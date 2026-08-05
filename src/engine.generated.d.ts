@@ -27,6 +27,11 @@ export interface OrreryFile {
 }
 
 export interface OrreryApi {
+  /** Declare that the vault is the host's, not the user's to pick. Drops the
+      intro screen, the folder picker, the drop target and the clear button —
+      all of which describe a choice that does not exist inside a plugin. Call
+      before load(). */
+  setHosted(on: boolean): void;
   /** On-screen or not. False suspends rendering, physics, audio and camera. */
   setVisible(on: boolean): void;
   /** Obsidian's userIgnoreFilters, verbatim: path prefixes, or /regex/. */

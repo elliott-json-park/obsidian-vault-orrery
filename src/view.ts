@@ -38,6 +38,10 @@ export class OrreryView extends ItemView {
       return;
     }
 
+    /* Before anything is drawn: the vault here is the one the plugin is
+       installed in, so the engine's own way of asking for a folder has to be
+       gone by the first paint rather than dismissed after it. */
+    this.api.setHosted(true);
     this.plugin.applySettingsTo(this.api);
     /* optional, and deliberately not awaited — the cosmos should not wait on a
        hand-tracking model that most sessions never use */

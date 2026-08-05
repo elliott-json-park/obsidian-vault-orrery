@@ -1098,10 +1098,16 @@ const STR = {
                 'Camera access denied<br><span style="opacity:.6">Carry on with the mouse</span>',
                 'カメラアクセス拒否<br><span style="opacity:.6">マウスで続行</span>',
                 '摄像头访问被拒绝<br><span style="opacity:.6">请继续使用鼠标</span>'],
-'cam.nomodel': ['핸드 트래킹 모듈 로드 실패<br><span style="opacity:.6">인터넷 연결 확인</span>',
-                'Hand tracking module failed to load<br><span style="opacity:.6">Check the connection</span>',
-                'ハンドトラッキングモジュールの読み込みに失敗<br><span style="opacity:.6">インターネット接続を確認</span>',
-                '手部追踪模块加载失败<br><span style="opacity:.6">请检查网络连接</span>'],
+/* Neither of these mentions the network, because nothing here uses it. The
+   hand-tracking files are on disk or they are not. */
+'cam.nomodel': ['핸드 트래킹 모듈을 찾지 못했습니다<br><span style="opacity:.6">vendor/mediapipe/ 확인</span>',
+                'Hand tracking module not found<br><span style="opacity:.6">Check vendor/mediapipe/</span>',
+                'ハンドトラッキングモジュールが見つかりません<br><span style="opacity:.6">vendor/mediapipe/ を確認</span>',
+                '未找到手部追踪模块<br><span style="opacity:.6">请检查 vendor/mediapipe/</span>'],
+'cam.badmodel':['핸드 트래킹 모듈이 실행되지 않습니다<br><span style="opacity:.6">콘솔에 원인이 있습니다</span>',
+                'Hand tracking loaded but will not run<br><span style="opacity:.6">The console says why</span>',
+                'ハンドトラッキングを実行できません<br><span style="opacity:.6">原因はコンソールにあります</span>',
+                '手部追踪无法运行<br><span style="opacity:.6">控制台中有原因</span>'],
 'rail.open':   ['마인드맵','MIND MAP','マインドマップ','思维导图'],
 'rail.close':  ['맵 닫기','CLOSE MAP','マップを閉じる','关闭地图'],
 'rail.go':     ['행성으로 이동','TRAVEL','惑星へ移動','前往行星'],
@@ -1333,6 +1339,36 @@ function goLabel(name, flying) {
    webcam feed never leaves the machine is only worth making if the model that
    reads it was not fetched from someone else's server either. */
 const VENDOR = { mediapipe: 'vendor/mediapipe/' };
+
+/* ================================================================= HOSTED
+   Standalone, this page has no vault until someone hands it one, so it opens
+   on an intro screen and offers a folder picker, a drop target, an "empty
+   space" hint and a way to clear back to nothing. Inside a host — the Obsidian
+   plugin — none of that is a choice the user has: the vault is the vault the
+   plugin is installed in. Offering to open a different folder there is worse
+   than clutter, it describes a capability that does not exist.
+
+   The intro screen goes with them. A splash with a START button is right for a
+   page someone navigated to; a leaf that opens inside an editor should show its
+   contents rather than ask permission first. Nothing behind it is waiting on
+   that click — the render loop starts on its own, and the audio context arms
+   itself on the first pointer or key event wherever that lands.
+
+   Declared as a mode the host switches on, not as a set of elements the plugin
+   reaches in and hides: the engine owns its own markup, and a plugin poking at
+   element ids would break silently the next time one is renamed. */
+let hosted = false;
+function setHosted(on) {
+  hosted = !!on;
+  if (!hosted) return;
+  const boot = $('boot');
+  boot.classList.add('gone');
+  boot.style.display = 'none';
+  /* #hint and #b-clear are also driven by refreshHUD(), which honours `hosted`
+     for the same reason; hiding them here covers the state before the first
+     vault arrives. */
+  ['b-load', 'hint', 'b-clear'].forEach(id => { $(id).style.display = 'none'; });
+}
 
 /* three.js is a hard dependency and its absence used to be a blank screen with
    a ReferenceError buried in the console. Say what is missing, and where. */
@@ -3195,8 +3231,10 @@ function refreshHUD() {
   $('s-span').textContent = yr.length ? yr[0] + '–' + yr[yr.length-1] : '—';
   $('l-cnt').textContent = cats.length;
   $('vault-name').textContent = DATA.meta.vault || 'EMPTY SPACE';
-  $('hint').classList.toggle('on', N === 0);
-  $('b-clear').style.display = N ? '' : 'none';
+  /* Hosted, an empty cosmos means an empty vault, not a missing one: there is
+     no folder to drop and nothing to clear back to. */
+  $('hint').classList.toggle('on', N === 0 && !hosted);
+  $('b-clear').style.display = (N && !hosted) ? '' : 'none';
 
   const legBody = $('legbody');
   legBody.innerHTML = '';
@@ -5976,6 +6014,9 @@ addEventListener('blur', () => { keysDown.clear(); ship.boost = false; SKY.rate 
    The tracker, the handedness split and the shape classifier are kept from
    v1 unchanged; only the action layer was replaced.                       */
 let gestureActive = false, hands = null, video = $('vid'), camStream = null;
+/* health of the tracker itself — see camFail() */
+let gResults = 0, gWatch = 0;
+const G_WATCH_MS = 20000;
 let gLoopOn = false, gHz = 0, gLast = 0;
 /* `dk` is the string key; `desc` is only ever the resolved copy of it, so a
    language switch while the camera is idle still repaints the caption. */
@@ -6028,6 +6069,20 @@ async function startCamera() {
     hands.onResults(onHands);
   }
   gestureActive = true; gLoopOn = true;
+  /* The other half of the same problem the failure counter covers. A model
+     whose WASM never arrives does not always reject — send() can simply never
+     settle, and then nothing throws, nothing is counted, and the camera sits
+     there looking online forever. So the claim being checked is the one that
+     actually matters: results are coming back. Generous, because first-run
+     initialisation genuinely reads about 16 MB off disk. */
+  gResults = 0;
+  clearTimeout(gWatch);
+  gWatch = setTimeout(() => {
+    /* gLoopOn too: a leaf hidden inside the window parks the tracker on
+       purpose, and a parked tracker is not a broken one. */
+    if (gestureActive && gLoopOn && !gResults)
+      camFail(new Error('no inference results within ' + (G_WATCH_MS / 1000) + 's'));
+  }, G_WATCH_MS);
   $('camoff').style.display = 'none';
   $('camst').textContent = 'ONLINE';
   if (!ship.on) $('mode').textContent = 'GESTURE';
@@ -6037,6 +6092,7 @@ async function startCamera() {
 }
 function stopCamera() {
   gestureActive = false; gLoopOn = false;
+  clearTimeout(gWatch); gWatch = 0;
   if (camStream) camStream.getTracks().forEach(t => t.stop());
   camStream = null; video.srcObject = null;
   /* the pane may still be showing a failure message from the last attempt */
@@ -6068,14 +6124,27 @@ const G_TARGET_MS = 1000 / 32;
    and two of these running at once doubles the webcam cost, which is the exact
    opposite of what suspending was for. */
 let pumping = false;
+/* A dropped frame and a model that never actually loaded raise the same
+   exception here, and treating both as transient is how a broken tracker ends
+   up looking exactly like a working one: camera on, status ONLINE, nothing
+   ever recognised, nothing said. Persistence is the only signal that separates
+   them — one failure is noise, twenty in a row is a tracker that never
+   started. */
+let gFail = 0;
+const G_FAIL_MAX = 20;
 async function pump() {
   if (pumping) return;
   pumping = true;
+  let fatal = null;
   try {
     while (gLoopOn) {
       const t0 = performance.now();
       if (video.readyState >= 2) {
-        try { await hands.send({ image: video }); } catch(e) { /* transient */ }
+        try { await hands.send({ image: video }); gFail = 0; }
+        catch (e) {
+          if (++gFail === 1) console.warn('Vault Orrery: hand inference error', e);
+          if (gFail >= G_FAIL_MAX) { fatal = e; break; }
+        }
         const now = performance.now();
         gHz = gHz*0.85 + (1000/Math.max(1, now-gLast))*0.15;
         gLast = now;
@@ -6084,6 +6153,21 @@ async function pump() {
       await new Promise(r => setTimeout(r, Math.max(4, G_TARGET_MS - spent)));
     }
   } finally { pumping = false; }
+  if (fatal) camFail(fatal);
+}
+/* Give the camera back rather than leaving the light on for a tracker that is
+   not reading anything, and drop `hands` so pressing C again is a real retry
+   and not a second run at the same broken instance. */
+function camFail(err) {
+  console.error('Vault Orrery: hand tracking failed to run. The MediaPipe ' +
+                'files are present but the model could not be initialised.', err);
+  stopCamera();
+  hands = null;
+  gFail = 0;
+  $('camst').textContent = 'MODEL ERROR';
+  $('camoff').dataset.i18n = 'cam.badmodel';
+  $('camoff').innerHTML = T('cam.badmodel');
+  toast('HAND TRACKING FAILED');
 }
 
 /* ---- landmark maths ----
@@ -6218,6 +6302,7 @@ const HOLD_MS = 115;
 const GHOST_MS = 300;
 
 function onHands(res) {
+  gResults++;
   const lms = res.multiHandLandmarks || [];
   const hd  = res.multiHandedness || [];
   const nowT = performance.now();
@@ -8082,16 +8167,25 @@ function collectEntry(entry, out, base) {
     step();
   });
 }
+/* Hosted, a dropped folder is not a vault to switch to — the host owns which
+   vault this is. Dropping a note on an Obsidian leaf is also already the
+   editor's own gesture, and swallowing it here would break it. */
 let dragDepth = 0;
 addEventListener('dragenter', e => {
+  if (hosted) return;
   e.preventDefault();
   if (++dragDepth === 1 && !loading) $('drop').classList.add('on');
 });
-addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+addEventListener('dragover', e => {
+  if (hosted) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'copy';
+});
 addEventListener('dragleave', e => {
+  if (hosted) return;
   if (--dragDepth <= 0) { dragDepth = 0; $('drop').classList.remove('on'); }
 });
 addEventListener('drop', async e => {
+  if (hosted) return;
   e.preventDefault();
   dragDepth = 0; $('drop').classList.remove('on');
   const entries = Array.from(e.dataTransfer.items || [])
@@ -8198,6 +8292,7 @@ runResume();
      leaf shown/hidden  → setVisible(true / false)
      onunload           → destroy()                                           */
 window.vaultOrrery = {
+  setHosted,
   setVisible(on) { RUN.host = !!on; runSync(); },
   setIgnoreFilters,
   setLang,
