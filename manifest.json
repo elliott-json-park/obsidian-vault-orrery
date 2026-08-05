@@ -1,0 +1,10 @@
+{
+  "id": "vault-orrery",
+  "name": "Vault Orrery",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "Fly through your vault as a star system, with optional webcam hand-gesture control. Runs entirely offline.",
+  "author": "Elliott Park",
+  "authorUrl": "https://github.com/Elliott Park",
+  "isDesktopOnly": true
+}

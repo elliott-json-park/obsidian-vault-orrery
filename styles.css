@@ -1,0 +1,15 @@
+/* The engine's own stylesheet is generated from vault-orrery-v2.html and
+   injected at runtime (see src/main.ts). Only the seam between Obsidian's leaf
+   and the engine's root belongs here. */
+
+.vault-orrery-host {
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* The view fills its leaf edge to edge; the engine draws its own frame. */
+.workspace-leaf-content[data-type='vault-orrery-view'] .view-content {
+  padding: 0;
+  overflow: hidden;
+}

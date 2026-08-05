@@ -1,0 +1,34 @@
+{
+  "name": "vault-orrery",
+  "version": "1.0.0",
+  "description": "Fly through your Obsidian vault as a star system.",
+  "main": "main.js",
+  "//": "No \"type\": \"module\" — Obsidian loads main.js as CommonJS, and declaring the package as ESM makes Node treat the built bundle as a module too. Build scripts use .mjs instead.",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "engine": "node scripts/build-engine.mjs",
+    "dev": "npm run engine && node esbuild.config.mjs",
+    "build": "npm run engine && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "test": "npm run build && node scripts/check-no-remote.mjs && node scripts/smoke.cjs",
+    "check": "node scripts/check-no-remote.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "graph",
+    "3d",
+    "visualization"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "builtin-modules": "^3.3.0",
+    "esbuild": "^0.20.0",
+    "obsidian": "latest",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@mediapipe/hands": "0.4.1675469240",
+    "three": "0.128.0"
+  }
+}

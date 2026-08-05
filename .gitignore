@@ -1,0 +1,13 @@
+# build output
+main.js
+main.js.map
+src/engine.generated.js
+
+# bundled third-party libraries — see THIRD-PARTY-NOTICES.md for how to
+# populate this directory. Not committed: large binaries, and their licences
+# require shipping them intact rather than as a fork.
+vendor/
+
+node_modules/
+.DS_Store
+*.log
