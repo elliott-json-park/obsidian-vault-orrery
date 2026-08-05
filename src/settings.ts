@@ -97,10 +97,9 @@ export class OrrerySettingTab extends PluginSettingTab {
     containerEl.createEl('h3', { text: 'Privacy' });
     const p = containerEl.createEl('p', { cls: 'setting-item-description' });
     p.append(
-      'This plugin makes no network requests of any kind. Hand tracking is off ' +
-      'by default; when you enable it, video frames are read in memory and ' +
-      'discarded, never stored or transmitted, and the model that reads them is ' +
-      'bundled with the plugin rather than downloaded. The camera is suspended ' +
-      'whenever the view is not on screen.');
+      'This plugin makes no network requests of any kind — no telemetry, no ' +
+      'update check, no remote fonts or scripts. Your notes are read, laid out ' +
+      'and drawn entirely on this machine, and nothing about them is stored ' +
+      'outside the vault.');
   }
 }

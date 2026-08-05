@@ -11,13 +11,6 @@
 export declare const ENGINE_CSS: string;
 export declare const ENGINE_HTML: string;
 
-/** What the host supplies at mount time. */
-export interface OrreryHost {
-  /** app:// directory the MediaPipe files are served from, with a trailing
-      slash. Empty means hand tracking stays unavailable. */
-  mediapipePath?: string;
-}
-
 /** A file for the engine to read. Duck-typed to match the browser's File, so
     the same engine takes a drag-and-drop in the standalone page and a TFile
     from the vault here. */
@@ -32,7 +25,7 @@ export interface OrreryApi {
       all of which describe a choice that does not exist inside a plugin. Call
       before load(). */
   setHosted(on: boolean): void;
-  /** On-screen or not. False suspends rendering, physics, audio and camera. */
+  /** On-screen or not. False suspends rendering, physics and audio. */
   setVisible(on: boolean): void;
   /** Obsidian's userIgnoreFilters, verbatim: path prefixes, or /regex/. */
   setIgnoreFilters(list: string[]): void;
@@ -49,4 +42,4 @@ export interface OrreryApi {
   readonly root: HTMLElement;
 }
 
-export declare function createOrrery(root: HTMLElement, host?: OrreryHost): OrreryApi;
+export declare function createOrrery(root: HTMLElement): OrreryApi;

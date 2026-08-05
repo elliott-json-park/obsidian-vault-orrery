@@ -3,7 +3,7 @@
   "name": "Vault Orrery",
   "version": "1.0.0",
   "minAppVersion": "1.4.0",
-  "description": "Fly through your vault as a star system, with optional webcam hand-gesture control. Runs entirely offline.",
+  "description": "Fly through your vault as a star system — a 3D graph with a spaceship, a surface mode and a formation timeline. Runs entirely offline.",
   "author": "Elliott Park",
   "authorUrl": "https://github.com/Elliott Park",
   "isDesktopOnly": true

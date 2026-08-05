@@ -49,7 +49,7 @@ export default class VaultOrreryPlugin extends Plugin {
     this.styleEl?.remove();
     this.styleEl = null;
     /* Views are torn down by Obsidian, which calls onClose(); that is where the
-       engine's own listeners, camera and audio context are released. */
+       engine's own listeners and audio context are released. */
   }
 
   private views(): OrreryView[] {
@@ -117,49 +117,4 @@ export default class VaultOrreryPlugin extends Plugin {
     return [...theirs.filter((x): x is string => typeof x === 'string'), ...mine];
   }
 
-  /* ---- bundled MediaPipe ------------------------------------------------- */
-
-  /** Where the hand-tracking files are served from, as an app:// directory.
-      Nothing is ever fetched from a network; this resolves inside the vault. */
-  mediapipeBasePath(): string {
-    const dir = this.manifest.dir;
-    if (!dir) return '';
-    const adapter = this.app.vault.adapter as unknown as { getResourcePath?(p: string): string };
-    if (!adapter.getResourcePath) return '';
-    /* getResourcePath appends a cache-busting query, so a directory path cannot
-       simply be concatenated with a filename. Resolve a known file and cut it
-       back to its folder instead. */
-    const one = adapter.getResourcePath(`${dir}/vendor/mediapipe/hands.js`);
-    return one.replace(/hands\.js(\?.*)?$/, '');
-  }
-
-  private mpLoad: Promise<boolean> | null = null;
-
-  /** Put `Hands` on the window, from disk, once.
-
-      Loaded when a view opens rather than when the camera starts: the engine
-      tests for `Hands` the moment you press C, and a fetch begun at that point
-      would report "module failed to load" for the first press and work on the
-      second. Failure here is not an error — hand tracking is optional, and the
-      engine already says so in its own words if the global never appears. */
-  ensureMediaPipe(): Promise<boolean> {
-    if (this.mpLoad) return this.mpLoad;
-    this.mpLoad = new Promise<boolean>(resolve => {
-      if ((window as unknown as { Hands?: unknown }).Hands) return resolve(true);
-      const base = this.mediapipeBasePath();
-      if (!base) return resolve(false);
-      const s = document.createElement('script');
-      s.src = base + 'hands.js';
-      s.async = true;
-      s.onload = () => resolve(!!(window as unknown as { Hands?: unknown }).Hands);
-      s.onerror = () => {
-        console.warn('Vault Orrery: vendor/mediapipe/hands.js not found — ' +
-                     'hand tracking stays unavailable. See THIRD-PARTY-NOTICES.md.');
-        resolve(false);
-      };
-      document.head.appendChild(s);
-      this.register(() => s.remove());
-    });
-    return this.mpLoad;
-  }
 }

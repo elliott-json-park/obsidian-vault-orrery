@@ -195,12 +195,6 @@ js = sub(js,
 js = sub(js, "document.getElementById('boot')", 'root.querySelector("#boot")',
   1, 'dependency-guard lookup scoped');
 
-/* 8. where MediaPipe is served from is the host's business: inside Obsidian it
-      is an app:// resource path, not a relative folder */
-js = sub(js,
-  "const VENDOR = { mediapipe: 'vendor/mediapipe/' };",
-  'const VENDOR = { mediapipe: host.mediapipePath || "vendor/mediapipe/" };',
-  1, 'vendor path supplied by the host');
 
 /* 9. the page exported itself onto window; a module returns it */
 js = sub(js, 'window.vaultOrrery = {', 'const API = {', 1, 'global export -> return value');
@@ -243,12 +237,7 @@ import * as THREE from 'three';
 export const ENGINE_CSS = ${JSON.stringify(css)};
 export const ENGINE_HTML = ${JSON.stringify(markup)};
 
-export function createOrrery(root, host) {
-  host = host || {};
-  /* "Hands" is deliberately NOT bound here. MediaPipe is loaded lazily — the
-     view mounts long before anyone presses C — so the engine's own
-     "typeof Hands === undefined" test has to resolve against the global at the
-     moment the camera starts, not against whatever was there at mount. */
+export function createOrrery(root) {
 ${preamble}
 ${js}
 ${epilogue}
@@ -280,6 +269,21 @@ for (const [name, rx, allowed] of residue) {
 }
 if (dirty) fail(`${dirty} page-level references survived. The engine changed shape; ` +
                 `add or adjust a substitution above.`);
+
+/* Every $('id') must exist in the markup that ships with it. Deleting a
+   feature means deleting both its panels and its code, and a lookup left
+   behind returns null and throws on the first frame it runs — in a build that
+   compiled, bundled and passed a smoke test, because nothing short of actually
+   mounting the engine in a browser would touch it. Both halves come from the
+   same file, so they can be compared here. */
+const markupIds = new Set([...markup.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
+const looked    = new Set([...js.matchAll(/\$\('([^']+)'\)/g)].map(m => m[1]));
+const orphans   = [...looked].filter(id => !markupIds.has(id));
+if (orphans.length)
+  fail(`${orphans.length} $() lookup(s) name an element the markup does not ` +
+       `contain: ${orphans.join(', ')}. Either the panel was removed and its ` +
+       `code was not, or an id was renamed in only one place.`);
+notes.push(`  ${String(looked.size).padStart(4)}  $() lookups, all present in markup`);
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, out, 'utf8');

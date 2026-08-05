@@ -18,6 +18,10 @@ const ENGINE_HTML = path.join(PLUGIN_ROOT, 'vault-orrery-v2.html');
    in comments and licence headers are not. */
 const CODE_URL = /(?:src|href|url|locateFile|importScripts|fetch)\s*[:=(]\s*["'`]https?:\/\/[^"'`]+/gi;
 const WASM_URL = /https?:\/\/[^\s"'`)]+\.(?:js|mjs|wasm|tflite|data|binarypb)\b/gi;
+/* The list is wider than what is actually bundled today (three.js is one .js
+   file). It costs nothing to keep the loadable-asset extensions in it, and a
+   future dependency that ships wasm should trip this without anyone having to
+   remember to widen it first. */
 
 /* The engine source is always present in the repo, so a missing one means the
    path is wrong, not that a build is pending — silently checking nothing is

@@ -67,25 +67,6 @@ canvas{display:block}
   box-shadow:0 0 8px var(--cy)}
 
 #keys{left:16px;width:238px;bottom:216px}
-#gp{top:16px;right:16px;width:250px;display:none}
-#gp.on{display:block}
-#gname{font-size:18px;letter-spacing:.18em;color:var(--am);
-  text-shadow:0 0 20px rgba(255,182,72,.55);line-height:1.25;min-height:24px}
-#gdesc{font-size:9.5px;opacity:.5;letter-spacing:.12em;min-height:13px;margin-bottom:6px}
-#hands{display:flex;gap:6px;margin:7px 0 2px}
-.hchip{flex:1;text-align:center;font-size:9px;padding:4px 0;letter-spacing:.14em;
-  border:1px solid rgba(92,225,255,.18);color:rgba(223,246,255,.3)}
-.hchip.on{border-color:var(--am);color:var(--am);box-shadow:0 0 12px rgba(255,182,72,.28) inset}
-/* held through a tracking gap rather than actually seen this frame */
-.hchip.ghost{border-color:rgba(255,182,72,.3);color:rgba(255,182,72,.45);
-  border-style:dashed}
-/* the tracking bar reads as a gate: cyan while the engine is only watching,
-   amber the moment the hand is clear enough to be obeyed */
-#g-bar.lo{background:linear-gradient(90deg,var(--cy-d),var(--cy));
-  box-shadow:0 0 8px var(--cy)}
-#g-bar{background:linear-gradient(90deg,var(--am-d),var(--am));
-  box-shadow:0 0 8px var(--am);transition:width .12s linear}
-#gp.weak #gname{color:rgba(255,182,72,.42);text-shadow:none}
 
 /* ---------- top center : control deck ---------- */
 /* left / width are written by layoutHUD() so the deck fits the gap the side
@@ -143,24 +124,6 @@ canvas{display:block}
 .mini.am{color:var(--am);border-color:rgba(255,182,72,.34);background:rgba(255,182,72,.06)}
 .mini.am:hover{background:rgba(255,182,72,.18);box-shadow:0 0 14px rgba(255,182,72,.2)}
 
-/* ---------- bottom-left : camera feed ---------- */
-#cam{bottom:16px;left:16px;width:238px;display:none}
-#cam.on{display:block}
-#cam .ttl{padding-right:22px}
-#camgrip{position:absolute;top:-1px;right:-1px;width:20px;height:20px;z-index:4;
-  cursor:nesw-resize;pointer-events:auto}
-#camgrip::after{content:"";position:absolute;top:5px;right:5px;width:8px;height:8px;
-  border-top:1px solid var(--cy);border-right:1px solid var(--cy);opacity:.6}
-#camgrip:hover::after{opacity:1;box-shadow:0 0 10px var(--cy)}
-#camwrap{position:relative;width:100%;height:0;padding-bottom:75%;overflow:hidden;
-  background:#020508}
-#vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-  transform:scaleX(-1);opacity:.32;filter:grayscale(1) contrast(1.35) brightness(.85)}
-#skel{position:absolute;inset:0;width:100%;height:100%}
-#camoff{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  text-align:center;font-size:9px;letter-spacing:.16em;color:rgba(223,246,255,.4);padding:14px;
-  line-height:1.7}
-
 /* ---------- bottom-right : inspector ---------- */
 #insp{bottom:16px;right:16px;width:352px;max-height:64vh;display:flex;flex-direction:column}
 #insp .bd{overflow:auto;font-family:var(--kr);text-transform:none;letter-spacing:0}
@@ -217,28 +180,6 @@ canvas{display:block}
 .lrow em{font-style:normal;font-family:var(--kr);letter-spacing:0;flex:1;
   overflow:hidden;text-overflow:ellipsis;text-transform:none;font-size:11px}
 .lrow i{font-style:normal;opacity:.4;font-variant-numeric:tabular-nums}
-
-/* ---------- bottom center : left-hand gesture rail ---------- */
-#rail{bottom:16px;left:50%;transform:translateX(-50%);display:none;gap:1px;
-  justify-content:center}
-#rail.on{display:flex}
-#rail .g{padding:6px 10px 8px;text-align:center;background:rgba(4,14,24,.7);
-  border:1px solid rgba(92,225,255,.14);min-width:96px;position:relative;
-  transition:border-color .12s,background .12s}
-#rail .g.on{border-color:var(--am);background:rgba(38,24,4,.8);
-  box-shadow:0 0 18px rgba(255,182,72,.22)}
-#rail .g.ready{border-color:rgba(92,225,255,.5);background:rgba(6,26,40,.85)}
-#rail .g u{display:block;text-decoration:none;font-size:15px;line-height:1.15;
-  filter:grayscale(1) brightness(1.6);transition:filter .12s}
-#rail .g.on u{filter:none}
-#rail .g s{display:block;text-decoration:none;font-size:8px;letter-spacing:.1em;
-  opacity:.55;margin-top:3px}
-#rail .g.on s{opacity:1;color:var(--am)}
-#rail .g.ready s{opacity:.95;color:var(--cy)}
-/* time left in the armed window */
-#rail .g i{position:absolute;left:0;bottom:0;height:2px;width:0;
-  background:linear-gradient(90deg,var(--am-d),var(--am));
-  box-shadow:0 0 7px var(--am)}
 
 #tgt{position:fixed;z-index:11;pointer-events:none;font-size:10px;letter-spacing:.1em;
   color:var(--am);text-shadow:0 0 12px rgba(255,182,72,.7);display:none;
@@ -487,24 +428,20 @@ canvas{display:block}
 @media (max-width:1320px){
   #idp,#keys,#leg{width:212px}
   #insp{width:312px}
-  #gp{width:224px}
 }
 @media (max-width:1120px){
   #idp,#keys,#leg{width:194px}
   #insp{width:280px;max-height:56vh}
-  #gp{width:206px}
   #idp .big{font-size:16px;letter-spacing:.24em}
   #keys .row{font-size:9.5px;line-height:1.7}
 }
-/* Short windows: the left column is identity + legend + shortcuts + webcam
-   stacked, and on a 720-tall laptop that is more than there is room for. */
+/* Short windows: the left column is identity + legend + shortcuts stacked,
+   and on a 720-tall laptop that is more than there is room for. */
 @media (max-height:760px){
   #keys .row:nth-child(n+7){display:none}
 }
 
 /* ================= GENESIS ================= */
-/* Bottom centre, where the gesture rail also lives — layoutHUD() lifts the
-   rail above it when both are up. */
 /* left / width are written by layoutHUD(), which fits it between the side
    panes exactly as it does the control deck */
 #gen{bottom:16px;left:50%;transform:translateX(-50%);width:min(660px,74vw);display:none}
@@ -539,7 +476,7 @@ canvas{display:block}
    entirely — the whole point is the sky, and a control deck across the top
    of a sunrise is vandalism. What is left is the name of the world you are
    on, where its sun is, and how to leave. */
-body.sky #ctl,body.sky #leg,body.sky #keys,body.sky #rail,
+body.sky #ctl,body.sky #leg,body.sky #keys,
 body.sky #insp,body.sky #gen,body.sky #tgt{display:none}
 body.sky{cursor:grab}
 body.sky.look{cursor:grabbing}
@@ -590,7 +527,7 @@ body.sky #skycomp{display:block}
 
 /* ================= SHIP MODE ================= */
 body.ship{cursor:none}
-body.ship #ctl,body.ship #leg,body.ship #keys,body.ship #insp,body.ship #rail{display:none}
+body.ship #ctl,body.ship #leg,body.ship #keys,body.ship #insp{display:none}
 body.ship.cursor{cursor:default}
 #shud{top:16px;left:50%;transform:translateX(-50%);width:420px;display:none}
 body.ship #shud{display:block}
@@ -657,11 +594,7 @@ body.ship #scanmsg{display:block}
    how a star system gets filtered out. The panes narrow instead, the deck is
    fitted to the gap by layoutHUD(), and the column only drops something when
    the window is genuinely too short to stack it (which layoutHUD decides by
-   measuring, not by guessing at a breakpoint). The gesture rail does go: it
-   is a legend for hand signals, and it only appears with the camera on. */
-@media (max-width:1180px){
-  #rail{display:none}
-}
+   measuring, not by guessing at a breakpoint). */
 </style>
 </head>
 <body>
@@ -681,6 +614,9 @@ body.ship #scanmsg{display:block}
       <div class="row"><span>EDGES</span><span id="s-edges">0</span></div>
       <div class="row"><span>SYSTEMS</span><span id="s-sys">0</span></div>
       <div class="row"><span>SPAN</span><span id="s-span">—</span></div>
+      <!-- which link types are drawn, cycled with L. It used to sit in the
+           gesture panel, which is gone; it is vault state, not hand state. -->
+      <div class="row"><span>LINK LAYER</span><span id="g-layer">ALL</span></div>
       <div class="row"><span>RANGE</span><span id="s-dist">—</span></div>
       <div class="row"><span>FPS</span><span id="s-fps">—</span></div>
       <div class="bar"><i id="s-load" style="width:100%"></i></div>
@@ -743,7 +679,6 @@ body.ship #scanmsg{display:block}
         <div class="mini" id="b-gen" data-i18n="btn.gen" data-i18n-title="btn.gen.t">◌ 항성계 생성</div>
         <div class="mini" id="b-post" data-i18n="btn.post" data-i18n-title="btn.post.t">⤓ 포스터</div>
         <div class="mini" id="b-snd" data-i18n="btn.snd" data-i18n-title="btn.snd.t">♪ 사운드</div>
-        <div class="mini" id="b-swap" data-i18n="btn.swap" data-i18n-title="btn.swap.t">⇄ 손 좌우</div>
         <div class="mini" id="b-rst" data-i18n="btn.rst">↺ 설정 초기화</div>
       </div>
     </div>
@@ -752,7 +687,6 @@ body.ship #scanmsg{display:block}
   <div class="pane glass" id="keys">
     <div class="bd" style="padding:7px 10px">
       <div class="row"><span>SEARCH</span><span>/</span></div>
-      <div class="row"><span>CAMERA · GESTURE</span><span>C</span></div>
       <div class="row"><span>MIND MAP</span><span>M · DBL-CLICK</span></div>
       <div class="row"><span>SPACESHIP</span><span>F</span></div>
       <div class="row"><span>STAND ON PLANET</span><span>V</span></div>
@@ -763,28 +697,6 @@ body.ship #scanmsg{display:block}
       <div class="row"><span>DRAG / WHEEL</span><span>ORBIT · ZOOM</span></div>
       <div class="row"><span>RIGHT-DRAG</span><span>PAN</span></div>
       <div class="row"><span>SHIFT+DRAG</span><span>MOVE NODE</span></div>
-    </div>
-  </div>
-
-  <div class="pane glass" id="gp">
-    <div class="ttl"><b>LEFT HAND</b><span id="gfps">0 HZ</span></div>
-    <div class="bd">
-      <div id="gname">STANDBY</div>
-      <div id="gdesc" data-i18n="gst.standby">카메라 대기 중</div>
-      <div id="hands"><div class="hchip" id="h0">HAND · L</div><div class="hchip" id="h1">HAND · R</div></div>
-      <div class="row"><span>TRACKING</span><span id="g-conf">0%</span></div>
-      <div class="bar"><i id="g-bar" style="width:0%"></i></div>
-      <div class="row"><span>LINK LAYER</span><span id="g-layer">ALL</span></div>
-    </div>
-  </div>
-
-  <div class="pane glass" id="cam">
-    <div id="camgrip" data-i18n-title="grip.t"></div>
-    <div class="ttl"><b>OPTICAL SENSOR</b><span id="camst">OFFLINE</span></div>
-    <div id="camwrap">
-      <video id="vid" playsinline muted autoplay></video>
-      <canvas id="skel"></canvas>
-      <div id="camoff" data-i18n="cam.off">카메라 비활성<br>[C] 키로 트래킹 시작</div>
     </div>
   </div>
 
@@ -857,8 +769,6 @@ body.ship #scanmsg{display:block}
       <div class="cell"><u id="sky-loc">—</u><s data-i18n="sky.loc">위도 · 자전</s></div>
     </div>
   </div>
-
-  <div class="pane" id="rail"></div>
 
   <div id="skycomp"></div>
   <div id="skykeys" data-i18n="sky.keys">드래그 · 시야 돌리기</div>
@@ -989,10 +899,9 @@ body.ship #scanmsg{display:block}
   </div>
 </div>
 
-<!-- Both libraries are loaded from disk, never from a CDN. Obsidian's community
-     plugin policy forbids fetching remote code at runtime, and the privacy claim
-     this app makes about the webcam is only true if the hand-tracking model is
-     local too. See THIRD-PARTY-NOTICES.md for what belongs in vendor/. -->
+<!-- Loaded from disk, never from a CDN: Obsidian's community plugin policy
+     forbids fetching remote code at runtime. See THIRD-PARTY-NOTICES.md for
+     what belongs in vendor/. -->
 <script src="vendor/three.min.js"></script>
 <script>
 "use strict";
@@ -1003,9 +912,10 @@ body.ship #scanmsg{display:block}
      · nothing is baked in. The app boots into genuinely empty space and
        only grows a cosmos once a folder is handed to it, so every
        vault-derived binding has to survive N === 0.
-     · the mouse is the primary instrument. Gestures shrank to two
-       left-hand signals, and neither of them does anything the mouse
-       and keyboard cannot already do.
+     · the mouse and the keyboard are the whole instrument. v1 also read
+       hand gestures off a webcam; that is gone, along with the model it
+       needed and everything it implied about what this app is allowed to
+       switch on.
      · there are two cameras: the orbiting orrery rig, and a ship you
        fly with WASD.
    ===================================================================== */
@@ -1044,13 +954,7 @@ const STR = {
 'btn.snd':     ['♪ 사운드','♪ SOUND','♪ サウンド','♪ 声音'],
 'btn.snd.t':   ['앰비언트 사운드 켜기 / 끄기 [U]','Ambient sound on / off [U]',
                 'アンビエントサウンド オン / オフ [U]','环境音效 开 / 关 [U]'],
-'btn.swap':    ['⇄ 손 좌우','⇄ HAND SWAP','⇄ 左右反転','⇄ 左右互换'],
-'btn.swap.d':  ['⇄ 손 직결','⇄ HAND DIRECT','⇄ 左右そのまま','⇄ 左右直连'],
-'btn.swap.t':  ['왼손이 반대로 인식되면 누르세요','Press this if your left hand is read as the right one',
-                '左手が右手として認識される場合に押してください','如果左手被识别为右手，请点击'],
 'btn.rst':     ['↺ 설정 초기화','↺ RESET','↺ 設定リセット','↺ 重置设置'],
-'grip.t':      ['드래그해서 크기 조절 · 더블클릭 초기화','Drag to resize · double-click to reset',
-                'ドラッグでサイズ変更 · ダブルクリックでリセット','拖动调整大小 · 双击重置'],
 
 /* ---- boot log ---------------------------------------------------------- */
 'boot.l1':     ['렌더 파이프라인 초기화','render pipeline','レンダーパイプライン初期化','渲染管线初始化'],
@@ -1065,57 +969,15 @@ const STR = {
                 '指定仓库文件夹后，会生成与其规模相称的行星系。'],
 'boot.upload': ['▣ 파일 업로드 하기','▣ UPLOAD FOLDER','▣ フォルダを選択','▣ 上传文件夹'],
 'boot.start':  ['▶ 시작하기','▶ START','▶ スタート','▶ 开始'],
-'boot.note':   ['폴더를 지정하지 않고 시작하면 빈 우주에서 출발합니다 — 언제든 창에 끌어다 놓으면 됩니다.<br>조작은 전부 마우스와 키보드로 가능합니다. <b>[C]</b> 키를 누르면 웹캠·손동작 기능을 켜고 끌 수 있습니다.<br>영상과 파일은 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.',
-                'Start without a folder and you begin in empty space — drop one on the window whenever you like.<br>Everything is reachable with the mouse and keyboard. <b>[C]</b> toggles the webcam and hand gestures.<br>Video and files are processed inside the browser and are never sent anywhere.',
-                'フォルダを指定せずに始めると、空の宇宙から出発します — いつでもウィンドウにドロップできます。<br>操作はすべてマウスとキーボードで可能です。<b>[C]</b> キーでウェブカメラと手のジェスチャーを切り替えます。<br>映像とファイルはブラウザ内でのみ処理され、どこにも送信されません。',
-                '不指定文件夹直接开始，将从空白宇宙出发 — 随时可以把文件夹拖到窗口上。<br>所有操作都能用鼠标和键盘完成。按 <b>[C]</b> 键可开关摄像头与手势功能。<br>影像与文件仅在浏览器内处理，不会发送到任何地方。'],
+'boot.note':   ['폴더를 지정하지 않고 시작하면 빈 우주에서 출발합니다 — 언제든 창에 끌어다 놓으면 됩니다.<br>조작은 전부 마우스와 키보드로 가능합니다.<br>파일은 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.',
+                'Start without a folder and you begin in empty space — drop one on the window whenever you like.<br>Everything is reachable with the mouse and keyboard.<br>Files are processed inside the browser and are never sent anywhere.',
+                'フォルダを指定せずに始めると、空の宇宙から出発します — いつでもウィンドウにドロップできます。<br>操作はすべてマウスとキーボードで可能です。<br>ファイルはブラウザ内でのみ処理され、どこにも送信されません。',
+                '不指定文件夹直接开始，将从空白宇宙出发 — 随时可以把文件夹拖到窗口上。<br>所有操作都能用鼠标和键盘完成。<br>文件仅在浏览器内处理，不会发送到任何地方。'],
 'boot.staged': ['✓ {name} · 노트 {n}개 준비됨','✓ {name} · {n} notes ready',
                 '✓ {name} · ノート {n} 件 準備完了','✓ {name} · 已准备 {n} 篇笔记'],
 'boot.nofold': ['선택된 폴더','the selected folder','選択されたフォルダ','所选文件夹'],
 'boot.nomd':   ['그 폴더에서 마크다운 파일을 찾지 못했습니다.','No markdown files in that folder.',
                 'そのフォルダにマークダウンファイルが見つかりません。','在该文件夹中未找到 Markdown 文件。'],
-
-/* ---- gesture panel ----------------------------------------------------- */
-'gst.standby': ['카메라 대기 중','Camera standby','カメラ待機中','摄像头待机中'],
-'gst.ready':   ['왼손을 카메라 앞으로','Left hand in front of the camera','左手をカメラの前に','请将左手放到摄像头前'],
-'gst.blur':    ['손이 흐릿합니다 · 가까이','Hand is unclear · come closer','手がぼやけています · 近づけて','手部模糊 · 请靠近'],
-'gst.armed':   ['✋맵 · 🖖이동 · 👍초기시점','✋MAP · 🖖TRAVEL · 👍HOME',
-                '✋マップ · 🖖移動 · 👍初期視点','✋地图 · 🖖移动 · 👍初始视角'],
-'gst.fistarm': ['주먹을 쥐면 명령 준비','Make a fist to arm a command','拳を握ると命令を準備','握拳即可准备指令'],
-'gst.lclose':  ['L자 · 마인드맵 닫기','L shape · mind map closed','L字 · マインドマップを閉じる','L 形 · 关闭思维导图'],
-'gst.lhint':   ['L자를 만들면 닫힙니다','Make an L to close it','L字を作ると閉じます','摆出 L 形即可关闭'],
-'gst.opened':  ['펼침','opened','展開','已展开'],
-'gst.notgt':   ['노드 미선택','no node selected','ノード未選択','未选择节点'],
-'gst.travel':  ['{n} 로 이동','Travelling to {n}','{n} へ移動','前往 {n}'],
-'gst.home':    ['초기 시점으로','Back to the opening view','初期視点へ','回到初始视角'],
-'cam.off':     ['카메라 비활성<br>[C] 키로 트래킹 시작','Camera off<br>Press [C] to start tracking',
-                'カメラ停止中<br>[C] キーでトラッキング開始','摄像头未启用<br>按 [C] 开始追踪'],
-'cam.blocked': ['이 브라우저가 카메라를 막았습니다<br><span style="opacity:.6">파일을 로컬 서버로 열면 해결됩니다<br>python -m http.server</span>',
-                'This browser blocked the camera<br><span style="opacity:.6">Serve the file over a local server instead<br>python -m http.server</span>',
-                'このブラウザがカメラをブロックしました<br><span style="opacity:.6">ファイルをローカルサーバーで開くと解決します<br>python -m http.server</span>',
-                '此浏览器阻止了摄像头<br><span style="opacity:.6">用本地服务器打开文件即可解决<br>python -m http.server</span>'],
-'cam.denied':  ['카메라 접근 거부<br><span style="opacity:.6">마우스로 계속</span>',
-                'Camera access denied<br><span style="opacity:.6">Carry on with the mouse</span>',
-                'カメラアクセス拒否<br><span style="opacity:.6">マウスで続行</span>',
-                '摄像头访问被拒绝<br><span style="opacity:.6">请继续使用鼠标</span>'],
-/* Neither of these mentions the network, because nothing here uses it. The
-   hand-tracking files are on disk or they are not. */
-'cam.nomodel': ['핸드 트래킹 모듈을 찾지 못했습니다<br><span style="opacity:.6">vendor/mediapipe/ 확인</span>',
-                'Hand tracking module not found<br><span style="opacity:.6">Check vendor/mediapipe/</span>',
-                'ハンドトラッキングモジュールが見つかりません<br><span style="opacity:.6">vendor/mediapipe/ を確認</span>',
-                '未找到手部追踪模块<br><span style="opacity:.6">请检查 vendor/mediapipe/</span>'],
-'cam.badmodel':['핸드 트래킹 모듈이 실행되지 않습니다<br><span style="opacity:.6">콘솔에 원인이 있습니다</span>',
-                'Hand tracking loaded but will not run<br><span style="opacity:.6">The console says why</span>',
-                'ハンドトラッキングを実行できません<br><span style="opacity:.6">原因はコンソールにあります</span>',
-                '手部追踪无法运行<br><span style="opacity:.6">控制台中有原因</span>'],
-'rail.open':   ['마인드맵','MIND MAP','マインドマップ','思维导图'],
-'rail.close':  ['맵 닫기','CLOSE MAP','マップを閉じる','关闭地图'],
-'rail.go':     ['행성으로 이동','TRAVEL','惑星へ移動','前往行星'],
-'rail.home':   ['초기 시점','HOME VIEW','初期視点','初始视角'],
-'toast.righthand': ['오른손만 인식됩니다 · [⇄ 손 좌우]를 눌러보세요',
-                'Only the right hand is being seen · try [⇄ HAND SWAP]',
-                '右手しか認識されません · [⇄ 左右反転] を押してください',
-                '只识别到右手 · 请试试 [⇄ 左右互换]'],
 
 /* ---- inspector · counts ------------------------------------------------ */
 'insp.empty':  ['대상을 지정하십시오<br><span style="opacity:.6">노드를 클릭</span>',
@@ -1263,10 +1125,10 @@ const STR = {
 'audio.off':   ['앰비언트 사운드 OFF','AMBIENT SOUND OFF','アンビエントサウンド OFF','环境音效 关'],
 
 /* ---- dependencies · limits · exclusions -------------------------------- */
-'vendor.missing':['three.js를 찾을 수 없습니다. 이 앱은 라이브러리를 원격에서 받아오지 않습니다 — <b>vendor/three.min.js</b> 에 직접 넣어 주세요.<br>손동작 기능을 쓰려면 <b>vendor/mediapipe/</b> 도 함께 필요합니다. 자세한 목록은 THIRD-PARTY-NOTICES.md 를 보세요.',
-                'three.js was not found. This app never fetches libraries remotely — place it at <b>vendor/three.min.js</b>.<br>Hand tracking additionally needs <b>vendor/mediapipe/</b>. See THIRD-PARTY-NOTICES.md for the full list.',
-                'three.js が見つかりません。このアプリはライブラリを遠隔から取得しません — <b>vendor/three.min.js</b> に配置してください。<br>ハンドトラッキングには <b>vendor/mediapipe/</b> も必要です。詳細は THIRD-PARTY-NOTICES.md をご覧ください。',
-                '未找到 three.js。本应用不会远程获取库文件 — 请将其放在 <b>vendor/three.min.js</b>。<br>手势追踪还需要 <b>vendor/mediapipe/</b>。完整清单请见 THIRD-PARTY-NOTICES.md。'],
+'vendor.missing':['three.js를 찾을 수 없습니다. 이 앱은 라이브러리를 원격에서 받아오지 않습니다 — <b>vendor/three.min.js</b> 에 직접 넣어 주세요. 자세한 내용은 THIRD-PARTY-NOTICES.md 를 보세요.',
+                'three.js was not found. This app never fetches libraries remotely — place it at <b>vendor/three.min.js</b>. See THIRD-PARTY-NOTICES.md.',
+                'three.js が見つかりません。このアプリはライブラリを遠隔から取得しません — <b>vendor/three.min.js</b> に配置してください。詳細は THIRD-PARTY-NOTICES.md をご覧ください。',
+                '未找到 three.js。本应用不会远程获取库文件 — 请将其放在 <b>vendor/three.min.js</b>。详情请见 THIRD-PARTY-NOTICES.md。'],
 'cap.label':   ['최대 노드','MAX NODES','最大ノード数','最大节点数'],
 'cap.off':     ['제한 없음','NO LIMIT','制限なし','无限制'],
 'cap.hit':     ['노트 {total}개 중 {n}개만 불러왔습니다 · 최대 노드 설정에서 조정하세요',
@@ -1332,13 +1194,6 @@ function goLabel(name, flying) {
   if (LANG === 'ko') return '◎ ' + name + ro(name) + (flying ? ' 비행' : ' 이동');
   return T(flying ? 'go.fly' : 'go.travel', { n: name });
 }
-
-/* ================================================================= VENDOR
-   Where the bundled libraries live, relative to this file. Nothing here may
-   ever become a URL: the plugin ships these on disk, and the promise that the
-   webcam feed never leaves the machine is only worth making if the model that
-   reads it was not fetched from someone else's server either. */
-const VENDOR = { mediapipe: 'vendor/mediapipe/' };
 
 /* ================================================================= HOSTED
    Standalone, this page has no vault until someone hands it one, so it opens
@@ -1422,7 +1277,7 @@ const LNK_MAX = 1.30;
    own edge. */
 const MAX_NODES_CEIL = 10000;
 const SET_DEF = { spd:1, bri:1, ten:.5, grv:1, str:1, thr:1,
-                  lnk:.7, spr:1, swapHands:true, mmHop:false, mmOrb:true, snd:false,
+                  lnk:.7, spr:1, mmHop:false, mmOrb:true, snd:false,
                   maxNodes:3000 };
 const SET = Object.assign({}, SET_DEF);
 try { Object.assign(SET, JSON.parse(localStorage.getItem('orrery2.set') || '{}')); } catch(e){}
@@ -3214,8 +3069,7 @@ function select(i) {
   /* the resonance lines belong to one note; they are not a layer */
   if (twinState && twinState.i !== i) twinsClear();
   /* selecting locks the view onto the body without approaching it — getting
-     closer is a separate, deliberate act (the inspector's travel button, or
-     the three-finger gesture) */
+     closer is a separate, deliberate act (the inspector's travel button) */
   if (!ship.on) rig.follow = i;
   if (i >= 0 && adj[i]) adj[i].forEach(j => neighbours.add(j));
   renderInspector();
@@ -3254,24 +3108,6 @@ function refreshHUD() {
   });
 }
 
-/* the two left-hand signals, and nothing else */
-const RAIL = [
-  ['✊→✋',  'rail.open',  'LOPEN'],
-  ['🤟L',   'rail.close', 'LCLOSE'],
-  ['✊→🖖', 'rail.go',    'LGO'],
-  ['✊→👍', 'rail.home',  'LHOME']
-];
-const railEls = {};
-RAIL.forEach(([e,k,id]) => {
-  const d = document.createElement('div');
-  d.className = 'g';
-  /* the strip along the bottom is how long the armed window has left — a
-     gesture that has to be finished in time should show the time */
-  d.innerHTML = '<u>'+e+'</u><s data-i18n="'+k+'">'+T(k)+'</s><i></i>';
-  $('rail').appendChild(d);
-  d.bar = d.querySelector('i');
-  railEls[id] = d;
-});
 
 /* ---- the link groups the inspector and the mind map both print ---- */
 function linkGroupsHTML(i) {
@@ -5425,7 +5261,7 @@ function exitShip() {
   ship.sf = 0;
   camera.fov = ORRERY_FOV; camera.updateProjectionMatrix();
   keysDown.clear();
-  $('mode').textContent = gestureActive ? 'GESTURE' : 'MOUSE';
+  $('mode').textContent = 'MOUSE';
   /* hand the orrery rig the ship's vantage point so the view does not jump */
   shipDirs();
   rig.tgtD.copy(ship.pos).addScaledVector(_fwd, Math.min(600, lockRange()*3));
@@ -5763,9 +5599,7 @@ function drawRadar() {
 applyRadarSize();
 
 /* =============================================================== INPUT
-   Everything the app can do is on the mouse and the keyboard. The gesture
-   engine below adds no capability — it is a second way to reach two of
-   these commands, for when your left hand is free. */
+   Everything the app can do is on the mouse and the keyboard. */
 let dragging = 0, lx = 0, ly = 0, moved = 0, dragNodeIdx = -1;
 /* Hover used to be resolved inside the pointermove handler, against whatever
    the last frame left in P[] and in the camera. Bodies are orbiting the whole
@@ -5978,7 +5812,6 @@ addEventListener('keydown', e => {
   else if (k === 'm') { e.preventDefault(); toggleMind(); }
   else if (k === 'r') resetView();
   else if (k === 'l') cycleLayer();
-  else if (k === 'c') toggleCamera();
   else if (k === 'g') { e.preventDefault(); toggleGenesis(); }
   else if (k === 'v') { e.preventDefault(); toggleSky(); }
   else if (k === 'n') { e.preventDefault(); twinsShow(selected); }
@@ -6002,517 +5835,6 @@ addEventListener('keyup', e => {
   if (k === 'shift') { ship.boost = false; SKY.rate = 1; }
 });
 addEventListener('blur', () => { keysDown.clear(); ship.boost = false; SKY.rate = 1; });
-
-/* ============================================== GESTURE ENGINE (MediaPipe)
-   v1 mapped fourteen commands across both hands. In practice the right hand
-   is on the mouse, so everything it used to do is gone. What is left is two
-   left-hand signals, both of which have a keyboard equivalent:
-
-     ✊ → ✋   open the mind map for the selected node   (= M, or double-click)
-     🤟 L     close it                                  (= Esc)
-
-   The tracker, the handedness split and the shape classifier are kept from
-   v1 unchanged; only the action layer was replaced.                       */
-let gestureActive = false, hands = null, video = $('vid'), camStream = null;
-/* health of the tracker itself — see camFail() */
-let gResults = 0, gWatch = 0;
-const G_WATCH_MS = 20000;
-let gLoopOn = false, gHz = 0, gLast = 0;
-/* `dk` is the string key; `desc` is only ever the resolved copy of it, so a
-   language switch while the camera is idle still repaints the caption. */
-const GST = { name:'STANDBY', dk:'gst.standby', desc:T('gst.standby'), conf:0, L:null, R:null };
-function gstSet(name, key, vars) {
-  GST.name = name; GST.dk = key; GST.dvars = vars || null; GST.desc = T(key, vars);
-}
-const skel = $('skel'), sctx = skel.getContext('2d');
-
-function toggleCamera() { gestureActive ? stopCamera() : startCamera(); }
-
-async function startCamera() {
-  if (gestureActive) return;
-  $('cam').classList.add('on');
-  $('gp').classList.add('on');
-  $('rail').classList.add('on');
-  $('camst').textContent = 'BOOTING';
-  layoutHUD();
-  if (!window.isSecureContext || !navigator.mediaDevices) {
-    $('camst').textContent = 'BLOCKED';
-    $('camoff').dataset.i18n = 'cam.blocked';
-    $('camoff').innerHTML = T('cam.blocked');
-    toast('SECURE CONTEXT REQUIRED'); return;
-  }
-  try {
-    camStream = await navigator.mediaDevices.getUserMedia({
-      video: { width:640, height:480, facingMode:'user' }, audio:false });
-    video.srcObject = camStream;
-    await video.play();
-  } catch (err) {
-    $('camst').textContent = 'DENIED';
-    $('camoff').dataset.i18n = 'cam.denied';
-    $('camoff').innerHTML = T('cam.denied');
-    toast('CAMERA DENIED'); return;
-  }
-  if (!hands) {
-    if (typeof Hands === 'undefined') {
-      $('camst').textContent = 'NO MODEL';
-      $('camoff').dataset.i18n = 'cam.nomodel';
-      $('camoff').innerHTML = T('cam.nomodel');
-      toast('HAND MODEL UNAVAILABLE'); return;
-    }
-    /* the WASM blobs and the model live beside hands.js, on disk */
-    hands = new Hands({ locateFile: f => VENDOR.mediapipe + f });
-    /* complexity 1 costs about twice the CPU of 0 and is worth it: at 0 the
-       model routinely loses a folded ring finger, which is exactly the
-       distinction the L shape hangs on. */
-    hands.setOptions({ maxNumHands:2, modelComplexity:1,
-      minDetectionConfidence:.55, minTrackingConfidence:.5 });
-    hands.onResults(onHands);
-  }
-  gestureActive = true; gLoopOn = true;
-  /* The other half of the same problem the failure counter covers. A model
-     whose WASM never arrives does not always reject — send() can simply never
-     settle, and then nothing throws, nothing is counted, and the camera sits
-     there looking online forever. So the claim being checked is the one that
-     actually matters: results are coming back. Generous, because first-run
-     initialisation genuinely reads about 16 MB off disk. */
-  gResults = 0;
-  clearTimeout(gWatch);
-  gWatch = setTimeout(() => {
-    /* gLoopOn too: a leaf hidden inside the window parks the tracker on
-       purpose, and a parked tracker is not a broken one. */
-    if (gestureActive && gLoopOn && !gResults)
-      camFail(new Error('no inference results within ' + (G_WATCH_MS / 1000) + 's'));
-  }, G_WATCH_MS);
-  $('camoff').style.display = 'none';
-  $('camst').textContent = 'ONLINE';
-  if (!ship.on) $('mode').textContent = 'GESTURE';
-  gstSet('READY', 'gst.ready');
-  toast('LEFT-HAND GESTURES ONLINE');
-  pump();
-}
-function stopCamera() {
-  gestureActive = false; gLoopOn = false;
-  clearTimeout(gWatch); gWatch = 0;
-  if (camStream) camStream.getTracks().forEach(t => t.stop());
-  camStream = null; video.srcObject = null;
-  /* the pane may still be showing a failure message from the last attempt */
-  $('camoff').dataset.i18n = 'cam.off';
-  $('camoff').innerHTML = T('cam.off');
-  $('camoff').style.display = ''; $('camst').textContent = 'OFFLINE';
-  $('cam').classList.remove('on');
-  $('gp').classList.remove('on');
-  $('rail').classList.remove('on');
-  if (!ship.on) $('mode').textContent = 'MOUSE';
-  gstSet('STANDBY', 'gst.standby');
-  GST.L = null; GST.R = null;
-  smooth.L = smooth.R = null;
-  lmFilt.L = lmFilt.R = null;
-  extState.L = extState.R = null;
-  lArm = 0; lNoL = 0; railFill(0);
-  sctx.clearRect(0,0,skel.width,skel.height);
-  layoutHUD();
-  toast('GESTURES OFFLINE');
-}
-/* A fixed 22 ms nap after every inference meant the tracker's rate depended
-   on how long inference happened to take: fast machines idled, slow ones fell
-   further behind. The nap is now whatever is left of the frame budget, so the
-   rate holds near the target and the CPU is given back when it can be. */
-const G_TARGET_MS = 1000 / 32;
-/* Re-entrancy guard. The loop awaits inference, so clearing gLoopOn does not
-   stop it immediately — it stops at the next turn. Suspend-then-resume can
-   therefore start a second pump while the first is still parked on an await,
-   and two of these running at once doubles the webcam cost, which is the exact
-   opposite of what suspending was for. */
-let pumping = false;
-/* A dropped frame and a model that never actually loaded raise the same
-   exception here, and treating both as transient is how a broken tracker ends
-   up looking exactly like a working one: camera on, status ONLINE, nothing
-   ever recognised, nothing said. Persistence is the only signal that separates
-   them — one failure is noise, twenty in a row is a tracker that never
-   started. */
-let gFail = 0;
-const G_FAIL_MAX = 20;
-async function pump() {
-  if (pumping) return;
-  pumping = true;
-  let fatal = null;
-  try {
-    while (gLoopOn) {
-      const t0 = performance.now();
-      if (video.readyState >= 2) {
-        try { await hands.send({ image: video }); gFail = 0; }
-        catch (e) {
-          if (++gFail === 1) console.warn('Vault Orrery: hand inference error', e);
-          if (gFail >= G_FAIL_MAX) { fatal = e; break; }
-        }
-        const now = performance.now();
-        gHz = gHz*0.85 + (1000/Math.max(1, now-gLast))*0.15;
-        gLast = now;
-      }
-      const spent = performance.now() - t0;
-      await new Promise(r => setTimeout(r, Math.max(4, G_TARGET_MS - spent)));
-    }
-  } finally { pumping = false; }
-  if (fatal) camFail(fatal);
-}
-/* Give the camera back rather than leaving the light on for a tracker that is
-   not reading anything, and drop `hands` so pressing C again is a real retry
-   and not a second run at the same broken instance. */
-function camFail(err) {
-  console.error('Vault Orrery: hand tracking failed to run. The MediaPipe ' +
-                'files are present but the model could not be initialised.', err);
-  stopCamera();
-  hands = null;
-  gFail = 0;
-  $('camst').textContent = 'MODEL ERROR';
-  $('camoff').dataset.i18n = 'cam.badmodel';
-  $('camoff').innerHTML = T('cam.badmodel');
-  toast('HAND TRACKING FAILED');
-}
-
-/* ---- landmark maths ----
-   Every measure is divided by hand size, so one set of thresholds holds
-   whether the hand is at the lens or across the room. Extension is decided by
-   two independent votes — a reach test and a joint-angle test — because
-   either alone misreads a hand tilted toward the camera. */
-const D2 = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
-function jointAngle(a, b, c) {                 // interior angle at b
-  const ux = a.x-b.x, uy = a.y-b.y, uz = (a.z||0)-(b.z||0);
-  const vx = c.x-b.x, vy = c.y-b.y, vz = (c.z||0)-(b.z||0);
-  const nu = Math.hypot(ux,uy,uz), nv = Math.hypot(vx,vy,vz);
-  if (nu < 1e-6 || nv < 1e-6) return Math.PI;
-  return Math.acos(clamp((ux*vx + uy*vy + uz*vz) / (nu*nv), -1, 1));
-}
-const FINGERS = [[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]];
-
-/* ---- landmark filter ----
-   The classifier is a stack of threshold tests on raw landmark positions, and
-   MediaPipe's output shakes by a pixel or two even on a hand held perfectly
-   still — enough to flip a finger's extension bit and, through it, the shape.
-   v2 smoothed the palm centroid only, which steadied the readout on screen
-   while leaving the decision underneath it as noisy as ever.
-
-   All 21 landmarks now go through a speed-adaptive filter: at rest the
-   coefficient collapses and the position is held hard; on a real movement it
-   opens up and passes the motion straight through. That is the whole trick
-   behind not having to trade a jittery signal for a laggy one. */
-const lmFilt = { L:null, R:null };
-function filterLandmarks(side, lm) {
-  let prev = lmFilt[side];
-  if (!prev || prev.length !== lm.length) {
-    prev = lmFilt[side] = lm.map(p => ({ x:p.x, y:p.y, z:p.z||0 }));
-    return prev;
-  }
-  const scale = Math.max(1e-4, D2(lm[0], lm[9]));
-  for (let i=0;i<lm.length;i++){
-    const p = prev[i], q = lm[i];
-    /* speed measured in hand-widths, so it means the same at any distance */
-    const v = Math.hypot(q.x - p.x, q.y - p.y) / scale;
-    const a = clamp(0.20 + v * 6.0, 0.20, 0.90);
-    p.x = lerp(p.x, q.x, a); p.y = lerp(p.y, q.y, a); p.z = lerp(p.z, q.z||0, a);
-  }
-  return prev;
-}
-
-/* Extension as a number rather than a bit. Each digit scores the same two
-   votes as before — how far the tip reaches past the middle joint, and how
-   straight the joints are — and the bit is a threshold on that score. Two
-   thresholds, in fact: a finger already counted as out stays out until its
-   score falls well below the level it had to clear to get there. A hand held
-   near the boundary now settles on one answer instead of alternating between
-   two several times a second.
-
-   The distance from the threshold is also the only honest confidence this
-   model gives up, so it is kept rather than the flat 92% v2 displayed. */
-const EXT_ON = 0.58, EXT_OFF = 0.40;
-const extState = { L:null, R:null };
-
-function analyse(lm, side) {
-  const wrist = lm[0], mmcp = lm[9];
-  const scale = Math.max(1e-4, D2(wrist, mmcp));
-  const was = extState[side] || [false,false,false,false,false];
-  const ext = [], marg = [];
-  const vote = (s, k) => {
-    ext.push(s > (was[k] ? EXT_OFF : EXT_ON));
-    marg.push(Math.min(1, Math.abs(s - 0.49) / 0.34));
-  };
-  /* the thumb swings sideways rather than curling, so its reach is measured
-     against the little finger's knuckle instead of the wrist */
-  const thumbAng = jointAngle(lm[2], lm[3], lm[4]);
-  vote(0.5 * clamp((D2(lm[4],lm[17]) / Math.max(1e-4, D2(lm[3],lm[17])) - 0.98) / 0.16, 0, 1) +
-       0.5 * clamp((thumbAng - 2.25) / 0.60, 0, 1), 0);
-  FINGERS.forEach(([mcp, pip, dip, tip], k) => {
-    const reach = D2(lm[tip], wrist) / Math.max(1e-4, D2(lm[pip], wrist));
-    const bend  = jointAngle(lm[mcp], lm[pip], lm[dip]) +
-                  jointAngle(lm[pip], lm[dip], lm[tip]);
-    vote(0.5 * clamp((reach - 1.00) / 0.22, 0, 1) +
-         0.5 * clamp((bend  - 3.60) / 1.30, 0, 1), k + 1);
-  });
-  extState[side] = ext;
-
-  const nExt = ext.filter(Boolean).length;
-  /* the weakest digit is what a misread will hinge on, but judging the whole
-     hand by it alone is unfair to a shape that is otherwise unambiguous */
-  const mn = Math.min.apply(null, marg);
-  const mean = marg.reduce((a,b) => a+b, 0) / marg.length;
-  let cx=0, cy=0;
-  [0,5,9,13,17].forEach(i => { cx += lm[i].x; cy += lm[i].y; });
-  cx/=5; cy/=5;
-  /* angle between the thumb ray and the index ray: an L is wide open, a
-     point with a lazy thumb is not */
-  const tvx = lm[4].x-lm[2].x, tvy = lm[4].y-lm[2].y;
-  const ivx = lm[8].x-lm[5].x, ivy = lm[8].y-lm[5].y;
-  const spread = Math.acos(clamp((tvx*ivx + tvy*ivy) /
-    (Math.hypot(tvx,tvy)*Math.hypot(ivx,ivy) + 1e-9), -1, 1));
-  return { lm, scale, ext, nExt, spread, margin: mn*0.5 + mean*0.5, x:1-cx, y:cy };
-}
-function classify(h) {
-  if (h.nExt >= 4) return 'OPEN';
-  /* THREE (thumb + index + middle) has to be tested before PEACE, which
-     ignores the thumb and would otherwise claim every one of them. Same
-     reason L goes before POINT. */
-  if (h.ext[0] && h.ext[1] && h.ext[2] && !h.ext[3] && !h.ext[4]) return 'THREE';
-  /* The gate was 0.95 rad — about 55° of splay between thumb and index. A
-     deliberate L is 70–90°, so that sounds generous until the hand is tilted
-     toward the lens, which foreshortens the angle and drops a perfectly good
-     L to POINT. 0.82 buys back the tilt and still clears a lazy-thumbed point
-     by a wide margin: those measure 0.35–0.55. */
-  if (h.ext[0] && h.ext[1] && !h.ext[2] && !h.ext[3] && !h.ext[4] && h.spread > 0.82)
-    return 'LSHAPE';
-  if (h.ext[1] && h.ext[2] && !h.ext[3] && !h.ext[4]) return 'PEACE';
-  if (h.ext[1] && !h.ext[2] && !h.ext[3] && !h.ext[4]) return 'POINT';
-  if (h.ext[0] && h.nExt === 1) return 'THUMB';
-  if (h.nExt <= 1) return 'FIST';
-  return 'NONE';
-}
-
-/* Hands are keyed by side, not by array slot: MediaPipe does not promise a
-   stable ordering between frames, and the whole design now hangs on knowing
-   which hand is the left one. */
-const smooth = { L:null, R:null };
-/* A candidate shape has to hold for this long before it becomes the answer.
-   v2 counted three frames instead, which is 66 ms on a fast machine and 200
-   on a slow one — the same gesture wanted a different rhythm depending on
-   the hardware it was performed in front of. */
-const HOLD_MS = 115;
-/* Tracking drops the odd frame: a hand crossing the edge of the lens, a blink
-   of motion blur, a garbage-collection pause. Treating every gap as "hand
-   gone" reset the armed state mid-gesture, which is most of what made the
-   engine feel unreliable. The last reading is held briefly and flagged. */
-const GHOST_MS = 300;
-
-function onHands(res) {
-  gResults++;
-  const lms = res.multiHandLandmarks || [];
-  const hd  = res.multiHandedness || [];
-  const nowT = performance.now();
-  const slot = { L:null, R:null };
-  lms.forEach((lm, i) => {
-    const label = (hd[i] && hd[i].label) || 'Right';
-    /* MediaPipe labels assume a mirrored selfie frame; we hand it the raw
-       camera image, so the label names the opposite hand. SET.swapHands
-       exists because that depends on the driver. */
-    let side = SET.swapHands ? (label === 'Left' ? 'R' : 'L')
-                             : (label === 'Left' ? 'L' : 'R');
-    const r = { lm, score: (hd[i] && hd[i].score) || .9 };
-    if (slot[side]) {                       // both landed on one side
-      const other = side === 'L' ? 'R' : 'L';
-      if (slot[other]) { if (slot[side].score >= r.score) return; }
-      else side = other;
-    }
-    slot[side] = r;
-  });
-  ['L','R'].forEach(side => {
-    const r = slot[side];
-    if (!r) {
-      const held = GST[side];
-      if (held && nowT - held.t < GHOST_MS) { held.ghost = true; return; }
-      GST[side] = null; smooth[side] = null;
-      lmFilt[side] = null; extState[side] = null;
-      return;
-    }
-    /* filter first, then classify — the whole point is that the decision
-       reads steadied positions rather than raw ones */
-    const h = analyse(filterLandmarks(side, r.lm), side);
-    h.side = side; h.score = r.score; h.t = nowT; h.ghost = false;
-    const s = smooth[side], cand = classify(h);
-    if (s) {
-      h.x = lerp(s.x, h.x, .55); h.y = lerp(s.y, h.y, .55);
-      h.pendG = cand;
-      h.pendSince = cand === s.pendG ? s.pendSince : nowT;
-      h.g = (nowT - h.pendSince >= HOLD_MS) ? cand : s.g;
-      h.gSince = h.g === s.g ? s.gSince : nowT;
-    } else {
-      h.g = cand; h.pendG = cand; h.pendSince = nowT; h.gSince = nowT;
-    }
-    /* Confidence, honestly assembled: how far every digit sits from its own
-       threshold, how sure the tracker is of the hand, and how much of the
-       frame the hand fills — a hand across the room is guesswork whatever
-       shape it scores. */
-    const near = Math.min(1, h.scale / 0.10);
-    h.conf = clamp(0.45*h.margin + 0.30*h.score + 0.25*near, 0, 1);
-    h.settled = clamp((nowT - h.gSince) / 250, 0, 1);
-    smooth[side] = { x:h.x, y:h.y, g:h.g, pendG:h.pendG,
-                     pendSince:h.pendSince, gSince:h.gSince };
-    GST[side] = h;
-  });
-  drawSkeleton();
-}
-
-const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],
-  [11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-function drawSkeleton() {
-  const w = skel.clientWidth, h = skel.clientHeight;
-  if (!w || !h) return;
-  if (skel.width !== w || skel.height !== h) { skel.width = w; skel.height = h; }
-  sctx.clearRect(0,0,w,h);
-  /* the left hand is the one that does anything now, so it is the bright
-     one; the right is drawn dim purely as a sanity check on the sides */
-  [[GST.L,'#ffb648','L'], [GST.R,'rgba(92,225,255,.45)','R']].forEach(([hnd, col, tag]) => {
-    if (!hnd) return;
-    const lm = hnd.lm;
-    const px = p => [(1-p.x)*w, p.y*h];
-    /* a hand being coasted through a tracking gap is drawn faint, so a
-       flickering signal looks like a flickering signal and not like a bug */
-    const live = hnd.ghost ? .3 : 1;
-    sctx.strokeStyle = col; sctx.globalAlpha = .85*live; sctx.lineWidth = 1.5;
-    sctx.shadowColor = col; sctx.shadowBlur = 7;
-    sctx.beginPath();
-    BONES.forEach(([a,b]) => {
-      const [x1,y1] = px(lm[a]), [x2,y2] = px(lm[b]);
-      sctx.moveTo(x1,y1); sctx.lineTo(x2,y2);
-    });
-    sctx.stroke();
-    sctx.globalAlpha = live;
-    lm.forEach((p,i) => {
-      const [x,y] = px(p);
-      sctx.fillStyle = col;
-      sctx.beginPath(); sctx.arc(x, y, i%4===0 ? 2.4 : 1.5, 0, TAU);
-      sctx.fill();
-    });
-    const [wx, wy] = px(lm[0]);
-    sctx.shadowBlur = 4;
-    sctx.fillStyle = col;
-    sctx.font = '600 9px ui-monospace,monospace';
-    sctx.fillText(tag + ' ' + hnd.g + (tag === 'L' ? '  ' +
-      Math.round((hnd.conf||0)*100) + '%' : ''), wx - 8, wy + 13);
-  });
-  sctx.shadowBlur = 0; sctx.globalAlpha = 1;
-}
-
-/* ---- the two signals ---- */
-let lArm = 0, lastMindGesture = 0, lNoL = 0, swapHinted = false;
-const ARM_MS = 1800;               // how long a fist stays armed
-/* Below this the shape is being watched, not obeyed. A hand at the edge of
-   the frame, half out of focus, or held in a pose the model is split on will
-   still produce a label — refusing to act on it is the difference between an
-   engine that occasionally does the wrong thing and one that waits. */
-const ACT_CONF = 0.42;
-function railFill(f) {
-  Object.values(railEls).forEach(e => {
-    if (e.bar) e.bar.style.width = (e.classList.contains('on') ? f*100 : 0) + '%';
-  });
-}
-function gestureStep() {
-  if (!gestureActive) return;
-  const L = GST.L;
-  const now = performance.now();
-  Object.values(railEls).forEach(e => e.classList.remove('on','ready'));
-  GST.conf = L ? L.conf : 0;
-
-  /* If the only hand ever seen is being filed as the right one, the driver is
-     mirroring the frame the other way round and every command is unreachable.
-     Say so once, rather than leaving it looking broken. */
-  if (!L && GST.R) { if (!lNoL) lNoL = now; } else lNoL = 0;
-  if (lNoL && now - lNoL > 4500 && !swapHinted) {
-    swapHinted = true;
-    toast(T('toast.righthand'));
-  }
-
-  if (!L) {
-    lArm = 0; railFill(0);
-    gstSet('READY', 'gst.ready'); return;
-  }
-  const trusted = L.conf > ACT_CONF && !L.ghost;
-
-  /* close: an L shape while the map is up */
-  if (mindOpen) {
-    railFill(0);
-    railEls.LCLOSE.classList.add('ready');
-    if (L.g === 'LSHAPE' && trusted && now - lastMindGesture > 600) {
-      lastMindGesture = now;
-      railEls.LCLOSE.classList.add('on');
-      closeMind();
-      gstSet('CLOSE', 'gst.lclose');
-      return;
-    }
-    gstSet('MIND MAP', trusted ? 'gst.lhint' : 'gst.blur');
-    return;
-  }
-
-  /* The fist arms; what you open into picks the command. Requiring the
-     release rather than firing on the fist itself is what keeps a hand that
-     merely rests closed from triggering anything by accident.
-
-         ✊ → ✋  full palm            mind map
-         ✊ → 🖖  thumb+index+middle   travel to the selected body
-         ✊ → 👍  thumb alone          glide back to the opening view      */
-  if (L.g === 'FIST') {
-    if (!lArm) { if (!trusted) { gstSet('IDLE', 'gst.blur'); return; }
-                 lArm = now; }
-    ['LOPEN','LGO','LHOME'].forEach(k => railEls[k].classList.add('on'));
-    railFill(1);
-    gstSet('ARMED', 'gst.armed');
-    return;
-  }
-  if (lArm) {
-    /* No lower time bound. v1 inherited a 90 ms floor from the hyperjump, but
-       the label debounce already demands the shape be held — the floor only
-       ever made the gesture unfireable on a fast machine. The debounce is the
-       guard; the window needs a ceiling and nothing else.
-
-       The rail counts the ceiling down while it runs, so a window that is
-       about to lapse looks like one that is about to lapse. */
-    const inWindow = now - lArm < ARM_MS;
-    const ready = now - lastMindGesture > 900;
-    ['LOPEN','LGO','LHOME'].forEach(k => railEls[k].classList.add('on'));
-    railFill(clamp(1 - (now - lArm) / ARM_MS, 0, 1));
-    if (inWindow && ready && trusted &&
-        (L.g === 'OPEN' || L.g === 'THREE' || L.g === 'THUMB')) {
-      lArm = 0; lastMindGesture = now;
-
-      Object.values(railEls).forEach(e => e.classList.remove('on'));
-      railFill(0);
-      if (L.g === 'OPEN') {
-        railEls.LOPEN.classList.add('on');
-        if (selected >= 0) { openMind(selected); gstSet('MIND MAP', 'gst.opened'); }
-        else { toast(T('need.node')); gstSet('NO TARGET', 'gst.notgt'); }
-        return;
-      }
-      if (L.g === 'THREE') {
-        railEls.LGO.classList.add('on');
-        if (selected >= 0) {
-          if (ship.on) shipFlyTo(selected); else focusNode(selected, true);
-          gstSet('TRAVEL', 'gst.travel', { n: nodes[selected].n });
-        } else { toast(T('need.node')); gstSet('NO TARGET', 'gst.notgt'); }
-        return;
-      }
-      /* THUMB — the rig's own damping does the gliding: only the targets are
-         moved, so the camera eases out to the opening framing instead of
-         cutting there */
-      railEls.LHOME.classList.add('on');
-      if (ship.on) shipReset(); else homeView();
-      gstSet('HOME', 'gst.home');
-      toast('HOME VIEW');
-      return;
-    }
-    if (now - lArm > ARM_MS) { lArm = 0; railFill(0); }
-    gstSet('ARMED', 'gst.armed');
-    return;
-  }
-  railFill(0);
-  gstSet('IDLE', trusted ? 'gst.fistarm' : 'gst.blur');
-}
 
 /* ============================================================ HERO PLANET
    The instanced body is a shared sphere wearing a patch of a shared texture,
@@ -6801,7 +6123,7 @@ function skyExit() {
   SKY.on = false;
   document.body.classList.remove('sky', 'look');
   camera.fov = ORRERY_FOV; camera.updateProjectionMatrix();
-  $('mode').textContent = gestureActive ? 'GESTURE' : 'MOUSE';
+  $('mode').textContent = 'MOUSE';
   /* hand the orrery rig a view of the world you were just standing on, from
      just off its shoulder, so leaving reads as lifting off rather than as a
      cut to somewhere else */
@@ -7421,25 +6743,6 @@ function writeHUD(now) {
   if (frame % 6) return;
   $('s-fps').textContent = fps.toFixed(0);
   $('s-dist').textContent = (ship.on ? ship.pos.length() : rig.dist).toFixed(0) + ' U';
-  if (gestureActive) {
-    $('gfps').textContent = gHz.toFixed(0) + ' HZ';
-    $('gname').textContent = GST.name;
-    $('gdesc').textContent = GST.desc;
-    $('g-conf').textContent = (GST.conf*100).toFixed(0) + '%';
-    $('g-bar').style.width = (GST.conf*100).toFixed(0) + '%';
-    /* the bar turns amber the moment the reading is good enough to act on, so
-       the number stops being decoration and becomes the gate it actually is */
-    $('g-bar').classList.toggle('lo', GST.conf <= ACT_CONF);
-    $('gp').classList.toggle('weak', !!GST.L && GST.conf <= ACT_CONF);
-    /* a hand being coasted through a tracking gap is shown as such */
-    $('h0').classList.toggle('on', !!GST.L && !GST.L.ghost);
-    $('h1').classList.toggle('on', !!GST.R && !GST.R.ghost);
-    $('h0').classList.toggle('ghost', !!(GST.L && GST.L.ghost));
-    $('h1').classList.toggle('ghost', !!(GST.R && GST.R.ghost));
-    $('h0').textContent = GST.L ? 'L · ' + GST.L.g : 'HAND · L';
-    $('h1').textContent = GST.R ? 'R · ' + GST.R.g : 'HAND · R';
-  }
-
   if (ship.on) {
     $('sh-spd').textContent = ship.speed.toFixed(0);
     $('thr').firstElementChild.style.width =
@@ -7486,8 +6789,6 @@ function runPause() {
   if (!RUN.running) return;
   RUN.running = false;
   if (RUN.raf) { cancelAnimationFrame(RUN.raf); RUN.raf = 0; }
-  /* the tracker loop exits on its own once the flag clears */
-  if (gestureActive) { gLoopOn = false; try { video.pause(); } catch(e){} }
   if (AUD.ctx && AUD.ctx.state === 'running') AUD.ctx.suspend().catch(()=>{});
 }
 function runResume() {
@@ -7498,11 +6799,6 @@ function runResume() {
      genesis clock should not jump a phase because you read a note. */
   last = performance.now();
   if (!RUN.raf) RUN.raf = requestAnimationFrame(frameLoop);
-  if (gestureActive && !gLoopOn) {
-    gLoopOn = true;
-    try { video.play().catch(()=>{}); } catch(e){}
-    pump();
-  }
   if (AUD.on && AUD.ctx && AUD.ctx.state === 'suspended') AUD.ctx.resume().catch(()=>{});
 }
 document.addEventListener('visibilitychange', runSync);
@@ -7623,8 +6919,6 @@ function syncControls() {
   $('v-thr').textContent = SET.thr.toFixed(2) + '×';
   $('v-lnk').textContent = SET.lnk < 0.02 ? 'OFF' : SET.lnk.toFixed(2) + '×';
   $('v-spr').textContent = SET.spr.toFixed(2) + '×';
-  $('b-swap').classList.toggle('am', !SET.swapHands);
-  $('b-swap').textContent = T(SET.swapHands ? 'btn.swap' : 'btn.swap.d');
   /* the step past the ceiling is the off position, so "no limit" is a place on
      the same slider rather than a separate control */
   $('r-cap').value = SET.maxNodes > 0 ? SET.maxNodes : MAX_NODES_CEIL + 500;
@@ -7648,68 +6942,45 @@ $('r-cap').addEventListener('input', e => {
 $('b-rst').onclick = () => {
   Object.assign(SET, SET_DEF); syncControls(); saveSet(); toast('CONTROLS RESET');
 };
-$('b-swap').onclick = () => {
-  SET.swapHands = !SET.swapHands;
-  smooth.L = smooth.R = null;
-  syncControls(); saveSet();
-  toast('HANDS · ' + (SET.swapHands ? 'SWAPPED' : 'DIRECT'));
-};
 $('ctltl').onclick = () => {
   const folded = $('ctl').classList.toggle('fold');
   $('ctlfold').textContent = folded ? '[ + ]' : '[ − ]';
 };
 
-/* =============================================== CAMERA PANE (resizable) */
-const CAMPANE = { w:238, h:0 };            // h = 0 -> keep the 4:3 aspect
-try { Object.assign(CAMPANE, JSON.parse(localStorage.getItem('orrery2.cam') || '{}')); } catch(e){}
-function applyCamSize() {
-  const wrap = $('camwrap');
-  $('cam').style.width = CAMPANE.w + 'px';
-  if (CAMPANE.h > 0) { wrap.style.paddingBottom = '0'; wrap.style.height = CAMPANE.h + 'px'; }
-  else { wrap.style.paddingBottom = '75%'; wrap.style.height = '0'; }
-  layoutHUD();
-}
-/* The HUD is three columns and the middle one has to live in whatever the
+/* ================================================================ HUD FIT
+   The HUD is three columns and the middle one has to live in whatever the
    other two leave. Sizing it as `100vw - 552px` assumed both side columns
    were exactly as wide as they are on a big monitor: on a 1280-wide laptop
    the deck came out 728px and ran 92px underneath the inspector, and the
    legend sat on the bottom of the identity pane besides. Both are measured
-   here instead of assumed.
-
-   The left column is also a stack — legend, shortcuts, camera — so growing
-   the camera has to push the two above it, or the legend runs off the top. */
+   here instead of assumed. */
 function layoutHUD() {
-  const camOn = $('cam').classList.contains('on');
-  const camH = camOn ? ($('cam').offsetHeight || 200) : 0;
-  const keys = $('keys');
-  keys.style.bottom = (16 + (camOn ? camH + 10 : 0)) + 'px';
-
   const idp = $('idp').getBoundingClientRect();
   const legTop = Math.round(idp.bottom + 12);
-  const leg = $('leg');
+  const leg = $('leg'), keys = $('keys');
   leg.style.top = legTop + 'px';
 
-  /* What is left of the column after the identity pane, the camera and the
-     shortcut list. When there is not enough for a usable legend, the
-     shortcut list goes first: it is reference, the legend is a control —
-     clicking a row filters that star system out of the cosmos. */
-  const base = 16 + camH + (camOn ? 10 : 0);
+  /* What is left of the left column after the identity pane and the shortcut
+     list. When there is not enough for a usable legend, the shortcut list
+     goes first: it is reference, and the legend is a control — clicking a row
+     filters that star system out of the cosmos. */
   keys.style.display = '';
-  let room = innerHeight - legTop - base - (keys.offsetHeight || 130) - 18;
+  let room = innerHeight - legTop - 34 - (keys.offsetHeight || 130);
   if (room < 74) {
     keys.style.display = 'none';
-    room = innerHeight - legTop - base - 18;
+    room = innerHeight - legTop - 34;
   }
   leg.style.display = room < 74 ? 'none' : '';
   leg.style.maxHeight = Math.max(74, room) + 'px';
 
-  /* the deck takes the gap, centred in it — never a slice of the whole
-     window that happens to reach past the panes on either side */
+  /* The gap between the side columns, which both the control deck and the
+     genesis bar are centred in — never a slice of the whole window that
+     happens to reach past the panes on either side. */
   const left  = idp.right + 14;
-  const right = innerWidth - 16 - Math.max($('insp').offsetWidth || 312,
-                                           $('gp').offsetWidth || 0) - 14;
-  const free = Math.max(240, right - left);
-  const mid  = Math.round(left + free / 2);
+  const right = innerWidth - 16 - ($('insp').offsetWidth || 312) - 14;
+  const free  = Math.max(240, right - left);
+  const mid   = Math.round(left + free / 2);
+
   const ctl = $('ctl');
   const w = Math.min(880, free);
   ctl.style.width = w + 'px';
@@ -7717,58 +6988,14 @@ function layoutHUD() {
   /* past this the sliders and the buttons cannot sit side by side */
   ctl.classList.toggle('tight', w < 430);
 
-  /* The bottom of the middle column needs its own band. The pane on the
-     bottom left is the camera feed, not the identity panel, and the camera
-     feed is user-resizable — so the edge to clear is whichever of the two is
-     actually wider at this moment. Left to a plain `min(640px, 74vw)` the
-     time bar ran under the inspector on a 1024-wide window and under an
-     enlarged camera pane on a small one. */
-  const camOnNow = $('cam').classList.contains('on');
-  const bl = Math.max(idp.right, camOnNow ? $('cam').getBoundingClientRect().right : 0) + 14;
-  const br = innerWidth - 16 - ($('insp').offsetWidth || 312) - 14;
-  /* No floor worth speaking of: the bar shrinks to whatever is left rather
-     than keeping a comfortable width and sliding under the inspector. Below
-     about 320px the year ticks stop being readable and go. */
-  const bFree = Math.max(120, br - bl);
-  const bMid = Math.round(bl + bFree / 2);
+  /* No floor worth speaking of on the genesis bar: it shrinks to whatever is
+     left rather than keeping a comfortable width and sliding under the
+     inspector. Below about 380px the year ticks stop being readable and go. */
   const gen = $('gen');
-  gen.style.width = Math.min(660, bFree) + 'px';
-  gen.style.left  = bMid + 'px';
-  $('genmarks').style.display = bFree < 380 ? 'none' : '';
-
-  /* two things want the bottom centre — the genesis bar and the gesture rail
-     — so they stack rather than argue */
-  const genH = gen.classList.contains('on') ? (gen.offsetHeight || 84) + 10 : 0;
-  $('rail').style.bottom = (16 + genH) + 'px';
+  gen.style.width = Math.min(660, free) + 'px';
+  gen.style.left  = mid + 'px';
+  $('genmarks').style.display = free < 380 ? 'none' : '';
 }
-(function camResize(){
-  const grip = $('camgrip');
-  let on = false, sx = 0, sy = 0, w0 = 0, h0 = 0;
-  grip.addEventListener('pointerdown', e => {
-    e.preventDefault(); e.stopPropagation();
-    on = true; sx = e.clientX; sy = e.clientY;
-    w0 = $('cam').offsetWidth; h0 = $('camwrap').offsetHeight;
-    grip.setPointerCapture(e.pointerId);
-  });
-  grip.addEventListener('pointermove', e => {
-    if (!on) return;
-    /* a webcam preview that can take 780px of a 920px window leaves nothing
-       for the vault it is supposed to be steering */
-    CAMPANE.w = clamp(w0 + (e.clientX - sx), 130,
-                      Math.max(190, Math.min(780, innerWidth * 0.4)));
-    CAMPANE.h = clamp(h0 - (e.clientY - sy), 84, Math.min(720, innerHeight - 190));
-    applyCamSize();
-  });
-  const end = () => {
-    if (!on) return; on = false;
-    try { localStorage.setItem('orrery2.cam', JSON.stringify(CAMPANE)); } catch(e){}
-  };
-  grip.addEventListener('pointerup', end);
-  grip.addEventListener('pointercancel', end);
-  grip.addEventListener('dblclick', e => {
-    e.stopPropagation(); CAMPANE.w = 238; CAMPANE.h = 0; applyCamSize(); end();
-  });
-})();
 
 /* ========================================================== VAULT PARSER
    A folder is read in the browser into exactly the shape the original build
@@ -8211,7 +7438,7 @@ addEventListener('drop', async e => {
    are all language-independent, so switching mid-flight leaves the cosmos
    exactly where it was and only the lettering changes.                     */
 function relocalize() {
-  syncControls();                     // the hand-swap button has two labels
+  syncControls();
   /* the legend is relabelled in place rather than rebuilt: refreshHUD() makes
      fresh rows, and a system the user had filtered off would come back looking
      switched on */
@@ -8221,7 +7448,6 @@ function relocalize() {
   if (GEN.on) syncGen(true);
   if (SKY.on) skySub();
   if (mindOpen && MM.sel >= 0) { mmHint(); mmSide(MM.sel); }
-  $('gdesc').textContent = GST.desc = T(GST.dk, GST.dvars);
   if (typeof pendingFiles !== 'undefined' && pendingFiles) bootStaged();
 }
 /* "✓ my-vault · 128 notes ready" — written on picking a folder and rewritten
@@ -8240,7 +7466,6 @@ buildLayout(EMPTY);
 buildObjects();
 refreshHUD();
 syncControls();
-applyCamSize();
 resize();
 $('g-layer').textContent = LAYERS[0].name;
 select(-1);
@@ -8301,12 +7526,10 @@ window.vaultOrrery = {
   clear() { swapVault(EMPTY); },
   destroy() {
     RUN.host = false; runPause();
-    if (gestureActive) stopCamera();
     if (AUD.ctx) { try { AUD.ctx.close(); } catch(e){} AUD.ctx = null; }
     try { renderer.dispose(); } catch(e){}
   }
 };
 </script>
-<script src="vendor/mediapipe/hands.js"></script>
 </body>
 </html>

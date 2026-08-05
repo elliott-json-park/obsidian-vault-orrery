@@ -30,7 +30,7 @@ export class OrreryView extends ItemView {
     while (doc.body.firstChild) root.appendChild(doc.body.firstChild);
 
     try {
-      this.api = createOrrery(root, { mediapipePath: this.plugin.mediapipeBasePath() });
+      this.api = createOrrery(root);
     } catch (e) {
       console.error('Vault Orrery: engine failed to start', e);
       host.empty();
@@ -43,9 +43,6 @@ export class OrreryView extends ItemView {
        gone by the first paint rather than dismissed after it. */
     this.api.setHosted(true);
     this.plugin.applySettingsTo(this.api);
-    /* optional, and deliberately not awaited — the cosmos should not wait on a
-       hand-tracking model that most sessions never use */
-    void this.plugin.ensureMediaPipe();
 
     /* Visibility, asked of the browser rather than inferred from workspace
        events. An IntersectionObserver answers the question that actually

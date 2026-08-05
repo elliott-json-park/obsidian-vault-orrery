@@ -1,52 +1,36 @@
 # Vault Orrery
 
-**Fly through your vault as a star system — and steer it with your hands.**
+**Fly through your vault as a star system.**
 
 Vault Orrery renders your notes as an orbiting cosmos you can pilot: folders
-become stars, notes become planets, and the sources they cite become moons. It
-is the only Obsidian graph view you can drive with **webcam hand gestures** —
-close your fist and open your palm to summon a mind map, spread three fingers
-to fly to the selected note, raise a thumb to glide back to the opening view.
-The camera is entirely optional; everything it does is also on the mouse and
-keyboard.
+become stars, notes become planets, and the sources they cite become moons.
 
 > **Not another galaxy graph.** Several plugins draw your vault as a starfield.
 > This one is a *flight simulator* for it: a WASD spaceship with a scanner and
 > radar, a surface mode where you stand on a note and watch its neighbours rise
-> over the horizon, a Genesis timeline that plays the vault's formation from
-> void to present, and gesture control. If you only want a prettier graph, the
-> other plugins are lighter and you should use one of those.
+> over the horizon, and a Genesis timeline that plays the vault's formation
+> from void to present. If you only want a prettier graph, the other plugins
+> are lighter and you should use one of those.
 
 ---
 
-## Privacy: the camera never leaves your machine
+## Privacy
 
-This plugin can read your notes and, if you turn it on, your webcam. That
-combination deserves a straight answer, so here it is.
+This plugin reads your notes. That deserves a straight answer, so here it is.
 
 - **No network access at runtime. At all.** There is no server, no telemetry,
   no analytics, no update check, no remote font, no CDN. The plugin makes zero
   outbound requests.
-- **Video is never transmitted, stored, or written to disk.** Frames go from
-  the camera into the hand-tracking model in memory and are discarded. Only
-  21 landmark coordinates per hand survive a frame, and only long enough to
-  classify a gesture.
-- **The hand-tracking model is bundled, not downloaded.** MediaPipe's WASM and
-  model files ship inside the plugin. This matters: a plugin that fetched its
-  model from a CDN would be sending a request every time you enabled the
-  camera, and the privacy claim above would be worth less.
-- **The camera is off by default** and only starts when you press `C`. When the
-  view is hidden — you switch to another tab or another note — the camera is
-  suspended along with the renderer, so it is not quietly running behind your
-  work.
-- **Note contents never leave the view either.** Parsing, layout, and rendering
-  all happen locally.
+- **Nothing leaves the view.** Parsing, layout and rendering all happen
+  locally, and nothing derived from your notes is written anywhere outside the
+  vault.
+- **No camera, no microphone, no other device permission** is requested — the
+  plugin has no code that could ask for one.
 
-You can verify all of this. The plugin is a single readable HTML/JS file, and
-`grep -rn "fetch\|XMLHttpRequest\|WebSocket\|https://" ` over it will show you
-what it does and does not reach for.
-
-If you never enable the camera, no camera permission is ever requested.
+You can verify all of this. The engine is a single readable HTML/JS file, and
+`grep -rn "fetch\|XMLHttpRequest\|WebSocket\|https://"` over it will show you
+what it does and does not reach for. `npm run check` is the same test,
+automated and run over the built bundle.
 
 ---
 
@@ -78,9 +62,9 @@ When the ceiling truncates a vault, it says so — "Loaded 3000 of 7412 notes" �
 rather than presenting a partial cosmos as if it were the whole thing.
 
 **Rendering stops when you are not looking at it.** The render loop, the physics
-clock, the audio context, and the camera are all suspended when the view's leaf
-is hidden or the window is in the background, and resume where they left off.
-An orrery in a background tab costs nothing.
+clock and the audio context are all suspended when the view's leaf is hidden or
+the window is in the background, and resume where they left off. An orrery in a
+background tab costs nothing.
 
 If a large vault still runs slowly, the cheapest wins are lowering **LINK
 GLOW**, turning **STARFIELD** down, and reducing **MAX NODES**.
@@ -99,20 +83,11 @@ GLOW**, turning **STARFIELD** down, and reducing **MAX NODES**.
 | `N` | find twins (notes alike but not yet linked) |
 | `SPACE` | ripple from the selected note |
 | `P` | save a poster (high-resolution PNG, no HUD) |
-| `C` | toggle webcam hand gestures |
+| `L` | cycle the link layer |
+| `U` | ambient sound |
 | `R` · `H` | reset view · hide HUD |
 | drag / wheel | orbit · zoom |
-
-### Gestures (optional, left hand)
-
-| | |
-|---|---|
-| ✊ → ✋ | open the mind map |
-| ✊ → 🖖 | travel to the selected note |
-| ✊ → 👍 | return to the opening view |
-| 🤟 L-shape | close the mind map |
-
-If your left hand is detected as your right, press **⇄ HAND SWAP**.
+| right-drag · shift-drag | pan · move a node |
 
 ---
 
@@ -150,7 +125,7 @@ overwritten on every build.
 
 ```bash
 npm install
-npm run vendor    # copy three.js + MediaPipe into vendor/
+npm run vendor    # copy three.js into vendor/
 npm run build     # engine -> typecheck -> bundle to main.js
 npm test          # build, then verify no remote code and run the smoke test
 npm run dev       # rebuild on change
@@ -158,9 +133,9 @@ npm run dev       # rebuild on change
 
 A fresh clone builds with nothing else present — the engine source, the build
 scripts, and the tests are all in this repository. `vendor/` is the one thing
-not committed: three.js and MediaPipe are multi-megabyte binaries shipped
-verbatim under their own licences, so `npm run vendor` copies them out of
-`node_modules` at pinned exact versions and verifies the result. See
+not committed: three.js is a multi-megabyte build shipped verbatim under its
+own licence, so `npm run vendor` copies it out of `node_modules` at a pinned
+exact version and verifies the result. See
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 `npm run check` is the policy gate: it greps the built bundle for anything that
@@ -168,11 +143,11 @@ could execute from a remote host and fails if it finds one.
 
 ## Third-party software
 
-This plugin bundles **three.js** (MIT) and **MediaPipe Hands** (Apache 2.0).
-Full notices, licence texts, and instructions for populating `vendor/` are in
+This plugin bundles **three.js** (MIT) and nothing else. Full notice, licence
+text, and instructions for populating `vendor/` are in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
-Neither library is fetched from a network at runtime.
+It is not fetched from a network at runtime.
 
 ---
 

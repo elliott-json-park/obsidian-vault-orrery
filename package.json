@@ -28,7 +28,6 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@mediapipe/hands": "0.4.1675469240",
     "three": "0.128.0"
   }
 }
