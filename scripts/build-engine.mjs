@@ -276,6 +276,71 @@ if (dirty) fail(`${dirty} page-level references survived. The engine changed sha
    compiled, bundled and passed a smoke test, because nothing short of actually
    mounting the engine in a browser would touch it. Both halves come from the
    same file, so they can be compared here. */
+/* Every function called by name must exist. This is the check that was
+   missing when the gesture engine came out: gestureStep() was deleted with it,
+   the call at the top of frameLoop was not, and the result threw on every
+   frame — after frameLoop had already queued the next one, so the loop kept
+   "running" while never getting far enough to draw or to update the FPS
+   readout. Nothing caught it. The build passed, the bundle passed, the smoke
+   test passed, the vault loaded, the panels laid out, clicks picked the right
+   planet. It only failed where nobody was looking: inside a frame.
+
+   A crude scan, deliberately: this file declares its functions at the top
+   level, so "called but never declared and not a known global" is a real
+   finding, and the allowlist below is short enough to read. */
+const GLOBALS = new Set([
+  'Array','Boolean','Date','Error','Float32Array','Float64Array','Function','Image',
+  'Int16Array','Int32Array',
+  'JSON','Map','Math','Number','Object','Promise','RegExp','Set','String','Symbol',
+  'THREE','Uint8Array','Uint16Array','Uint32Array','WeakMap','WeakSet',
+  'alert','atob','btoa','cancelAnimationFrame','clearInterval','clearTimeout',
+  'confirm','decodeURIComponent','encodeURIComponent','fetch','getComputedStyle',
+  'isFinite','isNaN','parseFloat','parseInt','performance','prompt',
+  'requestAnimationFrame','setInterval','setTimeout','structuredClone',
+  /* the bridge the generator itself supplies */
+  'VW','VH','ndcX','ndcY','onWin','onDoc','offWin',
+  /* keywords and syntax that look like calls */
+  'if','for','while','switch','catch','return','typeof','function','case','do',
+  'new','delete','void','in','of','else','await','yield','super','this','import',
+]);
+/* Comments and string literals go first. GLSL lives in template strings and is
+   full of things that look like calls — sin(), vec3(), texture2D() — and prose
+   in a comment does the same the moment it says "condenses (roughly)". */
+const bare = js
+  /* Regex literals go before comments: a pattern is not code either, and
+     /^wiki(\/|$)/ reads as a call to wiki() otherwise. Recognised by what can
+     precede one — an operator or an opening bracket, never a value — which is
+     the same way a reader tells it from a division. */
+  .replace(/([=(,:[!&|?{};+\-*%^~]\s*)\/(?![*/])(?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\\n])+\/[gimsuy]*/g, '$1/re/')
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')
+  .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ')
+  .replace(/`(?:\\.|[^`\\])*`/g, '``')
+  .replace(/'(?:\\.|[^'\\])*'/g, "''")
+  .replace(/"(?:\\.|[^"\\])*"/g, '""');
+
+const declared = new Set([...GLOBALS]);
+for (const rx of [/function\s+([A-Za-z_$][\w$]*)/g,
+                  /(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g,
+                  /class\s+([A-Za-z_$][\w$]*)/g])
+  for (const m of bare.matchAll(rx)) declared.add(m[1]);
+/* Parameter lists, which is also how object-literal method shorthand and every
+   arrow function declares its names — one pattern covers all three. */
+for (const m of bare.matchAll(/\(([^()]*)\)\s*(?:=>|\{)/g))
+  for (const p of m[1].split(','))
+    { const n = p.trim().replace(/[=.].*$/s, '').trim(); if (/^[A-Za-z_$][\w$]*$/.test(n)) declared.add(n); }
+for (const m of bare.matchAll(/(?:^|[^\w$.])([A-Za-z_$][\w$]*)\s*=>/g)) declared.add(m[1]);
+/* `foo(a) {` inside an object literal declares foo as well as a. */
+for (const m of bare.matchAll(/(?:^|[,{]\s*)([A-Za-z_$][\w$]*)\s*\([^()]*\)\s*\{/g)) declared.add(m[1]);
+
+const calledUndeclared = new Set();
+for (const m of bare.matchAll(/(^|[^.\w$])([A-Za-z_$][\w$]*)\s*\(/g))
+  if (!declared.has(m[2])) calledUndeclared.add(m[2]);
+if (calledUndeclared.size)
+  fail(`called but never declared: ${[...calledUndeclared].join(', ')}. ` +
+       `Either the function was removed and its call site was not, or it is a ` +
+       `global that belongs in GLOBALS here.`);
+notes.push(`  ${String(declared.size - GLOBALS.size).padStart(4)}  declarations, every call resolves`);
+
 const markupIds = new Set([...markup.matchAll(/id="([^"]+)"/g)].map(m => m[1]));
 const looked    = new Set([...js.matchAll(/\$\('([^']+)'\)/g)].map(m => m[1]));
 const orphans   = [...looked].filter(id => !markupIds.has(id));

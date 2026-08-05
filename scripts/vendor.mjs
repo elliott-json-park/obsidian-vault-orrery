@@ -41,6 +41,11 @@ fs.mkdirSync(VENDOR, { recursive: true });
 const OUT = path.join(VENDOR, 'three.min.js');
 fs.copyFileSync(path.join(MODULES, 'three', 'build', 'three.min.js'), OUT);
 
+/* The ES module build is for harness.html only — it imports the generated
+   engine module, which imports "three" by name. Nothing ships it. */
+fs.copyFileSync(path.join(MODULES, 'three', 'build', 'three.module.js'),
+                path.join(VENDOR, 'three.module.js'));
+
 /* A truncated copy is worse than a missing one — the engine's dependency guard
    catches an absent three.js and says so, but a half-written file fails as a
    syntax error in someone else's minified bundle. */

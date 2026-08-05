@@ -129,7 +129,16 @@ npm run vendor    # copy three.js into vendor/
 npm run build     # engine -> typecheck -> bundle to main.js
 npm test          # build, then verify no remote code and run the smoke test
 npm run dev       # rebuild on change
+npm run harness   # serve harness.html — mount the engine and actually draw
 ```
+
+`npm test` never renders anything: it checks the generated module and loads the
+bundle against a stubbed Obsidian. Both of those have passed while the engine
+threw on every frame, so **the harness is the only thing here that can tell you
+the renderer works.** It mounts `src/engine.generated.js` — the exact module the
+plugin loads — inside a sized container and runs the same calls the view makes.
+Add `?shim=1` to drive the loop from timers and report what a frame threw;
+without it a window that is not compositing never delivers a frame at all.
 
 A fresh clone builds with nothing else present — the engine source, the build
 scripts, and the tests are all in this repository. `vendor/` is the one thing

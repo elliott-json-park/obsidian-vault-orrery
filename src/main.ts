@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, addIcon, moment } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice, addIcon, moment } from 'obsidian';
 import { ENGINE_CSS } from './engine.generated.js';
 import type { OrreryApi } from './engine.generated.js';
 import { OrreryView, VIEW_TYPE_ORRERY } from './view';
@@ -35,6 +35,27 @@ export default class VaultOrreryPlugin extends Plugin {
         const views = this.views();
         if (!views.length) return false;
         if (!checking) views.forEach(v => void v.loadVault());
+        return true;
+      },
+    });
+
+    /* "It does not draw" is the one report that carries no information: the
+       view mounts, the vault loads, the panels lay out, and the canvas is
+       blank. Everything that would distinguish the causes — whether the frame
+       loop is running, what size the drawing buffer is, whether some pane is
+       simply covering it — is readable from the DOM, so read it here and put
+       it where someone can copy it without opening a developer console. */
+    this.addCommand({
+      id: 'diagnostics',
+      name: 'Show render diagnostics',
+      checkCallback: (checking: boolean) => {
+        const views = this.views();
+        if (!views.length) return false;
+        if (!checking) {
+          const text = views[0].diagnostics();
+          console.log('Vault Orrery diagnostics\n' + text);
+          new Notice(text, 60000);
+        }
         return true;
       },
     });

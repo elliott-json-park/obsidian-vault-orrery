@@ -6,6 +6,7 @@
   "//": "No \"type\": \"module\" — Obsidian loads main.js as CommonJS, and declaring the package as ESM makes Node treat the built bundle as a module too. Build scripts use .mjs instead.",
   "scripts": {
     "vendor": "node scripts/vendor.mjs",
+    "harness": "node scripts/serve.mjs",
     "engine": "node scripts/build-engine.mjs",
     "dev": "npm run engine && node esbuild.config.mjs",
     "build": "npm run engine && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",

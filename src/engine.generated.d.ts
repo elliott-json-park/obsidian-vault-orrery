@@ -20,6 +20,9 @@ export interface OrreryFile {
 }
 
 export interface OrreryApi {
+  /** State of the run gate, for the diagnostics command. */
+  debug(): { running: boolean; host: boolean; raf: number; hidden: boolean;
+             frames: number; nodes: number };
   /** Declare that the vault is the host's, not the user's to pick. Drops the
       intro screen, the folder picker, the drop target and the clear button —
       all of which describe a choice that does not exist inside a plugin. Call

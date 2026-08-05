@@ -66,7 +66,10 @@ canvas{display:block}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy-d),var(--cy));
   box-shadow:0 0 8px var(--cy)}
 
-#keys{left:16px;width:238px;bottom:216px}
+/* Bottom of the left column. It used to sit 216px up to clear the camera
+   pane below it, with layoutHUD() writing the real offset at runtime; with
+   the camera gone there is nothing under it and the offset is just 16. */
+#keys{left:16px;width:238px;bottom:16px}
 
 /* ---------- top center : control deck ---------- */
 /* left / width are written by layoutHUD() so the deck fits the gap the side
@@ -6786,19 +6789,29 @@ function runShould() { return RUN.host && !document.hidden; }
 function runSync() { runShould() ? runResume() : runPause(); }
 
 function runPause() {
-  if (!RUN.running) return;
   RUN.running = false;
   if (RUN.raf) { cancelAnimationFrame(RUN.raf); RUN.raf = 0; }
   if (AUD.ctx && AUD.ctx.state === 'running') AUD.ctx.suspend().catch(()=>{});
 }
 function runResume() {
-  if (RUN.running) return;
   RUN.running = true;
   /* without this the first frame back carries the whole absence as its dt.
      frameLoop clamps to 64 ms anyway, but a clamp is a symptom-fix and the
      genesis clock should not jump a phase because you read a note. */
   last = performance.now();
-  if (!RUN.raf) RUN.raf = requestAnimationFrame(frameLoop);
+  /* Reschedule unconditionally, and take no notice of RUN.running on the way
+     in. Both used to be short-circuits — return early if already running, and
+     only request a frame if no handle was held — which trusted the flags to
+     describe reality. They can come apart: a frame requested while the host
+     had not yet put this on screen may simply never be delivered, and then the
+     flag says running, the handle looks live, and every later attempt to start
+     the loop returns immediately because it believes it is already going. The
+     view sits there fully built and never paints a single frame, which is a
+     remarkably convincing impression of a working plugin.
+
+     A cancel-then-request costs nothing and cannot land in that state. */
+  if (RUN.raf) cancelAnimationFrame(RUN.raf);
+  RUN.raf = requestAnimationFrame(frameLoop);
   if (AUD.on && AUD.ctx && AUD.ctx.state === 'suspended') AUD.ctx.resume().catch(()=>{});
 }
 document.addEventListener('visibilitychange', runSync);
@@ -6811,7 +6824,6 @@ function frameLoop(now) {
   frame++;
   if (!world) { renderer.render(scene, camera); return; }   /* mid-rebuild */
 
-  gestureStep();
   genStep(dt);
   genStepBodies();
   genScaffold();
@@ -6942,7 +6954,11 @@ $('r-cap').addEventListener('input', e => {
 $('b-rst').onclick = () => {
   Object.assign(SET, SET_DEF); syncControls(); saveSet(); toast('CONTROLS RESET');
 };
+/* Once the deck has been folded or unfolded by hand, layoutHUD() stops
+   deciding for itself — see the auto-fold in there. */
+let deckTouched = false;
 $('ctltl').onclick = () => {
+  deckTouched = true;
   const folded = $('ctl').classList.toggle('fold');
   $('ctlfold').textContent = folded ? '[ + ]' : '[ − ]';
 };
@@ -6955,9 +6971,16 @@ $('ctltl').onclick = () => {
    legend sat on the bottom of the identity pane besides. Both are measured
    here instead of assumed. */
 function layoutHUD() {
-  const idp = $('idp').getBoundingClientRect();
-  const legTop = Math.round(idp.bottom + 12);
-  const leg = $('leg'), keys = $('keys');
+  /* Everything is measured with offsetLeft/Top, not getBoundingClientRect.
+     The panes are absolutely positioned inside #hud, so their offsets are
+     already relative to the HUD's own box — which is the viewport on this
+     page and the leaf inside the plugin. A client rect would be relative to
+     the window in both cases, and mixing that with a width that means "the
+     leaf" put the control deck off by the leaf's own left edge. */
+  const idp = $('idp'), leg = $('leg'), keys = $('keys'), insp = $('insp');
+  const W = innerWidth, H = innerHeight;
+
+  const legTop = idp.offsetTop + idp.offsetHeight + 12;
   leg.style.top = legTop + 'px';
 
   /* What is left of the left column after the identity pane and the shortcut
@@ -6965,36 +6988,75 @@ function layoutHUD() {
      goes first: it is reference, and the legend is a control — clicking a row
      filters that star system out of the cosmos. */
   keys.style.display = '';
-  let room = innerHeight - legTop - 34 - (keys.offsetHeight || 130);
+  let room = H - legTop - 34 - (keys.offsetHeight || 130);
   if (room < 74) {
     keys.style.display = 'none';
-    room = innerHeight - legTop - 34;
+    room = H - legTop - 34;
   }
   leg.style.display = room < 74 ? 'none' : '';
   leg.style.maxHeight = Math.max(74, room) + 'px';
 
-  /* The gap between the side columns, which both the control deck and the
-     genesis bar are centred in — never a slice of the whole window that
-     happens to reach past the panes on either side. */
-  const left  = idp.right + 14;
-  const right = innerWidth - 16 - ($('insp').offsetWidth || 312) - 14;
-  const free  = Math.max(240, right - left);
-  const mid   = Math.round(left + free / 2);
+  const left = idp.offsetLeft + idp.offsetWidth + 14;
 
+  /* The deck gets the whole gap between the columns — never a slice of the
+     window that happens to reach past the panes on either side. The inspector
+     used to narrow it, but the inspector is anchored to the bottom and the
+     deck to the top, so height is what actually separates them. */
   const ctl = $('ctl');
+  /* The floor is low enough to still fit beside the identity pane on a narrow
+     leaf — a wider minimum only pushed the deck off the right edge, which is
+     not a better answer than a cramped deck. */
+  const free = Math.max(180, W - 32 - left);
   const w = Math.min(880, free);
   ctl.style.width = w + 'px';
-  ctl.style.left  = mid + 'px';
+  ctl.style.left  = Math.round(left + free / 2) + 'px';
   /* past this the sliders and the buttons cannot sit side by side */
   ctl.classList.toggle('tight', w < 430);
 
-  /* No floor worth speaking of on the genesis bar: it shrinks to whatever is
-     left rather than keeping a comfortable width and sliding under the
-     inspector. Below about 380px the year ticks stop being readable and go. */
+  /* Height is read after the width is set, and only after: tight mode stacks
+     the sliders and makes the deck half again as tall, which is precisely the
+     case where its height matters. Measuring first read the old layout and
+     the correction was always one resize behind. */
+  if (!deckTouched) {
+    /* A deck taller than most of the leaf leaves nowhere for anything else.
+       Folded it is still a title bar — the way back is visible and one click
+       away — which is a better answer than a pane lying over the inspector.
+       Only ever folded automatically; unfolding stays the user's, and once
+       they have touched it this stops second-guessing them.
+
+       The height being judged is the *unfolded* one, measured by unfolding for
+       the read. Asking the current height instead makes the decision depend on
+       its own outcome: fold, and the next pass sees a short deck and unfolds,
+       and the one after that folds it again. */
+    const folded = ctl.classList.contains('fold');
+    if (folded) ctl.classList.remove('fold');
+    const fullH = ctl.offsetHeight;
+    if (folded) ctl.classList.add('fold');
+    ctl.classList.toggle('fold', 16 + fullH > H * 0.62);
+    $('ctlfold').textContent = ctl.classList.contains('fold') ? '[ + ]' : '[ − ]';
+  }
+
+  /* Below this the identity pane and the inspector cannot sit side by side at
+     any width they are willing to take, and the inspector is the one that can
+     go: it is empty until something is selected, and selecting needs a cosmos
+     big enough to aim at, which a leaf this narrow does not have either. */
+  insp.style.display = W < 620 ? 'none' : '';
+
+  /* What is left under the deck is the inspector's ceiling. That way round on
+     purpose: an inspector that scrolls is fine, an inspector sitting on top of
+     the controls is not. 64vh stays the cap on a roomy leaf. */
+  insp.style.maxHeight =
+    Math.max(96, Math.min(H * 0.64, H - (16 + ctl.offsetHeight) - 26)) + 'px';
+
+  /* The genesis bar runs along the bottom, which is where the inspector always
+     is, so it always gives way to it. No floor worth speaking of: it shrinks
+     to what is left rather than keeping a comfortable width and sliding
+     underneath. Below about 380px the year ticks stop being readable and go. */
+  const bFree = Math.max(120, (W - 16 - (insp.offsetWidth || 312) - 14) - left);
   const gen = $('gen');
-  gen.style.width = Math.min(660, free) + 'px';
-  gen.style.left  = mid + 'px';
-  $('genmarks').style.display = free < 380 ? 'none' : '';
+  gen.style.width = Math.min(660, bFree) + 'px';
+  gen.style.left  = Math.round(left + bFree / 2) + 'px';
+  $('genmarks').style.display = bFree < 380 ? 'none' : '';
 }
 
 /* ========================================================== VAULT PARSER
@@ -7517,6 +7579,10 @@ runResume();
      leaf shown/hidden  → setVisible(true / false)
      onunload           → destroy()                                           */
 window.vaultOrrery = {
+  /* The run gate, in the host's terms. A canvas that never paints looks the
+     same from outside whatever the reason, and the reason is in here. */
+  debug: () => ({ running: RUN.running, host: RUN.host, raf: RUN.raf,
+                  hidden: document.hidden, frames: frame, nodes: N }),
   setHosted,
   setVisible(on) { RUN.host = !!on; runSync(); },
   setIgnoreFilters,

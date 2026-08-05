@@ -1,0 +1,86 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>engine harness</title>
+<!-- Mounts src/engine.generated.js the way the plugin does — inside a sized
+     container, with $() scoped to it and the viewport rewritten to its box —
+     so the module the plugin actually loads can be exercised without Obsidian.
+     Not shipped; scratch rig. -->
+<style>
+  html,body{margin:0;height:100%;background:#05080f}
+  /* stands in for the Obsidian leaf's content element */
+  #leaf{position:absolute;inset:32px;border:1px solid #234}
+</style>
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.js" } }
+</script>
+<div id="leaf"></div>
+<script type="module">
+const log = [];
+window.__log = log;
+window.onerror = (m, s, l) => log.push(`onerror ${m} @${l}`);
+
+/* ?shim drives the frame loop off timers instead of the compositor, and
+   reports what a frame threw. A browser pane that is not being displayed
+   never delivers requestAnimationFrame, so without this the render path
+   cannot be exercised here at all — which is exactly the path that needs
+   exercising. */
+if (location.search.includes('shim')) {
+  let id = 0; const live = new Map();
+  window.requestAnimationFrame = cb => {
+    const h = ++id;
+    live.set(h, setTimeout(() => {
+      live.delete(h);
+      try { cb(performance.now()); }
+      catch (e) { log.push(`FRAME THREW: ${e.message} | ${(e.stack||'').split('\n').slice(1,4).join(' <- ')}`); }
+    }, 16));
+    return h;
+  };
+  window.cancelAnimationFrame = h => { const t = live.get(h); if (t) { clearTimeout(t); live.delete(h); } };
+  Object.defineProperty(document, 'hidden', { configurable: true, get: () => false });
+  Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+}
+
+const { createOrrery, ENGINE_CSS, ENGINE_HTML } = await import('/src/engine.generated.js');
+
+const style = document.createElement('style');
+style.textContent = ENGINE_CSS;
+document.head.appendChild(style);
+
+const host = document.getElementById('leaf');
+const root = document.createElement('div');
+root.className = 'vo-root';
+host.appendChild(root);
+const doc = new DOMParser().parseFromString(ENGINE_HTML, 'text/html');
+while (doc.body.firstChild) root.appendChild(doc.body.firstChild);
+
+let api = null;
+try { api = createOrrery(root); log.push('created'); }
+catch (e) { log.push('createOrrery: ' + e.message + ' | ' + (e.stack||'').split('\n')[1]); }
+window.__api = api;
+
+const mk = (path, text) => ({ path, file: { text: async () => text } });
+const FILES = [
+  mk('research/quantum.md', '# Quantum\n[[research/optics]] [[notes/daily]]\n2024-01-04'),
+  mk('research/optics.md',  '# Optics\n[[research/quantum]]\n2024-02-11'),
+  mk('research/lasers.md',  '# Lasers\n[[research/optics]]\n2024-02-20'),
+  mk('notes/daily.md',      '# Daily\n[[research/optics]]\n2024-03-01'),
+  mk('notes/ideas.md',      '# Ideas\n[[notes/daily]] [[research/quantum]]\n2024-04-09'),
+  mk('notes/reading.md',    '# Reading\n[[notes/ideas]]\n2024-04-22'),
+  mk('archive/old.md',      '# Old\nno links\n2023-06-01'),
+];
+
+window.__run = async () => {
+  const step = async (name, fn) => {
+    try { await fn(); log.push('ok ' + name); }
+    catch (e) { log.push(`FAIL ${name}: ${e.message} | ${(e.stack||'').split('\n')[1]}`); }
+  };
+  await step('setHosted',        () => api.setHosted(true));
+  await step('setLang',          () => api.setLang('en'));
+  await step('setMaxNodes',      () => api.setMaxNodes(3000));
+  await step('setIgnoreFilters', () => api.setIgnoreFilters([]));
+  await step('setVisible',       () => api.setVisible(true));
+  await step('resize',           () => api.resize());
+  await step('load',             () => api.load(FILES, 'demo-vault'));
+  return log;
+};
+</script>
