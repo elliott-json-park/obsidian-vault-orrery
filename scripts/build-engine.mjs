@@ -22,7 +22,12 @@
        the viewport, so inside a leaf it has to have the root's offset removed
        or every click picks the wrong body.
 
-   Run: npm run engine   ->   src/engine.generated.js
+   The stylesheet is written to styles.css rather than exported as a string.
+   Obsidian loads styles.css for us and forbids a plugin building its own
+   <style> element, so the generated CSS is concatenated with the hand-written
+   seam in src/styles.src.css and the pair becomes the shipped stylesheet.
+
+   Run: npm run engine   ->   src/engine.generated.js, styles.css
    ========================================================================= */
 
 import fs from 'node:fs';
@@ -42,9 +47,18 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT  = path.resolve(here, '..');
 const SRC  = path.join(PLUGIN_ROOT, 'vault-orrery-v2.html');
 const OUT  = path.join(PLUGIN_ROOT, 'src', 'engine.generated.js');
+const SEAM = path.join(PLUGIN_ROOT, 'src', 'styles.src.css');
+const CSS_OUT = path.join(PLUGIN_ROOT, 'styles.css');
 const CLS  = 'vo-root';
 
-const html = fs.readFileSync(SRC, 'utf8');
+/* Line endings are normalised before anything is matched. Several of the
+   substitutions below are anchored to a newline or span one, so a checkout
+   that turned the engine into CRLF — which is the default on Windows — makes
+   them all miss at once, and the first thing that notices is the extraction
+   failing to find the <script> block at all. Normalising here also makes the
+   generated output identical on every platform, which is what lets a reviewer
+   reproduce the released main.js byte for byte. */
+const html = fs.readFileSync(SRC, 'utf8').replace(/\r\n/g, '\n');
 const notes = [];
 const fail = m => { console.error('build-engine: ' + m); process.exit(1); };
 
@@ -190,6 +204,16 @@ js = sub(js,
   "  onWin('pointerdown', arm);\n  onWin('keydown', arm);",
   1, 'audio-arm listeners -> tracked');
 
+/* 6b. persistence. The standalone page is a page, so it keeps its preferences
+      in localStorage; a plugin has to use Obsidian's own plugin-data API
+      instead, so that the settings live in the vault, travel with it, and
+      leave with the plugin when it is uninstalled. The engine reads its state
+      synchronously while it starts up, so the host cannot hand it a promise —
+      it hands it a store it has already hydrated, and STORE.set() is what
+      schedules the write back. */
+js = subRx(js, /\blocalStorage\.getItem\(/g, 'STORE.get(', 4, 'localStorage.getItem -> host store');
+js = subRx(js, /\blocalStorage\.setItem\(/g, 'STORE.set(', 5, 'localStorage.setItem -> host store');
+
 /* 7. the missing-dependency screen cannot fire here (three is bundled), but it
       still refers to the page */
 js = sub(js, "document.getElementById('boot')", 'root.querySelector("#boot")',
@@ -209,6 +233,13 @@ const _off = [];
 function onWin(t, f, o){ window.addEventListener(t, f, o);   _off.push(() => window.removeEventListener(t, f, o)); }
 function onDoc(t, f, o){ document.addEventListener(t, f, o); _off.push(() => document.removeEventListener(t, f, o)); }
 function offWin(t, f, o){ window.removeEventListener(t, f, o); }
+/* The host's store, already hydrated. Falling back to a plain Map keeps the
+   engine startable without one — the harness and the smoke test both do that —
+   and means no code path here ever reaches for the browser's own web storage. */
+const STORE = store && typeof store.get === 'function' ? store : (() => {
+  const m = new Map();
+  return { get: k => (m.has(k) ? m.get(k) : null), set: (k, v) => { m.set(k, String(v)); } };
+})();
 `;
 
 const epilogue = `
@@ -234,10 +265,9 @@ const out = `/* AUTO-GENERATED — do not edit.
 /* eslint-disable */
 import * as THREE from 'three';
 
-export const ENGINE_CSS = ${JSON.stringify(css)};
 export const ENGINE_HTML = ${JSON.stringify(markup)};
 
-export function createOrrery(root) {
+export function createOrrery(root, store) {
 ${preamble}
 ${js}
 ${epilogue}
@@ -261,6 +291,10 @@ const residue = [
   /* a bare call is an implicit window listener that escaped rewriting */
   ['untracked bare listener', /(?<![.\w])addEventListener\(/g, 0],
   ['remote code url',          /https?:\/\/[^"']*\.(?:js|wasm|tflite|data)\b/g],
+  /* Web storage belongs to the page, not to a plugin: Obsidian's review asks
+     for plugin data instead, and a key left behind here would outlive the
+     vault it came from. */
+  ['web storage access',       /\b(?:local|session)Storage\b/g],
 ];
 let dirty = 0;
 for (const [name, rx, allowed] of residue) {
@@ -350,10 +384,30 @@ if (orphans.length)
        `code was not, or an id was renamed in only one place.`);
 notes.push(`  ${String(looked.size).padStart(4)}  $() lookups, all present in markup`);
 
+/* The stylesheet ships as a file, because Obsidian loads styles.css itself and
+   a plugin building its own <style> element is not allowed. The seam between
+   the leaf and the engine's root is hand-written; everything below it comes
+   from the engine and is regenerated every build. */
+if (!fs.existsSync(SEAM)) fail(`the hand-written stylesheet is missing at ${SEAM}`);
+const styles =
+`/* AUTO-GENERATED — do not edit.
+ * Hand-written part: src/styles.src.css
+ * Engine part:      vault-orrery-v2.html, scoped under .${CLS}
+ * Generator:        scripts/build-engine.mjs   (npm run engine)
+ */
+${fs.readFileSync(SEAM, 'utf8').trimEnd()}
+
+/* ---- engine, scoped under .${CLS} ---------------------------------------- */
+${css}
+`;
+
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, out, 'utf8');
+fs.writeFileSync(CSS_OUT, styles, 'utf8');
 
 console.log('build-engine: substitutions');
 notes.forEach(n => console.log(n));
 console.log(`build-engine: wrote ${path.relative(PLUGIN_ROOT, OUT)} ` +
             `(${(out.length / 1024).toFixed(0)} KB)`);
+console.log(`build-engine: wrote ${path.relative(PLUGIN_ROOT, CSS_OUT)} ` +
+            `(${(styles.length / 1024).toFixed(0)} KB)`);

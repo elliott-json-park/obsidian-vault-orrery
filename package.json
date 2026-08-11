@@ -1,6 +1,6 @@
 {
   "name": "vault-orrery",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Fly through your Obsidian vault as a star system.",
   "main": "main.js",
   "//": "No \"type\": \"module\" — Obsidian loads main.js as CommonJS, and declaring the package as ESM makes Node treat the built bundle as a module too. Build scripts use .mjs instead.",
@@ -22,7 +22,6 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "builtin-modules": "^3.3.0",
     "esbuild": "^0.20.0",
     "obsidian": "latest",
     "tslib": "^2.6.2",

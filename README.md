@@ -108,8 +108,11 @@ Settings → Community plugins → Browse → "Vault Orrery" → Install.
 
 ### Manual
 
-Copy `main.js`, `manifest.json`, `styles.css`, and the `vendor/` directory into
-`<vault>/.obsidian/plugins/vault-orrery/`, then enable it in Settings.
+Copy `main.js`, `manifest.json` and `styles.css` from the release into
+`<vault>/.obsidian/plugins/vault-orrery/`, then enable it in Settings. Those
+three files are the whole plugin — three.js is bundled into `main.js`, so
+nothing is fetched at runtime and `vendor/` is only needed to develop against
+the standalone engine page.
 
 ---
 
@@ -119,9 +122,16 @@ The engine is `vault-orrery-v2.html`, in this directory — a real page you can
 open by double-clicking it. That is where the renderer is developed and demoed,
 and it is the single source of truth. `scripts/build-engine.mjs` turns the page
 into the module the plugin imports: it scopes the stylesheet under `.vo-root`,
-redirects the page-level APIs at the view's container, and makes every window
-listener removable. Editing `src/engine.generated.js` is pointless — it is
-overwritten on every build.
+redirects the page-level APIs at the view's container, makes every window
+listener removable, and routes the page's `localStorage` calls at a store the
+host supplies — inside Obsidian that is the plugin's own data file, so nothing
+is left in web storage.
+
+Two files are build output and must not be edited by hand:
+`src/engine.generated.js`, and `styles.css` — the latter is
+`src/styles.src.css` (the seam between Obsidian's leaf and the engine's root)
+concatenated with the scoped engine stylesheet. Both are overwritten on every
+build.
 
 ```bash
 npm install
@@ -163,3 +173,6 @@ It is not fetched from a network at runtime.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+This software bundles third-party components under their own licences; see
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

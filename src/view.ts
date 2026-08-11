@@ -30,7 +30,7 @@ export class OrreryView extends ItemView {
     while (doc.body.firstChild) root.appendChild(doc.body.firstChild);
 
     try {
-      this.api = createOrrery(root);
+      this.api = createOrrery(root, this.plugin.engineStore());
     } catch (e) {
       console.error('Vault Orrery: engine failed to start', e);
       host.empty();
@@ -108,8 +108,8 @@ export class OrreryView extends ItemView {
   diagnostics(): string {
     const root = this.api?.root ?? this.contentEl.querySelector('.vo-root');
     if (!root) return 'no engine mounted in this leaf';
-    const q = (id: string) => root.querySelector('#' + id) as HTMLElement | null;
-    const gl = q('gl') as HTMLCanvasElement | null;
+    const q = (id: string) => root.querySelector<HTMLElement>('#' + id);
+    const gl = root.querySelector<HTMLCanvasElement>('#gl');
     const r = root.getBoundingClientRect();
     const cs = gl ? getComputedStyle(gl) : null;
     /* Asking for the context the renderer already holds returns that same

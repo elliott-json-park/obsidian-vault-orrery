@@ -2,6 +2,9 @@
 main.js
 main.js.map
 src/engine.generated.js
+# styles.css is generated too: src/styles.src.css plus the engine's own
+# stylesheet, scoped and concatenated by scripts/build-engine.mjs.
+styles.css
 
 # bundled third-party libraries — see THIRD-PARTY-NOTICES.md for how to
 # populate this directory. Not committed: large binaries, and their licences

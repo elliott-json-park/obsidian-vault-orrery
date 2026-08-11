@@ -3,7 +3,7 @@
    actually reach the engine. Not a substitute for running it in Obsidian; it is
    the part that can be checked without a GPU. Run: npm test */
 
-const Module = require('module'), path = require('path');
+const Module = require('module'), path = require('path'), fs = require('fs');
 const calls = [];
 class Plugin {
   constructor(app, manifest) { this.app = app; this.manifest = manifest; }
@@ -13,11 +13,14 @@ class Plugin {
   addSettingTab() { calls.push('settingTab'); }
   registerEvent() { calls.push('event'); }
   register() {}
-  async loadData() { return null; }
-  async saveData() {}
+  async loadData() { return this._data ?? null; }
+  async saveData(d) { this._data = d; }
 }
+/* debounce() here fires immediately and keeps the .cancel() the plugin calls,
+   so a write scheduled by the store is observable within one tick. */
+const debounce = fn => Object.assign((...a) => fn(...a), { cancel() { return this; } });
 const stub = { Plugin, ItemView: class {}, PluginSettingTab: class {}, Setting: class {},
-  Notice: class {}, TFile: class {}, WorkspaceLeaf: class {},
+  Notice: class {}, TFile: class {}, WorkspaceLeaf: class {}, debounce,
   addIcon: n => calls.push('icon:' + n), moment: { locale: () => 'ko' } };
 const or = Module._resolveFilename;
 Module._resolveFilename = function (r, ...a) { return r === 'obsidian' ? 'obsidian' : or.call(this, r, ...a); };
@@ -43,10 +46,24 @@ const mkApp = vault => ({ vault, workspace: { on() {}, getLeavesOfType: () => []
   ok(calls.some(c => c.startsWith('command:')), 'registers commands');
   ok(calls.includes('settingTab'), 'registers the settings tab');
   ok(calls.includes('icon:orbit'), 'registers its icon');
-  const style = made.find(e => typeof e.textContent === 'string' && e.textContent.includes('vo-root'));
-  ok(!!style, 'injects the scoped engine stylesheet');
-  ok(style && !/(^|[;}])\s*body\s*\{/.test(style.textContent), 'stylesheet has no unscoped body rule');
-  ok(style && !/(^|[;}])\s*\*\s*\{/.test(style.textContent), 'stylesheet has no unscoped universal reset');
+  /* The stylesheet is a file Obsidian loads, not something the plugin builds
+     at runtime — so it is checked on disk, and the plugin is checked for not
+     reaching for document.head at all. */
+  ok(made.length === 0, 'creates no <style> element of its own');
+  const css = fs.readFileSync(path.resolve(__dirname, '..', 'styles.css'), 'utf8');
+  ok(css.includes('.vo-root'), 'styles.css carries the scoped engine stylesheet');
+  ok(css.includes('.vault-orrery-host'), 'styles.css carries the hand-written seam');
+  ok(!/(^|[;}])\s*body\s*\{/.test(css), 'stylesheet has no unscoped body rule');
+  ok(!/(^|[;}])\s*\*\s*\{/.test(css), 'stylesheet has no unscoped universal reset');
+
+  /* Engine preferences must land in plugin data, not in web storage. */
+  const store = p.engineStore();
+  ok(store.get('orrery2.lang') === null, 'engine store starts empty');
+  store.set('orrery2.lang', 'ja');
+  ok(store.get('orrery2.lang') === 'ja', 'engine store reads back what it wrote');
+  await new Promise(r => setTimeout(r, 0));
+  ok(p._data && p._data.engineStore && p._data.engineStore['orrery2.lang'] === 'ja',
+     'engine store persists through saveData, not localStorage');
 
   const seen = {};
   const fake = { setLang: v => seen.lang = v, setMaxNodes: v => seen.max = v, setIgnoreFilters: v => seen.ig = v };

@@ -1,6 +1,8 @@
 import esbuild from 'esbuild';
 import process from 'node:process';
-import builtins from 'builtin-modules';
+/* Node ships this list itself, so the "builtin-modules" package is one less
+   dependency to carry — and one less thing that can go unmaintained. */
+import { builtinModules } from 'node:module';
 
 const banner =
 `/*
@@ -24,7 +26,8 @@ const ctx = await esbuild.context({
     '@codemirror/language', '@codemirror/lint', '@codemirror/search',
     '@codemirror/state', '@codemirror/view',
     '@lezer/common', '@lezer/highlight', '@lezer/lr',
-    ...builtins,
+    ...builtinModules,
+    ...builtinModules.map(m => 'node:' + m),
   ],
   format: 'cjs',
   target: 'es2018',

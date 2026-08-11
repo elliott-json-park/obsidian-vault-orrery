@@ -11,6 +11,12 @@ export interface OrrerySettings {
   followExcludedFiles: boolean;
   /** Extra patterns, same syntax as Obsidian's: a prefix, or /regex/. */
   extraIgnoreFilters: string[];
+  /** The engine's own preferences — panel sizes, radar size, its language
+      chip. The standalone page keeps these in localStorage; inside a plugin
+      they belong in the plugin's data file, so they live in the vault and
+      leave with the plugin. Opaque to this file: the engine owns both the
+      keys and the encoding. */
+  engineStore: Record<string, string>;
 }
 
 export const DEFAULT_SETTINGS: OrrerySettings = {
@@ -18,6 +24,7 @@ export const DEFAULT_SETTINGS: OrrerySettings = {
   maxNodes: 3000,
   followExcludedFiles: true,
   extraIgnoreFilters: [],
+  engineStore: {},
 };
 
 /* This tab is English-only, deliberately, even though the engine itself speaks
@@ -56,7 +63,6 @@ export class OrrerySettingTab extends PluginSettingTab {
       .addSlider(s => s
         .setLimits(0, 10000, 500)
         .setValue(this.plugin.settings.maxNodes)
-        .setDynamicTooltip()
         .onChange(async v => {
           this.plugin.settings.maxNodes = v;
           await this.plugin.saveSettings();
@@ -91,15 +97,16 @@ export class OrrerySettingTab extends PluginSettingTab {
             this.plugin.pushSettingsToViews();
           });
         t.inputEl.rows = 4;
-        t.inputEl.style.width = '100%';
+        t.inputEl.addClass('vault-orrery-ignore-input');
       });
 
-    containerEl.createEl('h3', { text: 'Privacy' });
-    const p = containerEl.createEl('p', { cls: 'setting-item-description' });
-    p.append(
-      'This plugin makes no network requests of any kind — no telemetry, no ' +
-      'update check, no remote fonts or scripts. Your notes are read, laid out ' +
-      'and drawn entirely on this machine, and nothing about them is stored ' +
-      'outside the vault.');
+    new Setting(containerEl)
+      .setName('Privacy')
+      .setHeading()
+      .setDesc(
+        'This plugin makes no network requests of any kind — no telemetry, no ' +
+        'update check, no remote fonts or scripts. Your notes are read, laid out ' +
+        'and drawn entirely on this machine, and nothing about them is stored ' +
+        'outside the vault.');
   }
 }

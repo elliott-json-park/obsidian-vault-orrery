@@ -8,8 +8,17 @@
    The engine's source of truth is vault-orrery-v2.html. If a method changes
    there, change it here too. */
 
-export declare const ENGINE_CSS: string;
 export declare const ENGINE_HTML: string;
+
+/** Where the engine keeps its own preferences. The standalone page uses
+    localStorage; inside a plugin the host supplies this instead, backed by
+    Obsidian's plugin data. Both halves are synchronous because the engine
+    reads its state while it is starting up — the host hydrates the store
+    before handing it over, and writes back on its own schedule. */
+export interface OrreryStore {
+  get(key: string): string | null;
+  set(key: string, value: string): void;
+}
 
 /** A file for the engine to read. Duck-typed to match the browser's File, so
     the same engine takes a drag-and-drop in the standalone page and a TFile
@@ -45,4 +54,4 @@ export interface OrreryApi {
   readonly root: HTMLElement;
 }
 
-export declare function createOrrery(root: HTMLElement): OrreryApi;
+export declare function createOrrery(root: HTMLElement, store?: OrreryStore): OrreryApi;

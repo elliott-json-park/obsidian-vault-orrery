@@ -1,0 +1,4 @@
+# The build reads vault-orrery-v2.html and matches against it line by line, so
+# every source file is checked out with LF regardless of platform. Without this
+# a Windows clone gets CRLF and the generator's patterns miss.
+* text=auto eol=lf

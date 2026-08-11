@@ -1,6 +1,5 @@
-import { Plugin, WorkspaceLeaf, Notice, addIcon, moment } from 'obsidian';
-import { ENGINE_CSS } from './engine.generated.js';
-import type { OrreryApi } from './engine.generated.js';
+import { Plugin, WorkspaceLeaf, Notice, addIcon, debounce, moment } from 'obsidian';
+import type { OrreryApi, OrreryStore } from './engine.generated.js';
 import { OrreryView, VIEW_TYPE_ORRERY } from './view';
 import { OrrerySettingTab, DEFAULT_SETTINGS, type OrrerySettings, type Lang } from './settings';
 
@@ -10,19 +9,21 @@ const ORBIT_ICON = `<circle cx="50" cy="50" r="12" fill="currentColor"/>` +
 
 export default class VaultOrreryPlugin extends Plugin {
   settings: OrrerySettings = DEFAULT_SETTINGS;
-  private styleEl: HTMLStyleElement | null = null;
+
+  /* The engine writes its own preferences — language, panel sizes, radar size,
+     its exclusion list — as it is used. They are held here and flushed to the
+     plugin's data file rather than written through on every keystroke: a
+     panel being dragged emits a value per frame, and each of those would
+     otherwise be a write to disk. */
+  private flushStore = debounce(() => { void this.saveSettings(); }, 800, false);
 
   async onload() {
     await this.loadSettings();
     addIcon('orbit', ORBIT_ICON);
 
-    /* The engine's stylesheet is injected here rather than living in
-       styles.css, because it is generated from the HTML and would otherwise be
-       a second copy to keep in step. It is removed with the plugin. */
-    this.styleEl = document.createElement('style');
-    this.styleEl.id = 'vault-orrery-engine-css';
-    this.styleEl.textContent = ENGINE_CSS;
-    document.head.appendChild(this.styleEl);
+    /* The engine's stylesheet is not injected at runtime: it is generated from
+       vault-orrery-v2.html into styles.css at build time (npm run engine), and
+       Obsidian loads that file itself. */
 
     this.registerView(VIEW_TYPE_ORRERY, leaf => new OrreryView(leaf, this));
 
@@ -51,11 +52,7 @@ export default class VaultOrreryPlugin extends Plugin {
       checkCallback: (checking: boolean) => {
         const views = this.views();
         if (!views.length) return false;
-        if (!checking) {
-          const text = views[0].diagnostics();
-          console.log('Vault Orrery diagnostics\n' + text);
-          new Notice(text, 60000);
-        }
+        if (!checking) new Notice(views[0].diagnostics(), 60000);
         return true;
       },
     });
@@ -67,8 +64,10 @@ export default class VaultOrreryPlugin extends Plugin {
   }
 
   onunload() {
-    this.styleEl?.remove();
-    this.styleEl = null;
+    /* Anything the engine changed in the last moments before the plugin was
+       disabled is still sitting in the debounce. */
+    this.flushStore.cancel();
+    void this.saveSettings();
     /* Views are torn down by Obsidian, which calls onClose(); that is where the
        engine's own listeners and audio context are released. */
   }
@@ -81,18 +80,37 @@ export default class VaultOrreryPlugin extends Plugin {
 
   async activateView() {
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_ORRERY);
-    if (existing.length) { this.app.workspace.revealLeaf(existing[0]); return; }
+    if (existing.length) { await this.app.workspace.revealLeaf(existing[0]); return; }
     const leaf: WorkspaceLeaf = this.app.workspace.getLeaf('tab');
     await leaf.setViewState({ type: VIEW_TYPE_ORRERY, active: true });
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
   }
 
   /* ---- settings plumbing ------------------------------------------------ */
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    /* loadData() is whatever JSON was on disk, so it is typed as unknown here
+       rather than trusted: a hand-edited data.json must not be able to put a
+       string where a number belongs and have TypeScript agree with it. */
+    const saved = (await this.loadData()) as Partial<OrrerySettings> | null;
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, saved ?? {});
+    /* Object.assign copies the reference, so a saved file with no engine state
+       would otherwise have every view writing into DEFAULT_SETTINGS itself. */
+    this.settings.engineStore = Object.assign({}, this.settings.engineStore);
   }
   async saveSettings() { await this.saveData(this.settings); }
+
+  /** The engine's own preferences, in the shape it reads them: a synchronous
+      store, hydrated from the plugin's data file before the engine starts. */
+  engineStore(): OrreryStore {
+    return {
+      get: (k: string) => this.settings.engineStore[k] ?? null,
+      set: (k: string, v: string) => {
+        this.settings.engineStore[k] = String(v);
+        this.flushStore();
+      },
+    };
+  }
 
   pushSettingsToViews() {
     this.views().forEach(v => { const api = v.getApi(); if (api) this.applySettingsTo(api); });

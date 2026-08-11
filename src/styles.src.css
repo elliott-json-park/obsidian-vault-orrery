@@ -1,0 +1,25 @@
+/* The hand-written half of styles.css.
+
+   `npm run engine` concatenates this file with the engine's own stylesheet —
+   scoped under .vo-root, extracted from vault-orrery-v2.html — and writes the
+   pair to styles.css at the repo root, which is the file Obsidian loads.
+
+   Edit this file, not styles.css. Edits made there are lost on the next build. */
+
+.vault-orrery-host {
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* The view fills its leaf edge to edge; the engine draws its own frame. */
+.workspace-leaf-content[data-type='vault-orrery-view'] .view-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* The exclusion-patterns box in the settings tab. One pattern per line, so it
+   wants the full width of the setting rather than a single-line input's. */
+.vault-orrery-ignore-input {
+  width: 100%;
+}

@@ -40,11 +40,13 @@ if (location.search.includes('shim')) {
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
 }
 
-const { createOrrery, ENGINE_CSS, ENGINE_HTML } = await import('/src/engine.generated.js');
+const { createOrrery, ENGINE_HTML } = await import('/src/engine.generated.js');
 
-const style = document.createElement('style');
-style.textContent = ENGINE_CSS;
-document.head.appendChild(style);
+/* The same stylesheet Obsidian loads, generated alongside the engine module. */
+const link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href = '/styles.css';
+document.head.appendChild(link);
 
 const host = document.getElementById('leaf');
 const root = document.createElement('div');
