@@ -4,6 +4,19 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.0.2
+
+- The settings tab is declared rather than drawn. From Obsidian 1.13.0 its
+  settings are indexed by the settings search, so someone looking for
+  "excluded" or "language" finds this tab without knowing to look in it. The
+  exclusion settings gained a heading of their own on the way.
+- `display()` remains as a fallback for Obsidian before 1.13.0, which has no
+  declarative renderer. It renders the same declarations rather than a second
+  copy of them, so the two paths cannot drift apart, and `minAppVersion` stays
+  at 1.7.2.
+- The README says why the plugin reads every note in the vault, which is a fair
+  thing to want answered before installing it.
+
 ## 1.0.1
 
 Everything in this release comes from the Obsidian plugin review. Nothing about

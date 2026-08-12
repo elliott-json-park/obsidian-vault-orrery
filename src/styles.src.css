@@ -19,7 +19,11 @@
 }
 
 /* The exclusion-patterns box in the settings tab. One pattern per line, so it
-   wants the full width of the setting rather than a single-line input's. */
-.vault-orrery-ignore-input {
+   wants the full width of the setting rather than a single-line input's.
+
+   Addressed through the group's class rather than a class on the textarea
+   itself: the declarative settings API renders the control, so the element is
+   Obsidian's to make and only the group around it is ours to name. */
+.vault-orrery-exclusions textarea {
   width: 100%;
 }

@@ -10,7 +10,7 @@ class Plugin {
   registerView(t) { calls.push('registerView:' + t); }
   addRibbonIcon() { calls.push('ribbon'); return {}; }
   addCommand(c) { calls.push('command:' + c.id); }
-  addSettingTab() { calls.push('settingTab'); }
+  addSettingTab(t) { calls.push('settingTab'); this._tab = t; }
   registerEvent() { calls.push('event'); }
   register() {}
   async loadData() { return this._data ?? null; }
@@ -64,6 +64,27 @@ const mkApp = vault => ({ vault, workspace: { on() {}, getLeavesOfType: () => []
   await new Promise(r => setTimeout(r, 0));
   ok(p._data && p._data.engineStore && p._data.engineStore['orrery2.lang'] === 'ja',
      'engine store persists through saveData, not localStorage');
+
+  /* The settings tab is declared, not drawn, so what can be checked here is the
+     declaration: that every setting the tab offers is reachable by the settings
+     search, and that a value round-trips through the tab's own storage in the
+     shape the plugin keeps it in. */
+  const tab = p._tab;
+  const flatten = items => items.flatMap(i => i.type === 'group' ? flatten(i.items ?? []) : [i]);
+  const defs = flatten(tab.getSettingDefinitions());
+  const keys = defs.filter(d => d.control).map(d => d.control.key).sort();
+  ok(JSON.stringify(keys) === '["extraIgnoreFilters","followExcludedFiles","language","maxNodes"]',
+     'every setting is declared for search -> ' + JSON.stringify(keys));
+  ok(defs.every(d => d.name), 'every declared setting has a name to be found by');
+
+  await tab.setControlValue('extraIgnoreFilters', 'archive\n\n  /^x/  ');
+  ok(JSON.stringify(p.settings.extraIgnoreFilters) === '["archive","/^x/"]',
+     'the exclusions textarea round-trips as a list, not a string');
+  ok(tab.getControlValue('extraIgnoreFilters') === 'archive\n/^x/',
+     'the exclusions list reads back as textarea lines');
+  await tab.setControlValue('language', 'not-a-language');
+  ok(p.settings.language === 'auto', 'a value that is not a language is refused');
+  p.settings.extraIgnoreFilters = [];
 
   const seen = {};
   const fake = { setLang: v => seen.lang = v, setMaxNodes: v => seen.max = v, setIgnoreFilters: v => seen.ig = v };

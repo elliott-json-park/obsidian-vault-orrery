@@ -27,6 +27,15 @@ This plugin reads your notes. That deserves a straight answer, so here it is.
 - **No camera, no microphone, no other device permission** is requested — the
   plugin has no code that could ask for one.
 
+**Why it reads the whole vault.** The plugin calls `vault.getMarkdownFiles()`
+and reads each note it is left with. That breadth is the feature rather than an
+excess of it: what is being drawn is the shape of the vault — every note as a
+body, every link between them as an orbit — and a graph of a subset is a
+different vault's picture, silently wrong in a way the user cannot see. Reading
+is done with `cachedRead`, so it goes through Obsidian's own cache rather than
+touching disk again, and the exclusion rules below are applied first, so notes
+you have hidden are never opened at all.
+
 You can verify all of this. The engine is a single readable HTML/JS file, and
 `grep -rn "fetch\|XMLHttpRequest\|WebSocket\|https://"` over it will show you
 what it does and does not reach for. `npm run check` is the same test,
