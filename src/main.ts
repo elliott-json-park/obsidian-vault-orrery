@@ -1,11 +1,35 @@
-import { Plugin, WorkspaceLeaf, Notice, addIcon, debounce, moment } from 'obsidian';
-import type { OrreryApi, OrreryStore } from './engine.generated.js';
-import { OrreryView, VIEW_TYPE_ORRERY } from './view';
+import { Plugin, WorkspaceLeaf, Notice, TFile, Menu, addIcon, debounce, moment } from 'obsidian';
+import type { OrreryApi, OrreryCommand, OrreryStore } from './engine.generated.js';
+import { OrreryView, VIEW_TYPE_ORRERY, HOVER_SOURCE } from './view';
 import { OrrerySettingTab, DEFAULT_SETTINGS, type OrrerySettings, type Lang } from './settings';
 
 const ORBIT_ICON = `<circle cx="50" cy="50" r="12" fill="currentColor"/>` +
   `<ellipse cx="50" cy="50" rx="44" ry="18" fill="none" stroke="currentColor" stroke-width="6"/>` +
   `<circle cx="94" cy="50" r="8" fill="currentColor"/>`;
+
+/* Every mode the view has, offered as a command so that it can be reached from
+   the palette and bound to a key. The engine already owns what each one does
+   and answers to these names; this table is only what to call them in a list
+   that is sorted alphabetically among a hundred other plugins' commands.
+
+   No key is bound by default. The engine's own single-letter shortcuts work
+   inside the view, and claiming a global hotkey for "Genesis" would be taking
+   something the user has other uses for. */
+const MODE_COMMANDS: ReadonlyArray<[OrreryCommand, string]> = [
+  ['open',    'Open the selected note'],
+  ['search',  'Search the cosmos'],
+  ['mindmap', 'Mind map of the selected note'],
+  ['ship',    'Spaceship mode'],
+  ['surface', 'Stand on the selected planet'],
+  ['genesis', 'Genesis — play the vault\'s formation'],
+  ['twins',   'Find twins of the selected note'],
+  ['ripple',  'Ripple from the selected note'],
+  ['poster',  'Save a poster'],
+  ['layer',   'Cycle the link layer'],
+  ['sound',   'Ambient sound'],
+  ['reset',   'Reset the view'],
+  ['hud',     'Show or hide the HUD'],
+];
 
 export default class VaultOrreryPlugin extends Plugin {
   settings: OrrerySettings = DEFAULT_SETTINGS;
@@ -57,6 +81,51 @@ export default class VaultOrreryPlugin extends Plugin {
       },
     });
 
+    /* Reachable from anywhere: the note you are reading, found in the sky.
+       This is the other half of clicking a planet to open a note, and the one
+       that makes the view worth leaving open beside the editor. */
+    this.addCommand({
+      id: 'reveal-active',
+      name: 'Reveal the active note in the orrery',
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || file.extension !== 'md') return false;
+        if (!checking) void this.revealFile(file);
+        return true;
+      },
+    });
+
+    /* Each mode, so it can be bound to a key or found by name. Only offered
+       while a view is open — a command that silently does nothing is worse
+       than one that is not in the list. */
+    for (const [id, name] of MODE_COMMANDS) {
+      this.addCommand({
+        id: 'mode-' + id,
+        name,
+        checkCallback: (checking: boolean) => {
+          const views = this.views();
+          if (!views.length) return false;
+          if (!checking) views[0].getApi()?.command(id);
+          return true;
+        },
+      });
+    }
+
+    /* "Show in Vault Orrery", where a note is already being right-clicked. */
+    this.registerEvent(this.app.workspace.on('file-menu', (menu: Menu, file) => {
+      if (!(file instanceof TFile) || file.extension !== 'md') return;
+      menu.addItem(item => item
+        .setTitle('Show in Vault Orrery')
+        .setIcon('orbit')
+        .onClick(() => { void this.revealFile(file); }));
+    }));
+
+    /* Hovering a note's name in the inspector offers Obsidian's own page
+       preview. Registering it here is what puts Vault Orrery in Settings →
+       Page preview, so the user can turn it off where they turn off every
+       other one. */
+    this.registerHoverLinkSource(HOVER_SOURCE, { display: 'Vault Orrery', defaultMod: true });
+
     this.addSettingTab(new OrrerySettingTab(this.app, this));
 
     /* Excluded-files patterns can change while a view is open. */
@@ -76,6 +145,22 @@ export default class VaultOrreryPlugin extends Plugin {
     return this.app.workspace.getLeavesOfType(VIEW_TYPE_ORRERY)
       .map(l => l.view)
       .filter((v): v is OrreryView => v instanceof OrreryView);
+  }
+
+  /** Open the orrery if it is not open, then put the camera on this note. */
+  async revealFile(file: TFile) {
+    await this.activateView();
+    const view = this.views()[0];
+    if (!view) return;
+    /* A view that has just been created is still reading the vault, and there
+       is nothing yet to reveal. Ask again until it has something, silently —
+       only the last attempt is allowed to report that the note is not there,
+       or a slow vault produces one notice per retry. */
+    const attempt = (tries: number) => {
+      if (view.reveal(file, tries > 0)) return;
+      if (tries > 0) window.setTimeout(() => attempt(tries - 1), 400);
+    };
+    attempt(view.getApi()?.busy() ? 25 : 0);
   }
 
   async activateView() {

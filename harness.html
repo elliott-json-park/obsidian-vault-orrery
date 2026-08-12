@@ -60,7 +60,7 @@ try { api = createOrrery(root); log.push('created'); }
 catch (e) { log.push('createOrrery: ' + e.message + ' | ' + (e.stack||'').split('\n')[1]); }
 window.__api = api;
 
-const mk = (path, text) => ({ path, file: { text: async () => text } });
+const mk = (path, text, meta) => ({ path, file: { text: async () => text }, meta });
 const FILES = [
   mk('research/quantum.md', '# Quantum\n[[research/optics]] [[notes/daily]]\n2024-01-04'),
   mk('research/optics.md',  '# Optics\n[[research/quantum]]\n2024-02-11'),
@@ -69,6 +69,11 @@ const FILES = [
   mk('notes/ideas.md',      '# Ideas\n[[notes/daily]] [[research/quantum]]\n2024-04-09'),
   mk('notes/reading.md',    '# Reading\n[[notes/ideas]]\n2024-04-22'),
   mk('archive/old.md',      '# Old\nno links\n2023-06-01'),
+  /* Host metadata, the way Obsidian supplies it: links already resolved (this
+     one is written through an alias the engine's own parser cannot follow) and
+     tags from the body rather than the front matter. */
+  mk('notes/aliased.md', '# Aliased\nsee [[The Optics Note]] #field/optics\n2024-05-02',
+     { links: { 'research/optics.md': 1 }, broken: 0, tags: ['field/optics'] }),
 ];
 
 window.__run = async () => {
@@ -83,6 +88,66 @@ window.__run = async () => {
   await step('setVisible',       () => api.setVisible(true));
   await step('resize',           () => api.resize());
   await step('load',             () => api.load(FILES, 'demo-vault'));
+
+  /* ---- the host seam ----
+     The half of the API Obsidian drives. None of it can be exercised by the
+     build or the smoke test: every one of these runs against a live scene
+     graph, and three of them are read back out of a frame. */
+  const opened = [];
+  await step('setHostHooks',  () => api.setHostHooks({ open: (p, o) => opened.push([p, o]) }));
+  await step('open button shown', () => {
+    const el = root.querySelector('#i-open');
+    if (!el || el.style.display === 'none') throw new Error('#i-open still hidden with a host hook set');
+  });
+  await step('revealPath',    () => {
+    if (!api.revealPath('research/optics.md')) throw new Error('known note not found');
+    if (api.revealPath('nowhere/at-all.md')) throw new Error('unknown note reported as found');
+  });
+  await step('open the revealed note', () => {
+    root.querySelector('#i-open').click();
+    if (opened.length !== 1) throw new Error('host hook was not called');
+    if (opened[0][0] !== 'research/optics.md') throw new Error('opened ' + opened[0][0]);
+  });
+  await step('setActivePath', () => {
+    api.setActivePath('notes/daily.md');
+    const d = api.debug();
+    if (d.active < 0) throw new Error('the active note did not resolve to a body');
+    if (d.active === d.selected) throw new Error('active and selected must be independent');
+    api.setActivePath('');
+    if (api.debug().active !== -1) throw new Error('clearing left a mark behind');
+    api.setActivePath('notes/daily.md');
+  });
+  await step('commands',      () => {
+    const names = api.commands();
+    if (!names.includes('mindmap')) throw new Error('no mindmap command');
+    if (api.command('nope')) throw new Error('unknown command reported as run');
+    api.command('mindmap'); api.command('mindmap');    // open and close again
+  });
+  /* Aliased links are the whole reason the host's own reading beats the
+     engine's. If this drops to 1 the metadata path has stopped being used. */
+  await step('host metadata', () => {
+    if (!api.revealPath('notes/aliased.md')) throw new Error('the aliased note is missing');
+    const links = root.querySelector('#i-links').textContent;
+    if (!/optics/i.test(links)) throw new Error('the alias link did not resolve: ' + links);
+    if (!/optics/i.test(root.querySelector('#i-tags').textContent)) throw new Error('body tag missing');
+  });
+  /* A reload the user did not ask for must not move the camera. */
+  await step('quiet reload keeps the view', async () => {
+    api.revealPath('research/lasers.md');
+    const before = api.debug();
+    const cam = root.querySelector('#s-dist').textContent;
+    await api.load(FILES, 'demo-vault', { quiet: true });
+    const after = api.debug();
+    if (after.nodes !== before.nodes) throw new Error('node count changed');
+    if (root.querySelector('#load').classList.contains('on')) throw new Error('curtain shown on a quiet load');
+    /* Both marks are held by path across the rebuild; an index kept instead
+       would land on whatever note happens to sit at that number afterwards. */
+    if (after.selected !== before.selected) throw new Error('the selection moved');
+    if (after.active !== before.active) throw new Error('the active mark moved');
+    if (!/lasers/.test(root.querySelector('#i-name').textContent))
+      throw new Error('the inspector is showing ' + root.querySelector('#i-name').textContent);
+    log.push('   range before ' + cam + ' after ' + root.querySelector('#s-dist').textContent);
+  });
   return log;
 };
 </script>

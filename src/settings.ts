@@ -12,6 +12,10 @@ export interface OrrerySettings {
   language: Lang;
   /** 0 = no ceiling. */
   maxNodes: number;
+  /** Re-derive the cosmos when the vault changes under an open view. */
+  liveSync: boolean;
+  /** Move the camera to whatever note is being edited. */
+  followActiveNote: boolean;
   /** Follow Settings → Files & Links → Excluded files. */
   followExcludedFiles: boolean;
   /** Extra patterns, same syntax as Obsidian's: a prefix, or /regex/. */
@@ -27,6 +31,12 @@ export interface OrrerySettings {
 export const DEFAULT_SETTINGS: OrrerySettings = {
   language: 'auto',
   maxNodes: 3000,
+  liveSync: true,
+  /* Off by default. Following is a strong opinion about where the camera
+     should be — right for a view kept open beside the editor, wrong for one
+     you are flying through — and the wrong default here takes the controls
+     out of the user's hands every time they switch note. */
+  followActiveNote: false,
   followExcludedFiles: true,
   extraIgnoreFilters: [],
   engineStore: {},
@@ -34,7 +44,8 @@ export const DEFAULT_SETTINGS: OrrerySettings = {
 
 /** The settings this tab edits. The engine's own store is not among them: it is
     written by the engine, not by a human, and has no place in settings search. */
-type Key = 'language' | 'maxNodes' | 'followExcludedFiles' | 'extraIgnoreFilters';
+type Key = 'language' | 'maxNodes' | 'liveSync' | 'followActiveNote'
+         | 'followExcludedFiles' | 'extraIgnoreFilters';
 
 /* This tab is English-only, deliberately, even though the engine itself speaks
    four languages. Obsidian gives plugins no i18n facility for settings, and the
@@ -79,6 +90,39 @@ export class OrrerySettingTab extends PluginSettingTab {
           step: 500,
           defaultValue: DEFAULT_SETTINGS.maxNodes,
         },
+      },
+      {
+        type: 'group',
+        heading: 'The editor',
+        items: [
+          {
+            name: 'Keep up with the vault',
+            desc: 'Re-derive the cosmos when notes are written, created, renamed or ' +
+                  'deleted while the view is open. The camera and the selection stay ' +
+                  'where they are. Turn this off on a very large vault, where each ' +
+                  'rebuild reads every note again; the Reload vault command then does ' +
+                  'it on request.',
+            aliases: ['live', 'refresh', 'update', 'watch'],
+            control: {
+              type: 'toggle',
+              key: 'liveSync',
+              defaultValue: DEFAULT_SETTINGS.liveSync,
+            },
+          },
+          {
+            name: 'Follow the active note',
+            desc: 'Move the camera to whichever note you open in the editor. Left off, ' +
+                  'the note being edited is still marked in the sky — the camera simply ' +
+                  'stays where you put it, and "Reveal the active note in the orrery" ' +
+                  'flies to it on request.',
+            aliases: ['sync', 'active file', 'follow'],
+            control: {
+              type: 'toggle',
+              key: 'followActiveNote',
+              defaultValue: DEFAULT_SETTINGS.followActiveNote,
+            },
+          },
+        ],
       },
       {
         type: 'group',
@@ -139,6 +183,8 @@ export class OrrerySettingTab extends PluginSettingTab {
     switch (key as Key) {
       case 'language': return s.language;
       case 'maxNodes': return s.maxNodes;
+      case 'liveSync': return s.liveSync;
+      case 'followActiveNote': return s.followActiveNote;
       case 'followExcludedFiles': return s.followExcludedFiles;
       case 'extraIgnoreFilters': return s.extraIgnoreFilters.join('\n');
       default: return undefined;
@@ -160,6 +206,12 @@ export class OrrerySettingTab extends PluginSettingTab {
         s.maxNodes = n;
         break;
       }
+      case 'liveSync':
+        s.liveSync = Boolean(value);
+        break;
+      case 'followActiveNote':
+        s.followActiveNote = Boolean(value);
+        break;
       case 'followExcludedFiles':
         s.followExcludedFiles = Boolean(value);
         break;

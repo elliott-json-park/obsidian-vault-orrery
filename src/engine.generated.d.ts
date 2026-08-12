@@ -26,6 +26,39 @@ export interface OrreryStore {
 export interface OrreryFile {
   path: string;
   file: { text(): Promise<string> };
+  /** What the host already knows about this file. Obsidian has resolved every
+      link in the vault — through aliases, headings, block ids and embeds — and
+      indexed the tags written in the body as well as in the front matter. The
+      engine's own parser is a regular expression over the text and gets a
+      worse answer, so where this is supplied it wins. Optional: the standalone
+      page has no host and parses for itself. */
+  meta?: OrreryFileMeta;
+}
+
+export interface OrreryFileMeta {
+  /** Resolved outgoing links, as vault paths mapped to how many times this
+      file refers to each. The shape of Obsidian's resolvedLinks[path]. */
+  links?: Record<string, number>;
+  /** How many of this file's links resolve to nothing. */
+  broken?: number;
+  /** Tags, with or without the leading '#', body and front matter alike. */
+  tags?: string[];
+}
+
+/** Which mode a host command switches on. The engine owns what each one does;
+    this is only the list, so a host can offer them in its own palette. */
+export type OrreryCommand =
+  | 'search' | 'mindmap' | 'ship' | 'surface' | 'genesis' | 'twins'
+  | 'ripple' | 'poster' | 'layer' | 'sound' | 'reset' | 'hud' | 'open';
+
+/** What the host can do that a web page cannot. Every hook is optional, and an
+    affordance whose hook is missing is not drawn at all rather than drawn and
+    then inert. */
+export interface OrreryHostHooks {
+  /** Open this note in the editor. `path` is the vault path the host gave. */
+  open?(path: string, opts: { newLeaf: boolean; newWindow: boolean }): void;
+  /** Offer the host's own hover preview over an element the engine owns. */
+  hover?(path: string, event: MouseEvent, el: HTMLElement): void;
 }
 
 export interface OrreryApi {
@@ -45,9 +78,27 @@ export interface OrreryApi {
   /** 0 means no ceiling. */
   setMaxNodes(n: number): void;
   /** The engine applies its own exclusion and cap gates, so hand it
-      everything and let one set of rules decide. */
-  load(files: OrreryFile[], vaultName?: string): Promise<void>;
+      everything and let one set of rules decide.
+
+      `quiet` is a rebuild the user did not ask for — a note saved while the
+      view is open. It keeps the camera where it is, restores the selection by
+      path, and shows neither the loading curtain nor the summary. */
+  load(files: OrreryFile[], vaultName?: string,
+       opts?: { quiet?: boolean }): Promise<void>;
   clear(): void;
+  /** Hand the engine the things only a host can do. */
+  setHostHooks(hooks: OrreryHostHooks): void;
+  /** Put the camera on the note at this path. False if that note is not in
+      the cosmos on screen — excluded, or past the node ceiling. */
+  revealPath(path: string, opts?: { select?: boolean }): boolean;
+  /** The note being edited, marked in the sky while the camera goes
+      elsewhere. Empty string clears it. */
+  setActivePath(path: string): void;
+  /** True while a vault is being read. */
+  busy(): boolean;
+  commands(): OrreryCommand[];
+  /** Run one. False if the engine does not have a command by that name. */
+  command(name: OrreryCommand): boolean;
   /** Re-measure against the container. Call when the leaf changes size. */
   resize(): void;
   destroy(): void;

@@ -4,6 +4,82 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.1.0
+
+The orrery stops being a picture of the vault and becomes a way to move around
+in it. Everything below is about the seam between the view and the editor.
+
+- **Open the note.** Every body on screen is a note you can be reading a second
+  later: `O`, the inspector's button, the mind map's button, Ctrl/Cmd-click on
+  a planet, Ctrl/Cmd-Enter in search. Ctrl/Cmd opens beside the orrery rather
+  than on top of it, so the view you clicked from is still there when you come
+  back.
+- **Find where you are.** The note being edited is marked in the sky with its
+  own violet beacon — distinct from the selection, because where you are
+  working and where you are looking are usually different notes. "Reveal the
+  active note in the orrery" flies to it from anywhere, there is a **Show in
+  Vault Orrery** item on every note's context menu, and a setting to have the
+  camera follow the editor if you want it to.
+- **The graph agrees with Obsidian's.** Links, tags and backlinks now come from
+  Obsidian's own index instead of being re-derived from the text. Links written
+  through an alias resolve instead of counting as broken, embeds count as
+  links, and `#tags` written in the body count alongside the ones in the front
+  matter. The plugin's own parser stays as the fallback for the standalone
+  engine page.
+- **It keeps up with the vault.** Notes written, created, renamed or deleted
+  while the view is open re-derive the cosmos, with the camera and the
+  selection left exactly where they were and no loading curtain over a view
+  someone is using. Switchable off for very large vaults.
+- **Every mode is a command.** Spaceship, Genesis, mind map, surface, poster,
+  twins, search and the rest are in the command palette and can be bound to
+  keys. No key is bound by default.
+- **Hover preview.** Hovering a note's name in the inspector offers Obsidian's
+  own page preview, registered as a hover source so it can be turned off where
+  every other one is.
+- **Rings.** One planet in each star system — the note its own folder points at
+  most — now wears one, widening with the count, plus the handful of notes the
+  whole vault leans on. They open out as you approach rather than being drawn
+  at every range, so the overview stays a map and a close pass finds a ringed
+  world. The vault's hubs are legible at a glance, which is not something a
+  slightly larger sphere ever managed.
+- **ORBIT GAP.** A new control for how much room each orbit ring gets. It is
+  the measurement the whole layout is built from, so widening the orbits also
+  moves the star systems apart to keep their clearance — the vault opens up
+  instead of growing into itself. It moves under your hand: the orbits widen
+  and settle continuously while the slider is dragged, with a little overshoot
+  at the end, rather than the cosmos being rebuilt in one cut when the handle
+  is let go. Orbits are roomier by default than they were, and ORBIT SPREAD
+  now reaches 3.2×.
+- **Links are arcs.** A link used to sag in the vertical plane alone, which
+  from directly above — where the map is usually read from — is a straight
+  line. It is now bowed outward, away from the core, so the curve is there
+  from any angle and two bodies going round the same centre are joined by
+  something that looks like it belongs to that centre. Drawn from more
+  samples, so the curve is a curve rather than a bent straw.
+- **Shooting stars.** One crosses the sky now and then: a burning head with a
+  tapering trail, the real meteor colours — magnesium blue-white, sodium
+  yellow, iron gold, and green from the oxygen behind it — and one in six is a
+  fireball. Aimed across the frame you are actually looking at, so
+  occasionally means occasionally seen.
+- **The sound has a room.** The drone and the selection pings run through a
+  generated convolution reverb — several seconds of tail, darkening as it
+  decays, with the pings also feeding a long echo that answers them a few
+  times over. A dry sine is a tone generator; the same note arriving through a
+  room is a sound with somewhere to have come from.
+- **A sky that is not science fiction.** The starfield was drawn in the
+  interface's own cyan, which is the single thing that made this read as a
+  set rather than as space. Stars are now coloured by temperature along the
+  only line real starlight runs along — blue-white to amber, and never green
+  or teal. Scintillation is gone, because twinkling is atmosphere and there
+  is none out here; the diffraction spike on bright stars stays, because that
+  is the camera and every real photograph has it. The Milky Way has a bulge
+  it comes from and a dust rift cut along it, and it is cream rather than
+  blue. Nebulae are Hα red where they are emission and dusty blue where they
+  are reflection, and they are clustered into complexes instead of scattered
+  as separate discs. The dust in the disk is faint and warm, the way scattered
+  starlight is. The geodesic boundary grid is down to the threshold of being
+  noticed.
+
 ## 1.0.2
 
 - The settings tab is declared rather than drawn. From Obsidian 1.13.0 its
