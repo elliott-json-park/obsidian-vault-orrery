@@ -43,6 +43,19 @@ canvas{display:block}
   padding:6px 10px 5px;border-bottom:1px solid rgba(92,225,255,.16);display:flex;
   justify-content:space-between;align-items:center;gap:8px}
 .ttl b{font-weight:600}
+/* Folding was the control deck's alone, and the deck is not the only pane
+   that outstays its welcome: the shortcut list is pure reference, read once
+   and then in the way, and the legend can run to dozens of rows on a vault
+   with many folders. Any pane marked foldable gets the same title-bar click
+   and the same [ − ] / [ + ] the deck taught. layoutHUD() measures heights
+   rather than assuming them, so a folded pane hands its room to its
+   neighbour without being told to. */
+.pane.foldable>.ttl{cursor:pointer;user-select:none}
+.pane.fold>.bd{display:none}
+#leg.fold{overflow:visible}
+.ttl .tr{display:flex;align-items:center;gap:9px}
+.ttl .tr i{font-style:normal}
+.ttl .fx{color:rgba(223,246,255,.45);letter-spacing:.05em}
 .bd{padding:8px 10px 10px}
 .row{display:flex;justify-content:space-between;gap:10px;line-height:1.85;
   white-space:nowrap;font-size:10.5px}
@@ -81,8 +94,20 @@ canvas{display:block}
 #ctl.fold .bd{display:none}
 /* auto-fit rather than a fixed four: on a narrow deck the sliders reflow to
    two or three columns instead of being crushed to a few pixels each */
-#ctlgrid{flex:1 1 auto;min-width:0;display:grid;
+#ctlknobs{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:9px}
+#ctlgrid,#ctladv{min-width:0;display:grid;
   grid-template-columns:repeat(auto-fit,minmax(94px,1fr));gap:9px 14px}
+/* The deck had eleven knobs across, all equal, and the ones anybody reaches
+   for twice — speed, glow, gap — were no easier to find than STARFIELD, which
+   is set once in a lifetime. The five that get touched stay out; the six that
+   do not fold away behind a line you can open. Nothing is removed: a control
+   that is genuinely useless should be deleted, and none of these are. */
+#ctladv{display:none}
+#ctl.adv #ctladv{display:grid}
+#advtog{cursor:pointer;pointer-events:auto;user-select:none;font-size:8px;
+  letter-spacing:.18em;color:rgba(92,225,255,.5);transition:color .15s;
+  border-top:1px solid rgba(92,225,255,.12);padding-top:8px}
+#advtog:hover{color:var(--cy)}
 #ctl.tight .bd{flex-direction:column;gap:9px}
 #ctl.tight .sep{display:none}
 #ctl.tight .vs{width:auto;flex-direction:row;flex-wrap:wrap}
@@ -106,6 +131,20 @@ canvas{display:block}
 #gen-r{flex:1 1 auto;min-width:0}
 #gen-r::-webkit-slider-thumb{background:var(--am);box-shadow:0 0 10px var(--am)}
 #gen-r::-moz-range-thumb{background:var(--am);box-shadow:0 0 10px var(--am)}
+/* ---------- frame budget readout ----------
+   Off by default and opened by clicking the FPS row, because a number that is
+   only interesting when something is wrong should not be on screen when it is
+   not. The rows are the phases the frame loop is actually divided into, so a
+   bad frame points at the function to go and read. */
+/* the stroke key: three cells across the row rather than the usual two */
+.row.lk{font-size:7px;letter-spacing:.06em;line-height:1.5;opacity:.72;margin-top:1px}
+#perf{display:none;margin-top:6px;border-top:1px solid rgba(92,225,255,.14);padding-top:5px}
+#perf.on{display:block}
+#perf .row{line-height:1.6;font-size:8.5px;letter-spacing:.09em}
+#perf .row span:last-child{font-variant-numeric:tabular-nums;color:var(--cy);opacity:.85}
+#perf .row.hot span:last-child{color:var(--am)}
+#perf .hd{opacity:.4;letter-spacing:.2em;font-size:7.5px;margin:1px 0 2px}
+#s-fps{cursor:pointer}
 #ctl .sep{width:1px;background:rgba(92,225,255,.16);flex:0 0 auto}
 #ctl .vs{flex:0 0 auto;display:flex;flex-direction:column;gap:5px;width:118px}
 .mini{cursor:pointer;pointer-events:auto;font-size:8.5px;letter-spacing:.1em;padding:5px 6px;
@@ -126,6 +165,11 @@ canvas{display:block}
   text-shadow:0 0 10px rgba(255,182,72,.4)}
 .mini.am{color:var(--am);border-color:rgba(255,182,72,.34);background:rgba(255,182,72,.06)}
 .mini.am:hover{background:rgba(255,182,72,.18);box-shadow:0 0 14px rgba(255,182,72,.2)}
+/* The one action that leaves the orrery and lands in the editor. It is
+   violet — Obsidian's own colour, and the only violet on the HUD — so that
+   "this takes you out of here" is legible before the label is read. */
+.mini.vio{color:var(--vi);border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.09)}
+.mini.vio:hover{background:rgba(167,139,250,.22);box-shadow:0 0 14px rgba(167,139,250,.28)}
 
 /* ---------- bottom-right : inspector ---------- */
 #insp{bottom:16px;right:16px;width:352px;max-height:64vh;display:flex;flex-direction:column}
@@ -620,56 +664,111 @@ body.ship #scanmsg{display:block}
       <!-- which link types are drawn, cycled with L. It used to sit in the
            gesture panel, which is gone; it is vault state, not hand state. -->
       <div class="row"><span>LINK LAYER</span><span id="g-layer">ALL</span></div>
+      <!-- the three link types now differ in stroke as well as in colour, and
+           a convention nobody is told is not a convention. Tinted to the
+           EDGE_TINT entries they stand for, so the key and the cosmos cannot
+           drift apart without it being visible here. -->
+      <div class="row lk">
+        <span style="color:#53d8ff">━━ WIKI</span>
+        <span style="color:#ff9d3c">━ ━ SRC</span>
+        <span style="color:#8b6bff">╍╍ LATENT</span>
+      </div>
       <div class="row"><span>RANGE</span><span id="s-dist">—</span></div>
-      <div class="row"><span>FPS</span><span id="s-fps">—</span></div>
+      <div class="row"><span>FPS</span><span id="s-fps" title="click for frame budget">—</span></div>
       <div class="bar"><i id="s-load" style="width:100%"></i></div>
+      <!-- opened by clicking FPS; see the PERF block for what fills it -->
+      <div id="perf">
+        <div class="hd">FRAME BUDGET · MS</div>
+        <div class="row"><span>SIM</span><span id="p-sim">—</span></div>
+        <div class="row"><span>PICK</span><span id="p-pick">—</span></div>
+        <div class="row"><span>BODIES</span><span id="p-inst">—</span></div>
+        <div class="row"><span>LINKS</span><span id="p-link">—</span></div>
+        <div class="row"><span>TRAILS</span><span id="p-trlms">—</span></div>
+        <div class="row"><span>SPRITES</span><span id="p-spr">—</span></div>
+        <div class="row"><span>SUBMIT</span><span id="p-draw">—</span></div>
+        <div class="row"><span>CPU TOTAL</span><span id="p-tot">—</span></div>
+        <div class="hd" style="margin-top:5px">GEOMETRY</div>
+        <div class="row"><span>LINK SEGS</span><span id="p-lv">—</span></div>
+        <div class="row"><span>OFF SCREEN</span><span id="p-cull">—</span></div>
+        <div class="row"><span>TRAILS</span><span id="p-trl">—</span></div>
+        <div class="row"><span>DRAW CALLS</span><span id="p-dc">—</span></div>
+      </div>
     </div>
   </div>
 
-  <div class="pane glass" id="leg">
-    <div class="ttl"><b>STAR SYSTEMS</b><span id="l-cnt">0</span></div>
+  <div class="pane glass foldable" id="leg">
+    <div class="ttl"><b>STAR SYSTEMS</b>
+      <span class="tr"><i id="l-cnt">0</i><i class="fx" id="legfold">[ − ]</i></span>
+    </div>
     <div class="bd" id="legbody"></div>
   </div>
 
   <div class="pane glass" id="ctl">
     <div class="ttl" id="ctltl"><b>ORRERY CONTROL</b><span id="ctlfold">[ − ]</span></div>
     <div class="bd">
-      <div id="ctlgrid">
-        <div class="sl">
-          <b>ORBIT SPEED<i id="v-spd">1.00×</i></b>
-          <input type="range" id="r-spd" min="0" max="400" step="1" value="100">
+      <div id="ctlknobs">
+        <!-- the five that get reached for -->
+        <div id="ctlgrid">
+          <div class="sl">
+            <b>ORBIT SPEED<i id="v-spd">1.00×</i></b>
+            <input type="range" id="r-spd" min="0" max="400" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>NODE GLOW<i id="v-bri">1.00×</i></b>
+            <input type="range" id="r-bri" min="10" max="260" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>LINK GLOW<i id="v-lnk">1.00×</i></b>
+            <input type="range" id="r-lnk" min="0" max="85" step="1" value="70">
+          </div>
+          <div class="sl">
+            <b>ORBIT GAP<i id="v-gap">1.00×</i></b>
+            <input type="range" id="r-gap" min="50" max="300" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b><span data-i18n="cap.label">최대 노드</span><i id="v-cap">3000</i></b>
+            <input type="range" id="r-cap" min="500" max="10500" step="500" value="3000">
+          </div>
         </div>
-        <div class="sl">
-          <b>NODE GLOW<i id="v-bri">1.00×</i></b>
-          <input type="range" id="r-bri" min="10" max="260" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>LINK TENSION<i id="v-ten">0.50</i></b>
-          <input type="range" id="r-ten" min="0" max="100" step="1" value="50">
-        </div>
-        <div class="sl">
-          <b>NODE GRAVITY<i id="v-grv">1.00×</i></b>
-          <input type="range" id="r-grv" min="0" max="300" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>STARFIELD<i id="v-str">1.00×</i></b>
-          <input type="range" id="r-str" min="0" max="200" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>SHIP THRUST<i id="v-thr">1.00×</i></b>
-          <input type="range" id="r-thr" min="20" max="400" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>LINK GLOW<i id="v-lnk">1.00×</i></b>
-          <input type="range" id="r-lnk" min="0" max="130" step="1" value="70">
-        </div>
-        <div class="sl">
-          <b>ORBIT SPREAD<i id="v-spr">1.00×</i></b>
-          <input type="range" id="r-spr" min="30" max="240" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b><span data-i18n="cap.label">최대 노드</span><i id="v-cap">3000</i></b>
-          <input type="range" id="r-cap" min="500" max="10500" step="500" value="3000">
+        <div id="advtog">▸ ADVANCED</div>
+        <!-- the six that are set once -->
+        <div id="ctladv">
+          <div class="sl">
+            <b>ARC HEIGHT<i id="v-arc">1.00×</i></b>
+            <input type="range" id="r-arc" min="0" max="250" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>LINK TENSION<i id="v-ten">0.50</i></b>
+            <input type="range" id="r-ten" min="0" max="100" step="1" value="50">
+          </div>
+          <div class="sl">
+            <b>AGE TINT<i id="v-age">0.60</i></b>
+            <input type="range" id="r-age" min="0" max="100" step="1" value="60">
+          </div>
+          <div class="sl">
+            <b>ORBIT TRAILS<i id="v-trl">0.70</i></b>
+            <input type="range" id="r-trl" min="0" max="100" step="1" value="70">
+          </div>
+          <div class="sl">
+            <b>BLOOM<i id="v-blm">0.60</i></b>
+            <input type="range" id="r-blm" min="0" max="150" step="1" value="60">
+          </div>
+          <div class="sl">
+            <b>NODE GRAVITY<i id="v-grv">1.00×</i></b>
+            <input type="range" id="r-grv" min="0" max="300" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>ORBIT SPREAD<i id="v-spr">1.00×</i></b>
+            <input type="range" id="r-spr" min="30" max="320" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>STARFIELD<i id="v-str">1.00×</i></b>
+            <input type="range" id="r-str" min="0" max="200" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>SHIP THRUST<i id="v-thr">1.00×</i></b>
+            <input type="range" id="r-thr" min="20" max="400" step="1" value="100">
+          </div>
         </div>
       </div>
       <div class="sep"></div>
@@ -681,20 +780,24 @@ body.ship #scanmsg{display:block}
         <div class="mini am" id="b-clear" style="display:none" data-i18n="btn.clear">✕ 볼트 비우기</div>
         <div class="mini" id="b-gen" data-i18n="btn.gen" data-i18n-title="btn.gen.t">◌ 항성계 생성</div>
         <div class="mini" id="b-post" data-i18n="btn.post" data-i18n-title="btn.post.t">⤓ 포스터</div>
+        <div class="mini" id="b-vid" data-i18n="btn.vid" data-i18n-title="btn.vid.t">⏺ 영상</div>
         <div class="mini" id="b-snd" data-i18n="btn.snd" data-i18n-title="btn.snd.t">♪ 사운드</div>
         <div class="mini" id="b-rst" data-i18n="btn.rst">↺ 설정 초기화</div>
       </div>
     </div>
   </div>
 
-  <div class="pane glass" id="keys">
+  <div class="pane glass foldable" id="keys">
+    <div class="ttl"><b>SHORTCUTS</b><span class="fx" id="keysfold">[ − ]</span></div>
     <div class="bd" style="padding:7px 10px">
+      <div class="row" id="k-open" style="display:none"><span>OPEN NOTE</span><span>O · CTRL-CLICK</span></div>
       <div class="row"><span>SEARCH</span><span>/</span></div>
       <div class="row"><span>MIND MAP</span><span>M · DBL-CLICK</span></div>
       <div class="row"><span>SPACESHIP</span><span>F</span></div>
       <div class="row"><span>STAND ON PLANET</span><span>V</span></div>
       <div class="row"><span>GENESIS · TWINS</span><span>G · N</span></div>
       <div class="row"><span>RIPPLE · POSTER</span><span>SPACE · P</span></div>
+      <div class="row"><span>RECORD CLIP</span><span>C</span></div>
       <div class="row"><span>LINK LAYER</span><span>L</span></div>
       <div class="row"><span>RESET · HIDE HUD</span><span>R · H</span></div>
       <div class="row"><span>DRAG / WHEEL</span><span>ORBIT · ZOOM</span></div>
@@ -719,6 +822,7 @@ body.ship #scanmsg{display:block}
         <div id="i-x"></div>
         <div id="i-links"></div>
         <div id="i-twins"></div>
+        <div class="mini host vio" id="i-open" style="margin-top:10px;display:none" data-i18n="insp.open">↗ 옵시디언에서 열기 [O]</div>
         <div class="mini am" id="i-go" style="margin-top:10px" data-i18n="insp.go">◎ 이동하기</div>
         <div class="mini" id="i-mm" data-i18n="insp.mm">◈ 마인드맵 열기 [M]</div>
         <div class="mini am" id="i-sky" data-i18n="insp.sky">⛰ 이 행성에 내려서기 [V]</div>
@@ -822,9 +926,12 @@ body.ship #scanmsg{display:block}
           <u id="mmz-fit" data-i18n-title="mm.fit.t" style="font-size:9px">⤢</u>
         </div>
         <div id="mmlegend">
+          <!-- the swatches carry the stroke as well as the colour now, because
+               the plate draws the stroke — a key that shows only half of what
+               distinguishes three things is a key you have to read twice -->
           <b><u style="background:#5cd8ff"></u><i data-i18n="leg.wiki" style="font-style:normal">위키링크</i></b>
-          <b><u style="background:#ff9d3c"></u><i data-i18n="leg.src" style="font-style:normal">출처</i></b>
-          <b><u style="background:#8b6bff"></u><i data-i18n="leg.tag" style="font-style:normal">태그공명</i></b>
+          <b><u style="background:repeating-linear-gradient(90deg,#ff9d3c 0 4px,transparent 4px 7px)"></u><i data-i18n="leg.src" style="font-style:normal">출처</i></b>
+          <b><u style="background:repeating-linear-gradient(90deg,#8b6bff 0 2px,transparent 2px 4px)"></u><i data-i18n="leg.tag" style="font-style:normal">태그공명</i></b>
           <b id="mmleg2" style="display:none"><u style="background:rgba(150,210,255,.4)"></u><i data-i18n="mm.hop2" style="font-style:normal">2홉</i></b>
         </div>
         <div id="mmhint" data-i18n="mm.hint">끌기 = 이동 · 놓으면 중력 복귀<br>더블클릭 = 중심 이동 · 휠 = 확대</div>
@@ -856,6 +963,7 @@ body.ship #scanmsg{display:block}
           <div id="mm-links"></div>
         </div>
         <div class="mmsec act">
+          <div class="mini host vio" id="mm-open" style="display:none" data-i18n="mm.open">↗ 옵시디언에서 열기</div>
           <div class="mini am" id="mm-go" data-i18n="mm.go">◎ 이 노드로 이동</div>
           <div class="mini" id="mm-center" data-i18n="mm.center">◈ 이 노드를 중심으로</div>
         </div>
@@ -954,6 +1062,16 @@ const STR = {
 'btn.post':    ['⤓ 포스터','⤓ POSTER','⤓ ポスター','⤓ 海报'],
 'btn.post.t':  ['HUD 없이 고해상도 PNG 저장 [P]','Save a high-resolution PNG with no HUD [P]',
                 'HUDなしで高解像度PNGを保存 [P]','保存无HUD的高分辨率PNG [P]'],
+'btn.vid':     ['⏺ 영상','⏺ CAPTURE','⏺ 動画','⏺ 录制'],
+'btn.vid.t':   ['HUD 없이 12초 영상 녹화 [C]','Record a 12-second clip with no HUD [C]',
+                'HUDなしで12秒の動画を録画 [C]','录制12秒无HUD视频 [C]'],
+'btn.vid.stop':['■ 정지','■ STOP','■ 停止','■ 停止'],
+'vid.rec':     ['녹화 중 · {s}초 남음','RECORDING · {s}s LEFT','録画中 · 残り{s}秒','录制中 · 剩余{s}秒'],
+'vid.ok':      ['영상 저장됨 · {s}','Clip saved · {s}','動画を保存 · {s}','视频已保存 · {s}'],
+'vid.fail':    ['이 브라우저는 영상 녹화를 지원하지 않습니다',
+                'This browser cannot record video',
+                'このブラウザは動画録画に対応していません',
+                '此浏览器不支持视频录制'],
 'btn.snd':     ['♪ 사운드','♪ SOUND','♪ サウンド','♪ 声音'],
 'btn.snd.t':   ['앰비언트 사운드 켜기 / 끄기 [U]','Ambient sound on / off [U]',
                 'アンビエントサウンド オン / オフ [U]','环境音效 开 / 关 [U]'],
@@ -997,6 +1115,19 @@ const STR = {
 'insp.ripple': ['◉ 여기서 파문 일으키기 [SPACE]','◉ RIPPLE FROM HERE [SPACE]',
                 '◉ ここから波紋 [SPACE]','◉ 从此处泛起涟漪 [SPACE]'],
 'insp.nobody': ['(본문 없음)','(no body text)','（本文なし）','（无正文）'],
+/* ---- the host (Obsidian) ----------------------------------------------
+   Only shown when a host has actually handed the engine a way to open a
+   note. Standalone, the page has no editor to open one in, and these rows
+   never appear. */
+'insp.open':   ['↗ 옵시디언에서 열기 [O]','↗ OPEN IN OBSIDIAN [O]',
+                '↗ Obsidianで開く [O]','↗ 在 Obsidian 中打开 [O]'],
+'mm.open':     ['↗ 옵시디언에서 열기','↗ OPEN IN OBSIDIAN','↗ Obsidianで開く','↗ 在 Obsidian 中打开'],
+'open.none':   ['먼저 노트를 선택하십시오','Select a note first','先にノートを選択してください','请先选择一篇笔记'],
+'open.fail':   ['그 노트를 열지 못했습니다','Could not open that note','そのノートを開けませんでした','无法打开该笔记'],
+'reveal.miss': ['그 노트는 지금 그려진 우주에 없습니다','That note is not in the cosmos on screen',
+                'そのノートは現在の宇宙にありません','该笔记不在当前绘制的宇宙中'],
+'sync.done':   ['볼트 갱신 · 노트 {n}개','Vault updated · {n} notes','ボルト更新 · ノート {n} 件','仓库已更新 · {n} 篇笔记'],
+'active.here': ['지금 편집 중인 노트','THE NOTE YOU ARE EDITING','編集中のノート','正在编辑的笔记'],
 'go.travel':   ['','◎ GO TO {n}','◎ {n} へ移動','◎ 前往 {n}'],
 'go.fly':      ['','◎ FLY TO {n}','◎ {n} へ飛行','◎ 飞往 {n}'],
 
@@ -1085,6 +1216,8 @@ const STR = {
                 'DRAG = MOVE · DOUBLE-CLICK = RECENTRE · WHEEL = ZOOM<br><b>← →</b> SELECT · <b>ENTER</b> CENTRE · <b>F</b> FIT · <b>2</b> 2 HOPS · <b>O</b> ORBITS',
                 'ドラッグ = 移動 · ダブルクリック = 中心移動 · ホイール = 拡大<br><b>← →</b> 選択 · <b>ENTER</b> 中心 · <b>F</b> フィット · <b>2</b> 2ホップ · <b>O</b> 公転',
                 '拖动 = 移动 · 双击 = 移动中心 · 滚轮 = 缩放<br><b>← →</b> 选择 · <b>ENTER</b> 居中 · <b>F</b> 适应 · <b>2</b> 二跳 · <b>O</b> 公转'],
+'mm.hintopen': ['<b>CTRL+ENTER</b> 노트 열기','<b>CTRL+ENTER</b> OPEN NOTE',
+                '<b>CTRL+ENTER</b> ノートを開く','<b>CTRL+ENTER</b> 打开笔记'],
 'mm.sec.conn': ['연결','CONNECTIONS','接続','连接'],
 'mm.sec.tags': ['태그','TAGS','タグ','标签'],
 'mm.sec.excerpt':['발췌','EXCERPT','抜粋','摘录'],
@@ -1228,6 +1361,115 @@ function setHosted(on) {
   ['b-load', 'hint', 'b-clear'].forEach(id => { $(id).style.display = 'none'; });
 }
 
+/* ---- what the host can do that this page cannot --------------------------
+   A cosmos you cannot leave is an ornament. Inside Obsidian every body on
+   screen is a note that can be opened, and that round trip — see it here,
+   read it there, come back — is the difference between a graph and a way of
+   working. The engine does not know what a workspace leaf is, so the host
+   hands it functions instead:
+
+     open(path, opts)   open this note in the editor
+     hover(path, ev,el) offer the host's own hover preview
+     active(path)       (host -> engine, see setActivePath)
+
+   Every one of them is optional. Standalone there is no host, `HOST.open` is
+   null, and the affordances that would promise an editor stay hidden rather
+   than being drawn and then doing nothing. */
+const HOST = { open:null, hover:null };
+function setHostHooks(h) {
+  HOST.open = h && typeof h.open === 'function' ? h.open : null;
+  HOST.hover = h && typeof h.hover === 'function' ? h.hover : null;
+  syncHostUI();
+}
+function canOpen() { return !!HOST.open; }
+function syncHostUI() {
+  const on = canOpen();
+  ['i-open', 'mm-open', 'k-open'].forEach(id => {
+    const el = $(id); if (el) el.style.display = on ? '' : 'none';
+  });
+}
+/* The path the host knows this note by. The layout drops a shared root folder
+   so paths read like the vault rather than like the disk, which makes `p`
+   the wrong string to hand back to something that has to find the file. */
+function hostPath(i) {
+  const nd = nodes && nodes[i];
+  return nd ? (nd.fp || nd.p) : '';
+}
+function openNote(i, ev) {
+  if (!canOpen()) return false;
+  if (i < 0 || i >= N) { toast(T('open.none')); return false; }
+  const mod = !!(ev && (ev.ctrlKey || ev.metaKey));
+  try {
+    HOST.open(hostPath(i), {
+      /* Ctrl/Cmd is "somewhere else" everywhere else in Obsidian, and adding
+         Shift to it is that same convention one step further out. */
+      newLeaf: mod, newWindow: mod && !!(ev && ev.shiftKey),
+    });
+  } catch (e) {
+    console.error('vault-orrery: host could not open note', e);
+    toast(T('open.fail'));
+    return false;
+  }
+  return true;
+}
+
+/* ---- finding a body by the name the host calls it ------------------------
+   Built on demand and thrown away whenever the cosmos is rebuilt, because a
+   map of stale indices is worse than no map: it points confidently at the
+   wrong planet. Both spellings go in — the full path the host uses and the
+   rooted-down one the HUD prints — and a lowercase pass is kept alongside so
+   that a host with different case conventions still lands on the note rather
+   than silently missing. */
+let pathIdx = null;
+function buildPathIdx() {
+  pathIdx = { exact: new Map(), lower: new Map() };
+  for (let i = 0; i < N; i++) {
+    const nd = nodes[i];
+    [nd.fp, nd.p].forEach(s => {
+      if (!s) return;
+      if (!pathIdx.exact.has(s)) pathIdx.exact.set(s, i);
+      const l = s.toLowerCase();
+      if (!pathIdx.lower.has(l)) pathIdx.lower.set(l, i);
+    });
+  }
+}
+function nodeByPath(p) {
+  if (!p || !N) return -1;
+  if (!pathIdx) buildPathIdx();
+  const s = String(p).replace(/\\/g, '/').replace(/^\.?\//, '');
+  if (pathIdx.exact.has(s)) return pathIdx.exact.get(s);
+  const l = s.toLowerCase();
+  if (pathIdx.lower.has(l)) return pathIdx.lower.get(l);
+  /* A vault whose notes all sit under one folder has that folder dropped from
+     the drawn paths, so try again without the host's leading segment. */
+  const cut = s.indexOf('/');
+  if (cut > 0) {
+    const tail = s.slice(cut + 1).toLowerCase();
+    if (pathIdx.lower.has(tail)) return pathIdx.lower.get(tail);
+  }
+  return -1;
+}
+/** Put the camera on the note the host names. Returns false if that note is
+    not in the cosmos on screen — excluded, or past the node ceiling — which
+    the host says out loud rather than leaving the view unchanged and mute. */
+function revealPath(p, opts) {
+  const i = nodeByPath(p);
+  if (i < 0) return false;
+  if (opts && opts.select === true) select(i); else focusNode(i, true);
+  return true;
+}
+
+/* ---- the note you are editing --------------------------------------------
+   Not the selection: the selection is where you are looking, and this is
+   where you are working. Both are shown at once and they are usually
+   different bodies — the whole point of a "you are here" marker is to keep
+   your place while you fly somewhere else. */
+let activePath = '', activeIdx = -1;
+function setActivePath(p) {
+  activePath = p ? String(p).replace(/\\/g, '/') : '';
+  activeIdx = activePath ? nodeByPath(activePath) : -1;
+}
+
 /* three.js is a hard dependency and its absence used to be a blank screen with
    a ReferenceError buried in the console. Say what is missing, and where. */
 if (typeof THREE === 'undefined') {
@@ -1266,33 +1508,60 @@ const bt = setInterval(() => {
 
 /* ================================================================ SETTINGS
    spd  orbital time · bri  node glow · ten  link tautness
+   arc  how high a link stands out of the orbital plane
    grv  how hard a dragged node is pulled home · str  background starfield
    thr  ship thrust · mmHop second hop in the mind map · mmOrb its orbits  */
-/* LINK GLOW used to run to 3.00×, and anywhere past about 1 the additive
-   line blending saturates to white and the cosmos turns into a wire ball.
-   The knob now tops out at 1.30 and rests at 0.70, which is where the links
-   read as light rather than as paint. */
-const LNK_MAX = 1.30;
+/* LINK GLOW used to run to 3.00×, then to 1.30×, and even 1.30 was a ceiling
+   worth nobody's while: additive line blending saturates to white well before
+   it, so the whole top third of the knob bought glare rather than glow. The
+   floor is the useful end and is left alone — OFF at zero, and every step up
+   from it still reads — while the top now stops at 0.85. The rest position
+   stays at 0.70, so nothing anyone is already looking at changes. */
+const LNK_MAX = 0.85;
 /* maxNodes is a performance ceiling, not a preference: a five-thousand-note
    vault running a spring simulation and four thousand instanced bodies will
    crawl on an integrated GPU. 3000 is where this stays comfortably interactive
    on a laptop; the slider goes to NO LIMIT for anyone who wants to find their
    own edge. */
 const MAX_NODES_CEIL = 10000;
-const SET_DEF = { spd:1, bri:1, ten:.5, grv:1, str:1, thr:1,
-                  lnk:.7, spr:1, mmHop:false, mmOrb:true, snd:false,
-                  maxNodes:3000 };
+/* TENSION and ARC HEIGHT were one knob, and they are two questions. Tension
+   is how much curve there is at all; arc height is how much of that curve
+   stands up out of the plane the bodies orbit in rather than lying flat
+   inside it. Sharing a control meant you could not have a taut link that
+   still arched, or a slack one that stayed low, and the flat-looking default
+   was nobody's choice — it was the one shape the single knob could make. */
+const ARC_MAX = 2.50;
+const BLM_MAX = 1.50;
+const SET_DEF = { spd:1, bri:1, ten:.5, arc:1, grv:1, str:1, thr:1,
+                  lnk:.7, spr:1, gap:1, age:.6, trl:.7, blm:.6,
+                  mmHop:false, mmOrb:true, snd:false,
+                  adv:false, legFold:false, keysFold:false, maxNodes:3000 };
 const SET = Object.assign({}, SET_DEF);
 try { Object.assign(SET, JSON.parse(localStorage.getItem('orrery2.set') || '{}')); } catch(e){}
 /* a value saved back when the slider still went to 3× has to be pulled in,
    or the old setting survives the change that was meant to remove it */
 SET.lnk = clamp(+SET.lnk || 0, 0, LNK_MAX);
+/* ARC HEIGHT is new, so every settings blob written before today is missing
+   it. `+undefined || 0` would read that absence as a deliberate zero and lay
+   every link flat for exactly the people who never asked for it — so a value
+   that is not a number falls back to the default rather than to the floor. */
+SET.arc = Number.isFinite(+SET.arc) ? clamp(+SET.arc, 0, ARC_MAX) : SET_DEF.arc;
+/* same trap as ARC HEIGHT, three more times: a blob written before today has
+   none of these keys, and reading the absence as a zero would ship the new
+   look switched off to exactly the people who never chose that */
+SET.age = Number.isFinite(+SET.age) ? clamp(+SET.age, 0, 1)       : SET_DEF.age;
+SET.trl = Number.isFinite(+SET.trl) ? clamp(+SET.trl, 0, 1)       : SET_DEF.trl;
+SET.blm = Number.isFinite(+SET.blm) ? clamp(+SET.blm, 0, BLM_MAX) : SET_DEF.blm;
 function saveSet(){ try { localStorage.setItem('orrery2.set', JSON.stringify(SET)); } catch(e){} }
 
 let toastT = 0;
-function toast(msg) {
+/* The duration is a parameter now because one caller genuinely needs a
+   different one: a recording counting itself down wants each second to
+   replace the last without the message blinking out in between. */
+function toast(msg, ms) {
   const t = $('toast');
-  t.textContent = msg; t.classList.add('on'); toastT = performance.now() + 1300;
+  t.textContent = msg; t.classList.add('on');
+  toastT = performance.now() + (ms || 1300);
 }
 
 /* ================================================================== LAYOUT
@@ -1302,26 +1571,95 @@ function toast(msg) {
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, coreIdx,
-    spiralOf, datedOrder, P, RAD, COL, orb, catOf, alpha, edgeCache, SHELL_R, adj, hayOf,
+    spiralOf, datedOrder, P, RAD, COL, COLB, orb, catOf, alpha, edgeCache, SHELL_R, adj, hayOf,
     bornAt, freshMark, tagIdx,
     genT, genE, genOrder, genScale, ripN,
     DSP, DVL, PULL, linkProg, ringRadii = [],
     starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, sunObj,
+    starCore, starShell, starRing, starAlC, starAlS, starAlR,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
     EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
+    trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
-    selRig, selRing, selRing2, selCage, hovRig, labels;
+    selRig, selRing, selRing2, selCage, hovRig, actRig, actRing, actRing2, actPip,
+    ringMesh, ringIdx = [], ringQ = [], ringK = null, labels;
 let world = null;
 
 const ORIGIN = { pos: new THREE.Vector3(0,0,0) };
 let SPIRAL = { r0:1010, dr:430, a0:1.2, da:0.108 };
-/* Samples per link. Nine draws a visibly smooth sag on the dozen-edge vaults
-   this was tuned on; on a seven-thousand-edge one it is a hundred and fifteen
-   thousand floats rewritten and re-uploaded every frame for a curve two
-   pixels tall. Set from the edge count in buildObjects, before the buffers
-   that depend on it are allocated. */
+
+/* ---------------------------------------------------------- ORBIT GAP
+   What the knob was set to when the layout was computed, plus just enough of
+   the layout's own arithmetic to work out what any other setting would have
+   produced. The knob used to rebuild the cosmos on release, which meant the
+   one control whose whole subject is *space between things* showed its
+   effect as a cut. Everything the gap touches is linear in the gap, so the
+   frame can carry it instead: gapNow is a spring chasing SET.gap, and
+   updatePositions widens the orbits from it every tick. The knob is a
+   breath now, not an edit.
+
+     GAPL.rg    the ring spacing the layout was actually built at
+     GAPL.step  RING_STEP, which the layout owns and this cannot see
+     GAPL.cats  each system's reach as (fixed part, per-gap part)
+     gapSys     how far the whole ring structure has moved from that
+   Per-planet widening is not the same number — a system's inner clearance
+   is set by the size of its star and does not scale — so each orbit carries
+   its own reference and is stretched from there. */
+let GAPL = { gap:1, rg:1, step:34, cats:[] };
+let gapNow = 1, gapVel = 0, gapSys = 1;
+function ringGapFor(g) {
+  let mx = 60;
+  for (let k=0;k<GAPL.cats.length;k++){
+    const c = GAPL.cats[k], r = c.a + c.b * g;
+    if (r > mx) mx = r;
+  }
+  return Math.max((mx * 2.3 + 40) * 0.92, 150);
+}
+/* Underdamped on purpose: ζ ≈ 0.66, so the cosmos overshoots by a few per
+   cent and settles back. A pure lerp arrives and stops, which reads as a
+   value being applied; the overshoot reads as mass being moved. */
+function gapStep(dt) {
+  const want = SET.gap;
+  if (gapNow === want && gapVel === 0) return;
+  const h = Math.min(0.05, dt);
+  gapVel += (want - gapNow) * 42 * h - gapVel * 8.6 * h;
+  gapNow += gapVel * h;
+  if (Math.abs(want - gapNow) < 0.0005 && Math.abs(gapVel) < 0.003) {
+    gapNow = want; gapVel = 0;
+  }
+  gapSys = ringGapFor(gapNow) / (GAPL.rg || 1);
+}
+/* Samples per link — now a *ceiling*, not a count. Nine draws a visibly
+   smooth sag on the dozen-edge vaults this was tuned on; on a seven-thousand
+   edge one it is a hundred and fifteen thousand floats rewritten and
+   re-uploaded every frame for a curve two pixels tall. Set from the edge
+   count in buildObjects, before the buffers that depend on it are allocated.
+
+   The edge count is the wrong question to answer on its own, though. What a
+   curve needs is set by how big it is *on screen*: the same link wants twelve
+   samples with the camera on top of it and three from across the vault, and
+   standing the arcs up made both ends of that more extreme. So the buffer is
+   sized for the worst case here and writeLinks spends per edge, from the
+   projected height of that edge's own arc. See segFor(). */
 let SEG = 9;
+/* Samples for an arc whose sagitta covers `px` pixels, at roughly a third of
+   a pixel of chord error — the point where a polyline stops being tellable
+   from a curve. Error for a quadratic bezier split into n falls as 1/n², so
+   the count goes as the square root and a curve ten times bigger costs three
+   times more rather than ten. Two is the floor: one straight segment, which
+   is all a link the size of a full stop can use. */
+function segFor(px, cap) {
+  if (!(px > 0.6)) return 2;
+  const n = 1 + Math.ceil(Math.sqrt(px * 3));
+  return n < 2 ? 2 : n > cap ? cap : n;
+}
 const PULSE = 260;                               // travelling data pulses
+/* Orbit trails. Module scope rather than beside the buffers they size, because
+   the frame loop and the budget readout both ask about them and buildObjects
+   is not somewhere either of those can see. */
+const TRAIL_CAP = 300;      // bodies that may carry one
+const TRAIL_SEG = 9;        // samples per trail, so eight drawn segments
+const TRAIL_SWEEP = 0.16;   // how far back it reaches, in orbital radians
 const EDGE_TINT = [ new THREE.Color(0x53d8ff), new THREE.Color(0xff9d3c),
                     new THREE.Color(0x8b6bff) ];
 const LAYERS = [
@@ -1365,6 +1703,131 @@ const GEN_BODY0 = 0.10, GEN_BODY1 = 0.93;   // the window bodies are born in
 /* palette ------------------------------------------------------------- */
 const WIKI_HUES = [188, 172, 202, 158, 214, 144, 226, 196, 168, 208, 180];
 function hsl(h, s, l) { return new THREE.Color().setHSL(h/360, s, l); }
+
+/* ---- what a star is actually the colour of ------------------------------
+   The sky used to be built out of the same cyan the HUD is drawn in, at half
+   saturation, and that is the single thing that made this read as science
+   fiction rather than as space: real stars are not teal. Their colour is a
+   consequence of their temperature and nothing else, and it runs along one
+   narrow line — blue-white, white, cream, amber, orange. There is no green
+   star and no cyan one, because the eye integrates a blackbody curve that
+   peaks in the green into white.
+
+   These are the standard B–M sRGB values, and the whole visible range is
+   contained between them. Note how little colour there is in any of them:
+   the most extreme star in the sky is less saturated than the faintest chip
+   on the control deck. */
+const STAR_TEMPS = [
+  [0.61, 0.69, 1.00],   // B  — blue-white
+  [0.79, 0.85, 1.00],   // A  — white with a blue cast
+  [0.97, 0.97, 1.00],   // F  — white
+  [1.00, 0.96, 0.90],   // G  — the sun, cream
+  [1.00, 0.83, 0.64],   // K  — amber
+  [1.00, 0.72, 0.46],   // M  — orange
+];
+/* ---- age as colour temperature ----
+   The starfield has been coloured by stellar temperature since v1, and the
+   notes have not been coloured by anything but their folder. Which is a waste
+   of a ramp that is already here and already reads correctly to anyone who
+   has ever looked up: blue-white is hot, orange is cool, and "hot off the
+   press" is the same metaphor in a different register. So a note's age rides
+   the same scale — this year's writing burns blue, the oldest notes in the
+   vault have cooled to amber — and the vault's history becomes something you
+   can see across the room rather than something you read off a label.
+
+   Mixed *into* the folder colour rather than replacing it, at a strength the
+   knob sets, because the folder colour is what the legend promises and the
+   legend has to stay true. At the default third the hue is still recognisably
+   the folder's; at 1.00 age wins and the legend becomes a rough guide.
+
+   An undated note is left alone entirely. Tinting it would be inventing a
+   date, and the vaults where this matters most are exactly the ones with a
+   lot of undated material in them. */
+/* A white balance, not a wash.
+
+   The first version of this mixed each note's colour *toward* the temperature
+   colour. It reads correctly on paper and is nearly invisible on screen, for
+   a reason that only shows up once you look at it: the middle of the ramp is
+   cream, so most of the vault — everything that is neither the oldest nor the
+   newest — was being mixed toward white, and mixing cyan toward white gives
+   you slightly paler cyan. The ends worked. The eighty per cent in between
+   did nothing, which is the part that had to carry the reading.
+
+   Dividing the temperature by the middle of its own ramp turns it into a
+   multiplier instead: neutral for a note from the middle of the vault's life,
+   warm for old ones, cool for new ones. That is what a camera does about
+   colour temperature, and it moves every note rather than only the extremes
+   while leaving the folder's hue recognisably itself.
+
+   It cannot turn a saturated cyan into amber, and it should not: the folder
+   colour is what the legend promises. What it can do is make two notes from
+   the same folder ten years apart plainly different, which is the question
+   this was added to answer. The knob goes to 1.00 for anyone who wants the
+   date to shout rather than speak. */
+const AGE_NEUTRAL = STAR_TEMPS[3];      // the G row: the sun, cream
+function applyAgeTint() {
+  if (!N || !COLB) return;
+  const span = GEN.hi - GEN.lo;
+  const k = clamp(SET.age, 0, 1);
+  const c = new THREE.Color();
+  for (let i=0;i<N;i++){
+    const b0 = COLB[i*3], b1 = COLB[i*3+1], b2 = COLB[i*3+2];
+    /* the hub is the vault itself, not a note in it, and it has a colour of
+       its own that means "this is the centre" */
+    if (k <= 0.001 || i === coreIdx || !bornAt[i] || span <= 0) {
+      COL[i*3] = b0; COL[i*3+1] = b1; COL[i*3+2] = b2;
+      continue;
+    }
+    /* 0 at the newest note in the vault, 1 at the oldest — which is the
+       direction STAR_TEMPS already runs in */
+    starColor(1 - (bornAt[i] - GEN.lo) / span, c);
+    const mr = lerp(1, c.r / AGE_NEUTRAL[0], k);
+    const mg = lerp(1, c.g / AGE_NEUTRAL[1], k);
+    const mb = lerp(1, c.b / AGE_NEUTRAL[2], k);
+    COL[i*3]   = clamp(b0 * mr, 0, 1);
+    COL[i*3+1] = clamp(b1 * mg, 0, 1);
+    COL[i*3+2] = clamp(b2 * mb, 0, 1);
+  }
+}
+/* the knob moves after the buffers are built, so the buffers have to be told */
+function recolour() {
+  applyAgeTint();
+  if (!N) return;
+  if (bodies && bodies.instanceColor) {
+    for (let i=0;i<N;i++) bodies.setColorAt(i, _tmpCol.setRGB(COL[i*3], COL[i*3+1], COL[i*3+2]));
+    bodies.instanceColor.needsUpdate = true;
+  }
+  if (nodeGlow && gCl) {
+    for (let i=0;i<N*3;i++) gCl[i] = COL[i];
+    nodeGlow.geometry.attributes.aColor.needsUpdate = true;
+  }
+  /* the ring a heavily cited note wears is struck from its own colour */
+  if (ringMesh && ringMesh.instanceColor) {
+    ringIdx.forEach((i, k2) => ringMesh.setColorAt(k2, _tmpCol.setRGB(
+      lerp(COL[i*3], 1, .30), lerp(COL[i*3+1], 1, .30), lerp(COL[i*3+2], 1, .30))));
+    ringMesh.instanceColor.needsUpdate = true;
+  }
+  /* The legend is not redrawn, and should not be: its swatches are the folder
+     colours, one per system, and the tint is a per-note thing mixed on top of
+     them. A legend that drifted with the knob would stop being the key to
+     anything. */
+}
+const _tmpCol = new THREE.Color();
+function starColor(u, out) {
+  const x = clamp(u, 0, 1) * (STAR_TEMPS.length - 1);
+  const i = Math.min(STAR_TEMPS.length - 2, Math.floor(x)), f = x - i;
+  const a = STAR_TEMPS[i], b = STAR_TEMPS[i + 1];
+  return (out || new THREE.Color()).setRGB(
+    lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(a[2], b[2], f));
+}
+/* The mix a dark sky shows. Most stars in the galaxy are cool red dwarfs and
+   almost none of them are visible; what is visible skews hot, so the draw is
+   weighted toward the white end with a real tail into amber. */
+function starTemp() {
+  const r = Math.random();
+  return r < 0.62 ? (r / 0.62) * 0.52
+                  : 0.52 + Math.pow((r - 0.62) / 0.38, 1.6) * 0.48;
+}
 const RAW_YEAR_COLOR = {
   2022: hsl(18, .85, .52), 2023: hsl(30, .88, .55), 2024: hsl(41, .92, .57),
   2025: hsl(50, .90, .60), 2026: hsl(58, .85, .64), 0: hsl(258, .45, .58)
@@ -1469,15 +1932,33 @@ for (let i=0;i<N;i++){
    them, then fill ring by ring with as many as the circumference takes. The
    whole thing scales with the vault instead of with a hard-coded constant —
    eight folders make a tight cosmos, eighty make a wide one. */
+/* How much room one orbit ring gets. This is the number the ORBIT GAP knob
+   scales, and it is the one measurement the whole layout is built out of: a
+   system's reach is its ring count times this, the clearance between systems
+   is sized from the widest reach, and the concentric rings the systems sit on
+   are sized from that clearance. Widen the orbits and everything else moves
+   out of the way by itself — which is the only way a spacing control can work
+   without systems growing into each other.
+
+   26 was too tight even before the planets started wearing rings. */
+const RING_STEP = 34;
 wikiCats.forEach(c => {
   c.R = 5.5 + Math.sqrt(c.n) * 1.7;                 // the star itself
   c.planets = planetsIn[c.key] || 0;
   c.orbRings = Math.max(1, Math.ceil(c.planets / 6));
-  c.reach = c.R * 3.2 + c.orbRings * 26 + 16;       // outermost planet orbit
+  c.reach = c.R * 3.2 + c.orbRings * RING_STEP * SET.gap + 16;   // outermost orbit
 });
 const maxReach = wikiCats.length ? Math.max.apply(null, wikiCats.map(c => c.reach)) : 60;
 const sep = maxReach * 2.3 + 40;                    // centre-to-centre clearance
 const ringGap = Math.max(sep * 0.92, 150);
+/* The reference the live ORBIT GAP spring stretches everything from. Note
+   that a ring's capacity is floor(TAU*r/sep) and both r and sep are
+   proportional to this number — so widening the gap moves every ring out
+   without changing which systems sit on which, which is why this can be a
+   scale factor in the frame rather than a rebuild. */
+GAPL = { gap: SET.gap, rg: ringGap, step: RING_STEP,
+         cats: wikiCats.map(c => ({ a: c.R * 3.2 + 16, b: c.orbRings * RING_STEP })) };
+gapNow = SET.gap; gapVel = 0; gapSys = 1;
 
 let placed = 0, ringNo = 0, ringOuter = ringGap;
 while (placed < wikiCats.length) {
@@ -1616,7 +2097,10 @@ for (let i = 0; i < N; i++) {
       r: inner + (ring + 0.5) * step + (slot%2) * step * 0.16,
       ph: slot/6*TAU + ring*0.62,
       sp: 0.00022 / (1 + ring*0.42) * (ring%2 ? -1 : 1),
-      inc: 0.13 + ring*0.10, y: (slot%3-1)*4
+      inc: 0.13 + ring*0.10, y: (slot%3-1)*4,
+      /* what the live gap spring stretches: the clearance around the star
+         stays, the room between the rings is what moves */
+      inner, step0: step, gapA: step - RING_STEP * SET.gap
     };
     col.toArray(COL, i*3);
   } else if (parentOf[i] >= 0) {
@@ -1692,6 +2176,10 @@ for (let i=0;i<N;i++) if (bornAt[i]) {
 if (!isFinite(GEN.lo)) { GEN.lo = 0; GEN.hi = 0; }
 GEN.dated = 0;
 for (let i=0;i<N;i++) if (bornAt[i]) GEN.dated++;
+/* the folder colours as built, before the age tint is mixed into them, so the
+   knob can be turned back down as well as up */
+COLB = COL.slice();
+applyAgeTint();
 GEN.u = 0; GEN.play = false; GEN.stage = -1; GEN.marksFor = null;
 
 /* ---- the formation schedule -----------------------------------------
@@ -1798,6 +2286,190 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false,
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setClearColor(0x02040a, 1);
 renderer.outputEncoding = THREE.sRGBEncoding;
+/* three zeroes its counters at the top of every render() call, which was fine
+   while a frame was one call and became a lie the moment the bloom chain made
+   it nine: the readout ended up describing whichever pass happened to be last
+   rather than the frame. Reset once a frame instead, in renderFrame, so DRAW
+   CALLS means the frame's draw calls again — bloom passes included, which is
+   the honest way to show what the effect costs. */
+renderer.info.autoReset = false;
+
+/* ======================================================== BLOOM
+   Everything that glows in here glowed by drawing a soft sprite behind it —
+   which puts a halo on the thing, and only on the thing. Real light does not
+   stop at the object: it spills into the lens, washes across whatever is next
+   to it, and turns a bright point into something the eye reads as *bright*
+   rather than as a pale pixel. Without that the core sun is a white disc and
+   a star system is a small hard dot, and no amount of additive sprite fixes
+   it, because the sprite is still bounded by the object it belongs to.
+
+   Written by hand rather than assembled from three's postprocessing examples.
+   That chain is five more files to vendor, licence and keep in step with a
+   pinned r128, for a bright-pass, two blurs and a composite — which is all
+   this is, and all of it is shorter than the wiring would have been.
+
+   The passes:
+     scene  -> RT0        the frame, in linear light, at half a pixel each way
+     RT0    -> BLUR_A     bright pass and downsample in one go
+     BLUR_A -> BLUR_B     horizontal gaussian
+     BLUR_B -> BLUR_A     vertical gaussian
+     RT0+A  -> canvas     add, then encode to sRGB
+
+   The encoding is the part that quietly ruins this, and it took two wrong
+   answers to get right. r128 picks a shader's output encoding from
+   `renderTarget.texture.encoding` when it is drawing to a target and from
+   `renderer.outputEncoding` when it is drawing to the canvas. Doing the sRGB
+   conversion by hand in the composite came out twice as bright as the plain
+   path; leaving it out came out half as bright. Neither, because the scene is
+   drawn by a mix of stock materials — which apply whatever encoding they are
+   told to — and hand-written ShaderMaterials like the glow points, which
+   include no encoding chunk and so apply none either way. No single
+   correction at the end can be right for both halves of that.
+
+   So the target is simply told to encode the way the canvas does. Then every
+   material behaves in the offscreen pass exactly as it did before, RT0 holds
+   what the canvas would have held, and the composite adds and passes through
+   without touching a curve. At zero bloom the two paths are identical, which
+   is a property that can be measured rather than argued about — and it was.
+
+   The cost is that the blur runs on encoded values instead of linear light,
+   which is not what a lens does. It is what most real-time bloom does, the
+   bright pass has already thrown away everything but the top of the range
+   where the two spaces are closest, and this is a look rather than a
+   simulation. Predictable beats principled here. */
+const BLOOM = {
+  ok: false, rt: null, a: null, b: null,
+  bright: null, blur: null, comp: null,
+  quad: null, cam: null, scene: null, w: 0, h: 0
+};
+const FS_V = `
+varying vec2 vUv;
+void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
+/* Bright pass. The knee is soft on purpose: a hard cut at a threshold makes
+   anything crossing it pop, so a body drifting into the light strobes. */
+const BRIGHT_F = `
+uniform sampler2D tSrc; uniform float uThresh; uniform float uKnee;
+varying vec2 vUv;
+void main(){
+  vec3 c = texture2D(tSrc, vUv).rgb;
+  float l = max(c.r, max(c.g, c.b));
+  float k = smoothstep(uThresh, uThresh + uKnee, l);
+  gl_FragColor = vec4(c * k, 1.0);
+}`;
+/* Nine taps, separable, on the linear-sampling hardware — so the five offsets
+   below buy nine samples' worth of blur for five fetches. */
+const BLUR_F = `
+uniform sampler2D tSrc; uniform vec2 uDir;
+varying vec2 vUv;
+void main(){
+  vec3 s = texture2D(tSrc, vUv).rgb * 0.2270270270;
+  s += texture2D(tSrc, vUv + uDir * 1.3846153846).rgb * 0.3162162162;
+  s += texture2D(tSrc, vUv - uDir * 1.3846153846).rgb * 0.3162162162;
+  s += texture2D(tSrc, vUv + uDir * 3.2307692308).rgb * 0.0702702703;
+  s += texture2D(tSrc, vUv - uDir * 3.2307692308).rgb * 0.0702702703;
+  gl_FragColor = vec4(s, 1.0);
+}`;
+const COMP_F = `
+uniform sampler2D tScene; uniform sampler2D tBloom; uniform float uAmt;
+varying vec2 vUv;
+void main(){
+  /* no curve applied either way: RT0 was written in the canvas's own encoding
+     and this is on its way straight back to the canvas */
+  gl_FragColor = vec4(texture2D(tScene, vUv).rgb +
+                      texture2D(tBloom, vUv).rgb * uAmt, 1.0);
+}`;
+function bloomInit() {
+  if (BLOOM.scene) return;
+  const mk = f => new THREE.ShaderMaterial({ vertexShader: FS_V, fragmentShader: f,
+    depthTest:false, depthWrite:false, uniforms:{} });
+  BLOOM.bright = mk(BRIGHT_F);
+  /* The threshold is in the canvas's own encoding, not in linear light, since
+     that is what RT0 holds. Half-bright is where a note stops being a lit
+     surface and starts being a source; the knee is wide so nothing crossing
+     it pops, which on an orrery full of things drifting through highlights
+     would be a scene that strobes. */
+  BLOOM.bright.uniforms = { tSrc:{value:null}, uThresh:{value:0.48}, uKnee:{value:0.40} };
+  BLOOM.blur = mk(BLUR_F);
+  BLOOM.blur.uniforms = { tSrc:{value:null}, uDir:{value:new THREE.Vector2()} };
+  BLOOM.comp = mk(COMP_F);
+  BLOOM.comp.uniforms = { tScene:{value:null}, tBloom:{value:null}, uAmt:{value:0.6} };
+  BLOOM.quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), BLOOM.bright);
+  BLOOM.quad.frustumCulled = false;
+  BLOOM.scene = new THREE.Scene();
+  BLOOM.scene.add(BLOOM.quad);
+  BLOOM.cam = new THREE.Camera();
+}
+function bloomSize(w, h) {
+  bloomInit();
+  if (BLOOM.w === w && BLOOM.h === h && BLOOM.rt) return;
+  [BLOOM.rt, BLOOM.a, BLOOM.b].forEach(r => { if (r) r.dispose(); });
+  const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+                format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false };
+  /* Eight bits, and sRGB — the canvas's own format, which is the point: the
+     bytes in here are the bytes that would have been on screen. Half float
+     would buy precision the plain path never had, and buy it at the price of
+     the identity that makes this safe. */
+  BLOOM.rt = new THREE.WebGLRenderTarget(w, h, opt);
+  BLOOM.rt.texture.encoding = THREE.sRGBEncoding;
+  const hw = Math.max(1, w >> 1), hh = Math.max(1, h >> 1);
+  BLOOM.a = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.b = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.w = w; BLOOM.h = h;
+  BLOOM.ok = true;
+}
+function bloomPass(mat, target) {
+  BLOOM.quad.material = mat;
+  renderer.setRenderTarget(target);
+  renderer.clear();
+  renderer.render(BLOOM.scene, BLOOM.cam);
+}
+/* The one place the frame is drawn. Every caller — the loop, the poster —
+   goes through here so that what is saved is what was on screen. */
+function renderFrame() {
+  renderer.info.reset();
+  const amt = SET.blm;
+  if (amt <= 0.02 || !BLOOM.ok) {
+    renderer.setRenderTarget(null);
+    renderer.render(scene, camera);
+    return false;
+  }
+  renderer.setRenderTarget(BLOOM.rt);
+  renderer.clear();
+  renderer.render(scene, camera);
+  /* the surface you are standing on belongs in the bloom too, or the ground
+     is the one thing in frame that light does not touch */
+  if (SKY.on) { renderer.autoClear = false; renderer.clearDepth();
+                renderer.render(stageScene, stageCam); renderer.autoClear = true; }
+
+  BLOOM.bright.uniforms.tSrc.value = BLOOM.rt.texture;
+  bloomPass(BLOOM.bright, BLOOM.a);
+  /* Three widening passes rather than one.
+     A single nine-tap blur reaches about five pixels, and five pixels of
+     spread is a soft edge, not a glow — the light has to travel far enough to
+     land on things that are not the source before anyone reads it as light.
+     Chaining blurs multiplies their kernels, so stepping the offset out 1, 3,
+     7 builds a wide falloff with a bright centre for six half-resolution
+     passes, which is nothing on any GPU that got this far. */
+  const hw = BLOOM.a.width, hh = BLOOM.a.height;
+  const steps = [1, 3, 7];
+  for (let k = 0; k < steps.length; k++) {
+    const r = steps[k];
+    BLOOM.blur.uniforms.tSrc.value = BLOOM.a.texture;
+    BLOOM.blur.uniforms.uDir.value.set(r/hw, 0);
+    bloomPass(BLOOM.blur, BLOOM.b);
+    BLOOM.blur.uniforms.tSrc.value = BLOOM.b.texture;
+    BLOOM.blur.uniforms.uDir.value.set(0, r/hh);
+    bloomPass(BLOOM.blur, BLOOM.a);
+  }
+
+  BLOOM.comp.uniforms.tScene.value = BLOOM.rt.texture;
+  BLOOM.comp.uniforms.tBloom.value = BLOOM.a.texture;
+  BLOOM.comp.uniforms.uAmt.value = amt;
+  BLOOM.quad.material = BLOOM.comp;
+  renderer.setRenderTarget(null);
+  renderer.render(BLOOM.scene, BLOOM.cam);
+  return true;                      // the ground is already in the composite
+}
 
 const scene = new THREE.Scene();
 /* thinner fog than v1: at ship speeds a heavy exponential fog turns the far
@@ -1917,27 +2589,36 @@ function pointsFrom(n, fill, mat) {
 }
 
 /* ---------- deep starfield ----------
-   Three populations now. The faint field carries almost no scintillation —
-   v1 ran every one of eight thousand stars at full twinkle and the result
-   read as static rather than as sky. Only the sparse bright foreground
-   shimmers, which is also how the real thing looks.                     */
+   Three populations, coloured by temperature (see starColor) rather than by
+   the interface's palette.
+
+   Almost no scintillation, and that is deliberate rather than a saving.
+   Twinkling is atmosphere: it is what a column of moving air does to a point
+   source, and it is the reason a star seen from a planet shivers and a star
+   seen from orbit does not. Every photograph taken from above the atmosphere
+   shows steady points. What those photographs do show is the four-pointed
+   spike on the brightest stars — that is the camera's own diffraction, not
+   the sky's, and it is left on here for the same reason it is left in the
+   photographs: it is how a bright star reads as bright.                  */
 const SKY_R = 14000;                       // far enough that the ship never
                                            // outruns the background
 let starFieldObj = null, brightStarObj = null, nebulaObj = null,
     milkyObj = null, dustObj = null, coronaObj = null;
 
-starFieldObj = pointsFrom(9000, (i, pos, sz, cl, al) => {
+starFieldObj = pointsFrom(13000, (i, pos, sz, cl, al) => {
   const r = SKY_R * (0.62 + Math.random()*0.38);
   const th = Math.random()*TAU, ph = Math.acos(2*Math.random()-1);
   pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
   pos[i*3+1] = r*Math.cos(ph)*.62;
   pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
-  sz[i] = (1.0 + Math.random()*3.0) * 2.4;
-  al[i] = .16 + Math.random()*.42;
-  const warm = Math.random() < 0.16;      // starlight is not all one colour
-  hsl(warm ? 24 + Math.random()*26 : 190 + Math.random()*70,
-      warm ? .55 : .42, .70 + Math.random()*.22).toArray(cl, i*3);
-}, glowMat(700, 0.10, 0, true));
+  /* A steep magnitude distribution: a very few bright, a great many at the
+     edge of visible. A flat one gives an evenly speckled dome, which is what
+     a starfield looks like when it is drawn rather than observed. */
+  const m = Math.pow(Math.random(), 1.9);
+  sz[i] = (0.8 + m * 3.6) * 2.4;
+  al[i] = .24 + m * .72;
+  starColor(starTemp()).toArray(cl, i*3);
+}, glowMat(700, 0.02, 0, true));
 
 brightStarObj = pointsFrom(150, (i, pos, sz, cl, al) => {
   const r = SKY_R * (0.70 + Math.random()*0.30);
@@ -1945,18 +2626,26 @@ brightStarObj = pointsFrom(150, (i, pos, sz, cl, al) => {
   pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
   pos[i*3+1] = r*Math.cos(ph)*.66;
   pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
-  sz[i] = (7 + Math.random()*13) * 2.4;
-  al[i] = .45 + Math.random()*.45;
-  const warm = Math.random() < 0.3;
-  hsl(warm ? 30 + Math.random()*22 : 196 + Math.random()*54, .5, .82).toArray(cl, i*3);
-}, glowMat(700, 0.38, 1, true));
+  sz[i] = (6 + Math.random()*12) * 2.4;
+  al[i] = .40 + Math.random()*.42;
+  starColor(starTemp()).toArray(cl, i*3);
+}, glowMat(700, 0.05, 1, true));
 
 /* ---------- the milky way ----------
    A band of unresolved stars along one great circle, tilted off the orbital
    plane. It costs one draw call and it is most of what makes the sky read
-   as a galaxy you are inside rather than as a sphere of scattered dots. */
+   as a galaxy you are inside rather than as a sphere of scattered dots.
+
+   Three things separate the real band from a bright smear, and all three are
+   here. It is brightest in one direction — the core, which is a bulge and not
+   a uniform ring. It is cut lengthwise by a dark rift, which is not empty sky
+   but dust in the way, and which is the detail every photograph of the band
+   is really showing. And it is warm rather than blue: what you are looking at
+   is billions of unresolved stars averaged together, and that average is the
+   colour of an old population, closer to cream than to white. */
 const MW_TILT = 0.42, MW_ROLL = 1.1;
-milkyObj = pointsFrom(7000, (i, pos, sz, cl, al) => {
+const MW_CORE = 2.10;                      // the direction the bulge lies in
+milkyObj = pointsFrom(9000, (i, pos, sz, cl, al) => {
   const a = Math.random()*TAU;
   /* concentrate toward the galactic equator, with a fat tail */
   const b = (Math.random()+Math.random()+Math.random()-1.5) * 0.30;
@@ -1968,9 +2657,20 @@ milkyObj = pointsFrom(7000, (i, pos, sz, cl, al) => {
   const x2 = x*Math.cos(MW_ROLL) - y1*Math.sin(MW_ROLL);
   const y2 = x*Math.sin(MW_ROLL) + y1*Math.cos(MW_ROLL);
   pos[i*3] = x2; pos[i*3+1] = y2; pos[i*3+2] = z1;
-  sz[i] = (2.2 + Math.random()*9) * 2.4;
-  al[i] = .020 + Math.random()*.055;
-  hsl(196 + Math.random()*54, .34, .72 + Math.random()*.2).toArray(cl, i*3);
+  sz[i] = (2.0 + Math.random()*8) * 2.4;
+
+  /* the bulge: an angular distance from one direction, falling off smoothly,
+     so the band has a somewhere it comes from */
+  let da = Math.abs(a - MW_CORE) % TAU; if (da > Math.PI) da = TAU - da;
+  const bulge = 1 + 2.2 * Math.exp(-(da*da) / (2 * 0.85 * 0.85));
+  /* the rift: a lane of dust lying along the band, wandering a little rather
+     than ruled straight, blocking most of the light behind it */
+  const lane = Math.sin(a*1.7 + 0.6) * 0.048 + Math.sin(a*3.9) * 0.018;
+  const dust = Math.exp(-Math.pow((b - lane) / 0.062, 2)) * (0.62 + 0.30*Math.sin(a*2.6 + 1.1));
+  al[i] = (.022 + Math.random()*.052) * bulge * Math.max(0.12, 1 - dust);
+
+  /* an old, unresolved population: cream, and never blue */
+  starColor(0.30 + Math.random()*0.45).toArray(cl, i*3);
 }, glowMat(700, 0, 0, true));
 
 /* ---------- galactic dust disk ----------
@@ -1988,9 +2688,18 @@ function buildDust(outer) {
     pos[i*3]   = Math.cos(a)*r + (Math.random()-.5)*R*0.026;
     pos[i*3+1] = (Math.random()-.5)*(R*0.015 + r*0.045);
     pos[i*3+2] = Math.sin(a)*r + (Math.random()-.5)*R*0.026;
-    sz[i] = (.8 + Math.random()*2.6) * 2.2;
-    al[i] = .045 + Math.random()*.13;
-    hsl(196 + Math.random()*64, .7, .55 + Math.random()*.2).toArray(cl, i*3);
+    sz[i] = (.8 + Math.random()*2.4) * 2.2;
+    /* Dimmer than it was, by a lot. This is starlight scattered off dust in
+       the plane, and scattered light is faint — at the brightness it used to
+       carry it read as a lit floor, which told you the scene had a designer.
+       An arm you can only just make out is doing its job: it gives the space
+       between the systems a structure without becoming the subject. */
+    al[i] = .020 + Math.random()*.070;
+    /* Warm and nearly colourless. Interstellar dust reddens what passes
+       through it — that is the one optical fact about it anyone would
+       recognise — so it can be anything here except blue. */
+    hsl(26 + Math.random()*18, .22 + Math.random()*.18, .46 + Math.random()*.18)
+      .toArray(cl, i*3);
   }, glowMat(700, 0, 0, true));
   dustObj.name = 'dust';
 }
@@ -1998,21 +2707,51 @@ function buildDust(outer) {
 /* ---------- nebula ----------
    A handful of very large, very dim points. Overlapping additively they read
    as gas rather than as dots, and they give the middle distance something to
-   occupy — without them the space between the arms is a void. */
+   occupy — without them the space between the arms is a void.
+
+   Two kinds, because there are two kinds. Emission nebulae are hydrogen lit
+   from inside and re-radiating at one wavelength, which is why every one of
+   them in every photograph is the same red; reflection nebulae are dust lit
+   from outside, and scatter blue for the same reason the sky here on Earth
+   does. Violet and teal clouds are the invention. */
 function buildNebula(outer) {
   dropGlow(nebulaObj);
   const R = Math.max(900, outer * 1.15);
-  nebulaObj = pointsFrom(300, (i, pos, sz, cl, al) => {
-    const r = R*0.16 + Math.pow(Math.random(), .7) * R;
+
+  /* Clustered, not scattered. Three hundred large dim points spread evenly
+     through the disk drew three hundred visibly separate discs — the eye
+     resolves each one and reads dots, which is exactly what this is supposed
+     not to be. Gas comes in complexes: a handful of places where there is a
+     great deal of it, and a lot of space where there is none. So the clouds
+     are sited first and then filled, with enough points close enough together
+     that they overlap into something continuous, and with the points at the
+     edge of a cloud smaller and fainter than the ones at its heart. */
+  const CLOUDS = 16, PER = 90;
+  const seeds = [];
+  for (let k = 0; k < CLOUDS; k++) {
     const a = Math.random()*TAU;
-    pos[i*3]   = Math.cos(a)*r + (Math.random()-.5)*R*0.16;
-    pos[i*3+1] = (Math.random()-.5)*(R*0.05 + r*0.10);
-    pos[i*3+2] = Math.sin(a)*r + (Math.random()-.5)*R*0.16;
-    sz[i] = (90 + Math.random()*230) * (R/1600);
-    al[i] = .012 + Math.random()*.030;
-    const violet = Math.random() < .38;
-    hsl(violet ? 258 + Math.random()*30 : 192 + Math.random()*38,
-        .68, .48 + Math.random()*.16).toArray(cl, i*3);
+    const r = R*0.20 + Math.pow(Math.random(), .75) * R;
+    seeds.push({
+      x: Math.cos(a)*r, y: (Math.random()-.5)*(R*0.04 + r*0.07), z: Math.sin(a)*r,
+      /* a cloud is wider than it is thick, lying in the disk it condensed out of */
+      w: R*(0.06 + Math.random()*0.13), h: R*(0.02 + Math.random()*0.05),
+      emission: Math.random() < .72,          // Hα is most of what is out there
+      lit: 0.55 + Math.random()*0.75,
+    });
+  }
+  nebulaObj = pointsFrom(CLOUDS * PER, (i, pos, sz, cl, al) => {
+    const c = seeds[(i / PER) | 0];
+    /* gaussian-ish, so the cloud has a dense middle and no edge */
+    const g = () => (Math.random()+Math.random()+Math.random()-1.5) * 0.75;
+    const dx = g(), dy = g(), dz = g();
+    const d = Math.min(1, Math.hypot(dx, dy, dz) / 1.1);
+    pos[i*3]   = c.x + dx*c.w;
+    pos[i*3+1] = c.y + dy*c.h;
+    pos[i*3+2] = c.z + dz*c.w;
+    sz[i] = (70 + Math.random()*150) * (1 - d*0.55) * (R/1600);
+    al[i] = (.009 + Math.random()*.018) * c.lit * (1 - d*0.7);
+    hsl(c.emission ? 352 + Math.random()*14 : 212 + Math.random()*16,
+        c.emission ? .50 : .32, c.emission ? .40 : .46).toArray(cl, i*3);
   }, glowMat(700, 0, 0, true));
 }
 buildDust(1600);
@@ -2479,6 +3218,66 @@ function surfCacheClear() {
   scene.add(coronaObj);
 })();
 
+/* ---------- ring texture ----------
+   One canvas, shared by every ringed body. three's RingGeometry lays its UVs
+   out as a disc — the coordinate is the position across the ring's own plane,
+   not the distance along it — so the bands are painted as a radial gradient
+   and the geometry samples straight through them.
+
+   The gaps are the whole reason this is a texture rather than a flat annulus:
+   a solid band reads as a plastic hoop, and two divisions in it read as
+   something orbiting in its own right. Fixed rather than random, so every
+   ringed planet is recognisably wearing the same kind of ring. */
+let RING_TEX = null;
+function ringTexture() {
+  if (RING_TEX) return RING_TEX;
+  const S = 256, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+  /* the geometry's inner edge sits at 0.49 of the disc; everything inside it
+     is never sampled, and is left empty so a seam cannot show through */
+  const stops = [[0.00,0],[0.487,0],[0.50,0.55],[0.58,0.95],[0.63,0.30],
+                 [0.66,0.88],[0.78,0.72],[0.80,0.12],[0.83,0.70],
+                 [0.95,0.34],[1.00,0]];
+  stops.forEach(([p, a]) => g.addColorStop(p, `rgba(255,255,255,${a})`));
+  x.fillStyle = g;
+  x.fillRect(0, 0, S, S);
+  RING_TEX = new THREE.CanvasTexture(c);
+  RING_TEX.minFilter = THREE.LinearFilter;
+  return RING_TEX;
+}
+
+/* A stock MeshBasicMaterial that also reads a per-instance alpha.
+
+   Patched rather than rewritten. A ShaderMaterial of our own would have been
+   fewer moving parts to explain, and it would also have dropped every chunk
+   three.js puts around a fragment — the output encoding among them, which is
+   the difference between a star that matches the rest of the scene and one
+   that does not. Two string replacements against two lines that have been in
+   the basic shader for as long as it has existed is the cheaper bet.
+
+   customProgramCacheKey earns its line: three.js keys compiled programs on a
+   material's parameters and never on what onBeforeCompile did to the source,
+   so without a key of its own a patched material and an unpatched one with
+   the same settings can be handed the same program — and which one gets the
+   alpha then depends on which was drawn first. */
+function starMat(opt) {
+  const m = new THREE.MeshBasicMaterial(Object.assign({
+    color: 0xffffff, transparent: true, opacity: 1 }, opt));
+  m.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute float aAlpha;\nvarying float vStarA;\n' +
+      sh.vertexShader.replace('void main() {', 'void main() {\n\tvStarA = aAlpha;');
+    sh.fragmentShader = 'varying float vStarA;\n' +
+      sh.fragmentShader.replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        'vec4 diffuseColor = vec4( diffuse, opacity * vStarA );\n' +
+        '\tif ( diffuseColor.a < 0.002 ) discard;');
+  };
+  m.customProgramCacheKey = () => 'starAlpha';
+  return m;
+}
+
 /* ================================================================== WORLD
    Every scene object derived from the vault lives under `world`, so loading a
    different vault is one disposeWorld() plus one buildLayout/buildObjects.
@@ -2487,44 +3286,90 @@ function buildObjects() {
 world = new THREE.Group();
 scene.add(world);
 
-/* ---------- category stars ---------- */
+/* ---------- category stars ----------
+   Three draw calls, not three per system.
+
+   Every star used to be a Group of its own three meshes, each with its own
+   material, which is three draw calls per folder: twenty-four on the vault
+   this was profiled on and sixty on a vault with twenty folders. Submitting
+   them was costing more than writing every link in the cosmos did, and it
+   grew with the folder count while the bodies and the links — instanced years
+   ago — did not.
+
+   The three layers are now one InstancedMesh each. What differed per system
+   and made that look impossible turns out to be nothing that instancing
+   cannot carry: the radius is a scale on a unit geometry, the colour is
+   instanceColor, and the spins and the ring's tilt go in the instance matrix
+   like any other transform.
+
+   The one thing an InstancedMesh has no room for is opacity, and opacity is
+   how a system switched off in the legend takes its light with it. Rather
+   than fake it — baking the fade into the colour would turn a fading core
+   into a black ball over the starfield instead of a vanishing one — each
+   layer carries a per-instance alpha attribute, injected into the stock
+   material by starMat(). */
 starGroup = new THREE.Group(); world.add(starGroup);
 starMeshes = [];
-cats.forEach(c => {
-  const R = c.R || (c.tier === 0 ? 8 : 5);
-  const g = new THREE.Group();
-  g.position.copy(c.pos);
+if (cats.length) {
+  const NS = cats.length;
+  /* Unit geometries. The radius that used to be built into each system's own
+     geometry is a scale in its instance matrix now, which is the same picture
+     and one buffer instead of one per folder. */
+  const coreGeo  = new THREE.IcosahedronGeometry(1, 3);
+  const shellGeo = new THREE.IcosahedronGeometry(1.75, 1);
+  const ringGeo  = new THREE.RingGeometry(2.6, 2.72, 96);
+
+  starAlC = new Float32Array(NS).fill(1);
+  starAlS = new Float32Array(NS).fill(1);
+  starAlR = new Float32Array(NS).fill(1);
+  coreGeo .setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlC, 1));
+  shellGeo.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlS, 1));
+  ringGeo .setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlR, 1));
+
   /* transparent even at rest: switching a system off in the legend has to be
-     able to take its light with it, and an opaque basic material cannot be
-     dimmed at all */
-  const core = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(R, 3),
-    new THREE.MeshBasicMaterial({ color: c.color.clone().lerp(new THREE.Color(0xffffff), .55),
-      transparent:true, opacity:1 })
-  );
-  g.add(core);
-  const shell = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(R*1.75, 1),
-    new THREE.MeshBasicMaterial({ color:c.color, wireframe:true, transparent:true,
-      opacity:.16, blending:THREE.AdditiveBlending, depthWrite:false })
-  );
-  g.add(shell);
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(R*2.6, R*2.72, 96),
-    new THREE.MeshBasicMaterial({ color:c.color, transparent:true, opacity:.26,
-      side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false })
-  );
-  ring.rotation.x = Math.PI/2 - (c.tier?0.1:0.36);
-  ring.rotation.z = Math.random()*TAU;
-  g.add(ring);
-  starGroup.add(g);
-  c.obj = g; c.shell = shell; c.ring = ring; c.core = core;
-  /* what "fully lit" means for this star, so the dimmer has somewhere to
-     return to rather than a hard-coded constant per material */
-  c.op0 = { core:1, shell:.16, ring:.26, glow: c.tier===0 ? .85 : .5 };
-  c.vis = 1;
-  starMeshes.push(c);
-});
+     able to take its light with it, and an opaque material cannot be dimmed */
+  starCore  = new THREE.InstancedMesh(coreGeo,  starMat({}), NS);
+  starShell = new THREE.InstancedMesh(shellGeo, starMat({ wireframe:true,
+    blending:THREE.AdditiveBlending, depthWrite:false }), NS);
+  starRing  = new THREE.InstancedMesh(ringGeo,  starMat({ side:THREE.DoubleSide,
+    blending:THREE.AdditiveBlending, depthWrite:false }), NS);
+
+  [starCore, starShell, starRing].forEach(m => {
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    /* the instance matrices are rewritten every frame from positions three.js
+       never sees, so its own bounds would be a guess that culls the lot */
+    m.frustumCulled = false;
+    starGroup.add(m);
+  });
+
+  cats.forEach((c, i) => {
+    c.si = i;
+    /* the star's drawn radius, kept beside c.R rather than written back into
+       it: c.R is the layout's number and the layout is built before this runs
+       — a rebuild that found its own fallback already there would be reading
+       last build's guess as this build's input */
+    c.sR = c.R || (c.tier === 0 ? 8 : 5);
+    /* the spins the frame loop advances, held per system rather than on a
+       mesh that no longer exists */
+    c.sx = 0; c.sy = 0;
+    c.rz = Math.random()*TAU;
+    c.rx = Math.PI/2 - (c.tier?0.1:0.36);
+    /* the core reads as the hot centre of the star, so it is the system's
+       colour pulled most of the way to white */
+    const cc = c.color.clone().lerp(new THREE.Color(0xffffff), .55);
+    starCore .setColorAt(i, cc);
+    starShell.setColorAt(i, c.color);
+    starRing .setColorAt(i, c.color);
+    /* what "fully lit" means for this star, so the dimmer has somewhere to
+       return to rather than a hard-coded constant per material */
+    c.op0 = { core:1, shell:.16, ring:.26, glow: c.tier===0 ? .85 : .5 };
+    c.vis = 1;
+    starMeshes.push(c);
+  });
+  [starCore, starShell, starRing].forEach(m => {
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+  });
+}
 
 /* ---------- the concentric ring guides ----------
    Faint circles on the orbital plane, one per ring of systems. They cost
@@ -2585,8 +3430,13 @@ spiralTrack = (function(){
 /* vault boundary — the shell that holds the undated archive */
 boundary = new THREE.Mesh(
   new THREE.IcosahedronGeometry((SHELL_R || 1200) + 120, 3),
-  new THREE.MeshBasicMaterial({ color:0x2f6f9a, wireframe:true, transparent:true,
-    opacity:.038, blending:THREE.AdditiveBlending, depthWrite:false,
+  /* Halved, and taken off the cyan. A geodesic grid drawn across the sky is
+     the most fictional thing in the scene — nothing in space is triangulated
+     — and at .038 it was reading as a dome the vault sits inside. It stays,
+     because the undated archive needs an outer edge to lie against, but it
+     stays at the threshold of being noticed rather than above it. */
+  new THREE.MeshBasicMaterial({ color:0x40566b, wireframe:true, transparent:true,
+    opacity:.016, blending:THREE.AdditiveBlending, depthWrite:false,
     side:THREE.DoubleSide }));
 boundary.scale.y = .68;
 boundary.visible = N > 0;
@@ -2735,9 +3585,89 @@ nodeGlow = new THREE.Points(nodeGlowGeo, glowMat(600, .06, 0));
 nodeGlow.frustumCulled = false;
 world.add(nodeGlow);
 
+/* ---------- rings ----------
+   A note everything else points at is the one you want to find from across
+   the vault, and until now the only sign of that was being slightly bigger
+   than its neighbours — a difference you cannot see without something beside
+   it to compare against. A ring is legible on its own, at any range, and it
+   is the one ornament a planet can wear that no viewer has to be taught to
+   read: this one matters.
+
+   Earned, and scarce — which is the whole difference between a mark and a
+   decoration. The first cut of this drew rings on the top tenth of the vault
+   and the result was a field of hoops: at that density a ring stops saying
+   "this one" and starts being the texture of the sky.
+
+   So the rule is per system, not per vault. Each star system's own most-cited
+   note gets one — every folder has a note the rest of it points at, and that
+   is the note worth finding from across the cosmos — plus the handful that
+   are exceptional against the whole vault rather than against their folder.
+   A vault of fifteen folders gets around fifteen ringed worlds instead of
+   three hundred, and they are spread out, one to a system, instead of piled
+   into whichever folder happens to be densest. */
+const RING_CAP = 40;
+ringIdx = [];
+{
+  const eligible = i => i !== coreIdx && nodes[i].k !== 'raw' && (nodes[i].inb | 0) >= 3;
+  const best = new Map();                       // star system -> its own hub
+  const all = [];
+  for (let i = 0; i < N; i++) {
+    if (!eligible(i)) continue;
+    all.push(i);
+    const key = nodes[i].c;
+    const cur = best.get(key);
+    if (cur === undefined || (nodes[i].inb | 0) > (nodes[cur].inb | 0)) best.set(key, i);
+  }
+  all.sort((a, b) => (nodes[b].inb | 0) - (nodes[a].inb | 0));
+  const pick = new Set(best.values());
+  /* the vault-wide exceptions, on top of the per-system hubs: a note the
+     whole vault leans on is worth marking even where its own folder already
+     has one */
+  all.slice(0, Math.max(1, Math.ceil(all.length * 0.01))).forEach(i => pick.add(i));
+  /* biggest first, so a cap that bites keeps the ones that matter most */
+  ringIdx = all.filter(i => pick.has(i)).slice(0, RING_CAP);
+}
+if (ringIdx.length) {
+  const maxIn = Math.max.apply(null, ringIdx.map(i => nodes[i].inb | 0));
+  const ringGeo = new THREE.RingGeometry(1, 2.05, 96, 1);
+  const ringMat = new THREE.MeshBasicMaterial({
+    map: ringTexture(), transparent: true, opacity: 0.72, side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending, depthWrite: false });
+  ringMesh = new THREE.InstancedMesh(ringGeo, ringMat, ringIdx.length);
+  ringMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  ringMesh.frustumCulled = false;
+  world.add(ringMesh);
+  ringQ = [];
+  ringK = new Float32Array(ringIdx.length);
+  ringIdx.forEach((i, k) => {
+    /* Tilted from the seed the note's own surface is generated from, so a
+       planet's rings sit at the same angle every time you come back to it —
+       and no two neighbours share one, which is what keeps a cluster of
+       ringed bodies from reading as a printed pattern. */
+    const h = mkHash3(surfSeed(i));
+    ringQ.push(new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(Math.PI * 0.5 + (h(1) - 0.5) * 0.85, (h(2) - 0.5) * 0.7, h(3) * TAU)));
+    /* between 2.4x and 3.5x the body: enough to read, never enough to touch
+       the neighbour it orbits beside */
+    ringK[k] = 2.4 + ((nodes[i].inb | 0) / maxIn) * 1.1;
+    ringMesh.setColorAt(k, new THREE.Color(
+      lerp(COL[i*3],   1, .30), lerp(COL[i*3+1], 1, .30), lerp(COL[i*3+2], 1, .30)));
+  });
+  if (ringMesh.instanceColor) ringMesh.instanceColor.needsUpdate = true;
+}
+
 /* ---------- links ---------- */
 EN = edges.length;
-SEG = EN > 4000 ? 5 : EN > 1500 ? 7 : 9;
+/* Raised again now that the arcs stand up — a standing arch has real
+   curvature where the old flat sag had two pixels of it, and five samples on
+   a real bow is a bent straw. What keeps the raise affordable is that this is
+   only the ceiling: segFor() spends it per edge from the arc's projected
+   height, so a big vault seen from map range still writes two or three
+   samples on nearly every link and only pays the ceiling for the handful of
+   arcs actually filling the screen. The ceiling still falls with the edge
+   count, because the ceiling is what sizes the buffer and the buffer is
+   re-uploaded whole every frame. */
+SEG = EN > 4000 ? 8 : EN > 1500 ? 12 : 16;
 edgeCache = new Array(EN);
 linkProg = new Float32Array(Math.max(1,EN)).fill(1);
 const linkVerts = Math.max(1, EN) * (SEG-1) * 2 * 3;
@@ -2752,6 +3682,46 @@ linkMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true,
 linkMesh = new THREE.LineSegments(linkGeo, linkMat);
 linkMesh.frustumCulled = false;
 world.add(linkMesh);
+
+/* ---------- orbit trails ----------
+   A body sliding along an invisible orbit reads as a dot that happens to be
+   somewhere else each time you look. A short arc trailing behind it reads as
+   something going round, and the whole cosmos stops being a slideshow of
+   positions and starts turning. It is the cheapest motion cue there is and
+   the one this had no version of.
+
+   No history buffer. Where a body was is not something worth remembering,
+   because the orbit is analytic — the same equation updatePositions solves
+   for `t` solves for `t - dt`, and stepping back is a rotation by a fixed
+   angle in the orbit's own plane. So a trail is the current point rotated
+   backwards a few times, exact and with nothing stored between frames.
+
+   Not on everything. Three thousand trails is a ball of wool, and the ones
+   worth watching are the ones big enough on screen to watch — so the set is
+   chosen per frame by projected size, capped, and each trail fades in with
+   the body's own growth rather than snapping on at a threshold. */
+/* Biggest first, so a cap that bites keeps the bodies worth watching rather
+   than whichever ones happen to come first in the file. Sorted once here; the
+   order cannot change, because a note's radius is its citation count and that
+   does not move while the vault is open. */
+trailPick = new Int32Array(TRAIL_CAP);
+trailOrder = new Int32Array(N);
+for (let i=0;i<N;i++) trailOrder[i] = i;
+trailOrder.sort((a,b) => RAD[b] - RAD[a]);
+{
+  const tv = TRAIL_CAP * (TRAIL_SEG-1) * 2 * 3;
+  trailPos = new Float32Array(tv);
+  trailCol = new Float32Array(tv);
+  trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos,3));
+  trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol,3));
+  trailGeo.setDrawRange(0, 0);
+  trailMesh = new THREE.LineSegments(trailGeo, new THREE.LineBasicMaterial({
+    vertexColors:true, transparent:true, opacity:.85,
+    blending:THREE.AdditiveBlending, depthWrite:false }));
+  trailMesh.frustumCulled = false;
+  world.add(trailMesh);
+}
 
 /* travelling data pulses */
 pulseIdx = new Int32Array(PULSE); pulseT = new Float32Array(PULSE);
@@ -2792,6 +3762,32 @@ hovRig = new THREE.Mesh(new THREE.RingGeometry(1, 1.05, 48),
   new THREE.MeshBasicMaterial({ color:0x5ce1ff, transparent:true, opacity:.75,
     side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false }));
 hovRig.visible = false; world.add(hovRig);
+
+/* ---------- the note you are editing ----------
+   A third marker, and deliberately unlike the other two. Selection is amber
+   and hover is cyan because both are things the cursor is doing; this one is
+   violet, is not the cursor's doing at all, and has to stay findable while
+   you fly somewhere else — so it breathes rather than sitting still, and it
+   carries a mark above the body that survives being small on screen.
+
+   Additive, depth-write off, like every other overlay here: it should read
+   as light laid over the scene rather than as an object competing in it. */
+actRig = new THREE.Group(); actRig.visible = false; world.add(actRig);
+const ACT_COL = 0xa78bfa;
+actRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.045, 84),
+  new THREE.MeshBasicMaterial({ color:ACT_COL, transparent:true, opacity:.85,
+    side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false }));
+actRig.add(actRing);
+/* an arc, not a ring: a broken circle turning slowly is legible as "live" at
+   a size where a pulsing solid one just looks like a smudge */
+actRing2 = new THREE.Mesh(new THREE.RingGeometry(1, 1.10, 64, 1, 0, TAU * 0.34),
+  new THREE.MeshBasicMaterial({ color:ACT_COL, transparent:true, opacity:.6,
+    side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false }));
+actRig.add(actRing2);
+actPip = new THREE.Mesh(new THREE.TetrahedronGeometry(1, 0),
+  new THREE.MeshBasicMaterial({ color:ACT_COL, transparent:true, opacity:.75,
+    blending:THREE.AdditiveBlending, depthWrite:false }));
+actRig.add(actPip);
 
 /* ---------- labels ---------- */
 labels = [];
@@ -2862,7 +3858,13 @@ function disposeWorld() {
   scene.remove(world);
   world = null;
   spiralTrack = starGlow = boundary = bodies = nodeGlow = linkMesh = pulses = null;
-  selRig = hovRig = ringGuides = sunObj = null;
+  trailMesh = trailGeo = trailPos = trailCol = null;
+  selRig = hovRig = actRig = ringGuides = sunObj = null;
+  starCore = starShell = starRing = starAlC = starAlS = starAlR = null;
+  ringMesh = null; ringIdx = []; ringQ = []; ringK = null;
+  /* the shared ring canvas was one of the maps just disposed above, so the
+     cache has to let go of it or the next vault draws from a dead texture */
+  RING_TEX = null;
   labels = [];
 }
 
@@ -3058,7 +4060,10 @@ const neighbours = new Set();
 const visited = new Set();      // what this session has looked at
 let twinState = null;           // the note whose resonance lines are showing
 
-function select(i) {
+/* `quiet` restores a selection rather than making one: same state, none of
+   the theatre. A vault rebuilt under the user while they edit would otherwise
+   ping and ripple on every save. */
+function select(i, quiet) {
   const was = selected;
   selected = i;
   neighbours.clear();
@@ -3067,7 +4072,7 @@ function select(i) {
     /* touching a note sends a wave out along everything it is tied to. It is
        the same gesture as dropping a stone, and it answers the one question
        a still graph never does: what does this actually reach? */
-    if (i !== was) { audioPing(i); if (!GEN.on) rippleFrom(i, 1); }
+    if (i !== was && !quiet) { audioPing(i); if (!GEN.on) rippleFrom(i, 1); }
   }
   /* the resonance lines belong to one note; they are not a layer */
   if (twinState && twinState.i !== i) twinsClear();
@@ -3166,6 +4171,17 @@ $('i-go').onclick = () => {
   if (selected < 0) return;
   if (ship.on) shipFlyTo(selected); else focusNode(selected, true);
 };
+$('i-open').onclick = e => openNote(selected, e);
+/* Obsidian's own hover preview, offered from the one element that is
+   reliably a note and reliably still there — the inspector's title. The
+   canvas cannot do this: a body under the cursor moves, and a preview
+   anchored to a moving target either follows it or lies about what it is
+   previewing. */
+$('i-name').addEventListener('mouseover', e => {
+  if (!HOST.hover || selected < 0) return;
+  try { HOST.hover(hostPath(selected), e, $('i-name')); }
+  catch (err) { console.error('vault-orrery: host preview', err); }
+});
 
 /* =============================================================== SEARCH */
 let searchOpen = false, searchSel = 0, searchHits = [];
@@ -3196,14 +4212,25 @@ function runSearch(q) {
   /* search is the one place a jump is still the point: you typed a name
      because you wanted to be there */
   $('sres').querySelectorAll('div').forEach(d => {
-    d.onclick = () => { focusNode(+d.dataset.i, true); closeSearch(); };
+    d.onclick = e => {
+      const i = +d.dataset.i;
+      closeSearch();
+      if (canOpen() && (e.ctrlKey || e.metaKey)) { select(i); openNote(i, e); return; }
+      focusNode(i, true);
+    };
   });
 }
 $('sin').addEventListener('input', e => runSearch(e.target.value));
 $('sin').addEventListener('keydown', e => {
   if (e.key === 'Escape') { filterTxt=''; closeSearch(); }
   else if (e.key === 'Enter' && searchHits[searchSel] !== undefined) {
-    focusNode(searchHits[searchSel], true); closeSearch();
+    const i = searchHits[searchSel];
+    closeSearch();
+    /* Enter flies to it, Ctrl/Cmd-Enter reads it — the same pair as the
+       quick switcher, so search here answers both "where is that" and
+       "take me to that". */
+    if (canOpen() && (e.ctrlKey || e.metaKey)) { select(i); openNote(i, e); }
+    else focusNode(i, true);
   } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault();
     searchSel = clamp(searchSel + (e.key==='ArrowDown'?1:-1), 0,
@@ -3737,6 +4764,156 @@ function cometStep(dt) {
   cometTailObj.geometry.attributes.color.needsUpdate = true;
 }
 
+/* ======================================================== SHOOTING STARS
+   The one piece of sky here that is honestly a lie, and worth it.
+
+   A meteor is an atmospheric event: a grain of dust hitting air at forty
+   kilometres a second and the air, not the grain, doing the glowing. There
+   is no air out here and there is nothing to be under. What is drawn is the
+   same grain lit the same way and put in the sky anyway, because a sky in
+   which nothing has ever happened is a photograph, and because looking up
+   at the moment one crosses is a thing that happens to people and not a
+   thing that happens to a rendering.
+
+   Two decisions do most of the work:
+
+   It is aimed. A streak spawned in a random direction on a sphere is almost
+   never inside a sixty-degree frustum, so tuning the rate to make one
+   *visible* now and then means running dozens of them behind your head.
+   These are spawned across the frame you are actually looking at, which is
+   the difference between "occasionally" meaning occasionally seen and
+   occasionally meaning occasionally emitted.
+
+   It is a trail of points and not a line. A LineSegments streak is one
+   pixel wide at any distance and reads as a scratch on the lens; a chain of
+   overlapping glow points, tapering in size and brightness toward the tail,
+   reads as something burning. The path is sampled from the flight equation
+   at fixed intervals of time rather than accumulated from frames, so the
+   streak is the same length at thirty frames a second as at a hundred and
+   forty.
+
+   The colours are the real ones, which is free: magnesium burns blue-white,
+   sodium a warm yellow, iron gold, and the green nobody believes is oxygen
+   in the trail behind it.                                                */
+/* Forty-eight samples for a streak is a lot, and it is what the streak
+   costs: the points have to overlap into a line. At half this they resolve
+   into a dotted trail, which is the one thing that reads worse than no
+   meteor at all. Three of them at once is a hundred and forty points. */
+const MET_MAX = 3, MET_TAIL = 48;
+const MET_COL = [ [0.74, 0.86, 1.00], [1.00, 0.92, 0.70],
+                  [1.00, 0.80, 0.52], [0.72, 1.00, 0.82] ];
+let metObj = null, metPos = null, metSz = null, metCol = null, metAl = null,
+    metLive = 0;
+const meteors = [];
+let meteorNext = 7 + Math.random() * 16;
+const _mR = new THREE.Vector3(), _mU = new THREE.Vector3(), _mF = new THREE.Vector3(),
+      _mA = new THREE.Vector3(), _mB = new THREE.Vector3();
+
+function meteorBuild() {
+  if (metObj) return;
+  metObj = pointsFrom(MET_MAX * MET_TAIL, (i, pos, sz, cl, al) => { al[i] = 0; },
+                      glowMat(700, 0, 0.85, false));
+  metObj.renderOrder = 3;
+  const at = metObj.geometry.attributes;
+  metPos = at.position.array; metSz = at.aSize.array;
+  metCol = at.aColor.array;   metAl = at.aAlpha.array;
+}
+
+function meteorSpawn() {
+  meteorBuild();
+  if (meteors.length >= MET_MAX) return;
+  /* the camera's own axes, so "across the frame" means across the frame */
+  _mR.set(1, 0, 0).applyQuaternion(camera.quaternion);
+  _mU.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  _mF.set(0, 0, -1).applyQuaternion(camera.quaternion);
+
+  const R = SKY_R * (0.26 + Math.random() * 0.22);
+  /* The frame, in the units the frustum is actually described in. Guessing
+     an angle instead — half a radian off the view axis, say — puts most of
+     them outside the picture on a wide window and all of them outside it on
+     a tall one, and then the rate has to be raised until one lands, which
+     is how you end up with a sky full of meteors nobody sees. */
+  const hh = Math.tan(camera.fov * Math.PI / 360), hw = hh * camera.aspect;
+  /* in at one edge and out at the far one: a chord across the picture, at a
+     random angle, never through the centre twice the same way */
+  const a = Math.random() * TAU;
+  const b = a + Math.PI + (Math.random() - 0.5) * 1.6;
+  const edge = (v, ang) => v.copy(_mF)
+    .addScaledVector(_mR, Math.cos(ang) * hw * 1.12)
+    .addScaledVector(_mU, Math.sin(ang) * hh * 1.12).normalize();
+
+  const dir = edge(_mA, a).clone();
+  const p0  = dir.clone().multiplyScalar(R).add(camera.position);
+  const p1  = edge(_mB, b).multiplyScalar(R).add(camera.position);
+
+  const dur  = 1.0 + Math.random() * 1.2;
+  const span = p0.distanceTo(p1);
+  const spd  = span / dur;
+  const vdir = p1.sub(p0).normalize();
+  /* a fireball, one in six or so: brighter, slower, longer, and it is the
+     one you point at */
+  const fire = Math.random() < 0.17;
+  meteors.push({
+    p0, dur, t: 0,
+    v: vdir.clone().multiplyScalar(spd),
+    /* a shallow curve across the flight, so the path is not a ruled line */
+    bend: new THREE.Vector3().crossVectors(vdir, dir)
+            .normalize().multiplyScalar(spd * (Math.random() - 0.5) * 0.22 / dur),
+    tail: R * (fire ? 0.22 : 0.14) / spd,
+    br: fire ? 2.3 : 1,
+    sz: (fire ? 1.7 : 1) * (R / 4200),
+    col: MET_COL[fire ? (1 + ((Math.random() * 3) | 0)) : (Math.random() < 0.72 ? 0 : 1)]
+  });
+}
+
+function meteorStep(dt) {
+  /* Spawning belongs to the orbital clock — freeze the sky and no more of
+     them arrive — but a streak already falling finishes on the wall clock.
+     Half a meteor left hanging in a stopped sky would be a bug on screen
+     whatever the rule behind it said. */
+  if (N && meteors.length < MET_MAX && SET.spd > 0.02) {
+    meteorNext -= dt * Math.min(2, SET.spd);
+    if (meteorNext <= 0) { meteorSpawn(); meteorNext = 11 + Math.random() * 30; }
+  }
+  if (!metObj) return;
+  for (let k = meteors.length - 1; k >= 0; k--) {
+    meteors[k].t += dt;
+    if (meteors[k].t > meteors[k].dur) meteors.splice(k, 1);
+  }
+  if (!meteors.length && !metLive) return;         // nothing to clear again
+
+  for (let m = 0; m < MET_MAX; m++) {
+    const M = meteors[m], base = m * MET_TAIL;
+    if (!M) {
+      for (let k = 0; k < MET_TAIL; k++) metAl[base + k] = 0;
+      continue;
+    }
+    const u = M.t / M.dur;
+    /* struck alight in a moment and out over most of the flight: the shape
+       of the brightness is most of what makes it read as burning up */
+    const env = Math.min(1, u / 0.07) * Math.pow(1 - u, 1.15) * M.br;
+    const ds = M.tail / MET_TAIL;
+    for (let k = 0; k < MET_TAIL; k++) {
+      const i = base + k, o = i * 3;
+      const s = Math.max(0, M.t - k * ds);
+      metPos[o]   = M.p0.x + M.v.x * s + M.bend.x * s * s;
+      metPos[o+1] = M.p0.y + M.v.y * s + M.bend.y * s * s;
+      metPos[o+2] = M.p0.z + M.v.z * s + M.bend.z * s * s;
+      /* the head is a burning point, the trail is what it left behind */
+      const f = k / MET_TAIL, taper = (1 - f) * (1 - f * 0.55);
+      metSz[i] = (k === 0 ? 96 : 34 + 62 * taper) * M.sz;
+      metAl[i] = env * (k === 0 ? 1 : taper * 0.88) *
+                 /* the trail cannot start before the meteor did */
+                 (M.t - k * ds > 0 ? 1 : 0);
+      metCol[o] = M.col[0]; metCol[o+1] = M.col[1]; metCol[o+2] = M.col[2];
+    }
+  }
+  metLive = meteors.length;
+  const at = metObj.geometry.attributes;
+  at.position.needsUpdate = true; at.aSize.needsUpdate = true;
+  at.aColor.needsUpdate = true;   at.aAlpha.needsUpdate = true;
+}
+
 /* ================================================================ POSTER
    The renderer has no preserveDrawingBuffer — reading the canvas is only
    valid in the same tick as the draw — so this renders and copies back to
@@ -3760,13 +4937,18 @@ function savePoster() {
        a fraction of the size it has on screen */
     const sc = innerHeight / (2 * Math.tan(camera.fov * Math.PI/360)) * scale;
     glowMats.forEach(m => { if (m.uniforms) m.uniforms.uScale.value = sc; });
-    renderer.render(scene, camera);
     /* a poster taken from a surface has to include the surface */
     if (SKY.on) {
       stageCam.aspect = innerWidth / innerHeight;
       stageCam.updateProjectionMatrix();
-      skyRender();
     }
+    /* The buffers are resized to the poster before it is drawn and put back
+       by resize() in the finally below. Skipping this would not merely blur
+       the bloom — it would sample a quarter of a 4K frame from a screen-sized
+       target and light the wrong half of the picture. */
+    bloomSize(Math.max(1, innerWidth * scale), Math.max(1, innerHeight * scale));
+    const composited = renderFrame();
+    if (SKY.on && !composited) skyRender();
 
     const src = renderer.domElement;
     const out = document.createElement('canvas');
@@ -3809,12 +4991,140 @@ function savePoster() {
 }
 $('b-post').onclick = savePoster;
 
+/* ---- clip capture ----
+   The poster answers "what does my vault look like", and it answers it well.
+   It cannot answer the other one: this thing *moves* — orbits turn, pulses run
+   the links, a meteor crosses — and a still is the one format that throws all
+   of that away. So the canvas records itself.
+
+   Straight off the WebGL canvas via captureStream, which has a property worth
+   having on purpose: the stream carries the drawing buffer and nothing else,
+   so the HUD, which is DOM sitting on top, is simply not in it. No hiding
+   panels and putting them back the way the poster has to. What comes out is
+   the cosmos, clean, at whatever the window is showing.
+
+   No audio. The ambient bed is generated by WebAudio and could be piped in,
+   but a clip that starts playing a drone when it is dropped into a chat is a
+   worse guest than a silent one, and anything this is posted to will lay its
+   own sound over the top regardless. */
+const VID = { rec: null, chunks: [], timer: 0, left: 0 };
+const VID_SECS = 12;
+function vidMime() {
+  if (typeof MediaRecorder === 'undefined') return null;
+  /* vp9 where it exists, vp8 where it does not, and whatever the browser will
+     admit to as a last resort */
+  const want = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  for (const m of want) if (MediaRecorder.isTypeSupported(m)) return m;
+  return null;
+}
+function vidStop() {
+  if (VID.rec && VID.rec.state !== 'inactive') VID.rec.stop();
+}
+function vidSync() {
+  const b = $('b-vid');
+  b.textContent = VID.rec ? T('btn.vid.stop') : T('btn.vid');
+  b.classList.toggle('am', !!VID.rec);
+}
+function recordClip() {
+  if (VID.rec) { vidStop(); return; }
+  if (!N) { toast(T('need.vault')); return; }
+  const mime = vidMime();
+  if (!mime) { toast(T('vid.fail')); return; }
+  let stream;
+  try { stream = renderer.domElement.captureStream(60); }
+  catch (e) { toast(T('vid.fail')); return; }
+  try { VID.rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 }); }
+  catch (e) { toast(T('vid.fail')); return; }
+
+  VID.chunks = [];
+  VID.rec.ondataavailable = e => { if (e.data && e.data.size) VID.chunks.push(e.data); };
+  VID.rec.onstop = () => {
+    clearInterval(VID.timer); VID.timer = 0;
+    VID.rec = null; vidSync();
+    stream.getTracks().forEach(tr => tr.stop());
+    if (!VID.chunks.length) { toast(T('vid.fail')); return; }
+    const blob = new Blob(VID.chunks, { type: 'video/webm' });
+    VID.chunks = [];
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    /* the same filename rule the poster uses, so a vault named 지식정원 does
+       not export as ____ */
+    a.download = (DATA.meta.vault || 'vault')
+                   .replace(/[^\w가-힣ぁ-んァ-ヶー一-龥.-]+/g, '_') +
+                 '-orrery.webm';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast(T('vid.ok', { s: (blob.size/1048576).toFixed(1) + ' MB' }));
+  };
+  VID.rec.start(250);
+  VID.left = VID_SECS;
+  vidSync();
+  toast(T('vid.rec', { s: VID.left }));
+  /* a running count, because a recording with no visible end is one people
+     interrupt — and it doubles as the way to stop early */
+  VID.timer = setInterval(() => {
+    VID.left--;
+    if (VID.left <= 0) { vidStop(); return; }
+    toast(T('vid.rec', { s: VID.left }), 1200);
+  }, 1000);
+}
+$('b-vid').onclick = recordClip;
+
 /* ================================================================= SOUND
    Off by default, and deliberately so: v1 chose "소리 없는 정적" as one of
    the five axes that make this read as space. This does not undo that
    decision, it makes it a setting — and nothing is created until the first
    time it is switched on, which is also what the autoplay policy requires. */
-const AUD = { on:false, ctx:null, master:null, noise:null, ngain:null };
+const AUD = { on:false, ctx:null, master:null, noise:null, ngain:null,
+              bus:null, echo:null, wetIn:null };
+
+/* ---------- the room ----------
+   A reverb is not an effect laid over this, it is the subject of it. What
+   the drone and the pings were missing was not richness but *distance* —
+   a dry sine at 220 Hz is a tone generator in the room you are sitting in,
+   and the same sine arriving through six seconds of tail is a sound with
+   somewhere to have come from.
+
+   The impulse is generated rather than loaded, because a file cannot be
+   shipped in a single self-contained page and a downloaded one cannot be
+   shipped at all. Three things make noise-times-an-envelope sound like a
+   space instead of like a hiss:
+
+     the head    a few milliseconds of near-silence before the tail, which
+                 is the time the first reflection takes to come back, and
+                 which is the whole of how large the space seems
+     the damping a one-pole low pass on the noise that closes further as the
+                 tail runs out. Air and every surface in a room eat the top
+                 end first, so a tail that stays bright reads as metal and a
+                 tail that darkens reads as distance
+     the decay   a power curve, not a straight line: loud reflections die
+                 quickly and the last of it hangs about for a long time  */
+function audioIR(ctx, secs, decay) {
+  const n = Math.max(1, Math.floor(ctx.sampleRate * secs));
+  const buf = ctx.createBuffer(2, n, ctx.sampleRate);
+  const head = Math.floor(ctx.sampleRate * 0.028);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    let lp = 0;
+    for (let i = 0; i < n; i++) {
+      const u = i / n;
+      /* the two channels are separately random, which is the whole of the
+         stereo width — a mono tail collapses the space to a point */
+      lp += ((Math.random() * 2 - 1) - lp) * (0.30 - u * 0.24);
+      const env = Math.pow(1 - u, decay);
+      d[i] = lp * env * (i < head ? (i / head) * (i / head) : 1);
+    }
+    /* a handful of early reflections: discrete walls, before the tail
+       smears into something continuous */
+    for (let k = 0; k < 7; k++) {
+      const at = Math.floor(ctx.sampleRate * (0.03 + Math.random() * 0.11));
+      if (at < n) d[at] += (Math.random() * 2 - 1) * 0.30 * (1 - k / 7);
+    }
+  }
+  return buf;
+}
+
 function audioInit() {
   if (AUD.ctx) return true;
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -3824,11 +5134,44 @@ function audioInit() {
     const master = ctx.createGain();
     master.gain.value = 0;
     master.connect(ctx.destination);
+
+    /* everything voiced goes into the bus, and the bus is heard twice: once
+       directly and once through the room. Rather more of the second than of
+       the first — this is meant to sound like a place, not like a place
+       someone is standing at the near edge of. */
+    const bus = ctx.createGain();
+    const dry = ctx.createGain(); dry.gain.value = 0.52;
+    bus.connect(dry); dry.connect(master);
+
+    const pre = ctx.createDelay(0.5); pre.delayTime.value = 0.045;
+    const conv = ctx.createConvolver(); conv.buffer = audioIR(ctx, 7.5, 2.7);
+    /* the tail comes back darker than it went in, and stays under the
+       direct sound instead of in front of it */
+    const wetLP = ctx.createBiquadFilter();
+    wetLP.type = 'lowpass'; wetLP.frequency.value = 1700; wetLP.Q.value = 0.4;
+    const wet = ctx.createGain(); wet.gain.value = 0.95;
+    bus.connect(pre); pre.connect(conv); conv.connect(wetLP);
+    wetLP.connect(wet); wet.connect(master);
+
+    /* A long feedback delay, fed by the pings alone. The room says how big
+       the space is; this says there is no far wall in it — a note answers
+       itself two or three times, each answer darker than the last, and the
+       melody you play by walking the vault keeps going after you have
+       stopped playing it. Its output rejoins the bus, so every repeat is
+       heard through the room as well. */
+    const echo = ctx.createGain();
+    const dl = ctx.createDelay(4); dl.delayTime.value = 0.62;
+    const dlLP = ctx.createBiquadFilter();
+    dlLP.type = 'lowpass'; dlLP.frequency.value = 1150;
+    const fb = ctx.createGain(); fb.gain.value = 0.36;
+    echo.connect(dl); dl.connect(dlLP); dlLP.connect(fb); fb.connect(dl);
+    dlLP.connect(bus);
+
     /* a drone, not a chord: three near-unison voices under a low filter is
        roughly what a very large room sounds like */
     const filt = ctx.createBiquadFilter();
     filt.type = 'lowpass'; filt.frequency.value = 320; filt.Q.value = 0.7;
-    filt.connect(master);
+    filt.connect(bus);
     [55, 82.4, 110.6].forEach((f, k) => {
       const o = ctx.createOscillator();
       o.type = k === 2 ? 'triangle' : 'sine';
@@ -3853,8 +5196,14 @@ function audioInit() {
     const nf = ctx.createBiquadFilter();
     nf.type = 'bandpass'; nf.frequency.value = 160; nf.Q.value = 0.7;
     const ng = ctx.createGain(); ng.gain.value = 0;
-    src.connect(nf); nf.connect(ng); ng.connect(master); src.start();
+    /* the engine is heard dry — it is behind you, not across the room — but
+       a little of it goes into the tail so that the ship sounds like it is
+       flying through the same space as everything else */
+    const nsend = ctx.createGain(); nsend.gain.value = 0.30;
+    src.connect(nf); nf.connect(ng); ng.connect(master);
+    ng.connect(nsend); nsend.connect(pre); src.start();
     AUD.noise = nf; AUD.ngain = ng; AUD.ctx = ctx; AUD.master = master;
+    AUD.bus = bus; AUD.echo = echo; AUD.wetIn = pre;
     return true;
   } catch (e) { console.error(e); return false; }
 }
@@ -3880,16 +5229,24 @@ function audioPing(i) {
   const step = PENTA[Math.abs(i * 7 + nodes[i].n.length) % PENTA.length];
   const f = 220 * Math.pow(2, (step + (nodes[i].k === 'raw' ? 0 : 12)) / 12);
   const g = ctx.createGain();
+  /* A slower attack than a ping needs — 40 ms rather than 14 — because a
+     hard transient in a long room is a click followed by a room, and a soft
+     one is just the room. The body of the note is shorter than it was and
+     what you actually hear is mostly tail. */
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.16, t + 0.014);
-  g.gain.exponentialRampToValueAtTime(0.0004, t + 1.5);
-  g.connect(AUD.master);
-  [[f, 'sine'], [f * 2.004, 'sine']].forEach(([fr, ty], k) => {
+  g.gain.exponentialRampToValueAtTime(0.15, t + 0.040);
+  g.gain.exponentialRampToValueAtTime(0.0004, t + 2.4);
+  g.connect(AUD.bus || AUD.master);
+  if (AUD.echo) g.connect(AUD.echo);
+  /* the octave and the fifth above, both quiet: partials, not a chord. In a
+     dry signal they are barely audible; through seven seconds of tail they
+     are what the tail is made of. */
+  [[f, 1], [f * 2.004, 0.30], [f * 2.998, 0.11]].forEach(([fr, lvl]) => {
     const o = ctx.createOscillator();
-    o.type = ty; o.frequency.value = fr;
-    const og = ctx.createGain(); og.gain.value = k ? 0.32 : 1;
+    o.type = 'sine'; o.frequency.value = fr;
+    const og = ctx.createGain(); og.gain.value = lvl;
     o.connect(og); og.connect(g);
-    o.start(t); o.stop(t + 1.6);
+    o.start(t); o.stop(t + 2.6);
   });
 }
 function audioStep() {
@@ -3935,7 +5292,8 @@ const MM = {
   age: 0, clock: 0, zoom: 1, px: 0, py: 0, trail: [], r1: 150, order: [], ax: 1,
   hint: null,                 // the live counts the map's caption quotes
   rings: [], hop2: false, orbit: true,
-  sky: null, bright: [], deep: null, deepR: 0, vig: null, spr: new Map()
+  sky: null, bright: [], deep: null, deepR: 0, vig: null, spr: new Map(),
+  bloom: null                  // the quarter-size buffer the glow is built in
 };
 const MM_MAX  = 26;           // first-ring neighbours; beyond this the wheel mushes
 const MM_HOP2 = 34;           // second ring, when it is asked for
@@ -4164,7 +5522,19 @@ function mmHalo(R, G, B) {
     x.fillStyle = g; x.fillRect(0, 0, S, S);
   });
 }
+/* The colour a note is drawn in, taken from the same array the orrery reads.
+
+   This used to go straight to the folder's colour, which was the same thing
+   right up until notes started carrying an age tint — and then the two views
+   quietly stopped agreeing. The same note was amber in the cosmos and cyan on
+   the plate, so whichever screen you were looking at was teaching you a
+   different meaning for colour. COL is where a node's colour is decided; this
+   asks there. */
 function mmRGB(i) {
+  if (COL && i >= 0 && i < N)
+    return [Math.round(COL[i*3] * 255),
+            Math.round(COL[i*3+1] * 255),
+            Math.round(COL[i*3+2] * 255)];
   const c = (catOf[i] && catOf[i].color) || CORE_COLOR;
   return [Math.round(c.r * 255), Math.round(c.g * 255), Math.round(c.b * 255)];
 }
@@ -4331,7 +5701,10 @@ function mmHint() {
   $('mmhint').innerHTML =
     (h.trunc ? T('mm.trunc', { t: h.trunc, n: MM_MAX }) + '<br>' : '') +
     (h.hop2total > h.hop2n ? T('mm.trunc2', { t: h.hop2total, n: h.hop2n }) + '<br>' : '') +
-    T('mm.hintfull');
+    T('mm.hintfull') +
+    /* appended rather than folded into the line above, because the shortcut
+       only exists when there is a host to open a note in */
+    (canOpen() ? ' · ' + T('mm.hintopen') : '');
 }
 
 function mmCrumbs() {
@@ -4682,40 +6055,129 @@ function mindDraw(now) {
     const far = A.hop === 2 || B.hop === 2;
     const col = MM_LINK_COL[t];
     const g = linkGeom(A, B, grow);
+    const iz2 = 1 / MM.zoom;
     const path = () => {
       mctx.beginPath();
       mctx.moveTo(A.x, A.y);
       mctx.quadraticCurveTo(g.cx, g.cy, g.ex, g.ey);
       mctx.stroke();
     };
+    /* The stroke pattern the orrery uses for the same three kinds of link:
+       a written wikilink whole, a source tether broken now and then, an
+       inferred one broken twice as often. The two views were teaching
+       different conventions for the same fact — the cosmos had learned to say
+       "how firm is this" with a gap, and the plate was still saying it with
+       colour alone, which is the channel that goes first in a crowd.
+
+       Lengths are in screen pixels, divided back out by the zoom, so the
+       pattern holds its size as the plate is scaled — the same reasoning as
+       the pixel-period dashes on the orrery's arcs. */
+    const dashOf = ty => ty === 1 ? [7*iz2, 5*iz2] : ty === 2 ? [2.5*iz2, 4*iz2] : null;
+    const dash = dashOf(t);
+    const setDash = d => mctx.setLineDash(d || []);
+
+    /* ---- casing ----
+       A dark pass under the line, a little wider than it. On a plate where
+       two dozen curves cross each other this is the whole difference between
+       a graph and a ball of wool: at every crossing the line drawn later cuts
+       the one drawn earlier, and the eye gets to follow a single link from
+       one end to the other instead of losing it in the tangle.
+
+       It is the trick the labels already use to stay readable over the links
+       they sit on, pointed at the links themselves. Not opaque — the sky and
+       the dust behind have to survive it — but dark enough to break the line
+       underneath. Never dashed: a casing with gaps in it does not case
+       anything, so it is always the solid version of the same curve. */
+    const casing = (wide, alpha) => {
+      setDash(null);
+      mctx.strokeStyle = 'rgba(1,4,10,' + alpha + ')';
+      mctx.lineWidth = wide;
+      path();
+    };
+
     if (near) {
+      casing(7.2 * iz2, 0.72);
       /* a wide soft pass under the line reads as the link glowing rather than
          merely being thicker */
       mctx.strokeStyle = 'rgba(' + col + ',' + (0.16 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 6 / MM.zoom;
-      mctx.setLineDash([]);
+      mctx.lineWidth = 6 * iz2;
+      setDash(null);
       path();
       mctx.strokeStyle = 'rgba(' + col + ',' + (0.92 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 1.9 / MM.zoom;
+      mctx.lineWidth = 1.9 * iz2;
+      setDash(dash);
       path();
+      /* the travelling dash says which way the link runs, and rides on top of
+         the type pattern rather than replacing it — direction and firmness
+         are two different things to know about a link */
       mctx.strokeStyle = 'rgba(235,250,255,' + (0.55 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 1.5 / MM.zoom;
-      mctx.setLineDash([2.5 / MM.zoom, 11 / MM.zoom]);
-      mctx.lineDashOffset = -(now * 0.022) % (13.5 / MM.zoom);
+      mctx.lineWidth = 1.5 * iz2;
+      mctx.setLineDash([2.5 * iz2, 11 * iz2]);
+      mctx.lineDashOffset = -(now * 0.022) % (13.5 * iz2);
       path();
       mctx.setLineDash([]);
+      mctx.lineDashOffset = 0;
       return;
     }
-    mctx.setLineDash([]);
     /* At a line this thin on a background this dark the structure was only
        just visible, and dimming a node dropped its links out of the picture
        entirely — the shape of the graph is the point, so the quiet links are
        given enough weight to survive being quiet. The second hop is quieter
        again; it is context, not the subject. */
+    const lw = (far ? .7 : hot ? 1.3 : .95) * iz2;
+    /* the second hop is a thicket and casing every strand of it would print a
+       dark web over the dust; it is context, and context may overlap */
+    if (!far) casing(lw + 2.6 * iz2, 0.55 * grow);
+    setDash(dash);
     mctx.strokeStyle = 'rgba(' + col + ',' +
       ((far ? .13 : hot ? .46 : .22) * grow).toFixed(3) + ')';
-    mctx.lineWidth = (far ? .7 : hot ? 1.3 : .95) / MM.zoom;
+    mctx.lineWidth = lw;
     path();
+    mctx.setLineDash([]);
+  }
+
+  /* ---- orbit trails ----
+     The cosmos got these; the plate turns too, and for the same reason it
+     wanted them there. A node creeping round its ring reads as a dot that is
+     somewhere slightly different each time you look at it, and a short wake
+     behind it reads as a system going round.
+
+     Rest positions, not drawn positions: the wake is where the orbit has
+     been, and a node that has been flung out on its spring is somewhere the
+     orbit never took it. Stepping back is a rotation of the angle, so this is
+     one cos and one sin per node and no history to keep — the same trick the
+     orrery uses, and cheaper here, where there are sixty nodes rather than
+     three thousand.
+
+     Off when the orbits are, because then nothing has been anywhere. */
+  if (MM.orbit && SET.trl > 0.02 && age > 0.9) {
+    const amt = SET.trl;
+    const AX = MM.ax;
+    mctx.globalCompositeOperation = 'lighter';
+    mctx.lineCap = 'round';
+    MM.nodesL.forEach(n => {
+      if (n.root || !n.w) return;
+      const born = clamp((age - n.delay) / 0.34, 0, 1);
+      if (born < 0.6) return;
+      const [R, G, B] = mmRGB(n.i);
+      /* far enough back to be a wake, short enough not to become a ring */
+      const sweep = -0.30 * (n.w < 0 ? -1 : 1);
+      const M = 7;
+      let px2 = n.rx, py2 = n.ry;
+      for (let s = 1; s <= M; s++) {
+        const a2 = n.ang + sweep * (s / M);
+        const qx = Math.cos(a2) * n.ring * AX, qy = Math.sin(a2) * n.ring;
+        /* squared falloff, so it is brightest just behind the node and thins
+           to nothing rather than stopping */
+        const f = 1 - s / M;
+        mctx.strokeStyle = 'rgba(' + R + ',' + G + ',' + B + ',' +
+                           (f * f * 0.52 * amt * born).toFixed(3) + ')';
+        mctx.lineWidth = (n.r * 0.5 * f + 0.3) * iz;
+        mctx.beginPath(); mctx.moveTo(px2, py2); mctx.lineTo(qx, qy); mctx.stroke();
+        px2 = qx; py2 = qy;
+      }
+    });
+    mctx.globalCompositeOperation = 'source-over';
   }
 
   /* data pulses — the same travelling light the orrery runs along its links,
@@ -4829,7 +6291,65 @@ function mindDraw(now) {
   mmDrawLabels(labelQ, iz);
   mctx.restore();
 
+  mmBloom();
   if (MM.vig) mctx.drawImage(MM.vig, 0, 0);
+}
+
+/* ---- bloom, on a 2D canvas ----
+   The plate fakes light the way a painter does: every glowing thing carries
+   its own radial gradient. That puts a halo on the object and stops there, so
+   nothing here ever lights anything else, and the cosmos next door — which
+   now has a real bloom — reads as the more luminous of the two for no reason
+   the vault could explain.
+
+   Canvas2D will do this in three draws. The whole plate goes into a quarter
+   size buffer through a filter that doubles as the bright pass: `contrast`
+   pivots at mid grey, so cranking it drives everything below halfway to black
+   and everything above it to white, which is a threshold with a soft knee for
+   free. Blur while it is small — a five pixel blur at a quarter scale is a
+   twenty pixel spill at full — then lay it back over the plate with `lighter`.
+
+   Drawn after the transform is released and before the vignette: bloom is
+   light in the scene, and the vignette is the lens the scene is seen through.
+
+   `filter` is checked rather than assumed. It is on everywhere this plugin
+   can run, but a canvas that silently ignores the string would paint the
+   whole plate over itself at full strength, and a wash-out is a much worse
+   failure than no bloom. */
+let MM_FILTER_OK = null;
+function mmBloom() {
+  const amt = SET.blm;
+  if (amt <= 0.02) return;
+  if (MM_FILTER_OK === null) {
+    const p = document.createElement('canvas').getContext('2d');
+    p.filter = 'blur(1px)';
+    MM_FILTER_OK = p.filter === 'blur(1px)';
+  }
+  if (!MM_FILTER_OK) return;
+  const bw = Math.max(1, Math.round(MM.w * MM.dpr / 4));
+  const bh = Math.max(1, Math.round(MM.h * MM.dpr / 4));
+  let b = MM.bloom;
+  if (!b || b.canvas.width !== bw || b.canvas.height !== bh) {
+    const c = document.createElement('canvas');
+    c.width = bw; c.height = bh;
+    b = MM.bloom = c.getContext('2d');
+  }
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  b.globalCompositeOperation = 'copy';
+  b.filter = 'brightness(1.1) contrast(2.7) blur(5px)';
+  b.drawImage(mmc, 0, 0, bw, bh);
+  b.filter = 'none';
+  b.globalCompositeOperation = 'source-over';
+
+  mctx.save();
+  mctx.setTransform(MM.dpr, 0, 0, MM.dpr, 0, 0);
+  mctx.globalCompositeOperation = 'lighter';
+  /* held below the orrery's own strength on the same knob: the plate is a
+     smaller, denser picture and the same spill closes its gaps up */
+  mctx.globalAlpha = Math.min(1, amt * 0.62);
+  mctx.imageSmoothingEnabled = true;
+  mctx.drawImage(b.canvas, 0, 0, MM.w, MM.h);
+  mctx.restore();
 }
 
 /* ---- the star at the centre ----
@@ -5100,6 +6620,11 @@ $('mm-go').onclick = () => {
   if (ship.on) shipFlyTo(i); else focusNode(i, true);
 };
 $('mm-center').onclick = () => { if (MM.sel !== MM.root) buildMind(MM.sel); };
+/* The map stays up. Reading a note in the editor and coming back to the same
+   wheel of neighbours is the loop this popup exists for; closing it would
+   make every note a fresh start. Ctrl/Cmd, which opens in another leaf,
+   is the case where you do want both on screen at once. */
+$('mm-open').onclick = e => openNote(MM.sel, e);
 $('i-mm').onclick = () => openMind(selected);
 addEventListener('resize', () => { if (mindOpen) { mmResize(); buildMind(MM.root, {push:false}); } });
 /* ============================================================ SHIP MODE
@@ -5381,7 +6906,10 @@ function shipFlyTo(j) {
   const to = new THREE.Vector3(P[j*3], P[j*3+1], P[j*3+2]);
   const d = from.distanceTo(to);
   const mid = from.clone().add(to).multiplyScalar(.5);
-  mid.y += d * 0.34 * (1 - SET.ten);          // the link's own sag
+  /* the link's own lift, ARC HEIGHT and all — the comment above says the ship
+     rides the curve the link is drawn on, and it only stays true if both read
+     the same knobs */
+  mid.y += d * (0.20 + 0.34 * (1 - SET.ten)) * SET.arc;
   ship.travel = { from, mid, to, t:0, dur: clamp(d / (baseThrust()*0.55), 0.7, 6.5),
                   target:j };
   ship.vel.set(0,0,0);
@@ -5708,6 +7236,10 @@ addEventListener('pointerup', e => {
 /* the double-click that opens the mind map has to survive the drag handler,
    so it is timed here rather than left to the browser's dblclick event */
 function tapNode(i, e) {
+  /* Ctrl/Cmd-click is "open this" everywhere in Obsidian, including on every
+     link inside every note. Honouring it here costs one line and means the
+     gesture a user already has works on a planet too. */
+  if (canOpen() && (e.ctrlKey || e.metaKey)) { select(i); openNote(i, e); return; }
   const now = performance.now();
   /* Matching the two taps by node index alone lost most double-clicks, and
      the first tap was the reason: selecting pins the rig to the body, so the
@@ -5762,6 +7294,9 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
 
   if (mindOpen) {                      // the popup owns the keyboard while up
+    if (k === 'enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault(); openNote(MM.sel, e); return;
+    }
     if (k === 'escape' || k === 'm') { e.preventDefault(); closeMind(); }
     else if (k === 'arrowright' || k === 'arrowdown' || k === 'tab') {
       e.preventDefault(); mmCycle(e.shiftKey && k === 'tab' ? -1 : 1);
@@ -5779,6 +7314,13 @@ addEventListener('keydown', e => {
     return;
   }
 
+  /* Ahead of the mode branches, because opening the note you are looking at
+     means the same thing whether you are flying to it, standing on it, or
+     looking down at the whole vault from outside. */
+  if (k === 'o' && canOpen() && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault(); openNote(selected, e); return;
+  }
+
   /* on a surface the movement keys walk you around the world rather than
      flying you anywhere — the sky is what changes, not your address */
   if (SKY.on) {
@@ -5793,6 +7335,7 @@ addEventListener('keydown', e => {
       return;
     }
     if (k === 'p') { e.preventDefault(); savePoster(); return; }
+    if (k === 'c') { e.preventDefault(); recordClip(); return; }
     if (k === 'r') { SKY.yaw = 0; SKY.pitch = 0.10; SKY.fov = 58; return; }
     return;
   }
@@ -5820,6 +7363,7 @@ addEventListener('keydown', e => {
   else if (k === 'n') { e.preventDefault(); twinsShow(selected); }
   else if (k === ' ') { e.preventDefault(); if (!e.repeat) rippleHere(); }
   else if (k === 'p') { e.preventDefault(); savePoster(); }
+  else if (k === 'c') { e.preventDefault(); recordClip(); }
   else if (k === 'u') { e.preventDefault(); audioSet(!AUD.on); }
   else if (k === 'h') $('hud').style.display = $('hud').style.display==='none'?'':'none';
   else if (k === 'escape') {
@@ -6341,6 +7885,7 @@ function skyHUD() {
 let last = performance.now(), fps = 60, t = 0, frame = 0;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
 const _pos = new THREE.Vector3();
+const _actUp = new THREE.Vector3();     // the active-note mark's own scratch
 
 function resize() {
   const w = innerWidth, h = innerHeight;
@@ -6348,6 +7893,11 @@ function resize() {
   camera.aspect = w/h; camera.updateProjectionMatrix();
   const sc = h / (2 * Math.tan(camera.fov * Math.PI/360));
   glowMats.forEach(m => { if (m.uniforms) m.uniforms.uScale.value = sc; });
+  /* the offscreen buffers are sized in device pixels, not CSS ones, or the
+     bloom is resampled from a frame at the wrong resolution on every screen
+     that is not exactly 1x */
+  const pr = renderer.getPixelRatio();
+  bloomSize(Math.max(1, Math.round(w * pr)), Math.max(1, Math.round(h * pr)));
   if (stageCam) { stageCam.aspect = w/h; stageCam.updateProjectionMatrix(); }
   layoutHUD();
   if (mindOpen) mmResize();
@@ -6362,11 +7912,13 @@ function updatePositions(dtms) {
      place because the planets anchored to it read that vector each frame, so
      moving the star moves its whole system with it. */
   let starMoved = false;
+  /* the live ORBIT GAP: the whole ring structure breathes by this factor */
+  const gs = gapSys;
   cats.forEach((c, ci) => {
     if (c.oR === undefined) return;
     const a = c.oA0 + t * c.oSp;
-    c.pos.set(Math.cos(a) * c.oR, c.oY, Math.sin(a) * c.oR);
-    if (c.obj) c.obj.position.copy(c.pos);
+    const oR = c.oR * gs;
+    c.pos.set(Math.cos(a) * oR, c.oY * gs, Math.sin(a) * oR);
     if (starGlow) {
       const gp = starGlow.geometry.attributes.position.array;
       gp[ci*3] = c.pos.x; gp[ci*3+1] = c.pos.y; gp[ci*3+2] = c.pos.z;
@@ -6374,15 +7926,21 @@ function updatePositions(dtms) {
     }
   });
   if (starMoved) starGlow.geometry.attributes.position.needsUpdate = true;
+  /* the spins are advanced here and written in updateStars, which runs after
+     every position in the frame is final — one place that composes a star's
+     matrix rather than three that each moved a piece of it */
   cats.forEach(c => {
-    if (!c.shell) return;
-    c.shell.rotation.y += 0.0016; c.shell.rotation.x += 0.0007;
-    c.ring.rotation.z += 0.0021;
-    const b = 1 + Math.sin(t*0.0011 + c.oA0*3.1) * 0.035;
-    c.core.scale.setScalar(b);
+    if (c.si === undefined) return;
+    c.sy += 0.0016; c.sx += 0.0007; c.rz += 0.0021;
   });
-  if (boundary) boundary.rotation.y = t * 0.0000085;
-  if (spiralTrack) spiralTrack.rotation.y = -t * 0.000055;
+  /* the drawn guides are the layout made visible, so they have to move with
+     it — the ring tracks, the spiral the archive rides, and the shell that
+     holds the undated end of it */
+  if (boundary) { boundary.rotation.y = t * 0.0000085;
+                  boundary.scale.set(gs, .68 * gs, gs); }
+  if (spiralTrack) { spiralTrack.rotation.y = -t * 0.000055;
+                     spiralTrack.scale.setScalar(gs); }
+  if (ringGuides) ringGuides.scale.setScalar(gs);
   if (sunObj) {
     const u = sunObj.userData;
     sunObj.position.set(P[coreIdx*3], P[coreIdx*3+1], P[coreIdx*3+2]);
@@ -6416,10 +7974,19 @@ function updatePositions(dtms) {
     const a = o.ph + t * o.sp;
     const ca = Math.cos(a), sa = Math.sin(a);
     const ci = Math.cos(o.inc), si = Math.sin(o.inc);
-    const orad = o.kind === 'wiki' ? o.r0 * spr : o.r0;
+    /* A planet's orbit widens from the clearance around its own star; the
+       archive out on the spiral rides the ring structure instead, so it
+       moves with the systems rather than with them. */
+    let orad, oy = o.y;
+    if (o.kind === 'wiki') {
+      const f = Math.max(0.05, (GAPL.step * gapNow + o.gapA) / (o.step0 || 1));
+      orad = (o.inner + (o.r0 - o.inner) * f) * spr;
+    } else {
+      orad = o.r0 * gs; oy *= gs;
+    }
     const x = ca*orad, z = sa*orad;
     P[i*3]   = o.anchor.pos.x + x            + DSP[i*3];
-    P[i*3+1] = o.anchor.pos.y + o.y + z*si   + DSP[i*3+1];
+    P[i*3+1] = o.anchor.pos.y + oy + z*si    + DSP[i*3+1];
     P[i*3+2] = o.anchor.pos.z + z*ci         + DSP[i*3+2];
   }
   /* pass 2 : moons around their planet, reading the parent's already
@@ -6471,6 +8038,7 @@ function updateVisibility(dt) {
    brightest thing in that corner of the sky was the one thing the click was
    supposed to remove. The star, its shell, its ring and its glow sprite now
    all ride the same damped value the notes do. */
+const _sq = new THREE.Quaternion(), _sEul = new THREE.Euler();
 function updateStars(dt) {
   if (!cats || !cats.length) return;
   const k = 1 - Math.pow(0.004, dt);
@@ -6483,16 +8051,86 @@ function updateStars(dt) {
     if (GEN.on) want *= GEN.u >= c.genT
       ? clamp((GEN.u - c.genT) / GEN.grow, 0, 1) : 0;
     const v = c.vis = lerp(c.vis === undefined ? want : c.vis, want, k);
-    const on = v > 0.006;
-    if (c.obj) c.obj.visible = on;
-    if (on) {
-      c.core.material.opacity  = c.op0.core  * v;
-      c.shell.material.opacity = c.op0.shell * v;
-      c.ring.material.opacity  = c.op0.ring  * v;
-    }
     if (ga) { ga.array[ci] = c.op0.glow * v; dirty = true; }
+    const i = c.si;
+    if (i === undefined || !starCore) return;
+    /* A star switched off is scaled away as well as faded out. The alpha
+       alone would do it — the patched shader discards at nothing — but a
+       collapsed instance never reaches the fragment stage at all, and an
+       instance is the one thing here that cannot simply be left out of the
+       draw. This is the `visible = false` the Group used to get. */
+    const R = v > 0.006 ? c.sR : 0;
+    const b = 1 + Math.sin(t*0.0011 + c.oA0*3.1) * 0.035;
+
+    _sq.identity();
+    _s.set(R*b, R*b, R*b);
+    _m.compose(c.pos, _sq, _s);
+    starCore.setMatrixAt(i, _m);
+    starAlC[i] = c.op0.core * v;
+
+    _sq.setFromEuler(_sEul.set(c.sx, c.sy, 0));
+    _s.set(R, R, R);
+    _m.compose(c.pos, _sq, _s);
+    starShell.setMatrixAt(i, _m);
+    starAlS[i] = c.op0.shell * v;
+
+    _sq.setFromEuler(_sEul.set(c.rx, 0, c.rz));
+    _m.compose(c.pos, _sq, _s);
+    starRing.setMatrixAt(i, _m);
+    starAlR[i] = c.op0.ring * v;
   });
   if (dirty) ga.needsUpdate = true;
+  if (starCore) {
+    starCore.instanceMatrix.needsUpdate = true;
+    starShell.instanceMatrix.needsUpdate = true;
+    starRing.instanceMatrix.needsUpdate = true;
+    starCore.geometry.attributes.aAlpha.needsUpdate = true;
+    starShell.geometry.attributes.aAlpha.needsUpdate = true;
+    starRing.geometry.attributes.aAlpha.needsUpdate = true;
+  }
+}
+
+/* ====================================================== VIEW STATE
+   Two things every writer below wants to know about this frame's camera, and
+   both used to be worked out by whoever needed them — which is how the links
+   and the nodes came to fog on different reference distances for one release.
+   Computed once, here, and read from there.
+
+   ---- fog ----
+   Additive glow has no occlusion and no falloff: a node behind the core
+   arrives at the eye exactly as bright as one in front of it, so a dense
+   vault reads as a flat disc of light with the far side painted over the near
+   one. The depth is in the scene and not on the screen.
+
+   The reference is the camera's own range, never an absolute distance. That
+   is the whole trick: fog pinned to world units either does nothing up close
+   or swallows the vault entirely when you pull back to look at it, whereas
+   fog measured against how far out you are currently standing is a depth cue
+   at every zoom. At the range you are focused on, nothing is attenuated; half
+   again as far and it is visibly behind; the floor stops the far side from
+   disappearing, because it is still your vault.
+
+   ---- frustum ----
+   Six planes, so the writers can ask whether a thing is on screen at all
+   before spending anything on drawing it. The link mesh has frustumCulled off
+   — it is one buffer holding every edge in the vault, so three.js can only
+   ever cull all of them or none — and this is the finer-grained replacement
+   that a single shared buffer otherwise gives up. */
+const FOG = { ref: 1, k: 1.15, floor: 0.30 };
+const FRU = new THREE.Frustum();
+const _fm = new THREE.Matrix4(), _fs = new THREE.Sphere();
+function fogAt(d) {
+  const f = 1 - (d/FOG.ref - 1) * FOG.k;
+  return f > 1 ? 1 : f < FOG.floor ? FOG.floor : f;
+}
+function viewStep() {
+  /* Standing on a planet the orbit rig's distance is stale — the surface
+     camera is its own — so the range is taken from where the eye actually is
+     relative to the core. Same for the ship, which is its own camera too. */
+  FOG.ref = Math.max(60, (ship.on || SKY.on) ? camera.position.length() : rig.dist);
+  camera.updateMatrixWorld();
+  FRU.setFromProjectionMatrix(
+    _fm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 }
 
 /* A node's size means something — citation count — so it must never move.
@@ -6502,6 +8140,7 @@ function writeInstances() {
   const ic = bodies.instanceColor.array;
   const bri = SET.bri;
   const gsc = GEN.on, rip = ripples.length > 0;
+  const cam = camera.position, ccx = cam.x, ccy = cam.y, ccz = cam.z;
   for (let i=0;i<N;i++){
     _pos.set(P[i*3], P[i*3+1], P[i*3+2]);
     /* the core has its own unlit geometry, so its instance is collapsed to
@@ -6552,8 +8191,52 @@ function writeInstances() {
     /* the halo of the world under your feet would be a wall of light across
        the whole frame */
     if (SKY.on && i === SKY.i) a = 0;
+    /* Depth fog, on the halo and not on the body.
+
+       The body is a lit mesh behind a depth test: it already carries distance
+       in its shading and in what covers it, and dimming it would only make a
+       far note muddy without telling anyone anything new. The halo is the
+       additive sprite that carries none of that, and it is the halo that a
+       thousand nodes stack into a flat wall of light. So the fog goes exactly
+       where the missing cue is.
+
+       The boosts above survive it for the same reason they do on the links:
+       selection at 2.1x and a scan target at 2.4x clear the 0.30 floor
+       several times over, so a marked node on the far side still reads over
+       an ordinary one in front of it. */
+    a *= fogAt(Math.sqrt((P[i*3]-ccx)*(P[i*3]-ccx) +
+                         (P[i*3+1]-ccy)*(P[i*3+1]-ccy) +
+                         (P[i*3+2]-ccz)*(P[i*3+2]-ccz)));
     gAl[i] = Math.min(2.6, a * bri);
     if (gsc || genSz) gSz[i] = gSz0[i] * (gsc ? genScale[i] : 1);
+  }
+  /* The ringed bodies, which are few — the top tenth by incoming links, and
+     never more than RING_CAP — so this is a short second pass rather than a
+     branch inside the loop above that every node would pay for. */
+  if (ringMesh) {
+    for (let k = 0; k < ringIdx.length; k++) {
+      const i = ringIdx[k];
+      _pos.set(P[i*3], P[i*3+1], P[i*3+2]);
+      /* The hero globe stands at the same place and the same radius as the
+         instance it replaces, so the ring needs no exemption for it — and
+         the close-up planet is exactly where a ring is worth seeing. The
+         world under your feet is the one case: from the ground, its own ring
+         would be a bar across the whole sky. */
+      let s = (SKY.on && i === SKY.i) ? 0 : RAD[i] * ringK[k];
+      /* A ring only a few pixels across is not read as a ring; it is read as
+         a smudge on a dot, and forty of them is a rash across the map. So it
+         grows in with approach rather than being drawn at every range: from
+         the whole vault you see planets, and closing on one you find it has
+         rings. Scale rather than opacity, because these share one material —
+         and scaling from zero is a ring opening out, which is a better
+         arrival than a ring fading up. */
+      const app = s / Math.max(1, camera.position.distanceTo(_pos));
+      s *= sstep(clamp((app - 0.011) / 0.026, 0, 1));
+      if (gsc) s *= genScale[i];
+      _m.compose(_pos, ringQ[k], _s.set(s, s, s));
+      ringMesh.setMatrixAt(k, _m);
+    }
+    ringMesh.instanceMatrix.needsUpdate = true;
   }
   if (gsc || genSz) { nodeGlowGeo.attributes.aSize.needsUpdate = true; genSz = gsc; }
   bodies.instanceMatrix.needsUpdate = true;
@@ -6601,21 +8284,71 @@ function stepLinkLayers(dt) {
    zero vertices written again, because they are already zero. */
 function writeLinks() {
   if (!EN) return;
-  /* tension 1 = taut cable, 0 = slack rope hanging under the pair */
-  const sag = 0.34 * (1 - SET.ten);
+  /* Two curvatures, and they are not the same idea.
+
+     lift is height: the link rises above the line between the pair, out of
+     the orbital plane the bodies themselves lie in. This is the one that
+     carries the arc now. An arch that stands has somewhere to stand *from* —
+     the plane of the system — and the eye reads the gap underneath it as the
+     span, which is exactly what a link is. ARC HEIGHT scales it; TENSION
+     still decides how much curve there is to scale.
+
+     bow is the sideways push, *outward* from the core along the direction the
+     pair sits in. Led on its own it laid every arch flat into the plane, so
+     from the usual reading angle — down onto the map — the links were a mat
+     of curves lying in the same sheet as the bodies. It is kept, small, for
+     the one thing it does that lift cannot: seen from directly overhead a
+     purely vertical arc is a straight line, and a little bow keeps the curve
+     legible from up there too — including with ARC HEIGHT at zero, which is
+     the one setting where bow is all there is. */
+  const lift = (0.20 + 0.34 * (1 - SET.ten)) * SET.arc;
+  const bow  = 0.05 + 0.09 * (1 - SET.ten);
   const scanSet = (ship.on && ship.scan && ship.lock >= 0) ? scanLit : null;
   const lnk = SET.lnk, sel = selected, lock = ship.lock;
   const rip = ripples.length > 0 ? ripN : null;
   const VP = P, LP = linkPos, LC = linkCol, AL = alpha;
   const STRIP = (SEG-1)*2;
-  const inv = 1/(SEG-1);
   let w = 0, dirty = false;
+  /* Segments that carry colour, as against the ones collapsed for a gap, a
+     dead link or a sample the curve did not need. The frame budget readout
+     shows it against the ceiling, so the adaptive sampling above is something
+     you can watch work rather than something you have to take on faith.
+
+     Segments, and the readout says SEGS. It said VERTS for a day, which was
+     off by the factor of two between a line segment and its two endpoints —
+     a panel built to stop numbers going stale is the last place to leave a
+     wrong one. */
+  let live = 0;
+
+  /* ---- depth ----
+     Where the eye is and how many pixels a unit covers, for two jobs that
+     both used to be done blind: how bright a link is for its distance, and
+     how many samples its curve deserves. The fog reference and the frustum
+     come from viewStep(), shared with the node writer. */
+  const cam = camera.position;
+  const cx = cam.x, cy = cam.y, cz = cam.z;
+  const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  let culled = 0;
+
   for (let e=0;e<EN;e++){
     const ed = edges[e];
     const ia = ed[0], ib = ed[1], ty = ed[2];
     const prog = linkProg[e];
     const aa = AL[ia], ab = AL[ib];
-    let str = (aa < ab ? aa : ab) * (ty===0 ? .55 : ty===1 ? .30 : .16) * lnk;
+    /* .55 / .30 / .16 was a hierarchy doing two jobs. Brightness was the only
+       cue that survived a crowded frame — colour is the first thing lost to a
+       dim link or a bright neighbour, and lost outright to a colour-blind
+       reader — so the weaker kinds of link were held down to keep them from
+       being mistaken for wikilinks. It worked, at the price of a latent link
+       being nearly invisible, which is a strange thing to do to the one kind
+       of link the vault did not already know about.
+
+       The dashes carry that distinction now, and carry it in a way brightness
+       cannot: a gap is still a gap at any intensity. So this can go back to
+       meaning what it says — how much light a link contributes — and the
+       weaker two come up. Not to parity: a written link is still the firmer
+       fact, and should still read as one. */
+    let str = (aa < ab ? aa : ab) * (ty===0 ? .55 : ty===1 ? .40 : .28) * lnk;
     if (sel >= 0) str *= (ia===sel || ib===sel) ? 3.4 : .22;
     /* during a scan the target's own links burn bright and the rest recede,
        so the choice on offer is unambiguous */
@@ -6632,8 +8365,74 @@ function writeLinks() {
     if (!ec) ec = edgeCache[e] = {};
 
     const ax = VP[ia*3], ay = VP[ia*3+1], az = VP[ia*3+2];
+    const bx = VP[ib*3], by = VP[ib*3+1], bz = VP[ib*3+2];
 
-    if (prog <= 0.002 || str <= 0.002) {
+    /* One depth per edge, taken at the chord's midpoint. Per *sample* would be
+       a sqrt on every vertex of every link for a gradient nobody can see along
+       a line a few hundred units long — the fog is a cue about which side of
+       the vault a link is on, and an edge is on one side or the other. */
+    const hx = (ax+bx)*.5, hy = (ay+by)*.5, hz = (az+bz)*.5;
+    const ex = hx-cx, ey = hy-cy, ez = hz-cz;
+    const eyeD = Math.sqrt(ex*ex + ey*ey + ez*ez);
+    /* No exemption for the selected node or the scan target, and none is
+       needed: their 3.4x and 4.2x already clear the 0.30 floor several times
+       over, so a highlighted link on the far side still outranks an ordinary
+       one in front of it. Fog changes the ordering within a tier, which is
+       what it is for, and not between tiers, which would be a lie. */
+    str *= fogAt(eyeD);
+
+    const dx = ax-bx, dy = ay-by, dz = az-bz;
+    const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    /* the control point's offset from the chord midpoint, accumulated rather
+       than applied directly, because its length is also what decides how many
+       samples the curve is worth below */
+    let ox = 0, oy = 0, oz = 0;
+    /* the outward direction at the midpoint, with whatever of it ran along
+       the chord taken back out — an offset along the chord would slide the
+       control point toward one end and skew the arc instead of bending it */
+    const ml = Math.sqrt(hx*hx + hy*hy + hz*hz);
+    if (ml > 1e-4 && d > 1e-4) {
+      const rx = hx/ml, ry = hy/ml, rz = hz/ml;
+      const k = (rx*dx + ry*dy + rz*dz) / (d*d);
+      const ux = rx - k*dx, uy = ry - k*dy, uz = rz - k*dz;
+      const ul = Math.sqrt(ux*ux + uy*uy + uz*uz);
+      /* head-on to the core there is no outward left to bow along, and the
+         lift alone carries the curve */
+      if (ul > 0.08) {
+        const h = d * bow / ul;
+        ox += ux*h; oy += uy*h; oz += uz*h;
+      }
+    }
+    oy += d*lift;
+    const mx = hx+ox, my = hy+oy, mz = hz+oz;
+    const off = Math.sqrt(ox*ox + oy*oy + oz*oz);
+
+    /* ---- is it worth drawing at all? ----
+       Two reasons not to, and they collapse the strip the same way, so they
+       are asked together.
+
+       Dead: faded out by the layer filter, by the formation clock, or by a
+       selection pushing everything else back.
+
+       Off screen: the frustum test. It is done here rather than before the
+       geometry above because the *arc* is what has to be tested, and the arc
+       is not the chord — a link between two bodies both behind you can still
+       stand up through the middle of the frame, and one drawn as a straight
+       line between two visible endpoints can now bulge out past the top of
+       it. The bounding sphere is the one that holds the whole curve: a
+       quadratic bezier never leaves the hull of its three points, so a sphere
+       on the chord midpoint with half the chord plus half the control offset
+       for a radius contains all of it, with a little slack from using the sum
+       rather than the diagonal. Slack is the right way to be wrong here —
+       culling something still on screen is a hole in the picture, and culling
+       one thing too few costs a strip. */
+    let cull = false;
+    if (prog > 0.002 && str > 0.002) {
+      _fs.center.set(hx + ox*0.5, hy + oy*0.5, hz + oz*0.5);
+      _fs.radius = (d + off) * 0.5;
+      if (!FRU.intersectsSphere(_fs)) { cull = true; culled++; }
+    }
+    if (prog <= 0.002 || str <= 0.002 || cull) {
       if (ec.zero) { w += STRIP; ec.str = 0; ec.ty = ty; continue; }
       /* collapse the strip onto one point rather than skipping it — the
          vertex count has to stay constant for the shared buffer */
@@ -6648,38 +8447,202 @@ function writeLinks() {
     ec.zero = false;
     dirty = true;
 
-    const bx = VP[ib*3], by = VP[ib*3+1], bz = VP[ib*3+2];
-    const dx = ax-bx, dy = ay-by, dz = az-bz;
-    const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    const mx = (ax+bx)*.5, my = (ay+by)*.5 + d*sag, mz = (az+bz)*.5;
+    /* How much curve this edge actually has on screen, which is what decides
+       how finely it is worth cutting. A quadratic bezier bulges half as far as
+       its control point is offset, so the sagitta is |o|/2 in world units, and
+       fpx/eyeD turns that into pixels. A link filling the screen gets the
+       ceiling; the same link seen from across the vault gets two samples and a
+       straight line, which is all anyone could tell it from anyway. */
+    const segE = segFor(0.5 * off * fpx / (eyeD > 1 ? eyeD : 1), SEG);
+    /* Dashes, and they carry the same meaning the colours already do — how
+       firm the link is. An explicit wiki link is drawn whole; a source link is
+       broken now and then; a latent one, inferred rather than written, is
+       broken twice as often. Colour alone was doing this work and colour is
+       the first thing lost to a dim link, a bright neighbour or a colour-blind
+       reader, whereas a gap survives all three. It costs nothing: the strip is
+       already a run of separate segments, so a dash is a segment not drawn.
+
+       The period is counted in pixels, not in samples. Skipping every third
+       sample was the obvious way to write this and it made the dash length a
+       hostage to the adaptive sampler: the same link cut into fourteen samples
+       up close and three from across the vault has its gaps three times closer
+       together at one end of the zoom than the other, so a dashed line slowly
+       turned into a dotted one as you flew toward it. Asking instead how many
+       samples fit in twenty-odd pixels holds the pattern still while
+       everything around it scales.
+
+       Only once the curve has segments to spare. Below six the pattern would
+       be eating a third of a line that is a few pixels long, and a link you
+       cannot see is not being told apart from anything. */
+    let dash = 0;
+    if (segE >= 6 && ty !== 0) {
+      const segPx = (d * fpx / (eyeD > 1 ? eyeD : 1)) / (segE - 1);
+      const wantPx = ty === 1 ? 26 : 13;      // source breaks half as often
+      dash = Math.round(wantPx / (segPx > 0.01 ? segPx : 0.01));
+      dash = dash < 2 ? 2 : dash > 7 ? 7 : dash;
+    }
 
     const tint = EDGE_TINT[ty];
     const r = tint.r*str, gg = tint.g*str, bb = tint.b*str;
+    const inv = 1/(segE-1);
     let px = ax, py = ay, pz = az;
-    for (let s=1;s<SEG;s++){
+    for (let s=1;s<segE;s++){
       const u = s*inv*prog, iu = 1-u, i2 = iu*iu, u2 = u*u, k = 2*iu*u;
       const qx = i2*ax + k*mx + u2*bx;
       const qy = i2*ay + k*my + u2*by;
       const qz = i2*az + k*mz + u2*bz;
-      /* the retracting tip runs hot, like something being reeled in */
-      const hot = (prog < 1 && s >= SEG-2) ? 2.6 : 1;
-      const hr = r*hot, hg = gg*hot, hb = bb*hot;
-      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
-      LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
-      LP[w*3]=qx; LP[w*3+1]=qy; LP[w*3+2]=qz;
-      LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
+      if (dash && (s % dash) === 0) {
+        /* the gap. Collapsed onto the point it would have started from rather
+           than skipped, because the strip's vertex count is fixed. */
+        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+        LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
+        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+        LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
+      } else {
+        /* the retracting tip runs hot, like something being reeled in */
+        const hot = (prog < 1 && s >= segE-2) ? 2.6 : 1;
+        const hr = r*hot, hg = gg*hot, hb = bb*hot;
+        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+        LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
+        LP[w*3]=qx; LP[w*3+1]=qy; LP[w*3+2]=qz;
+        LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
+        live++;
+      }
       px = qx; py = qy; pz = qz;
+    }
+    /* the slots the ceiling reserved and this edge did not need, parked on the
+       curve's own last point */
+    for (let s=segE;s<SEG;s++){
+      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+      LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
+      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+      LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
     }
     ec.ax=ax; ec.ay=ay; ec.az=az;
     ec.bx=bx; ec.by=by; ec.bz=bz;
     ec.mx=mx; ec.my=my; ec.mz=mz;
     ec.str=str; ec.ty=ty; ec.prog=prog;
   }
+  PERF.linkLive = live;
+  PERF.linkCap = EN * (SEG-1);
+  PERF.linkCull = culled;
   if (dirty) {
     linkGeo.attributes.position.needsUpdate = true;
     linkGeo.attributes.color.needsUpdate = true;
   }
 }
+
+/* One trail, written backwards from where the body is now.
+
+   The orbit is a circle of radius `orad` in a plane tilted by `inc`, centred
+   on the body's anchor, and updatePositions builds a point on it from cos and
+   sin of the current angle. Stepping back in time is therefore a rotation of
+   that (cos, sin) pair by a fixed negative angle, which is two multiplies and
+   two adds per sample and no trigonometry at all past the first pair.
+
+   The anchor is taken as it is now rather than rewound with the body. A star
+   creeps round the hub some hundreds of times slower than its planets go
+   round it, so rewinding it would move the trail by less than a pixel while
+   costing a second orbit solve per sample — and the arc you want to see is
+   the one round where the star *is*, not a smear of where it has been. */
+function writeTrails() {
+  if (!trailMesh) return;
+  const on = SET.trl > 0.02 && N > 0 && !mindOpen;
+  trailMesh.visible = on;
+  if (!on) { trailGeo.setDrawRange(0, 0); return; }
+
+  const cam = camera.position, cx = cam.x, cy = cam.y, cz = cam.z;
+  const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  const TP = trailPos, TC = trailCol, VP = P;
+  const gs = gapSys, spr = SET.spr, amt = SET.trl;
+  let n = 0, w = 0;
+
+  for (let k=0;k<N && n<TRAIL_CAP;k++){
+    const i = trailOrder[k];
+    const o = orb[i];
+    /* the hub does not orbit, and a note dragged out of its orbit is being
+       held by the reader — a trail on it would describe a path it is not on */
+    if (!o || o.kind === 'core' || !o.sp) continue;
+    const a0 = alpha[i];
+    if (a0 < 0.06) continue;
+    const dx = VP[i*3]-cx, dy = VP[i*3+1]-cy, dz = VP[i*3+2]-cz;
+    const d2 = dx*dx + dy*dy + dz*dz;
+    if (d2 < 1) continue;
+    const dist = Math.sqrt(d2);
+    /* How big this body is on screen, in pixels of radius, and how strongly it
+       is allowed to trail because of it.
+
+       The first cut of this asked for three pixels before drawing anything,
+       which was reasoned from how a trail looks up close and never checked
+       against the view the vault actually opens in: at the framing that fits
+       a whole cosmos on screen the largest planet is about two pixels across,
+       so the answer was no trails at all, ever, until you flew somewhere. The
+       floor is under a pixel now and the fade does the work — at map range the
+       big bodies draw the faintest of wakes and the specks draw nothing, which
+       is the long-exposure look this wanted in the first place, and coming
+       closer brings them up rather than switching them on. */
+    const px = RAD[i] * fpx / dist;
+    if (px < 0.9) continue;
+    const grow = px > 4 ? 1 : (px - 0.9) / 3.1;
+
+    /* the orbit this body is on, in the same terms updatePositions used */
+    let orad, cen, oy = o.y;
+    if (o.kind === 'moon') {
+      const p = o.anchorNode;
+      orad = o.r0 * spr;
+      _tp.set(VP[p*3], VP[p*3+1], VP[p*3+2]);
+      cen = _tp; oy = 0;
+    } else if (o.kind === 'wiki') {
+      const f = Math.max(0.05, (GAPL.step * gapNow + o.gapA) / (o.step0 || 1));
+      orad = (o.inner + (o.r0 - o.inner) * f) * spr;
+      cen = o.anchor.pos;
+    } else {
+      orad = o.r0 * gs; oy *= gs;
+      cen = o.anchor.pos;
+    }
+    if (!cen || !(orad > 0.01)) continue;
+
+    const ang = o.ph + t * o.sp;
+    const ci = Math.cos(o.inc), si = Math.sin(o.inc);
+    /* backwards along the direction of travel, whichever way that is */
+    const step = -TRAIL_SWEEP / (TRAIL_SEG-1) * (o.sp < 0 ? -1 : 1);
+    const cs = Math.cos(step), sn = Math.sin(step);
+    let ca = Math.cos(ang), sa = Math.sin(ang);
+
+    const cr = COL[i*3], cg = COL[i*3+1], cb = COL[i*3+2];
+    /* the trail is the body's own light, spent: bright where it just was and
+       gone by the far end, which is what makes it read as a wake rather than
+       as a wire hoop */
+    const base = amt * grow * clamp(a0, 0, 1) * (i === selected ? 1.7 : 1)
+                 * fogAt(dist) * 0.55;
+    let px0 = cen.x + ca*orad + DSP[i*3];
+    let py0 = cen.y + oy + sa*orad*si + DSP[i*3+1];
+    let pz0 = cen.z + sa*orad*ci + DSP[i*3+2];
+
+    for (let s=1;s<TRAIL_SEG;s++){
+      const nc = ca*cs - sa*sn, ns = sa*cs + ca*sn;
+      ca = nc; sa = ns;
+      const qx = cen.x + ca*orad + DSP[i*3];
+      const qy = cen.y + oy + sa*orad*si + DSP[i*3+1];
+      const qz = cen.z + sa*orad*ci + DSP[i*3+2];
+      /* squared, so the fade is fastest right behind the body and the tail
+         thins to nothing instead of stopping */
+      const f0 = 1 - (s-1)/(TRAIL_SEG-1), f1 = 1 - s/(TRAIL_SEG-1);
+      const g0 = base*f0*f0, g1 = base*f1*f1;
+      TP[w*3]=px0; TP[w*3+1]=py0; TP[w*3+2]=pz0;
+      TC[w*3]=cr*g0; TC[w*3+1]=cg*g0; TC[w*3+2]=cb*g0; w++;
+      TP[w*3]=qx; TP[w*3+1]=qy; TP[w*3+2]=qz;
+      TC[w*3]=cr*g1; TC[w*3+1]=cg*g1; TC[w*3+2]=cb*g1; w++;
+      px0 = qx; py0 = qy; pz0 = qz;
+    }
+    trailPick[n++] = i;
+  }
+  trailGeo.setDrawRange(0, w);
+  trailGeo.attributes.position.needsUpdate = true;
+  trailGeo.attributes.color.needsUpdate = true;
+  PERF.trails = n;
+}
+const _tp = new THREE.Vector3();
 
 function writePulses(dt) {
   if (!EN) return;
@@ -6713,6 +8676,21 @@ function writeLabels() {
       ? _pos.set(P[L.idx*3], P[L.idx*3+1], P[L.idx*3+2])
       : _pos.copy(L.get());
     const d = camPos.distanceTo(p);
+    /* Off screen before anything else. Every label is its own Sprite and so
+       its own draw call, and the alpha test below only asks whether a label is
+       far away — not whether it is behind you, which flying through the middle
+       of a vault makes the commoner case by a long way.
+
+       The radius is deliberately generous. A sprite is a flat card facing the
+       camera, so its centre can sit outside the frustum while a good part of
+       it is still on screen; the pad is the label's own offset plus a bound on
+       the height it is about to be scaled to, widened for the fact that a name
+       is wider than it is tall. Erring toward keeping is the cheap direction —
+       a label wrongly kept costs one draw call, a label wrongly dropped is a
+       name that flickers out at the edge of the frame. */
+    _fs.center.copy(p); _fs.center.y += L.off;
+    _fs.radius = L.off + 90 * clamp(d * 0.0016, .55, 5.2);
+    if (!FRU.intersectsSphere(_fs)) { L.sprite.visible = false; return; }
     let op;
     if (L.node) {
       const nd = nodes[L.idx];
@@ -6742,9 +8720,39 @@ function writeLabels() {
   });
 }
 
+/* one frame's budget, at 60fps, for colouring a row that is eating it */
+const BUDGET = 16.7;
+function perfRow(id, ms, share) {
+  const el = $(id);
+  el.textContent = ms < 0.1 ? '<0.1' : ms.toFixed(ms < 10 ? 1 : 0);
+  el.parentElement.classList.toggle('hot', ms > BUDGET * share);
+}
 function writeHUD(now) {
   if (frame % 6) return;
   $('s-fps').textContent = fps.toFixed(0);
+  if (PERF.on) {
+    /* the share of a frame each phase is allowed before the row goes amber.
+       They do not add to one: a third of the budget in any single phase is
+       already the answer to "what is slow", and the point of the colour is to
+       pick that phase out without reading the numbers. */
+    perfRow('p-sim',  PERF.sim,  0.35);
+    perfRow('p-pick', PERF.pick, 0.12);
+    perfRow('p-inst', PERF.inst, 0.20);
+    perfRow('p-link', PERF.link, 0.25);
+    perfRow('p-trlms', PERF.trl, 0.15);
+    perfRow('p-spr',  PERF.spr,  0.15);
+    perfRow('p-draw', PERF.draw, 0.30);
+    perfRow('p-tot',  PERF.tot,  0.90);
+    /* drawn against reserved: how much of the sample ceiling the arcs on
+       screen are actually claiming */
+    $('p-lv').textContent = PERF.linkCap
+      ? PERF.linkLive + ' / ' + PERF.linkCap : '—';
+    /* edges the frustum threw out this frame, against the vault's total —
+       zero when the whole cosmos is in frame, which is the honest answer */
+    $('p-cull').textContent = EN ? PERF.linkCull + ' / ' + EN : '—';
+    $('p-trl').textContent = PERF.trails + ' / ' + TRAIL_CAP;
+    $('p-dc').textContent = renderer.info.render.calls;
+  }
   $('s-dist').textContent = (ship.on ? ship.pos.length() : rig.dist).toFixed(0) + ' U';
   if (ship.on) {
     $('sh-spd').textContent = ship.speed.toFixed(0);
@@ -6785,6 +8793,38 @@ function writeHUD(now) {
    drain and, more to the point, a surprise.                                  */
 const RUN = { host: true, running: false, raf: 0 };
 
+/* ==================================================== FRAME BUDGET
+   Half the comments in this file argue about milliseconds — the link writer
+   was rewritten out of Vector3 because it cost eight of them, the sample
+   counts fall away with the edge count, the pick runs every frame now. Every
+   one of those numbers was measured once, by hand, on one machine, and then
+   written into a comment where it slowly stopped being true.
+
+   This measures them continuously instead, on whatever machine is actually
+   running. The phases are the frame loop's own divisions, so a row that goes
+   red names the function to go and open.
+
+   Cost of the instrument: eight performance.now() calls a frame, and the
+   arithmetic below, none of which runs unless the panel is open. It is left
+   compiled in rather than stripped from a release build, because a profiler
+   you have to rebuild to get is a profiler you do not use.
+
+   `sub` is honest about what it is. renderer.render() returns once the draw
+   calls are queued, not once the GPU has done them, so it measures how long
+   this thread spent asking — a real cost, and a different one from how long
+   the frame took to appear. When CPU total is small and the frame rate is
+   still poor, the answer is not in this panel. */
+const PERF = {
+  on: false, sim:0, pick:0, inst:0, link:0, trl:0, spr:0, draw:0, tot:0,
+  linkLive:0, linkCap:0, linkCull:0, trails:0, t0:0
+};
+/* One exponential average per row, at the same 0.92 the FPS counter uses.
+   Raw per-frame numbers on a six-frame readout are unreadable — they jitter
+   by a factor of three on garbage collection alone — and the question the
+   panel answers is "what does this cost", not "what did this one frame do". */
+function perfMix(k, v) { PERF[k] = PERF[k]*0.9 + v*0.1; }
+function perfNow() { return PERF.on ? performance.now() : 0; }
+
 function runShould() { return RUN.host && !document.hidden; }
 function runSync() { runShould() ? runResume() : runPause(); }
 
@@ -6822,8 +8862,9 @@ function frameLoop(now) {
   const dt = dtms/1000;
   fps = fps*0.92 + (1000/Math.max(1,dtms))*0.08;
   frame++;
-  if (!world) { renderer.render(scene, camera); return; }   /* mid-rebuild */
+  if (!world) { renderFrame(); return; }                    /* mid-rebuild */
 
+  const _p0 = perfNow();
   genStep(dt);
   genStepBodies();
   genScaffold();
@@ -6831,24 +8872,37 @@ function frameLoop(now) {
   rippleStep(dt);
   if (ship.on) shipStep(dt); else if (!SKY.on) applyCam(dt);
   stepDisplacement(dt);
+  gapStep(dt);
   updatePositions(dtms);
   /* the surface camera is placed from this frame's positions, not the last
      one's — standing on a body that is itself in orbit, a frame of lag is a
      frame of the whole sky sliding */
   if (SKY.on) skyStep(dt);
   cometStep(dt);
+  meteorStep(dt);
   updateVisibility(dt);
   heroStep(dt);
+  const _p1 = perfNow();
   /* Now that this frame's positions are final, answer the pointer — every
      frame, not only when the mouse moves, because the bodies move too. */
   if (pointerIn && !ship.on && !SKY.on && !dragging && !mindOpen)
     hovered = pickAt(mouseNDC.x, mouseNDC.y, hovered);
+  const _p2 = perfNow();
   stepLinkLayers(dt);
+  /* the camera is final for this frame by here — the rig, the ship and the
+     surface camera have all had their say — so the fog range and the frustum
+     every writer below reads are settled once, before the first of them */
+  viewStep();
   writeInstances();
+  const _p3 = perfNow();
   writeLinks();
+  const _p3b = perfNow();
+  writeTrails();
+  const _p4 = perfNow();
   writePulses(dt);
   writeLabels();
   twinWrite();
+  const _p5 = perfNow();
   audioStep();
 
   if (mindOpen) { mindStep(dt); mindDraw(now); }
@@ -6870,6 +8924,35 @@ function frameLoop(now) {
     selCage.scale.setScalar(RAD[selected]*1.7);
     selCage.rotation.y += 0.006; selCage.rotation.x += 0.003;
   } else if (selRig) selRig.visible = false;
+
+  /* the note being edited, breathing on a two-second cycle */
+  if (activeIdx >= 0 && activeIdx < N && actRig) {
+    const vis = GEN.on ? clamp(genScale[activeIdx], 0, 1) : 1;
+    actRig.visible = vis > 0.03;
+    if (actRig.visible) {
+      actRig.position.set(P[activeIdx*3], P[activeIdx*3+1], P[activeIdx*3+2]);
+      const br = 0.5 + 0.5 * Math.sin(t * 0.0031);
+      const r = RAD[activeIdx] * (3.6 + br * 0.5);
+      actRing.scale.setScalar(r);
+      actRing.quaternion.copy(camera.quaternion);
+      actRing.material.opacity = (0.45 + br * 0.42) * vis;
+      actRing2.scale.setScalar(r * 1.30);
+      actRing2.quaternion.copy(camera.quaternion);
+      actRing2.rotateZ(t * 0.0012);
+      actRing2.material.opacity = (0.28 + (1 - br) * 0.36) * vis;
+      /* the mark rides above the body, on the axis the camera calls up, and
+         is scaled with range so that it stays a mark rather than becoming a
+         speck at map distance or a wall up close */
+      const d = camera.position.distanceTo(actRig.position);
+      const s = clamp(d * 0.011, RAD[activeIdx] * 0.5, RAD[activeIdx] * 2.6);
+      _actUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+      actPip.position.copy(_actUp).multiplyScalar(r * 1.9 + s * 1.6);
+      actPip.scale.setScalar(s);
+      actPip.quaternion.copy(camera.quaternion);
+      actPip.rotateZ(Math.PI * 0.25);
+      actPip.material.opacity = (0.45 + br * 0.4) * vis;
+    }
+  } else if (actRig) actRig.visible = false;
 
   if (hovered >= 0 && hovered < N && hovered !== selected && hovRig) {
     hovRig.visible = true;
@@ -6899,9 +8982,26 @@ function frameLoop(now) {
   if (milkyObj)       milkyObj.rotation.y       = t * 0.0000008;
 
   writeHUD(now);
-  renderer.render(scene, camera);
-  /* the ground goes on last, over the sky it belongs to */
-  if (SKY.on) { skyRender(); skyHUD(); }
+  const _p6 = perfNow();
+  /* the ground goes on last, over the sky it belongs to — unless the bloom
+     path drew it already, which it has to, or the one surface in frame would
+     be the one thing light did not spill onto */
+  const composited = renderFrame();
+  if (SKY.on) { if (!composited) skyRender(); skyHUD(); }
+  if (PERF.on) {
+    const _p7 = performance.now();
+    perfMix('sim',  _p1-_p0);
+    perfMix('pick', _p2-_p1);
+    perfMix('inst', _p3-_p2);
+    perfMix('link', _p3b-_p3);
+    perfMix('trl',  _p4-_p3b);
+    perfMix('spr',  _p5-_p4);
+    perfMix('draw', _p7-_p6);
+    /* the sum of the phases plus everything between them — the rigs, the
+       parallax, the HUD write — rather than the phases added up, so a cost
+       that lives in none of the rows still shows up in the total */
+    perfMix('tot',  _p7-_p0);
+  }
 }
 
 /* ======================================================== CONTROL DECK */
@@ -6914,7 +9014,43 @@ function applyStarfield() {
     m.uniforms.uTwinkle.value = (m.userData.twinkle || 0) * clamp(b, 0, 1.2);
   });
 }
+/* the fold's two halves — the class the CSS reads and the arrow the reader
+   does — kept together so RESET can put both back at once */
+function syncAdv() {
+  $('ctl').classList.toggle('adv', !!SET.adv);
+  $('advtog').textContent = (SET.adv ? '▾ ' : '▸ ') + 'ADVANCED';
+}
+/* Same for the two side panes. The deck is deliberately not in here: its fold
+   is also driven automatically by layoutHUD when the leaf is short, and that
+   negotiation with `deckTouched` is its own thing — these two are only ever
+   folded because somebody folded them. */
+const FOLDERS = [['leg', 'legFold', 'legfold'], ['keys', 'keysFold', 'keysfold']];
+function syncFolds() {
+  FOLDERS.forEach(([pane, key, mark]) => {
+    const on = !!SET[key];
+    $(pane).classList.toggle('fold', on);
+    $(mark).textContent = on ? '[ + ]' : '[ − ]';
+  });
+}
+FOLDERS.forEach(([pane, key]) => {
+  $(pane).firstElementChild.onclick = () => {
+    SET[key] = !SET[key];
+    syncFolds(); saveSet();
+    /* the pane below now has more or less room to be given, and layoutHUD is
+       what hands it over */
+    layoutHUD();
+  };
+});
 function syncControls() {
+  syncAdv();
+  syncFolds();
+  $('r-arc').value = Math.round(SET.arc*100);
+  $('r-age').value = Math.round(SET.age*100);
+  $('r-trl').value = Math.round(SET.trl*100);
+  $('r-blm').value = Math.round(SET.blm*100);
+  $('v-age').textContent = SET.age < 0.02 ? 'OFF' : SET.age.toFixed(2);
+  $('v-trl').textContent = SET.trl < 0.02 ? 'OFF' : SET.trl.toFixed(2);
+  $('v-blm').textContent = SET.blm < 0.02 ? 'OFF' : SET.blm.toFixed(2) + '×';
   $('r-spd').value = Math.round(SET.spd*100);
   $('r-bri').value = Math.round(SET.bri*100);
   $('r-ten').value = Math.round(SET.ten*100);
@@ -6923,6 +9059,10 @@ function syncControls() {
   $('r-thr').value = Math.round(SET.thr*100);
   $('r-lnk').value = Math.round(SET.lnk*100);
   $('r-spr').value = Math.round(SET.spr*100);
+  $('r-gap').value = Math.round(SET.gap*100);
+  /* FLAT rather than 0.00×, because zero here is a shape — the arcs lie down
+     into the orbital plane and the bow carries them alone — not an absence */
+  $('v-arc').textContent = SET.arc < 0.02 ? 'FLAT' : SET.arc.toFixed(2) + '×';
   $('v-spd').textContent = SET.spd.toFixed(2) + '×';
   $('v-bri').textContent = SET.bri.toFixed(2) + '×';
   $('v-ten').textContent = SET.ten.toFixed(2);
@@ -6931,6 +9071,7 @@ function syncControls() {
   $('v-thr').textContent = SET.thr.toFixed(2) + '×';
   $('v-lnk').textContent = SET.lnk < 0.02 ? 'OFF' : SET.lnk.toFixed(2) + '×';
   $('v-spr').textContent = SET.spr.toFixed(2) + '×';
+  $('v-gap').textContent = SET.gap.toFixed(2) + '×';
   /* the step past the ceiling is the off position, so "no limit" is a place on
      the same slider rather than a separate control */
   $('r-cap').value = SET.maxNodes > 0 ? SET.maxNodes : MAX_NODES_CEIL + 500;
@@ -6942,17 +9083,65 @@ $('r-cap').addEventListener('input', e => {
   SET.maxNodes = v > MAX_NODES_CEIL ? 0 : v;
   syncControls(); saveSet();
 });
-[['r-spd','spd'], ['r-bri','bri'], ['r-ten','ten'],
- ['r-grv','grv'], ['r-str','str'], ['r-thr','thr'],
+[['r-spd','spd'], ['r-bri','bri'], ['r-ten','ten'], ['r-arc','arc'],
+ ['r-grv','grv'], ['r-str','str'], ['r-thr','thr'], ['r-age','age'],
+ ['r-trl','trl'], ['r-blm','blm'],
  ['r-lnk','lnk'], ['r-spr','spr']].forEach(([id, key]) => {
   $(id).addEventListener('input', e => {
     SET[key] = (+e.target.value) / 100;
     if (key === 'lnk') SET.lnk = clamp(SET.lnk, 0, LNK_MAX);
+    if (key === 'arc') SET.arc = clamp(SET.arc, 0, ARC_MAX);
+    if (key === 'blm') SET.blm = clamp(SET.blm, 0, BLM_MAX);
+    /* the only one of these that has to touch a buffer rather than be read
+       out of SET by the next frame */
+    if (key === 'age') recolour();
     syncControls(); saveSet();
   });
 });
+/* ORBIT GAP used to rebuild the cosmos when the handle was let go: the
+   number followed the drag, the sky changed in one cut at the end, and the
+   camera was scaled to compensate so that the cut would not throw half the
+   vault out of frame. It worked and it read as an edit rather than as a
+   spacing control.
+
+   The layout's arithmetic is linear in this number — a ring's radius, the
+   clearance between systems and the room between orbits all scale together,
+   and the count of systems a ring holds does not change at all, because the
+   circumference and the clearance grow by the same factor. So the frame can
+   carry it: the slider moves a target, gapStep() springs toward it, and the
+   orbits widen and settle continuously under a camera that is left exactly
+   where it was. See GAPL / gapStep above; nothing here is rebuilt. */
+$('r-gap').addEventListener('input', e => {
+  SET.gap = (+e.target.value) / 100;
+  $('v-gap').textContent = SET.gap.toFixed(2) + '×';
+  saveSet();
+});
+
+/* The FPS number is the natural place to ask for more of the same, so it is
+   the handle rather than a keystroke nobody would find. Opening it starts the
+   measuring; closing it stops, and the rows keep their last values rather than
+   resetting, so a panel reopened after a stutter is not blank. */
+$('s-fps').onclick = () => {
+  PERF.on = !PERF.on;
+  $('perf').classList.toggle('on', PERF.on);
+  if (PERF.on) frame = 0;                 // read something on the next frame
+  /* ten rows appearing makes the identity pane taller, and the legend below it
+     is positioned from that pane's measured height — so the measurement has to
+     be retaken here rather than waiting for the next resize */
+  layoutHUD();
+};
+/* ADVANCED remembers, because a deck folded shut every time you reopen the
+   vault is a deck you stop putting anything in. */
+$('advtog').onclick = () => {
+  SET.adv = $('ctl').classList.toggle('adv');
+  syncAdv(); saveSet(); layoutHUD();
+};
+
 $('b-rst').onclick = () => {
   Object.assign(SET, SET_DEF); syncControls(); saveSet(); toast('CONTROLS RESET');
+  /* RESET puts the folds back too, and a pane that has just unfolded is a
+     pane whose neighbour has to be measured again */
+  layoutHUD();
 };
 /* Once the deck has been folded or unfolded by hand, layoutHUD() stops
    deciding for itself — see the auto-fold in there. */
@@ -6989,12 +9178,17 @@ function layoutHUD() {
      filters that star system out of the cosmos. */
   keys.style.display = '';
   let room = H - legTop - 34 - (keys.offsetHeight || 130);
-  if (room < 74) {
+  /* A folded legend is a title bar and needs a title bar's worth of room, not
+     a list's. Without this the pane a reader deliberately folded to make space
+     would still be judged against the height it no longer has, and hidden
+     outright on the leaf where folding it was the point. */
+  const legMin = leg.classList.contains('fold') ? 30 : 74;
+  if (room < legMin) {
     keys.style.display = 'none';
     room = H - legTop - 34;
   }
-  leg.style.display = room < 74 ? 'none' : '';
-  leg.style.maxHeight = Math.max(74, room) + 'px';
+  leg.style.display = room < legMin ? 'none' : '';
+  leg.style.maxHeight = Math.max(legMin, room) + 'px';
 
   const left = idp.offsetLeft + idp.offsetWidth + 14;
 
@@ -7151,6 +9345,20 @@ function tagsOf(fm){
   return (Array.isArray(t) ? t : []).map(s => String(s).replace(/^#/,'').trim())
                                     .filter(Boolean).slice(0, 24);
 }
+/* Front-matter tags and whatever the host found in the body, de-duplicated
+   case-insensitively — `#Project` and `#project` are one tag in Obsidian and
+   must be one tag here, or a note resonates with itself. */
+function mergeTags(a, b){
+  const out = [], seen = new Set();
+  [].concat(a || [], Array.isArray(b) ? b : []).forEach(v => {
+    const s = String(v).replace(/^#/,'').trim();
+    if (!s) return;
+    const k = s.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k); out.push(s);
+  });
+  return out.slice(0, 24);
+}
 function dateOf(fm, rel){
   let d = fm.date || fm.created || fm['날짜'] || fm.datetime || '';
   if (Array.isArray(d)) d = d[0] || '';
@@ -7185,10 +9393,22 @@ function buildGraph(files, vaultName) {
     const parts = segs[i].slice(root ? 1 : 0);
     const rel = parts.join('/');
     const { fm, body } = splitFront(f.text);
+    /* What the host knows about this file, if there is a host. Obsidian has
+       already resolved every link in the vault — through aliases, headings,
+       block ids and embeds — and already knows the tags written in the body
+       rather than only the ones in the front matter. Re-deriving all of that
+       from the text with a regular expression gets a different, worse answer:
+       a link through an alias reads as broken, and `#project` written in a
+       paragraph does not exist. Where the host offers its own reading, it
+       wins; where it does not, the parser below still stands on its own. */
+    const hm = f.meta && typeof f.meta === 'object' ? f.meta : null;
     return {
-      rel, dir: parts.slice(0,-1).join('/'),
+      rel, fp: f.path.replace(/\\/g,'/'),
+      dir: parts.slice(0,-1).join('/'),
       name: parts[parts.length-1].replace(MD_RE, ''),
-      fm, body, t: tagsOf(fm), d: dateOf(fm, rel),
+      fm, body, hm,
+      t: mergeTags(tagsOf(fm), hm && hm.tags),
+      d: dateOf(fm, rel),
       w: (body.match(/\S+/g) || []).length,
       sz: f.text.length, x: excerptOf(body)
     };
@@ -7218,7 +9438,29 @@ function buildGraph(files, vaultName) {
   /* cited counts every mention, not every distinct pair — a note named five
      times in one file is cited five times, which is what sizes the planet */
   const cited = new Int32Array(K);
+  /* The host's links arrive already resolved, as vault paths with counts —
+     `{ "wiki/Physics.md": 3 }` — so they need looking up rather than parsing.
+     A path the host reports that this build does not contain is not broken:
+     it is a note the ceiling or an exclusion left out, and counting it as a
+     dangling link would make the HUD's "broken" figure a measure of the
+     ceiling instead of the vault. */
+  const byFull = new Map();
+  recs.forEach((r, i) => { byFull.set(r.fp.toLowerCase(), i); byFull.set(r.rel.toLowerCase(), i); });
+  const hostResolve = p => {
+    const s = String(p).replace(/\\/g,'/').replace(/^\.?\//,'').toLowerCase();
+    if (byFull.has(s)) return byFull.get(s);
+    return resolve(s);
+  };
   const refs = recs.map(r => {
+    if (r.hm && r.hm.links) {
+      const out = new Set();
+      Object.keys(r.hm.links).forEach(p => {
+        const j = hostResolve(p);
+        if (j >= 0) { out.add(j); cited[j] += Math.max(1, r.hm.links[p] | 0); }
+      });
+      broken += Math.max(0, r.hm.broken | 0);
+      return out;
+    }
     const out = new Set(); let m;
     WIKI_LINK.lastIndex = 0;
     while ((m = WIKI_LINK.exec(r.body))) {
@@ -7326,7 +9568,7 @@ function buildGraph(files, vaultName) {
   });
 
   const outNodes = recs.map((r, i) => ({
-    p: r.rel, n: r.name, k: kind[i], f: r.rel.split('/')[0] || '',
+    p: r.rel, fp: r.fp, n: r.name, k: kind[i], f: r.rel.split('/')[0] || '',
     d: r.d, y: r.d ? +r.d.slice(0,4) : 0, t: r.t, g: '',
     w: r.w, sz: r.sz, x: r.x, inb: cited[i], c: catKey[i]
   }));
@@ -7358,7 +9600,35 @@ function setLoad(f, sub) {
 
 /* Swap the cosmos under a running render loop: drop the old scene graph,
    re-derive the layout, rebuild the objects, refit the camera. */
-function swapVault(data) {
+/* What a rebuild has to put back if it is not to feel like a rebuild.
+   Editing a note in the next pane over is the ordinary case inside Obsidian,
+   and every save re-derives the whole cosmos. Refitting the camera each time
+   would throw the user across the vault while they type. So the framing and
+   the selection are taken by name — indices mean something else on the other
+   side of the swap — and restored after it. */
+function viewMark() {
+  return {
+    sel: selected >= 0 ? hostPath(selected) : '',
+    follow: rig.follow >= 0 ? hostPath(rig.follow) : '',
+    tgt: rig.tgtD.clone(), dist: rig.distD, th: rig.thD, ph: rig.phD, roll: rig.rollD,
+  };
+}
+function viewRestore(m) {
+  if (!m) return;
+  rig.tgtD.copy(m.tgt); rig.distD = m.dist;
+  rig.thD = m.th; rig.phD = m.ph; rig.rollD = m.roll;
+  rig.tgt.copy(m.tgt); rig.dist = m.dist; rig.th = m.th; rig.ph = m.ph; rig.roll = m.roll;
+  rig.thV = 0; rig.phV = 0;
+  const s = m.sel ? nodeByPath(m.sel) : -1;
+  if (s >= 0) select(s, true);
+  const f = m.follow ? nodeByPath(m.follow) : -1;
+  /* select() sets its own follow; a view that was locked on a body it no
+     longer contains simply stops following rather than snapping elsewhere */
+  rig.follow = f;
+  nudge();
+}
+
+function swapVault(data, keep) {
   closeSearch();
   closeMind();
   /* everything that holds a node index from the old vault has to let go
@@ -7369,16 +9639,30 @@ function swapVault(data) {
   if (ship.on) exitShip();
   disposeWorld();
   buildLayout(data);
+  /* the old map named the old indices */
+  pathIdx = null;
   buildObjects();
   refreshHUD();
   renderInspector();
   resize();
-  fitView();
+  if (keep) viewRestore(keep); else fitView();
+  /* re-resolve after the fit, so the marker is placed against the cosmos that
+     is actually on screen rather than the one that has just been thrown away */
+  setActivePath(activePath);
 }
 
 let loading = false;
-async function ingest(list, vaultName) {
+/* opts.quiet — a rebuild the user did not ask for. Inside Obsidian the vault
+   changes under this view constantly: every note saved, created or renamed
+   re-derives the cosmos. That reload has to be the opposite of the first one.
+   No loading curtain over a view someone is using, no camera refit, no
+   summary toast announcing a vault they already know they have — the planets
+   simply are where the notes now are. Only a change in what the vault
+   *contains* is worth a word, and even that is one line. */
+async function ingest(list, vaultName, opts) {
   if (loading) return;
+  const quiet = !!(opts && opts.quiet);
+  const before = N;
 
   /* Three gates, reported separately. System paths are noise and are dropped
      silently; the user's own exclusions and the node ceiling both change what
@@ -7389,7 +9673,7 @@ async function ingest(list, vaultName) {
   const excluded = candidates.length - kept.length;
 
   if (!kept.length) {
-    toast(T(excluded ? 'excl.all' : 'load.nomd'));
+    if (!quiet) toast(T(excluded ? 'excl.all' : 'load.nomd'));
     return;
   }
 
@@ -7399,25 +9683,40 @@ async function ingest(list, vaultName) {
   const capped = total - md.length;
 
   loading = true;
-  showLoad(true, 'READING VAULT');
-  setLoad(0, capped ? T('cap.hit', { n: md.length, total })
-                    : T('load.notes', { n: md.length }));
+  if (!quiet) {
+    showLoad(true, 'READING VAULT');
+    setLoad(0, capped ? T('cap.hit', { n: md.length, total })
+                      : T('load.notes', { n: md.length }));
+  }
   const files = [];
   for (let i=0;i<md.length;i++){
-    try { files.push({ path: md[i].path, text: await md[i].file.text() }); } catch(e){}
-    if (i % 16 === 0) { setLoad(i/md.length*0.7, md[i].path); await gap(); }
+    try {
+      files.push({ path: md[i].path, text: await md[i].file.text(), meta: md[i].meta || null });
+    } catch(e){}
+    if (i % 16 === 0) { if (!quiet) setLoad(i/md.length*0.7, md[i].path); await gap(); }
   }
-  setLoad(.78, T('load.graph')); await gap();
+  if (!quiet) setLoad(.78, T('load.graph'));
+  await gap();
   let data = null;
   try { data = buildGraph(files, vaultName); }
   catch (err) { console.error(err); toast(T('load.failed')); showLoad(false); loading = false; return; }
   if (!data.nodes.length) { toast(T('load.empty')); showLoad(false); loading = false; return; }
-  setLoad(.9, T('load.orbit')); await gap();
-  try { swapVault(data); }
+  if (!quiet) setLoad(.9, T('load.orbit'));
+  await gap();
+  /* The framing is taken here rather than at the top of the call: reading the
+     vault yields to the frame loop between files, and the camera keeps
+     moving while it does. */
+  const keep = quiet ? viewMark() : null;
+  try { swapVault(data, keep); }
   catch (err) { console.error(err); toast(T('load.render')); swapVault(EMPTY); }
-  setLoad(1); await gap();
-  showLoad(false);
+  if (!quiet) { setLoad(1); await gap(); showLoad(false); }
   loading = false;
+  if (quiet) {
+    /* one line, and only when the vault gained or lost a note — a save that
+       changed a link says nothing at all */
+    if (N !== before) toast(T('sync.done', { n: N }));
+    return;
+  }
   toast(data.meta.vault + ' · ' + data.meta.files + ' NOTES · ' + data.meta.edges + ' LINKS');
   /* queued behind the summary so both are read, not just the last one */
   if (excluded) setTimeout(() => toast(T('excl.some', { n: excluded })), 2600);
@@ -7570,6 +9869,25 @@ $('b-go').onclick = () => {
 
 runResume();
 
+/* Named so a host can offer them as its own commands. Each is exactly the
+   thing the corresponding key does, called through the same function, so a
+   command and its shortcut can never mean two different things. */
+const CMD = {
+  search:  openSearch,
+  mindmap: toggleMind,
+  ship:    toggleShip,
+  surface: toggleSky,
+  genesis: toggleGenesis,
+  twins:   () => twinsShow(selected),
+  ripple:  rippleHere,
+  poster:  savePoster,
+  layer:   cycleLayer,
+  sound:   () => audioSet(!AUD.on),
+  reset:   resetView,
+  hud:     () => { const h = $('hud'); h.style.display = h.style.display === 'none' ? '' : 'none'; },
+  open:    () => openNote(selected, null),
+};
+
 /* ---- the seam a plugin wraps --------------------------------------------
    Everything an Obsidian plugin needs from this file, and nothing more. The
    engine stays a self-contained page; the plugin is the part that knows what a
@@ -7582,16 +9900,43 @@ window.vaultOrrery = {
   /* The run gate, in the host's terms. A canvas that never paints looks the
      same from outside whatever the reason, and the reason is in here. */
   debug: () => ({ running: RUN.running, host: RUN.host, raf: RUN.raf,
-                  hidden: document.hidden, frames: frame, nodes: N }),
+                  hidden: document.hidden, frames: frame, nodes: N,
+                  /* which body the two marks are on, by index — the pair that
+                     says whether a reveal actually landed */
+                  selected, active: activeIdx }),
   setHosted,
   setVisible(on) { RUN.host = !!on; runSync(); },
   setIgnoreFilters,
   setLang,
   setMaxNodes(n) { SET.maxNodes = Math.max(0, n|0); syncControls(); saveSet(); },
   load: ingest,
+  /* --- the host's half of the conversation ----------------------------- */
+  setHostHooks,
+  revealPath,
+  setActivePath,
+  /* True while a vault is being read. A host that reloads on every vault
+     event needs to know when to wait rather than queueing rebuilds behind
+     each other. */
+  busy: () => loading,
+  /* Every mode this view has, by name, so the host can put them in its own
+     command palette and let the user bind a key to them. The engine keeps
+     owning what each one does; the host only needs the list. */
+  commands: () => Object.keys(CMD),
+  command(name) {
+    const f = CMD[name];
+    if (!f) return false;
+    f();
+    return true;
+  },
   clear() { swapVault(EMPTY); },
   destroy() {
     RUN.host = false; runPause();
+    /* a recording outlives the view otherwise: the interval keeps firing and
+       the recorder keeps holding a stream off a canvas nobody is drawing to */
+    if (VID.timer) { clearInterval(VID.timer); VID.timer = 0; }
+    try { vidStop(); } catch(e){}
+    [BLOOM.rt, BLOOM.a, BLOOM.b].forEach(r => { if (r) { try { r.dispose(); } catch(e){} } });
+    BLOOM.rt = BLOOM.a = BLOOM.b = null; BLOOM.ok = false;
     if (AUD.ctx) { try { AUD.ctx.close(); } catch(e){} AUD.ctx = null; }
     try { renderer.dispose(); } catch(e){}
   }

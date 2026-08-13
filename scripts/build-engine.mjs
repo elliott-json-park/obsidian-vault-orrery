@@ -327,8 +327,12 @@ const GLOBALS = new Set([
   'Int16Array','Int32Array',
   'JSON','Map','Math','Number','Object','Promise','RegExp','Set','String','Symbol',
   'THREE','Uint8Array','Uint16Array','Uint32Array','WeakMap','WeakSet',
-  'alert','atob','btoa','cancelAnimationFrame','clearInterval','clearTimeout',
+  'alert','atob','Blob','btoa','cancelAnimationFrame','clearInterval','clearTimeout',
   'confirm','decodeURIComponent','encodeURIComponent','fetch','getComputedStyle',
+  /* clip capture. MediaRecorder is feature-detected at the call site rather
+     than assumed — see vidMime() — because Obsidian ships an Electron whose
+     codec set is its own business, not Chrome's. */
+  'MediaRecorder',
   'isFinite','isNaN','parseFloat','parseInt','performance','prompt',
   'requestAnimationFrame','setInterval','setTimeout','structuredClone',
   /* the bridge the generator itself supplies */

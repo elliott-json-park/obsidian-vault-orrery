@@ -12,6 +12,7 @@ class Plugin {
   addCommand(c) { calls.push('command:' + c.id); }
   addSettingTab(t) { calls.push('settingTab'); this._tab = t; }
   registerEvent() { calls.push('event'); }
+  registerHoverLinkSource(id) { calls.push('hover:' + id); }
   register() {}
   async loadData() { return this._data ?? null; }
   async saveData(d) { this._data = d; }
@@ -20,7 +21,8 @@ class Plugin {
    so a write scheduled by the store is observable within one tick. */
 const debounce = fn => Object.assign((...a) => fn(...a), { cancel() { return this; } });
 const stub = { Plugin, ItemView: class {}, PluginSettingTab: class {}, Setting: class {},
-  Notice: class {}, TFile: class {}, WorkspaceLeaf: class {}, debounce,
+  Notice: class {}, TFile: class {}, WorkspaceLeaf: class {}, Menu: class {}, debounce,
+  getAllTags: c => (c && c.tags ? c.tags.map(t => t.tag) : []),
   addIcon: n => calls.push('icon:' + n), moment: { locale: () => 'ko' } };
 const or = Module._resolveFilename;
 Module._resolveFilename = function (r, ...a) { return r === 'obsidian' ? 'obsidian' : or.call(this, r, ...a); };
@@ -36,7 +38,11 @@ global.document = {
 
 const P = require(path.resolve(__dirname, '..', 'main.js')).default;
 const ok = (c, m) => { console.log((c ? '  ok  ' : 'FAIL  ') + m); if (!c) process.exitCode = 1; };
-const mkApp = vault => ({ vault, workspace: { on() {}, getLeavesOfType: () => [] } });
+const mkApp = vault => ({
+  vault,
+  workspace: { on() {}, getLeavesOfType: () => [], getActiveFile: () => null },
+  metadataCache: { on() {}, resolvedLinks: {}, unresolvedLinks: {}, getFileCache: () => null },
+});
 
 (async () => {
   const p = new P(mkApp({ getConfig: k => k === 'userIgnoreFilters' ? ['journal', '/^\d{4}-/'] : null }),
@@ -45,6 +51,16 @@ const mkApp = vault => ({ vault, workspace: { on() {}, getLeavesOfType: () => []
   ok(calls.includes('registerView:vault-orrery-view'), 'registers the orrery view');
   ok(calls.some(c => c.startsWith('command:')), 'registers commands');
   ok(calls.includes('settingTab'), 'registers the settings tab');
+  /* Every mode the engine answers to has to be reachable from the palette, or
+     it exists only for someone who already knows the single-letter key. */
+  const modes = ['open','search','mindmap','ship','surface','genesis','twins',
+                 'ripple','poster','layer','sound','reset','hud'];
+  const missing = modes.filter(m => !calls.includes('command:mode-' + m));
+  ok(missing.length === 0, 'every engine mode is a command -> ' +
+     (missing.length ? 'missing ' + missing.join(', ') : modes.length + ' of them'));
+  ok(calls.includes('command:reveal-active'), 'the active note can be revealed from anywhere');
+  ok(calls.includes('hover:vault-orrery'),
+     'declares itself a hover source, so page preview can be turned off for it');
   ok(calls.includes('icon:orbit'), 'registers its icon');
   /* The stylesheet is a file Obsidian loads, not something the plugin builds
      at runtime — so it is checked on disk, and the plugin is checked for not
@@ -73,7 +89,8 @@ const mkApp = vault => ({ vault, workspace: { on() {}, getLeavesOfType: () => []
   const flatten = items => items.flatMap(i => i.type === 'group' ? flatten(i.items ?? []) : [i]);
   const defs = flatten(tab.getSettingDefinitions());
   const keys = defs.filter(d => d.control).map(d => d.control.key).sort();
-  ok(JSON.stringify(keys) === '["extraIgnoreFilters","followExcludedFiles","language","maxNodes"]',
+  ok(JSON.stringify(keys) === '["extraIgnoreFilters","followActiveNote","followExcludedFiles",' +
+                             '"language","liveSync","maxNodes"]',
      'every setting is declared for search -> ' + JSON.stringify(keys));
   ok(defs.every(d => d.name), 'every declared setting has a name to be found by');
 

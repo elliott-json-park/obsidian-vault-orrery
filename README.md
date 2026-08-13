@@ -14,6 +14,35 @@ become stars, notes become planets, and the sources they cite become moons.
 
 ---
 
+## It is wired into the editor
+
+A cosmos you cannot leave is an ornament, so every body on screen is a note you
+can be reading a second later.
+
+- **Open the note** with `O`, with the inspector's button, from the mind map,
+  or by Ctrl/Cmd-clicking a planet — the same gesture that opens a link
+  anywhere else in Obsidian. Ctrl/Cmd opens it *beside* the orrery rather than
+  on top of it, so the view you clicked from is still there when you come back.
+- **Find where you are.** The note you are editing carries its own violet
+  beacon, separate from the selection: where you are working and where you are
+  looking are usually different notes, and both are worth keeping on screen.
+- **Get there from anywhere.** *Reveal the active note in the orrery* is a
+  command, **Show in Vault Orrery** is on every note's context menu, and the
+  camera will follow the editor if you turn that on in settings.
+- **Every mode is a command**, so the spaceship, Genesis, the mind map, the
+  surface, the poster and the rest can be bound to whatever keys you like. None
+  is bound by default.
+- **The vault stays current.** Notes written, created, renamed or deleted while
+  the view is open re-derive the cosmos — with the camera and the selection
+  left where they were, and no loading curtain over a view you are using.
+
+The graph is Obsidian's own. Links, backlinks and tags come from the index
+Obsidian already keeps, so a link written through an alias resolves rather than
+counting as broken, an embed counts as a link, and a `#tag` written in a
+paragraph counts alongside the ones in the front matter.
+
+---
+
 ## Privacy
 
 This plugin reads your notes. That deserves a straight answer, so here it is.
@@ -78,12 +107,38 @@ background tab costs nothing.
 If a large vault still runs slowly, the cheapest wins are lowering **LINK
 GLOW**, turning **STARFIELD** down, and reducing **MAX NODES**.
 
+Keeping up with the vault re-reads every note each time it rebuilds, debounced
+so that writing a note costs one rebuild rather than one per save. On a vault
+large enough for that to be felt, turn **Keep up with the vault** off in
+settings; the *Reload vault* command then does it when you ask.
+
+---
+
+## Giving the vault room
+
+Two knobs on the control panel decide how tightly the cosmos is packed, and
+they are not the same question.
+
+- **ORBIT GAP** is how much room one orbit ring gets. It is the measurement the
+  whole layout is built out of, so widening it also pushes the star systems
+  apart to keep their clearance — the vault opens up rather than growing into
+  itself. It moves while you drag: the whole cosmos widens and settles under a
+  camera that stays where you left it, so you are watching the space open
+  rather than watching a new layout appear.
+- **ORBIT SPREAD** scales the orbits within each system, leaving the systems
+  themselves where they are. Turn it up to pull a crowded system's planets
+  away from their star without moving the vault around them.
+
+A dense folder — a few hundred notes in one place — is the case worth reaching
+for these on. Start with ORBIT GAP.
+
 ---
 
 ## Controls
 
 | | |
 |---|---|
+| `O` · ctrl/cmd-click | open the note in Obsidian |
 | `/` | search |
 | `M` · double-click | mind map |
 | `F` | spaceship (WASD to fly, `SPACE` to scan links) |
