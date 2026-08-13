@@ -4,6 +4,51 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.2.0
+
+The control deck stops being one person's idea of which knobs matter, the
+sound stops being one person's idea of what a room sounds like, and the star at
+the centre of the vault stops being a ball with a wireframe on it.
+
+- **Arrange the deck yourself.** Every control carries a ◆. Click it and the
+  control moves between the bar that is always out and the drawer you open, and
+  the arrangement is saved. The drawer is grouped into motion and structure,
+  light and film, and sound. Thirty-four controls, and which five you keep in
+  front of you is your decision rather than a fact about the markup.
+- **Tune the sound.** Master level, tuning in semitones, the scale the vault is
+  played in (pentatonic, minor, lydian, whole tone, open fifths), room size and
+  mix and damping, echo tail and time, drone level and tone, note level and
+  decay, engine. Every one of these was a constant buried in the audio graph;
+  all of them now move while the sound is playing, and every one of them
+  defaults to exactly the number that was hard-coded, so switching sound on
+  sounds the way it did.
+- **Light the cosmos like a photograph.** Sun rays marched from the star's own
+  place on screen, a filmic curve with cold shadows and warm highlights, a
+  vignette, grain that sits in the shadows, and colour separating toward the
+  corners the way a real lens cannot help doing. Each is a knob and each goes
+  to zero, and at zero the frame is drawn by the same path it always was.
+- **A sky worth lowering your voice in.** Nine curtains of very faint colour
+  hang on the celestial sphere, crossing at every angle and drifting past the
+  band of the galaxy.
+- **The camera breathes.** A very slow drift on four incommensurable periods,
+  added after the damping rather than into it, so a still frame stops reading
+  as a paused video and nothing else in the rig knows about it.
+- **The star at the centre.** It had a flat cream surface with two counter-
+  rotating wireframe shells standing in for convection, which is how you draw
+  an object you are explaining rather than one you are looking at. It now has
+  limb darkening — the disc is white in the middle and amber at the edge,
+  because at the edge you are seeing a shallower and cooler layer — granulation
+  drawn as the dark lanes between convection cells rather than as the cells,
+  and a chromosphere standing just off the limb. Its colours are rows of the
+  same temperature table the starfield is built from. The corona is depth
+  tested now, so it surrounds the disc instead of being painted over it, and it
+  gives way to the photosphere as you approach.
+- **Orbits open twice as far.** ORBIT GAP reaches 6.00×. What limited it was
+  never the layout but the fog, which greyed out the structure exactly as it
+  was spread apart, and the dust disk, which the cosmos walked out of. Both
+  track the reach of the cosmos now, and the fog is only ever thinned — a vault
+  smaller than the reference looks exactly as it did.
+
 ## 1.1.0
 
 The orrery stops being a picture of the vault and becomes a way to move around

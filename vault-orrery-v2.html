@@ -99,11 +99,21 @@ canvas{display:block}
   grid-template-columns:repeat(auto-fit,minmax(94px,1fr));gap:9px 14px}
 /* The deck had eleven knobs across, all equal, and the ones anybody reaches
    for twice — speed, glow, gap — were no easier to find than STARFIELD, which
-   is set once in a lifetime. The five that get touched stay out; the six that
-   do not fold away behind a line you can open. Nothing is removed: a control
-   that is genuinely useless should be deleted, and none of these are. */
+   is set once in a lifetime. So the deck is two shelves: a bar that is always
+   out and a drawer you open. Which knob is on which shelf used to be decided
+   here, once, for everybody — and it was decided wrongly for anyone whose
+   work is not the same as the author's. It is now the reader's choice: every
+   knob carries a ◆ that moves it between the two, and the arrangement is
+   saved. Nothing is removed: a control that is genuinely useless should be
+   deleted, and none of these are. */
 #ctladv{display:none}
 #ctl.adv #ctladv{display:grid}
+/* a heading spans the whole auto-fit grid rather than taking a cell of it */
+.slhd{grid-column:1/-1;font-size:7.5px;letter-spacing:.2em;opacity:.42;
+  border-bottom:1px solid rgba(92,225,255,.10);padding-bottom:3px;margin-top:3px}
+.slhd:first-child{margin-top:0}
+#ctlhint{grid-column:1/-1;font-size:7px;letter-spacing:.06em;opacity:.34;
+  line-height:1.6;margin-top:3px}
 #advtog{cursor:pointer;pointer-events:auto;user-select:none;font-size:8px;
   letter-spacing:.18em;color:rgba(92,225,255,.5);transition:color .15s;
   border-top:1px solid rgba(92,225,255,.12);padding-top:8px}
@@ -120,6 +130,19 @@ canvas{display:block}
   display:flex;justify-content:space-between;gap:6px;align-items:baseline}
 .sl>b i{font-style:normal;color:var(--cy);opacity:.95;font-variant-numeric:tabular-nums;
   letter-spacing:.04em}
+/* the label and its pin travel together on the left; the value stays right */
+.sl>b .nm{display:flex;align-items:baseline;gap:5px;min-width:0;overflow:hidden;
+  white-space:nowrap;text-overflow:ellipsis}
+/* The pin is deliberately quiet until it is wanted. It sits on a control the
+   pointer is already on top of, so it does not need to advertise: dim at rest,
+   lit when the knob is on the bar, and a hit area big enough to be a target
+   rather than a pixel. */
+.sl>b .pin{font-style:normal;text-decoration:none;cursor:pointer;pointer-events:auto;
+  flex:0 0 auto;font-size:7px;line-height:1;color:rgba(92,225,255,.30);
+  padding:2px 3px;margin:-2px -1px -2px -3px;transition:color .15s,text-shadow .15s}
+.sl>b .pin:hover{color:var(--cy);text-shadow:0 0 8px var(--cy)}
+.sl.pinned>b .pin{color:rgba(92,225,255,.85);text-shadow:0 0 7px rgba(92,225,255,.45)}
+.sl.pinned>b{opacity:.72}
 .sl input[type=range],#gen-r{-webkit-appearance:none;appearance:none;width:100%;height:3px;
   background:rgba(92,225,255,.16);outline:0;cursor:ew-resize;border-radius:2px}
 .sl input[type=range]::-webkit-slider-thumb,#gen-r::-webkit-slider-thumb{-webkit-appearance:none;
@@ -706,70 +729,15 @@ body.ship #scanmsg{display:block}
   <div class="pane glass" id="ctl">
     <div class="ttl" id="ctltl"><b>ORRERY CONTROL</b><span id="ctlfold">[ − ]</span></div>
     <div class="bd">
+      <!-- Both shelves are filled by the CONTROL DECK block from the KNOBS
+           table, not written out here. Thirty-odd sliders spelt in markup is
+           thirty chances for an id to disagree with the code that reads it,
+           and — the reason it changed — which shelf a knob sits on is the
+           reader's to decide and cannot be a fact about the document. -->
       <div id="ctlknobs">
-        <!-- the five that get reached for -->
-        <div id="ctlgrid">
-          <div class="sl">
-            <b>ORBIT SPEED<i id="v-spd">1.00×</i></b>
-            <input type="range" id="r-spd" min="0" max="400" step="1" value="100">
-          </div>
-          <div class="sl">
-            <b>NODE GLOW<i id="v-bri">1.00×</i></b>
-            <input type="range" id="r-bri" min="10" max="260" step="1" value="100">
-          </div>
-          <div class="sl">
-            <b>LINK GLOW<i id="v-lnk">1.00×</i></b>
-            <input type="range" id="r-lnk" min="0" max="85" step="1" value="70">
-          </div>
-          <div class="sl">
-            <b>ORBIT GAP<i id="v-gap">1.00×</i></b>
-            <input type="range" id="r-gap" min="50" max="300" step="1" value="100">
-          </div>
-          <div class="sl">
-            <b><span data-i18n="cap.label">최대 노드</span><i id="v-cap">3000</i></b>
-            <input type="range" id="r-cap" min="500" max="10500" step="500" value="3000">
-          </div>
-        </div>
+        <div id="ctlgrid"></div>
         <div id="advtog">▸ ADVANCED</div>
-        <!-- the six that are set once -->
-        <div id="ctladv">
-          <div class="sl">
-            <b>ARC HEIGHT<i id="v-arc">1.00×</i></b>
-            <input type="range" id="r-arc" min="0" max="250" step="1" value="100">
-          </div>
-          <div class="sl">
-            <b>LINK TENSION<i id="v-ten">0.50</i></b>
-            <input type="range" id="r-ten" min="0" max="100" step="1" value="50">
-          </div>
-          <div class="sl">
-            <b>AGE TINT<i id="v-age">0.60</i></b>
-            <input type="range" id="r-age" min="0" max="100" step="1" value="60">
-          </div>
-          <div class="sl">
-            <b>ORBIT TRAILS<i id="v-trl">0.70</i></b>
-            <input type="range" id="r-trl" min="0" max="100" step="1" value="70">
-          </div>
-          <div class="sl">
-            <b>BLOOM<i id="v-blm">0.60</i></b>
-            <input type="range" id="r-blm" min="0" max="150" step="1" value="60">
-          </div>
-          <div class="sl">
-            <b>NODE GRAVITY<i id="v-grv">1.00×</i></b>
-            <input type="range" id="r-grv" min="0" max="300" step="1" value="100">
-          </div>
-          <div class="sl">
-            <b>ORBIT SPREAD<i id="v-spr">1.00×</i></b>
-            <input type="range" id="r-spr" min="30" max="320" step="1" value="100">
-          </div>
-          <div class="sl">
-            <b>STARFIELD<i id="v-str">1.00×</i></b>
-            <input type="range" id="r-str" min="0" max="200" step="1" value="100">
-          </div>
-          <div class="sl">
-            <b>SHIP THRUST<i id="v-thr">1.00×</i></b>
-            <input type="range" id="r-thr" min="20" max="400" step="1" value="100">
-          </div>
-        </div>
+        <div id="ctladv"></div>
       </div>
       <div class="sep"></div>
       <div class="vs">
@@ -1260,6 +1228,20 @@ const STR = {
 'audio.on':    ['앰비언트 사운드 ON','AMBIENT SOUND ON','アンビエントサウンド ON','环境音效 开'],
 'audio.off':   ['앰비언트 사운드 OFF','AMBIENT SOUND OFF','アンビエントサウンド OFF','环境音效 关'],
 
+/* ---- the deck's own arrangement ---------------------------------------
+   The knob names themselves stay English instrument-lettering, like the rest
+   of the HUD chrome. Only the sentence explaining the ◆ is prose, and prose
+   moves. */
+'pin.hint':    ['◆ 를 누르면 그 조절기가 위 기본 바와 이 서랍 사이를 오갑니다.',
+                'Click ◆ on any control to move it between the bar above and this drawer.',
+                '◆ を押すと、そのつまみが上のバーとこの引き出しの間を移動します。',
+                '点击 ◆ 可将该控制项在上方基本栏与此抽屉之间移动。'],
+'pin.on':      ['{n} · 기본 바에 고정','{n} · pinned to the bar','{n} · バーに固定','{n} · 已固定到基本栏'],
+'pin.off':     ['{n} · 서랍으로 내림','{n} · moved to the drawer','{n} · 引き出しへ','{n} · 已移入抽屉'],
+'grp.cosmos':  ['운동과 구조','MOTION & STRUCTURE','運動と構造','运动与结构'],
+'grp.light':   ['빛과 필름','LIGHT & FILM','光とフィルム','光与胶片'],
+'grp.sound':   ['소리','SOUND','サウンド','声音'],
+
 /* ---- dependencies · limits · exclusions -------------------------------- */
 'vendor.missing':['three.js를 찾을 수 없습니다. 이 앱은 라이브러리를 원격에서 받아오지 않습니다 — <b>vendor/three.min.js</b> 에 직접 넣어 주세요. 자세한 내용은 THIRD-PARTY-NOTICES.md 를 보세요.',
                 'three.js was not found. This app never fetches libraries remotely — place it at <b>vendor/three.min.js</b>. See THIRD-PARTY-NOTICES.md.',
@@ -1532,26 +1514,191 @@ const MAX_NODES_CEIL = 10000;
    was nobody's choice — it was the one shape the single knob could make. */
 const ARC_MAX = 2.50;
 const BLM_MAX = 1.50;
-const SET_DEF = { spd:1, bri:1, ten:.5, arc:1, grv:1, str:1, thr:1,
-                  lnk:.7, spr:1, gap:1, age:.6, trl:.7, blm:.6,
-                  mmHop:false, mmOrb:true, snd:false,
-                  adv:false, legFold:false, keysFold:false, maxNodes:3000 };
-const SET = Object.assign({}, SET_DEF);
+
+/* The scales the vault is played in. Which note a selection sounds is a
+   property of the note — see audioPing — but *which ten notes exist* is a
+   choice about mood, and it is the cheapest one in the whole instrument:
+   pentatonic cannot sound wrong, minor makes the same walk elegiac, whole
+   tone removes the ground from under it, and open fifths is a bell tower. */
+const SCALES = [
+  { n:'PENTATONIC',  s:[0, 2, 4, 7, 9, 12, 14, 16, 19, 21] },
+  { n:'MINOR',       s:[0, 2, 3, 5, 7, 8, 10, 12, 14, 15] },
+  { n:'LYDIAN',      s:[0, 2, 4, 6, 7, 9, 11, 12, 14, 16] },
+  { n:'WHOLE TONE',  s:[0, 2, 4, 6, 8, 10, 12, 14, 16, 18] },
+  { n:'OPEN FIFTHS', s:[0, 7, 12, 19, 24, 26, 31, 36, 38, 43] },
+];
+
+/* ---------------------------------------------------------------- KNOBS
+   One table, and it is the only place a control is described.
+
+   It used to take four edits and a matching pair of ids to add a knob: a
+   slider in the markup, a value cell beside it, a line in syncControls that
+   wrote both, and a row in an array of [id, key] pairs that read it back.
+   Four chances to name something inconsistently, and the deck's own layout —
+   which five are out, which six are folded away — was spelt in the markup, so
+   it could not be anybody's choice but the author's.
+
+   Everything a knob is now lives here: its range, how that range maps onto
+   the value SET holds, how it reads out, which shelf it starts on, and what
+   to do when it moves. The DOM is generated from it and so is the load-time
+   sanitising, which means a knob cannot exist in one of those and not the
+   other.
+
+     k     the SET key. Also the id used in the saved arrangement.
+     g     group: which heading it files under in the drawer
+     min/max/step   the slider's own integer range
+     sc    what to divide the slider by to get the value SET holds. Keeping
+           the two apart is what lets one row be a multiplier, another a
+           semitone, another a count of hertz.
+     def   the default, in SET's units
+     pin   on the bar rather than in the drawer, out of the box
+     fmt   the readout
+     apply optional: what has to happen beyond storing the number. Most knobs
+           need nothing — the next frame reads SET — and the ones that do are
+           the ones that own a buffer or a live audio node.
+     get/set  optional: for the one knob whose slider is not a scaled copy of
+           its value.                                                      */
+const mult = v => v.toFixed(2) + '×';
+const offAt = (v, s) => v < 0.02 ? 'OFF' : s;
+const KNOBS = [
+  { k:'spd', g:'cosmos', label:'ORBIT SPEED',   min:0,  max:400, sc:100, def:1,   pin:1, fmt:mult },
+  { k:'bri', g:'cosmos', label:'NODE GLOW',     min:10, max:260, sc:100, def:1,   pin:1, fmt:mult },
+  { k:'lnk', g:'cosmos', label:'LINK GLOW',     min:0,  max:LNK_MAX*100, sc:100, def:.7, pin:1,
+    fmt:v => offAt(v, mult(v)) },
+  /* ORBIT GAP used to rebuild the cosmos when the handle was let go: the
+     number followed the drag, the sky changed in one cut at the end, and the
+     camera was scaled to compensate so that the cut would not throw half the
+     vault out of frame. It worked and it read as an edit rather than as a
+     spacing control. The layout's arithmetic is linear in this number — a
+     ring's radius, the clearance between systems and the room between orbits
+     all scale together, and the count of systems a ring holds does not change
+     at all, because the circumference and the clearance grow by the same
+     factor. So the frame carries it instead: gapStep() springs toward SET.gap
+     and the orbits widen under a camera left exactly where it was. Which is
+     why it needs no `apply` — see GAPL / gapStep. */
+  /* The ceiling was 3.00×, and it was a ceiling on the wrong thing. Three
+     times is not much room when the question being asked is "let me see the
+     structure" — a vault with forty folders is a wall of overlapping systems
+     at 1× and still crowded at 3×. It stops at 6.00× now.
+     What actually limited it was not the layout, which is linear and does not
+     care, but the two things that stayed the size they were while the cosmos
+     grew around them: the fog, which turned the far half grey exactly when it
+     became worth looking at, and the dust disk, which the cosmos walked out
+     of. Both track the reach now — see applyDepth. */
+  { k:'gap', g:'cosmos', label:'ORBIT GAP',     min:50, max:600, sc:100, def:1,   pin:1, fmt:mult },
+  /* the one knob whose slider is not its value: the step past the ceiling is
+     the off position, so "no limit" is a place on the same slider rather than
+     a separate control */
+  { k:'maxNodes', g:'cosmos', label:'MAX NODES', min:500, max:MAX_NODES_CEIL+500, step:500,
+    sc:1, def:3000, pin:1, i18n:'cap.label',
+    get: () => SET.maxNodes > 0 ? SET.maxNodes : MAX_NODES_CEIL + 500,
+    set: raw => { SET.maxNodes = raw > MAX_NODES_CEIL ? 0 : raw; },
+    fmt: () => SET.maxNodes > 0 ? String(SET.maxNodes) : T('cap.off') },
+  /* FLAT rather than 0.00×, because zero here is a shape — the arcs lie down
+     into the orbital plane and the bow carries them alone — not an absence */
+  { k:'arc', g:'cosmos', label:'ARC HEIGHT',    min:0,  max:ARC_MAX*100, sc:100, def:1,
+    fmt:v => v < 0.02 ? 'FLAT' : mult(v) },
+  { k:'ten', g:'cosmos', label:'LINK TENSION',  min:0,  max:100, sc:100, def:.5, fmt:v => v.toFixed(2) },
+  { k:'age', g:'cosmos', label:'AGE TINT',      min:0,  max:100, sc:100, def:.6,
+    fmt:v => offAt(v, v.toFixed(2)), apply: () => recolour() },
+  { k:'trl', g:'cosmos', label:'ORBIT TRAILS',  min:0,  max:100, sc:100, def:.7,
+    fmt:v => offAt(v, v.toFixed(2)) },
+  { k:'grv', g:'cosmos', label:'NODE GRAVITY',  min:0,  max:300, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'spr', g:'cosmos', label:'ORBIT SPREAD',  min:30, max:320, sc:100, def:1, fmt:mult },
+  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)), apply: () => applyStarfield() },
+  { k:'thr', g:'cosmos', label:'SHIP THRUST',   min:20, max:400, sc:100, def:1, fmt:mult },
+
+  { k:'blm', g:'light',  label:'BLOOM',         min:0,  max:BLM_MAX*100, sc:100, def:.6,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'ray', g:'light',  label:'SUN RAYS',      min:0,  max:150, sc:100, def:.5,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:.55,
+    fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
+  { k:'fil', g:'light',  label:'FILM GRADE',    min:0,  max:150, sc:100, def:.55,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'vig', g:'light',  label:'VIGNETTE',      min:0,  max:150, sc:100, def:.5,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'grn', g:'light',  label:'FILM GRAIN',    min:0,  max:150, sc:100, def:.3,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'abr', g:'light',  label:'LENS FRINGE',   min:0,  max:150, sc:100, def:.3,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'drf', g:'light',  label:'CAMERA DRIFT',  min:0,  max:200, sc:100, def:.5,
+    fmt:v => offAt(v, mult(v)) },
+
+  /* ---- sound ----------------------------------------------------------
+     Every one of these was a constant buried in audioInit, and every one of
+     them is a matter of taste rather than of correctness: how big the room
+     is, how far under the direct sound the tail sits, how long a note rings,
+     what key the vault is in. The defaults are exactly the numbers that were
+     hard-coded, so switching sound on sounds the way it did.               */
+  { k:'sVol',   g:'sound', label:'MASTER',      min:0, max:150, sc:100, def:.55,
+    fmt:v => offAt(v, Math.round(v*100) + '%'), apply: () => audioApply() },
+  { k:'sTune',  g:'sound', label:'TUNING',      min:-24, max:24, sc:1, def:0,
+    fmt:v => (v > 0 ? '+' : '') + v + ' st', apply: () => audioApply() },
+  { k:'sScale', g:'sound', label:'SCALE',       min:0, max:SCALES.length-1, sc:1, def:0,
+    fmt:v => SCALES[clamp(v|0, 0, SCALES.length-1)].n },
+  { k:'sRoom',  g:'sound', label:'ROOM SIZE',   min:5, max:140, sc:10, def:7.5,
+    fmt:v => v.toFixed(1) + ' s', apply: () => audioApply() },
+  { k:'sWet',   g:'sound', label:'ROOM MIX',    min:0, max:170, sc:100, def:.95,
+    fmt:v => v < 0.02 ? 'DRY' : v.toFixed(2), apply: () => audioApply() },
+  { k:'sDamp',  g:'sound', label:'ROOM DAMP',   min:300, max:6000, step:50, sc:1, def:1700,
+    fmt:v => Math.round(v) + ' Hz', apply: () => audioApply() },
+  { k:'sEcho',  g:'sound', label:'ECHO TAIL',   min:0, max:85, sc:100, def:.36,
+    fmt:v => offAt(v, v.toFixed(2)), apply: () => audioApply() },
+  { k:'sEchoT', g:'sound', label:'ECHO TIME',   min:12, max:170, sc:100, def:.62,
+    fmt:v => v.toFixed(2) + ' s', apply: () => audioApply() },
+  { k:'sDrone', g:'sound', label:'DRONE',       min:0, max:170, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)), apply: () => audioApply() },
+  { k:'sDroneT',g:'sound', label:'DRONE TONE',  min:90, max:1200, step:10, sc:1, def:320,
+    fmt:v => Math.round(v) + ' Hz', apply: () => audioApply() },
+  { k:'sPing',  g:'sound', label:'NOTE LEVEL',  min:0, max:200, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'sPingD', g:'sound', label:'NOTE DECAY',  min:40, max:800, step:10, sc:100, def:2.4,
+    fmt:v => v.toFixed(2) + ' s' },
+  { k:'sEngine',g:'sound', label:'ENGINE',      min:0, max:200, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)) },
+];
+const KNOB_OF = {};
+KNOBS.forEach(kn => { KNOB_OF[kn.k] = kn; });
+const GROUPS = [['cosmos','grp.cosmos'], ['light','grp.light'], ['sound','grp.sound']];
+
+/* The arrangement is a list rather than a flag per knob, because it is one
+   thing — what is on the bar — and a list of five strings survives a knob
+   being renamed or dropped in a way that thirty booleans do not. */
+const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
+const SET_DEF = { mmHop:false, mmOrb:true, snd:false,
+                  adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
+KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
+const SET = Object.assign({}, SET_DEF, { pin: PIN_DEF.slice() });
 try { Object.assign(SET, JSON.parse(localStorage.getItem('orrery2.set') || '{}')); } catch(e){}
-/* a value saved back when the slider still went to 3× has to be pulled in,
-   or the old setting survives the change that was meant to remove it */
-SET.lnk = clamp(+SET.lnk || 0, 0, LNK_MAX);
-/* ARC HEIGHT is new, so every settings blob written before today is missing
-   it. `+undefined || 0` would read that absence as a deliberate zero and lay
-   every link flat for exactly the people who never asked for it — so a value
-   that is not a number falls back to the default rather than to the floor. */
-SET.arc = Number.isFinite(+SET.arc) ? clamp(+SET.arc, 0, ARC_MAX) : SET_DEF.arc;
-/* same trap as ARC HEIGHT, three more times: a blob written before today has
-   none of these keys, and reading the absence as a zero would ship the new
-   look switched off to exactly the people who never chose that */
-SET.age = Number.isFinite(+SET.age) ? clamp(+SET.age, 0, 1)       : SET_DEF.age;
-SET.trl = Number.isFinite(+SET.trl) ? clamp(+SET.trl, 0, 1)       : SET_DEF.trl;
-SET.blm = Number.isFinite(+SET.blm) ? clamp(+SET.blm, 0, BLM_MAX) : SET_DEF.blm;
+
+/* Every saved blob predates some knob in the table above, and several of them
+   predate a range that has since been narrowed — LINK GLOW ran to 3.00× once,
+   and a value saved back then would survive the change that was meant to
+   remove it. Both cases are the same repair, so it is written once here
+   rather than a line at a time as knobs arrive.
+
+   A value that is not a number falls back to the *default*, never to the
+   floor: `+undefined || 0` reads a key's absence as a deliberate zero, which
+   is how a new look ships switched off to exactly the people who never chose
+   that. Three knobs were once wrong in precisely this way. */
+KNOBS.forEach(kn => {
+  if (kn.get) return;                        // MAX NODES carries its own zero
+  const v = +SET[kn.k];
+  SET[kn.k] = Number.isFinite(v) ? clamp(v, kn.min / kn.sc, kn.max / kn.sc) : kn.def;
+});
+SET.maxNodes = Number.isFinite(+SET.maxNodes)
+  ? clamp(+SET.maxNodes, 0, MAX_NODES_CEIL) : SET_DEF.maxNodes;
+/* A saved arrangement naming a knob that no longer exists would leave the bar
+   one control short and no way to find out which; one naming the same knob
+   twice would append the same element to the grid twice, which is a move
+   rather than a copy and so silently loses nothing — but only by accident. */
+SET.pin = Array.isArray(SET.pin)
+  ? KNOBS.filter(kn => SET.pin.indexOf(kn.k) >= 0).map(kn => kn.k)
+  : PIN_DEF.slice();
+
 function saveSet(){ try { localStorage.setItem('orrery2.set', JSON.stringify(SET)); } catch(e){} }
 
 let toastT = 0;
@@ -1628,6 +1775,41 @@ function gapStep(dt) {
     gapNow = want; gapVel = 0;
   }
   gapSys = ringGapFor(gapNow) / (GAPL.rg || 1);
+  applyDepth();
+}
+/* ---- how far you can see, and how far the air reaches ------------------
+   Both of these were constants, and a constant is a statement about how big
+   the cosmos is. Neither had any way to know it had stopped being true.
+
+   The fog was tuned on a small vault and it is a *ratio*: at 0.00026 the view
+   goes to soup around six thousand units out, which is the far edge of a
+   modest cosmos and reads as depth. Open a vault four times that size, or
+   widen the orbits, and the same number puts the far half of the structure
+   behind a grey wall — the fog stopped describing distance and started
+   deleting the thing the knob had just spread out.
+
+   So it scales with the reach. Note the Math.min: the density is only ever
+   *reduced* from what it was. A cosmos smaller than the reference keeps
+   exactly today's air, because making a small vault foggier than it has been
+   for a year is a change nobody asked for; a bigger one gets proportionally
+   thinner, so what you see is the same amount of depth over a longer space.
+
+   The far plane comes along for the same reason, and only ever upward: a
+   camera that can already be pulled out to twenty-four thousand units was
+   never far from clipping the sky behind it.                             */
+const FOG_D0 = 0.00026, FOG_R0 = 6000, FAR_0 = 40000;
+let farNow = FAR_0;
+function applyDepth() {
+  const reach = Math.max(600, (SHELL_R || 1600) * gapSys);
+  scene.fog.density = FOG_D0 * Math.min(1, FOG_R0 / reach);
+  const far = Math.max(FAR_0, reach * 3 + 20000);
+  /* the projection matrix is rebuilt when this moves, so it is compared
+     rather than assigned — the spring calls this on every frame it runs */
+  if (Math.abs(far - farNow) > farNow * 0.02) {
+    farNow = far;
+    camera.far = far;
+    camera.updateProjectionMatrix();
+  }
 }
 /* Samples per link — now a *ceiling*, not a count. Nine draws a visibly
    smooth sag on the dozen-edge vaults this was tuned on; on a seven-thousand
@@ -2338,8 +2520,8 @@ renderer.info.autoReset = false;
    where the two spaces are closest, and this is a look rather than a
    simulation. Predictable beats principled here. */
 const BLOOM = {
-  ok: false, rt: null, a: null, b: null,
-  bright: null, blur: null, comp: null,
+  ok: false, rt: null, a: null, b: null, c: null,
+  bright: null, blur: null, comp: null, ray: null,
   quad: null, cam: null, scene: null, w: 0, h: 0
 };
 const FS_V = `
@@ -2369,14 +2551,101 @@ void main(){
   s += texture2D(tSrc, vUv - uDir * 3.2307692308).rgb * 0.0702702703;
   gl_FragColor = vec4(s, 1.0);
 }`;
-const COMP_F = `
-uniform sampler2D tScene; uniform sampler2D tBloom; uniform float uAmt;
+/* ---------- god rays ----------
+   A radial blur of the bright pass, marched toward the sun's own place on
+   screen. This is the oldest trick in the book and it is still the single
+   largest thing that can be done to make a rendering feel like a photograph
+   of somewhere: light that reaches across the frame from a source rather than
+   stopping at the object that emitted it. It is also the whole of what makes
+   this read as sacred rather than merely dark — a nave is a box until the
+   windows put shafts across it.
+
+   Marched over the *blurred* bright buffer rather than the scene, which is
+   free, since that buffer has already been made and already contains only
+   what is bright enough to be a source. Twenty-four steps is enough at half
+   resolution; the decay is what stops the far end of the march smearing the
+   whole frame, and the distance falloff is what keeps the corners clean when
+   the sun is near the edge.                                              */
+const RAY_F = `
+uniform sampler2D tSrc; uniform vec2 uSun; uniform float uDecay, uWeight;
 varying vec2 vUv;
 void main(){
-  /* no curve applied either way: RT0 was written in the canvas's own encoding
-     and this is on its way straight back to the canvas */
-  gl_FragColor = vec4(texture2D(tScene, vUv).rgb +
-                      texture2D(tBloom, vUv).rgb * uAmt, 1.0);
+  vec2 uv = vUv;
+  /* not named "step": that is a built-in, and a variable shadowing one is
+     legal GLSL that some drivers still refuse to compile */
+  vec2 dlt = (uv - uSun) * 0.0355;
+  float ill = 1.0;
+  vec3 s = vec3(0.0);
+  for (int i = 0; i < 24; i++) {
+    uv -= dlt;
+    s += texture2D(tSrc, clamp(uv, 0.0, 1.0)).rgb * ill;
+    ill *= uDecay;
+  }
+  /* the far side of the frame is not lit by a source at the near side */
+  float fall = clamp(1.0 - length(vUv - uSun) * 0.62, 0.0, 1.0);
+  gl_FragColor = vec4(s * uWeight * fall * fall, 1.0);
+}`;
+/* ---------- composite, and the grade ----------
+   The composite used to add one buffer and stop, and stopping there is what
+   made the frame read as *rendered*. Four things separate a render from a
+   photograph and none of them is more geometry:
+
+     the curve    a sensor rolls its highlights off; a framebuffer clips them,
+                  which is why bright things here went chalky rather than
+                  radiant
+     the split    shadows go cold and highlights go warm in every emulsion
+                  ever made, and the eye reads that pair as depth
+     the lens     a vignette, and colour separating toward the corners,
+                  because a real one cannot focus three wavelengths onto the
+                  same ring of glass
+     the grain    a floor of noise, which stops flat regions banding and is
+                  the difference between "dark" and "shot in the dark"
+
+   All four are knobs, all four can be taken to zero, and at zero this is the
+   same three lines it used to be. That is deliberate: the identity between
+   the bloom path and the plain path at zero bloom was a property worth
+   having, and it now extends to the grade. */
+const COMP_F = `
+uniform sampler2D tScene; uniform sampler2D tBloom; uniform sampler2D tRay;
+uniform float uAmt, uRay, uFilm, uVig, uGrain, uAbr, uTime;
+varying vec2 vUv;
+vec3 tonemap(vec3 x){
+  /* a shoulder, not a curve fit to anything in particular: it has to be
+     monotonic, leave the bottom two thirds nearly alone, and never reach 1 */
+  return (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14);
+}
+void main(){
+  vec2 d = vUv - 0.5;
+  float r2 = dot(d, d);
+  vec3 c;
+  if (uAbr > 0.001) {
+    /* quadratic in radius, like the aberration of a real lens: nothing at the
+       centre, and it never becomes the subject */
+    vec2 o = d * r2 * uAbr * 0.055;
+    c = vec3(texture2D(tScene, vUv + o).r,
+             texture2D(tScene, vUv).g,
+             texture2D(tScene, vUv - o).b);
+  } else {
+    c = texture2D(tScene, vUv).rgb;
+  }
+  c += texture2D(tBloom, vUv).rgb * uAmt;
+  c += texture2D(tRay,   vUv).rgb * uRay;
+  if (uFilm > 0.001) {
+    vec3 g = tonemap(c * (1.0 + uFilm * 0.22));
+    float l = dot(g, vec3(0.2126, 0.7152, 0.0722));
+    g *= mix(vec3(0.85, 0.94, 1.14), vec3(1.11, 1.02, 0.86),
+             smoothstep(0.09, 0.74, l));
+    c = mix(c, g, clamp(uFilm, 0.0, 1.0));
+  }
+  if (uVig > 0.001)
+    c *= mix(1.0, smoothstep(1.10, 0.16, r2 * 2.0), clamp(uVig, 0.0, 1.0) * 0.8);
+  if (uGrain > 0.001) {
+    float n = fract(sin(dot(vUv * 1024.0 + uTime, vec2(12.9898, 78.233))) * 43758.5453);
+    /* signed, and scaled with how dark the pixel already is: grain sits in
+       the shadows of a real frame and is invisible in its highlights */
+    c += (n - 0.5) * uGrain * 0.055 * (1.0 - smoothstep(0.0, 0.85, max(c.r, max(c.g, c.b))));
+  }
+  gl_FragColor = vec4(c, 1.0);
 }`;
 function bloomInit() {
   if (BLOOM.scene) return;
@@ -2391,8 +2660,14 @@ function bloomInit() {
   BLOOM.bright.uniforms = { tSrc:{value:null}, uThresh:{value:0.48}, uKnee:{value:0.40} };
   BLOOM.blur = mk(BLUR_F);
   BLOOM.blur.uniforms = { tSrc:{value:null}, uDir:{value:new THREE.Vector2()} };
+  BLOOM.ray = mk(RAY_F);
+  BLOOM.ray.uniforms = { tSrc:{value:null}, uSun:{value:new THREE.Vector2(.5,.5)},
+                         uDecay:{value:0.945}, uWeight:{value:0.052} };
   BLOOM.comp = mk(COMP_F);
-  BLOOM.comp.uniforms = { tScene:{value:null}, tBloom:{value:null}, uAmt:{value:0.6} };
+  BLOOM.comp.uniforms = { tScene:{value:null}, tBloom:{value:null}, tRay:{value:null},
+                          uAmt:{value:0.6}, uRay:{value:0}, uFilm:{value:0},
+                          uVig:{value:0}, uGrain:{value:0}, uAbr:{value:0},
+                          uTime:{value:0} };
   BLOOM.quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), BLOOM.bright);
   BLOOM.quad.frustumCulled = false;
   BLOOM.scene = new THREE.Scene();
@@ -2402,7 +2677,7 @@ function bloomInit() {
 function bloomSize(w, h) {
   bloomInit();
   if (BLOOM.w === w && BLOOM.h === h && BLOOM.rt) return;
-  [BLOOM.rt, BLOOM.a, BLOOM.b].forEach(r => { if (r) r.dispose(); });
+  [BLOOM.rt, BLOOM.a, BLOOM.b, BLOOM.c].forEach(r => { if (r) r.dispose(); });
   const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
                 format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false };
   /* Eight bits, and sRGB — the canvas's own format, which is the point: the
@@ -2414,8 +2689,21 @@ function bloomSize(w, h) {
   const hw = Math.max(1, w >> 1), hh = Math.max(1, h >> 1);
   BLOOM.a = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
   BLOOM.b = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  /* the rays get a target of their own rather than borrowing the blur's spare
+     one: the march reads A and the composite reads both, so writing the rays
+     into B would be correct only until the day a fourth blur pass is added */
+  BLOOM.c = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
   BLOOM.w = w; BLOOM.h = h;
   BLOOM.ok = true;
+  /* A freshly allocated target holds whatever the driver left in it. The
+     composite multiplies both of these by an amount that may be zero, and
+     zero times undefined memory is still zero — but a target that has never
+     been drawn to is also a target three.js has never attached, and clearing
+     them here means the first composited frame cannot sample one. */
+  [BLOOM.a, BLOOM.b, BLOOM.c].forEach(r => {
+    renderer.setRenderTarget(r); renderer.clear();
+  });
+  renderer.setRenderTarget(null);
 }
 function bloomPass(mat, target) {
   BLOOM.quad.material = mat;
@@ -2423,12 +2711,51 @@ function bloomPass(mat, target) {
   renderer.clear();
   renderer.render(BLOOM.scene, BLOOM.cam);
 }
+/* Where the sun is on screen, in the 0..1 the ray march wants, or null when
+   it is behind the camera or there is no vault to have one. project() maps a
+   point behind the eye to a z past 1 and mirrors it through the origin, so a
+   sun over your shoulder would otherwise pull shafts out of the wrong side of
+   the frame — which is a thing nobody would be able to name and everybody
+   would be able to see. */
+const _sunV = new THREE.Vector3();
+function sunScreen() {
+  if (!N || !sunObj || !sunObj.visible) return null;
+  _sunV.copy(sunObj.position).project(camera);
+  if (_sunV.z > 1) return null;
+  return _sunV;
+}
 /* The one place the frame is drawn. Every caller — the loop, the poster —
    goes through here so that what is saved is what was on screen. */
 function renderFrame() {
   renderer.info.reset();
   const amt = SET.blm;
-  if (amt <= 0.02 || !BLOOM.ok) {
+  const sun = SET.ray > 0.02 ? sunScreen() : null;
+  /* Two fades, and both of them are about where the source is rather than how
+     much of it was asked for.
+
+     Off screen: the shafts go out gradually rather than snapping, because a
+     source just past the edge of the frame still throws light into it and one
+     a long way past it does not.
+
+     Close up: a shaft is something seen *across* a space. Fly into the hub
+     and the star stops being a point throwing light through a room and starts
+     being the room — at which range the march is sampling a bright buffer
+     that fills the frame, and every step of it lands on more of the same, so
+     the whole picture washes to cream. The corona and the bloom are what
+     carry the sun from arm's length; the rays hand over to them. */
+  let rayAmt = 0;
+  if (sun) {
+    const edge = clamp(1.9 - Math.max(Math.abs(sun.x), Math.abs(sun.y)), 0, 1);
+    const room = clamp(camera.position.distanceTo(sunObj.position) /
+                       ((RAD[coreIdx] || 17) * 34) - 0.12, 0, 1);
+    rayAmt = SET.ray * edge * room * room;
+  }
+  /* the grade is four knobs and any one of them is reason enough to composite */
+  const film = SET.fil + SET.vig + SET.grn + SET.abr;
+  /* The plain path stays exactly what it was, and is still taken whenever
+     nothing has been asked for — the identity between it and the composite at
+     zero was worth measuring once and is worth keeping. */
+  if ((amt <= 0.02 && rayAmt <= 0.02 && film <= 0.02) || !BLOOM.ok) {
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
     return false;
@@ -2441,30 +2768,53 @@ function renderFrame() {
   if (SKY.on) { renderer.autoClear = false; renderer.clearDepth();
                 renderer.render(stageScene, stageCam); renderer.autoClear = true; }
 
-  BLOOM.bright.uniforms.tSrc.value = BLOOM.rt.texture;
-  bloomPass(BLOOM.bright, BLOOM.a);
-  /* Three widening passes rather than one.
-     A single nine-tap blur reaches about five pixels, and five pixels of
-     spread is a soft edge, not a glow — the light has to travel far enough to
-     land on things that are not the source before anyone reads it as light.
-     Chaining blurs multiplies their kernels, so stepping the offset out 1, 3,
-     7 builds a wide falloff with a bright centre for six half-resolution
-     passes, which is nothing on any GPU that got this far. */
-  const hw = BLOOM.a.width, hh = BLOOM.a.height;
-  const steps = [1, 3, 7];
-  for (let k = 0; k < steps.length; k++) {
-    const r = steps[k];
-    BLOOM.blur.uniforms.tSrc.value = BLOOM.a.texture;
-    BLOOM.blur.uniforms.uDir.value.set(r/hw, 0);
-    bloomPass(BLOOM.blur, BLOOM.b);
-    BLOOM.blur.uniforms.tSrc.value = BLOOM.b.texture;
-    BLOOM.blur.uniforms.uDir.value.set(0, r/hh);
-    bloomPass(BLOOM.blur, BLOOM.a);
+  /* The bright pass and the blur chain feed both the glow and the shafts, so
+     they run if either is wanted — and are skipped entirely for a frame that
+     only asked for the grade, which then costs one full-screen pass. */
+  const glow = amt > 0.02 || rayAmt > 0.02;
+  if (glow) {
+    BLOOM.bright.uniforms.tSrc.value = BLOOM.rt.texture;
+    bloomPass(BLOOM.bright, BLOOM.a);
+    /* Three widening passes rather than one.
+       A single nine-tap blur reaches about five pixels, and five pixels of
+       spread is a soft edge, not a glow — the light has to travel far enough
+       to land on things that are not the source before anyone reads it as
+       light. Chaining blurs multiplies their kernels, so stepping the offset
+       out 1, 3, 7 builds a wide falloff with a bright centre for six
+       half-resolution passes, which is nothing on any GPU that got this far. */
+    const hw = BLOOM.a.width, hh = BLOOM.a.height;
+    const steps = [1, 3, 7];
+    for (let k = 0; k < steps.length; k++) {
+      const r = steps[k];
+      BLOOM.blur.uniforms.tSrc.value = BLOOM.a.texture;
+      BLOOM.blur.uniforms.uDir.value.set(r/hw, 0);
+      bloomPass(BLOOM.blur, BLOOM.b);
+      BLOOM.blur.uniforms.tSrc.value = BLOOM.b.texture;
+      BLOOM.blur.uniforms.uDir.value.set(0, r/hh);
+      bloomPass(BLOOM.blur, BLOOM.a);
+    }
+  }
+  /* the shafts, marched over what the blur has already made */
+  if (rayAmt > 0.02) {
+    BLOOM.ray.uniforms.tSrc.value = BLOOM.a.texture;
+    BLOOM.ray.uniforms.uSun.value.set(sun.x * 0.5 + 0.5, sun.y * 0.5 + 0.5);
+    bloomPass(BLOOM.ray, BLOOM.c);
   }
 
-  BLOOM.comp.uniforms.tScene.value = BLOOM.rt.texture;
-  BLOOM.comp.uniforms.tBloom.value = BLOOM.a.texture;
-  BLOOM.comp.uniforms.uAmt.value = amt;
+  const U = BLOOM.comp.uniforms;
+  U.tScene.value = BLOOM.rt.texture;
+  U.tBloom.value = BLOOM.a.texture;
+  U.tRay.value   = BLOOM.c.texture;
+  U.uAmt.value   = glow ? amt : 0;
+  U.uRay.value   = rayAmt > 0.02 ? rayAmt : 0;
+  U.uFilm.value  = SET.fil;
+  U.uVig.value   = SET.vig;
+  U.uGrain.value = SET.grn;
+  U.uAbr.value   = SET.abr;
+  /* the grain has to move, or it is dirt on the sensor rather than noise in
+     it — and it has to move on the wall clock, since a frozen sky is still a
+     photograph being taken */
+  U.uTime.value  = (performance.now() * 0.001) % 1000;
   BLOOM.quad.material = BLOOM.comp;
   renderer.setRenderTarget(null);
   renderer.render(BLOOM.scene, BLOOM.cam);
@@ -2603,7 +2953,8 @@ function pointsFrom(n, fill, mat) {
 const SKY_R = 14000;                       // far enough that the ship never
                                            // outruns the background
 let starFieldObj = null, brightStarObj = null, nebulaObj = null,
-    milkyObj = null, dustObj = null, coronaObj = null;
+    milkyObj = null, dustObj = null, coronaObj = null, coronaRay = null,
+    veilObj = null;
 
 starFieldObj = pointsFrom(13000, (i, pos, sz, cl, al) => {
   const r = SKY_R * (0.62 + Math.random()*0.38);
@@ -2754,8 +3105,100 @@ function buildNebula(outer) {
         c.emission ? .50 : .32, c.emission ? .40 : .46).toArray(cl, i*3);
   }, glowMat(700, 0, 0, true));
 }
+/* ---------- the celestial veil ----------
+   The sky had depth and it had no *grandeur*. Stars, a band, arms and gas all
+   describe where things are; none of them makes the space feel like somewhere
+   you would lower your voice in. What was missing is the thing a cathedral
+   gets from its windows — enormous slow colour, arriving from a direction,
+   with nothing in it to resolve.
+
+   Drawn as points rather than as a shader dome, and that is the whole design
+   decision here. A screen-filling fragment shader with two four-octave noise
+   fields is around sixty sines a pixel, which at 1440p is a hundred million
+   of them a frame for a background nobody is looking directly at — it would
+   have cost more than everything else in the scene put together. Nine
+   curtains of very large, very dim points cost one draw call and one buffer,
+   overlap additively into something continuous exactly the way the nebula
+   already does, and can be turned down to nothing by a knob without the GPU
+   still paying for them.
+
+   A curtain is a great circle with a normal of its own, so the nine of them
+   cross at every angle rather than lying in the same band as the milky way.
+   Along its length the hue walks — teal into violet into rose — because a
+   single-coloured sheet reads as a gel over the lens and a walking one reads
+   as different gases at different distances. */
+function buildVeil() {
+  dropGlow(veilObj);
+  const CURT = 9, PER = 300;
+  const arcs = [];
+  for (let k = 0; k < CURT; k++) {
+    /* a random great circle: one axis to spin about, and two perpendiculars
+       in the plane it defines */
+    const ax = new THREE.Vector3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1)
+                 .normalize();
+    const u = new THREE.Vector3(0,1,0);
+    if (Math.abs(ax.y) > 0.9) u.set(1,0,0);
+    const e1 = new THREE.Vector3().crossVectors(ax, u).normalize();
+    const e2 = new THREE.Vector3().crossVectors(ax, e1).normalize();
+    arcs.push({ e1, e2, e3: new THREE.Vector3().crossVectors(e1, e2),
+      a0: Math.random()*TAU,
+      /* never a whole circle: a curtain has ends, and a ring around the sky
+         reads as a piece of hardware */
+      span: 1.1 + Math.random()*1.9,
+      hue: 168 + Math.random()*150,          // teal → violet → rose
+      dh:  (Math.random()-.5)*120,
+      lit: 0.55 + Math.random()*0.9,
+      thick: 0.055 + Math.random()*0.10 });
+  }
+  const _v = new THREE.Vector3();
+  veilObj = pointsFrom(CURT * PER, (i, pos, sz, cl, al) => {
+    const c = arcs[(i / PER) | 0];
+    const u = (i % PER) / PER;
+    const a = c.a0 + (u - 0.5) * c.span;
+    /* thickness across the curtain, gaussian, so it has a bright spine and
+       no edge to find */
+    const g = (Math.random()+Math.random()+Math.random()-1.5) * 0.8;
+    const r = SKY_R * (0.86 + Math.random()*0.10);
+    _v.copy(c.e1).multiplyScalar(Math.cos(a))
+      .addScaledVector(c.e2, Math.sin(a))
+      .addScaledVector(c.e3, g * c.thick)
+      .normalize().multiplyScalar(r);
+    pos[i*3] = _v.x; pos[i*3+1] = _v.y; pos[i*3+2] = _v.z;
+    /* faded to nothing at both ends, so a curtain begins and ends in the sky
+       rather than being cut off by its own last point */
+    const ends = Math.sin(u * Math.PI);
+    const core = Math.exp(-g*g*0.9);
+    /* Sized in world units against a point shader that divides by depth, so
+       the number is large: at fourteen thousand out, two thousand units is a
+       blob a couple of hundred pixels across, which is what it takes for
+       three hundred of them to overlap into a sheet instead of a stipple. */
+    sz[i] = (900 + Math.random()*1700) * (0.45 + core*0.75) * (SKY_R/14000);
+    /* Three hundred points across a curtain sixty degrees wide overlap maybe
+       five deep, so the per-point alpha has to be five times what the sheet
+       is meant to read as — not the sheet's own value, which was the first
+       guess and produced a curtain that could not be seen at any setting of
+       its own knob. */
+    al[i] = (.070 + Math.random()*.115) * c.lit * ends * (0.25 + core);
+    hsl((c.hue + c.dh*(u-0.5) + 360) % 360,
+        .42 + Math.random()*.26, .40 + Math.random()*.16).toArray(cl, i*3);
+  }, glowMat(700, 0, 0, false));
+  veilObj.name = 'veil';
+  /* behind everything, and never writing depth: it is the far wall */
+  veilObj.renderOrder = -1;
+  applyVeil();
+}
+/* Its own knob rather than riding STARFIELD's. Turning the star population
+   down is a legibility decision — fewer points competing with the notes — and
+   turning the veil down is a taste one, and a person can want either without
+   the other. */
+function applyVeil() {
+  if (veilObj && veilObj.material.uniforms)
+    veilObj.material.uniforms.uBright.value = SET.vei;
+}
+
 buildDust(1600);
 buildNebula(1600);
+buildVeil();
 
 /* ======================================================== PLANET SURFACES
    Every body was the same faceted ball in a different colour, which is fine
@@ -3192,6 +3635,146 @@ function surfCacheClear() {
   globeTask = null;
 }
 
+/* ================================================= THE STAR AT THE CENTRE
+   What the hub used to be: a cream ball of flat colour, with two wireframe
+   icosahedra counter-rotating over it standing in for convection, and a
+   backside shell for the glow.
+
+   The wireframes were the tell. A wireframe is a *diagram* of a sphere — it
+   is how you draw an object you are explaining rather than one you are
+   looking at — and no photograph of a star has ever had a lattice on it. Two
+   of them turning against each other read as a title sequence. And under
+   them the disc was uniform, which is the other half of the problem: the one
+   thing every photograph of the sun does show, the thing your eye knows
+   before you can name it, is that the disc is not evenly bright.
+
+   Three facts, and each is one term in the shader below:
+
+     limb darkening   A star has no surface. You are looking into a gas that
+                      gets hotter with depth, and at the edge of the disc your
+                      line of sight is shallow — it stops in a cooler, higher
+                      layer. So the middle is white and the rim is amber, and
+                      the falloff is steep near the edge. This is the single
+                      difference between a ball and a star.
+     granulation      The photosphere boils. Convection cells a thousand
+                      kilometres across rise bright in the middle and sink
+                      dark at their edges, and they turn over on their own
+                      clock rather than being carried round by rotation.
+     the chromosphere A thin, much hotter, much redder layer standing just off
+                      the limb — the pink ring in every eclipse photograph.
+                      Drawn as its own shell so it sits *outside* the disc's
+                      silhouette, which is the whole of why it reads.
+
+   The colours are the palette the rest of the sky is already built from:
+   STAR_TEMPS[3] is the G row, our own sun's cream, and STAR_TEMPS[4] is the K
+   row it cools to at the edge. Nothing here is invented. */
+const SUN_V = `
+varying vec3 vN; varying vec3 vE; varying vec3 vP;
+void main(){
+  vP = position;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  /* the geometry is a sphere about its own origin, so the outward direction
+     is the position — no dependence on whatever normals the subdivision left */
+  vN = normalize(normalMatrix * normalize(position));
+  vE = normalize(-mv.xyz);
+  gl_Position = projectionMatrix * mv;
+}`;
+/* A hand-written ShaderMaterial gets none of three.js's fragment chunks, the
+   output encoding among them — see the BLOOM block, which had to work this
+   out the hard way. Everything else on screen arrives at the canvas in sRGB,
+   so this has to as well or the whole star sits a stop and a half dark
+   against a scene that does not. */
+const SUN_F = `
+uniform float uTime; uniform vec3 uCore; uniform vec3 uEdge;
+varying vec3 vN; varying vec3 vE; varying vec3 vP;
+float hash(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+float noise(vec3 p){
+  vec3 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(hash(i),                 hash(i + vec3(1,0,0)), f.x),
+                 mix(hash(i + vec3(0,1,0)),    hash(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash(i + vec3(0,0,1)),    hash(i + vec3(1,0,1)), f.x),
+                 mix(hash(i + vec3(0,1,1)),    hash(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+void main(){
+  /* mu, the cosine between the surface and the line of sight: 1 in the middle
+     of the disc, 0 at the limb */
+  float mu = clamp(dot(normalize(vN), normalize(vE)), 0.0, 1.0);
+  /* The linear law, I(mu) = 1 - u(1 - mu), which is what limb darkening is
+     actually measured and tabulated as; u is near 0.6 for our own sun in
+     visible light and is pushed to 0.80 here because this disc is a few
+     hundred pixels across rather than half a degree of sky.
+
+     A power law was tried first — pow(mu, 0.55) — and it is the wrong shape.
+     mu is not the radius: it is sqrt(1 - r²), so it stays above 0.85 across
+     the whole inner half of the disc and then falls off a cliff. Any function
+     of mu that is gentle near 1 therefore puts the entire visible gradient
+     into the last few per cent of the radius, and the disc reads flat with a
+     thin dark ring — which is exactly what it did. Linear in mu spends the
+     gradient across the face, where it can be seen. */
+  float ld = 1.0 - 0.80 * (1.0 - mu);
+
+  /* Granulation, drawn as the *lanes* and not as the cells.
+
+     Convection on a star is a honeycomb: rising gas fills almost the whole
+     surface and it is bright, and the thin network of cooler gas sinking back
+     down between the cells is dark. So the face is mostly light with a dark
+     web on it — and taking the noise field directly gives the opposite
+     impression, broad bright blobs next to broad dark blobs of the same size,
+     which reads as a bruised moon. That is what the first attempt looked like.
+
+     A level set of a noise field — the places where it passes through its own
+     middle — is a set of thin closed curves, and a field of them is exactly
+     that honeycomb, for one noise call. Granulation also turns over in place
+     rather than being carried round, so the sample point drifts through the
+     field instead of the sphere spinning under it.
+
+     The width of the level set and how dark it goes are the two numbers that
+     decide whether this is granulation or brain coral: a wide, high-contrast
+     lane is a vein, and the first pass at these had both. Thin and shallow. */
+  vec3 q = normalize(vP);
+  float g1 = noise(q * 17.0 + vec3(0.0, uTime * 0.055, 0.0));
+  float g2 = noise(q * 38.0 - vec3(uTime * 0.080, 0.0, uTime * 0.050));
+  float lane = 1.0 - smoothstep(0.0, 0.14, abs(g1 - 0.5));
+  float fine = 1.0 - smoothstep(0.0, 0.18, abs(g2 - 0.5));
+  /* a slow unevenness across the whole face, so the web is not a uniform
+     texture laid over a uniform ball */
+  float broad = noise(q * 3.4 + vec3(uTime * 0.020, 0.0, uTime * 0.030));
+  float cell = 1.03 - 0.20 * lane - 0.07 * fine + 0.10 * (broad - 0.5);
+
+  /* The colour follows the *angle*, not the brightness. Mixing by the lit
+     value instead made every dark lane in the middle of the disc go amber, as
+     though the cool gas were somewhere other than where it is: the limb is
+     cooler because you are seeing a shallower layer there, and a lane is
+     dimmer because the gas in it is sinking. Two different facts, and only one
+     of them is about temperature. */
+  vec3 tint = mix(uEdge, uCore, pow(mu, 0.85));
+
+  /* The middle of the disc is meant to clip and the rest of it is not. A star
+     should saturate somewhere — that is what makes it read as a source rather
+     than as a lit ball — but at 1.16, with the old flat falloff, it saturated
+     everywhere and every term above was computed and thrown away by the
+     clamp. */
+  float v = ld * cell * 1.22;
+  gl_FragColor = vec4(pow(clamp(tint * v, 0.0, 1.0), vec3(0.4545)), 1.0);
+}`;
+/* The chromosphere. Front faces, additively blended, on a shell four per cent
+   wider than the disc: the centre of it faces the camera square on and
+   contributes nothing, and the ring where the shell turns away — which lies
+   just outside the disc's own edge — is all that is left. That is the shape
+   the layer actually has, and drawing it as a rim term on the surface itself
+   could not have put it there, because it would still have been inside the
+   silhouette. */
+const RIM_F = `
+uniform vec3 uCol; uniform float uAmt;
+varying vec3 vN; varying vec3 vE; varying vec3 vP;
+void main(){
+  float f = 1.0 - abs(dot(normalize(vN), normalize(vE)));
+  float a = pow(f, 3.4) * uAmt;
+  if (a < 0.002) discard;
+  gl_FragColor = vec4(pow(uCol * (0.55 + f * 0.75), vec3(0.4545)), a);
+}`;
+
 /* ---------- the sun's corona ----------
    A camera-facing sprite with a hand-drawn radial falloff. The core node is
    a lit sphere and reads as a rock without this; the corona is what makes it
@@ -3209,13 +3792,74 @@ function surfCacheClear() {
   x.fillStyle = g; x.fillRect(0,0,S,S);
   const tex = new THREE.CanvasTexture(c);
   tex.minFilter = THREE.LinearFilter;
+  /* Depth-tested, which it was not.
+     A corona is the atmosphere *around* a star, and you see it because the
+     star's own disc is in the way of the middle of it — that is what an
+     eclipse is for. Drawn with the depth test off it was a full-brightness
+     additive disc pasted over the photosphere, and while the photosphere was
+     a flat cream ball nothing was lost by that. It has a face now: limb
+     darkening and granulation, none of which survives being painted over.
+     With the test on, the near hemisphere rejects the middle of the sprite at
+     exactly the radius the disc happens to have, at every range — which is
+     the one thing a fixed hollow in the texture could not do, since the disc
+     shrinks against the sprite as the sprite grows with distance.
+     depthWrite stays off: it must not occlude anything itself. */
   coronaObj = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex,
-    transparent:true, depthWrite:false, depthTest:false,
+    transparent:true, depthWrite:false, depthTest:true,
     blending:THREE.AdditiveBlending, opacity:.85 }));
   coronaObj.scale.setScalar(260);
   coronaObj.renderOrder = 2;
   coronaObj.visible = false;
   scene.add(coronaObj);
+
+  /* ---------- the crown ----------
+     A smooth radial falloff is a lamp. Every photograph of a star in eclipse
+     shows the other thing: streamers, of uneven length, standing out of the
+     limb along the field lines and not evenly spaced. Drawn as a second
+     sprite rather than into the first so the two can turn against each other
+     — the crown creeps one way, the glow breathes on its own cycle, and the
+     result never repeats within any time anyone watches it for.
+
+     Tapered triangles, and their lengths come from two incommensurable sines
+     rather than from Math.random alone: pure noise gives a sea urchin, where
+     every spike is a different length from its neighbour, and a star has
+     *regions* — a long streamer with two or three shorter ones leaning
+     against it. */
+  const R = 256, cc = document.createElement('canvas');
+  cc.width = cc.height = R * 2;
+  const y = cc.getContext('2d');
+  y.translate(R, R);
+  const SPIKES = 46;
+  for (let i = 0; i < SPIKES; i++) {
+    const a = (i / SPIKES) * TAU;
+    const shape = (Math.sin(i * 2.31) + Math.sin(i * 0.73) + Math.sin(i * 5.7) * 0.4) / 2.4;
+    const len = R * (0.34 + 0.62 * Math.pow(Math.abs(shape), 0.85));
+    const w = 0.010 + 0.020 * Math.abs(Math.sin(i * 1.7));
+    const g2 = y.createLinearGradient(0, 0, Math.cos(a) * len, Math.sin(a) * len);
+    g2.addColorStop(0.00, 'rgba(255,240,205,0.42)');
+    g2.addColorStop(0.22, 'rgba(255,206,138,0.16)');
+    g2.addColorStop(0.60, 'rgba(255,164,86,0.045)');
+    g2.addColorStop(1.00, 'rgba(255,140,60,0)');
+    y.fillStyle = g2;
+    y.beginPath();
+    y.moveTo(0, 0);
+    y.lineTo(Math.cos(a - w) * len, Math.sin(a - w) * len);
+    y.lineTo(Math.cos(a) * len * 1.04, Math.sin(a) * len * 1.04);
+    y.lineTo(Math.cos(a + w) * len, Math.sin(a + w) * len);
+    y.closePath();
+    y.fill();
+  }
+  const rtex = new THREE.CanvasTexture(cc);
+  rtex.minFilter = THREE.LinearFilter;
+  /* same as the corona: streamers stand out of the limb, they do not lie
+     across the disc */
+  coronaRay = new THREE.Sprite(new THREE.SpriteMaterial({ map:rtex,
+    transparent:true, depthWrite:false, depthTest:true,
+    blending:THREE.AdditiveBlending, opacity:.6 }));
+  coronaRay.scale.setScalar(420);
+  coronaRay.renderOrder = 2;
+  coronaRay.visible = false;
+  scene.add(coronaRay);
 })();
 
 /* ---------- ring texture ----------
@@ -3468,26 +4112,40 @@ world.add(boundary);
 /* ---------- the sun ----------
    The core sits exactly where the point light does, so as a lit Phong body it
    would be shaded from the inside out and come back black. It gets its own
-   unlit geometry instead: a bright shell, a churning wireframe over it, and
-   the corona sprite already in the scene. */
+   unlit geometry instead — see THE STAR AT THE CENTRE above for what the
+   shader is doing and why the wireframes went. */
 sunObj = null;
 if (N && coreIdx >= 0) {
   const SR = RAD[coreIdx];
   sunObj = new THREE.Group();
-  const surface = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(SR, 4),
-    new THREE.MeshBasicMaterial({ color: 0xfff0cf }));
+  /* Detail 5, not 4. The limb is where the whole effect lives and it is also
+     where a polyhedron is most obviously a polyhedron: mu falls off fastest
+     exactly along the silhouette, so a facet edge there shows up as a notch
+     in the darkening. One more subdivision is 5,120 triangles for the single
+     most-looked-at object in the scene. */
+  const surfMat = new THREE.ShaderMaterial({
+    vertexShader: SUN_V, fragmentShader: SUN_F,
+    uniforms: { uTime: { value: 0 },
+                /* the G row for the middle of the disc — our own sun's cream —
+                   and the M row for the limb. Both are rows of the same table
+                   the starfield is coloured from, so the hub cannot drift out
+                   of the palette the sky around it is built on. */
+                uCore: { value: new THREE.Color().fromArray(STAR_TEMPS[3]) },
+                uEdge: { value: new THREE.Color().fromArray(STAR_TEMPS[5]) } }
+  });
+  const surface = new THREE.Mesh(new THREE.IcosahedronGeometry(SR, 5), surfMat);
   sunObj.add(surface);
-  /* two counter-rotating shells: convection, near enough */
-  const flare1 = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(SR*1.06, 2),
-    new THREE.MeshBasicMaterial({ color:0xffb648, wireframe:true, transparent:true,
-      opacity:.42, blending:THREE.AdditiveBlending, depthWrite:false }));
-  const flare2 = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(SR*1.18, 1),
-    new THREE.MeshBasicMaterial({ color:0xff8a3c, wireframe:true, transparent:true,
-      opacity:.20, blending:THREE.AdditiveBlending, depthWrite:false }));
-  sunObj.add(flare1); sunObj.add(flare2);
+
+  /* the chromosphere: a hot thin ring standing just off the limb */
+  const rimMat = new THREE.ShaderMaterial({
+    vertexShader: SUN_V, fragmentShader: RIM_F,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { uCol: { value: new THREE.Color(0xff7a4a) },
+                uAmt: { value: 0.95 } }
+  });
+  const rim = new THREE.Mesh(new THREE.IcosahedronGeometry(SR * 1.04, 4), rimMat);
+  sunObj.add(rim);
+
   const halo = new THREE.Mesh(
     new THREE.IcosahedronGeometry(SR*1.55, 3),
     new THREE.MeshBasicMaterial({ color:0xffcf8a, transparent:true, opacity:.085,
@@ -3495,7 +4153,7 @@ if (N && coreIdx >= 0) {
   sunObj.add(halo);
   /* the sun lights the vault, so its output should track its own mass */
   const lit = 3.6 + Math.min(2.2, SR * 0.03);
-  sunObj.userData = { surface, flare1, flare2, halo, R:SR, lit };
+  sunObj.userData = { surface, rim, halo, R:SR, lit, surfMat, rimMat };
   world.add(sunObj);
   coreLight.intensity = lit;
 }
@@ -3819,6 +4477,15 @@ if (coronaObj) {
   coronaObj.visible = N > 0;
   coronaObj.scale.setScalar(Math.max(120, (RAD[coreIdx] || 17) * 15));
 }
+if (coronaRay) {
+  coronaRay.visible = N > 0;
+  coronaRay.scale.setScalar(Math.max(120, (RAD[coreIdx] || 17) * 15) * 1.62);
+}
+/* the air and the far plane are sized from the cosmos, and this is a new one.
+   gapStep would get to it, but only on a frame where the spring is moving —
+   a vault opened at a gap it is already settled at would keep the last
+   vault's fog until somebody touched the knob. */
+applyDepth();
 }   /* ---- end buildObjects ---- */
 
 function makeLabel(text, color, size) {
@@ -3921,12 +4588,36 @@ function applyCam(dt) {
   rig.ph   = lerp(rig.ph, rig.phD, k);
   rig.roll = lerp(rig.roll, rig.rollD, k*0.7);
   rig.tgt.lerp(rig.tgtD, k);
-  const sp = Math.sin(rig.ph), cp = Math.cos(rig.ph);
+
+  /* ---- the breath ----
+     Added after the damping rather than into the targets, and that is the
+     whole of why it works. Fed into rig.thD it would be an instruction the
+     damper chases, which the momentum decay would fight and the user's own
+     drag would arrive on top of; taken here it is a lens on a mount that is
+     never perfectly still, and nothing else in the rig knows about it.
+
+     Four incommensurable periods — none a multiple of another — so the
+     pattern does not come back round inside any length of time anyone sits
+     and watches it. The amplitudes are small enough that nobody will name
+     what changed; the point is that a still frame stops reading as a paused
+     video, which is the difference between a rendering and a shot.
+
+     On the wall clock, not the orbital one: freezing the sky with ORBIT SPEED
+     is a decision about the cosmos, not about the camera holding it. */
+  let cth = rig.th, cph = rig.ph, cdist = rig.dist, croll = rig.roll;
+  if (SET.drf > 0.004) {
+    const s = performance.now() * 0.001, d = SET.drf;
+    cth   += (Math.sin(s*0.083) * 0.011 + Math.sin(s*0.191 + 1.7) * 0.005) * d;
+    cph    = clamp(cph + Math.sin(s*0.127 + 0.6) * 0.008 * d, 0.10, Math.PI - 0.10);
+    cdist *= 1 + Math.sin(s*0.061 + 2.3) * 0.007 * d;
+    croll += Math.sin(s*0.047 + 0.9) * 0.011 * d;
+  }
+  const sp = Math.sin(cph), cp = Math.cos(cph);
   camera.position.set(
-    rig.tgt.x + rig.dist*sp*Math.sin(rig.th),
-    rig.tgt.y + rig.dist*cp,
-    rig.tgt.z + rig.dist*sp*Math.cos(rig.th));
-  camera.up.set(Math.sin(rig.roll), Math.cos(rig.roll), 0);
+    rig.tgt.x + cdist*sp*Math.sin(cth),
+    rig.tgt.y + cdist*cp,
+    rig.tgt.z + cdist*sp*Math.cos(cth));
+  camera.up.set(Math.sin(croll), Math.cos(croll), 0);
   camera.lookAt(rig.tgt);
 }
 function orbitBy(dx, dy, momentum) {
@@ -5076,8 +5767,20 @@ $('b-vid').onclick = recordClip;
    the five axes that make this read as space. This does not undo that
    decision, it makes it a setting — and nothing is created until the first
    time it is switched on, which is also what the autoplay policy requires. */
+
+/* Every number that used to be written into the graph as a literal is now
+   read out of SET instead, and the graph keeps a handle on whatever node
+   holds it, so a knob can move it while it is sounding. The defaults are the
+   old literals to the digit — the point of making these settings was not to
+   change what the room sounds like, it was to stop that being one person's
+   decision about everybody's room. */
 const AUD = { on:false, ctx:null, master:null, noise:null, ngain:null,
-              bus:null, echo:null, wetIn:null };
+              bus:null, echo:null, wetIn:null,
+              dry:null, wet:null, wetLP:null, conv:null,
+              dl:null, dlLP:null, fb:null, nsend:null,
+              droneFilt:null, drone:[], irSecs:0 };
+/* the three near-unison voices, before tuning */
+const DRONE_HZ = [55, 82.4, 110.6];
 
 /* ---------- the room ----------
    A reverb is not an effect laid over this, it is the subject of it. What
@@ -5144,12 +5847,14 @@ function audioInit() {
     bus.connect(dry); dry.connect(master);
 
     const pre = ctx.createDelay(0.5); pre.delayTime.value = 0.045;
-    const conv = ctx.createConvolver(); conv.buffer = audioIR(ctx, 7.5, 2.7);
+    const conv = ctx.createConvolver();
+    conv.buffer = audioIR(ctx, SET.sRoom, 2.7);
+    AUD.irSecs = SET.sRoom;
     /* the tail comes back darker than it went in, and stays under the
        direct sound instead of in front of it */
     const wetLP = ctx.createBiquadFilter();
-    wetLP.type = 'lowpass'; wetLP.frequency.value = 1700; wetLP.Q.value = 0.4;
-    const wet = ctx.createGain(); wet.gain.value = 0.95;
+    wetLP.type = 'lowpass'; wetLP.frequency.value = SET.sDamp; wetLP.Q.value = 0.4;
+    const wet = ctx.createGain(); wet.gain.value = SET.sWet;
     bus.connect(pre); pre.connect(conv); conv.connect(wetLP);
     wetLP.connect(wet); wet.connect(master);
 
@@ -5160,19 +5865,20 @@ function audioInit() {
        stopped playing it. Its output rejoins the bus, so every repeat is
        heard through the room as well. */
     const echo = ctx.createGain();
-    const dl = ctx.createDelay(4); dl.delayTime.value = 0.62;
+    const dl = ctx.createDelay(4); dl.delayTime.value = SET.sEchoT;
     const dlLP = ctx.createBiquadFilter();
     dlLP.type = 'lowpass'; dlLP.frequency.value = 1150;
-    const fb = ctx.createGain(); fb.gain.value = 0.36;
+    const fb = ctx.createGain(); fb.gain.value = SET.sEcho;
     echo.connect(dl); dl.connect(dlLP); dlLP.connect(fb); fb.connect(dl);
     dlLP.connect(bus);
 
     /* a drone, not a chord: three near-unison voices under a low filter is
        roughly what a very large room sounds like */
     const filt = ctx.createBiquadFilter();
-    filt.type = 'lowpass'; filt.frequency.value = 320; filt.Q.value = 0.7;
+    filt.type = 'lowpass'; filt.frequency.value = SET.sDroneT; filt.Q.value = 0.7;
     filt.connect(bus);
-    [55, 82.4, 110.6].forEach((f, k) => {
+    AUD.drone.length = 0;
+    DRONE_HZ.forEach((f, k) => {
       const o = ctx.createOscillator();
       o.type = k === 2 ? 'triangle' : 'sine';
       o.frequency.value = f;
@@ -5186,6 +5892,12 @@ function audioInit() {
       lg.gain.value = k === 0 ? 0.16 : 0.09;
       lfo.connect(lg); lg.connect(g.gain); lfo.start();
       o.connect(g); g.connect(filt); o.start();
+      /* the LFO adds to g.gain rather than scaling it, so turning the drone
+         down has to take the breath down with it — an offset of zero with a
+         swing of 0.16 either side is not silence, it is the same voice at a
+         sixth of the level, wandering in and out of phase inversion */
+      AUD.drone.push({ o, g, lg, base: f, lvl: k === 0 ? 0.5 : 0.2,
+                       swing: k === 0 ? 0.16 : 0.09 });
     });
     /* thruster: band-passed noise whose gain and centre follow ship speed */
     const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 2), ctx.sampleRate);
@@ -5204,8 +5916,73 @@ function audioInit() {
     ng.connect(nsend); nsend.connect(pre); src.start();
     AUD.noise = nf; AUD.ngain = ng; AUD.ctx = ctx; AUD.master = master;
     AUD.bus = bus; AUD.echo = echo; AUD.wetIn = pre;
+    AUD.dry = dry; AUD.wet = wet; AUD.wetLP = wetLP; AUD.conv = conv;
+    AUD.dl = dl; AUD.dlLP = dlLP; AUD.fb = fb; AUD.nsend = nsend;
+    AUD.droneFilt = filt;
     return true;
   } catch (e) { console.error(e); return false; }
+}
+
+/* ---------- the knobs, applied to a graph that is already sounding ----
+   Everything here ramps rather than jumps. A gain assigned directly clicks,
+   and a click in a seven-second room is not a click — it is a click followed
+   by seven seconds of the room's opinion of it. setTargetAtTime with a short
+   constant is inaudible as a change and still lands within a slider's own
+   reaction time.
+
+   The one exception is ROOM SIZE, which cannot be ramped because it is not a
+   parameter: it is a buffer, and the only way to change it is to generate a
+   new one. See audioRoom.                                                */
+function audioApply() {
+  const A = AUD;
+  if (!A.ctx) return;
+  const t = A.ctx.currentTime;
+  const to = (p, v, k) => p.setTargetAtTime(v, t, k || 0.06);
+
+  A.master.gain.cancelScheduledValues(t);
+  /* 0.28 rather than the old 0.15, because MASTER now sits at 0.55 of it and
+     the product is what it always was. The headroom above the old level is
+     the point: a laptop speaker in a bright room needed more than this could
+     give, and the only way to get it was the system volume. */
+  to(A.master.gain, A.on ? 0.28 * SET.sVol : 0, 0.35);
+
+  to(A.wet.gain, SET.sWet, 0.12);
+  A.wetLP.frequency.setTargetAtTime(SET.sDamp, t, 0.10);
+  /* the delay's own filter sits below the room's, so a repeat is always
+     darker than the tail it is heard through */
+  A.dlLP.frequency.setTargetAtTime(clamp(SET.sDamp * 0.68, 200, 6000), t, 0.10);
+  to(A.fb.gain, SET.sEcho, 0.10);
+  /* Slower than the rest, and deliberately: a delay line whose length is
+     being changed resamples what is already in it, so the tail bends in
+     pitch on the way. Taken over a fifth of a second that reads as the room
+     stretching, which is a good sound; taken instantly it is a tape wobble. */
+  A.dl.delayTime.setTargetAtTime(SET.sEchoT, t, 0.20);
+
+  A.droneFilt.frequency.setTargetAtTime(SET.sDroneT, t, 0.12);
+  const tune = Math.pow(2, SET.sTune / 12);
+  A.drone.forEach(v => {
+    v.o.frequency.setTargetAtTime(v.base * tune, t, 0.30);
+    to(v.g.gain,  v.lvl   * SET.sDrone, 0.20);
+    to(v.lg.gain, v.swing * SET.sDrone, 0.20);
+  });
+  audioRoom();
+}
+/* Rebuilding the impulse is a few million samples of arithmetic on the same
+   thread that draws the frame, so it cannot run on every input event of a
+   drag — fourteen seconds of stereo at 48 kHz is over a million samples per
+   channel and the frame would stall on each one. It runs when the handle
+   settles instead, which costs one hitch at a moment nobody is looking at
+   the cosmos, and the convolver picks the new buffer up on its own. */
+let roomT = 0;
+function audioRoom() {
+  if (!AUD.ctx || !AUD.conv) return;
+  if (Math.abs(SET.sRoom - AUD.irSecs) < 0.05) return;
+  clearTimeout(roomT);
+  roomT = setTimeout(() => {
+    if (!AUD.ctx || !AUD.conv) return;
+    AUD.irSecs = SET.sRoom;
+    AUD.conv.buffer = audioIR(AUD.ctx, SET.sRoom, 2.7);
+  }, 260);
 }
 function audioSet(on) {
   if (on && !audioInit()) { toast(T('audio.no')); return; }
@@ -5214,28 +5991,33 @@ function audioSet(on) {
   $('b-snd').classList.toggle('am', AUD.on);
   if (AUD.ctx) {
     if (AUD.on && AUD.ctx.state === 'suspended') AUD.ctx.resume();
-    AUD.master.gain.cancelScheduledValues(AUD.ctx.currentTime);
-    AUD.master.gain.setTargetAtTime(AUD.on ? 0.15 : 0, AUD.ctx.currentTime, 0.7);
+    /* the whole graph, not just the master: switching sound on is the first
+       moment any of these settings has ever been able to reach a live node */
+    audioApply();
   }
   toast(T(AUD.on ? 'audio.on' : 'audio.off'));
 }
 /* One soft ping per selection, pitched by the note itself — so walking the
    vault plays a melody that is a property of the vault rather than of the
-   app. Concepts sit an octave above raw material. */
-const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+   app. Concepts sit an octave above raw material.
+   Which note that lands on is the vault's; which ten notes it can land on,
+   and what key they are in, is now the listener's. See SCALES. */
 function audioPing(i) {
-  if (!AUD.on || !AUD.ctx || i < 0 || i >= N) return;
+  if (!AUD.on || !AUD.ctx || i < 0 || i >= N || SET.sPing < 0.02) return;
   const ctx = AUD.ctx, t = ctx.currentTime;
-  const step = PENTA[Math.abs(i * 7 + nodes[i].n.length) % PENTA.length];
-  const f = 220 * Math.pow(2, (step + (nodes[i].k === 'raw' ? 0 : 12)) / 12);
+  const sc = SCALES[clamp(SET.sScale | 0, 0, SCALES.length - 1)].s;
+  const step = sc[Math.abs(i * 7 + nodes[i].n.length) % sc.length];
+  const f = 220 * Math.pow(2,
+    (step + (nodes[i].k === 'raw' ? 0 : 12) + SET.sTune) / 12);
+  const dec = SET.sPingD;
   const g = ctx.createGain();
   /* A slower attack than a ping needs — 40 ms rather than 14 — because a
      hard transient in a long room is a click followed by a room, and a soft
      one is just the room. The body of the note is shorter than it was and
      what you actually hear is mostly tail. */
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.15, t + 0.040);
-  g.gain.exponentialRampToValueAtTime(0.0004, t + 2.4);
+  g.gain.exponentialRampToValueAtTime(0.15 * SET.sPing, t + 0.040);
+  g.gain.exponentialRampToValueAtTime(0.0004, t + dec);
   g.connect(AUD.bus || AUD.master);
   if (AUD.echo) g.connect(AUD.echo);
   /* the octave and the fifth above, both quiet: partials, not a chord. In a
@@ -5246,14 +6028,17 @@ function audioPing(i) {
     o.type = 'sine'; o.frequency.value = fr;
     const og = ctx.createGain(); og.gain.value = lvl;
     o.connect(og); og.connect(g);
-    o.start(t); o.stop(t + 2.6);
+    /* stopped a fraction after the envelope reaches its floor, whatever the
+       decay was set to — an oscillator left running past its own silence is
+       a node the context never collects */
+    o.start(t); o.stop(t + dec + 0.2);
   });
 }
 function audioStep() {
   if (!AUD.on || !AUD.ctx || !AUD.ngain) return;
   const t = AUD.ctx.currentTime;
   const v = ship.on ? clamp(ship.speed / 300, 0, 1) : 0;
-  AUD.ngain.gain.setTargetAtTime(v * 0.20, t, 0.15);
+  AUD.ngain.gain.setTargetAtTime(v * 0.20 * SET.sEngine, t, 0.15);
   AUD.noise.frequency.setTargetAtTime(120 + v * 520, t, 0.25);
 }
 $('b-snd').onclick = () => audioSet(!AUD.on);
@@ -7944,8 +8729,17 @@ function updatePositions(dtms) {
   if (sunObj) {
     const u = sunObj.userData;
     sunObj.position.set(P[coreIdx*3], P[coreIdx*3+1], P[coreIdx*3+2]);
-    u.flare1.rotation.y += 0.0021; u.flare1.rotation.x += 0.0009;
-    u.flare2.rotation.y -= 0.0014; u.flare2.rotation.z += 0.0011;
+    /* The convection used to be two wireframe shells turning against each
+       other, and turning a lattice is not what boiling looks like. The motion
+       is in the surface shader now, and it is a clock rather than a rotation:
+       granulation turns over in place. On the orbital clock, so a frozen sky
+       freezes the star's face with it. */
+    u.surfMat.uniforms.uTime.value = t * 0.001;
+    /* the chromosphere flickers a little, out of step with everything else —
+       it is the most violent layer of the star and the only one thin enough
+       to show it */
+    u.rimMat.uniforms.uAmt.value = 0.80 + 0.28 * Math.sin(t * 0.0017 + 0.4)
+                                        + 0.10 * Math.sin(t * 0.0043);
     /* a slow breath, so the star is never a dead sphere */
     const b = 1 + Math.sin(t*0.00085) * 0.022;
     /* the hub is where the formation starts: nothing, then a point, then a
@@ -8969,14 +9763,49 @@ function frameLoop(now) {
        or it either vanishes up close or eats the screen from far away */
     const d = camera.position.length();
     const ig = GEN.on ? clamp(genScale[coreIdx], 0, 1) : 1;
+    const base = clamp((RAD[coreIdx]||17) * 9 + d * 0.05, 90, 900) * ig;
+    /* It used to sit at the origin and be right by coincidence — the hub is
+       at the origin. Now that the disc occludes it, "near enough" is not: a
+       sprite half a unit off the star it belongs to is a sprite the star
+       occludes lopsidedly. Dragging the core node is exactly the case. */
+    if (sunObj) coronaObj.position.copy(sunObj.position);
     coronaObj.visible = ig > 0.02;
-    coronaObj.material.opacity = 0.85 * ig;
-    coronaObj.scale.setScalar(clamp((RAD[coreIdx]||17) * 9 + d * 0.05, 90, 900) * ig);
+    /* The corona hands over to the photosphere as you approach, and it has to,
+       because at close range it was the brighter of the two — which is exactly
+       backwards. A real corona is a millionth of the disc's brightness and you
+       can only see it when the disc is hidden; the reason this one is drawn at
+       all is that at map range the disc is four pixels across and something
+       has to say "light source". Up close the disc says it itself. */
+    const near = clamp(d / ((RAD[coreIdx] || 17) * 40), 0, 1);
+    coronaObj.material.opacity = 0.85 * ig * (0.38 + 0.62 * near);
+    coronaObj.scale.setScalar(base);
+    if (coronaRay) {
+      /* The crown turns, slowly, against a glow that only breathes. Two
+         motions on one object at different rates is the cheapest way to make
+         something read as alive rather than as animated: neither is fast
+         enough to watch, and together they never present the same face
+         twice. The turn is on the orbital clock, so a frozen sky freezes the
+         star with it. */
+      coronaRay.visible = ig > 0.02;
+      coronaRay.position.copy(coronaObj.position);
+      coronaRay.material.rotation = t * 0.000021;
+      /* the streamers surge on their own cycle, out of phase with the glow */
+      const surge = 1 + Math.sin(t * 0.00043 + 0.8) * 0.075;
+      coronaRay.scale.setScalar(base * 1.62 * surge);
+      coronaRay.material.opacity = (0.34 + 0.16 * Math.sin(t * 0.00067)) * ig;
+    }
   }
   /* parallax: each shell turns at its own rate, which is most of why the
      scene reads as deep rather than as a flat backdrop */
-  if (dustObj)        dustObj.rotation.y        = t * 0.0000075;
-  if (nebulaObj)      nebulaObj.rotation.y      = -t * 0.0000042;
+  /* The arms and the gas are built to the outermost ring — "its radius has to
+     track the outermost ring", as buildDust says — and then the ORBIT GAP
+     knob moves that ring and they stayed where they were. Widen far enough
+     and the cosmos walks out of its own galaxy, which is a thing you notice
+     immediately and cannot name. They ride the same factor the rings do. */
+  if (dustObj)      { dustObj.rotation.y        = t * 0.0000075;
+                      dustObj.scale.setScalar(gapSys); }
+  if (nebulaObj)    { nebulaObj.rotation.y      = -t * 0.0000042;
+                      nebulaObj.scale.setScalar(gapSys); }
   if (starFieldObj)   starFieldObj.rotation.y   = t * 0.0000011;
   if (brightStarObj)  brightStarObj.rotation.y  = t * 0.0000011;
   if (milkyObj)       milkyObj.rotation.y       = t * 0.0000008;
@@ -9041,81 +9870,130 @@ FOLDERS.forEach(([pane, key]) => {
     layoutHUD();
   };
 });
+/* ---------------------------------------------------------- the knobs
+   Built once from KNOBS, then only ever moved between the two shelves.
+
+   Rebuilding the elements on every re-pin would have been three lines
+   shorter and would throw away the element the pointer is inside — a slider
+   loses its drag, a focus ring goes with it, and on a touch screen the
+   gesture that opened the drawer ends up cancelled. appendChild moves a node
+   that already has a parent, so laying the shelves out is the same walk
+   either way and nothing is destroyed. */
+const KNOB_EL = new Map();
+/* the slider's integer position, which is the value scaled — except for the
+   one knob that keeps its own counsel */
+function knobRaw(kn) { return kn.get ? kn.get() : Math.round(SET[kn.k] * kn.sc); }
+function knobPut(kn, raw) {
+  if (kn.set) { kn.set(raw); return; }
+  SET[kn.k] = clamp(raw, kn.min, kn.max) / kn.sc;
+}
+function knobVal(kn) { return kn.get ? kn.get() : SET[kn.k]; }
+function pinned(k) { return SET.pin.indexOf(k) >= 0; }
+
+function buildKnobs() {
+  KNOBS.forEach(kn => {
+    const wrap = document.createElement('div');
+    wrap.className = 'sl';
+    const b   = document.createElement('b');
+    const nm  = document.createElement('span'); nm.className = 'nm';
+    const pin = document.createElement('u');    pin.className = 'pin';
+    const lab = document.createElement('span');
+    const val = document.createElement('i');
+    nm.append(pin, lab);
+    b.append(nm, val);
+    const inp = document.createElement('input');
+    inp.type = 'range';
+    inp.min = kn.min; inp.max = kn.max; inp.step = kn.step || 1;
+    wrap.append(b, inp);
+
+    pin.onclick = () => togglePin(kn.k);
+    inp.addEventListener('input', e => {
+      knobPut(kn, +e.target.value);
+      if (kn.apply) kn.apply();
+      syncControls();
+      saveSet();
+    });
+    KNOB_EL.set(kn.k, { wrap, lab, val, inp, pin });
+  });
+  GROUPS.forEach(([g]) => {
+    const hd = document.createElement('div');
+    hd.className = 'slhd';
+    groupEl.set(g, hd);
+  });
+  hintEl = document.createElement('div');
+  hintEl.id = 'ctlhint';
+  layoutKnobs();
+}
+/* Which shelf each knob is on, and the drawer's headings. Walked in the
+   table's own order, so a knob pinned and unpinned again comes back where it
+   was rather than to the end of the row.
+
+   Placement only — nothing here writes a word of text. Every string in the
+   deck is set in syncControls instead, which is also what a language switch
+   calls, so a heading cannot be correct on the shelf it was built on and
+   stale on the one it was moved to. */
+const groupEl = new Map();
+let hintEl = null;
+function layoutKnobs() {
+  const bar = $('ctlgrid'), drawer = $('ctladv');
+  KNOBS.forEach(kn => {
+    const e = KNOB_EL.get(kn.k);
+    const on = pinned(kn.k);
+    e.wrap.classList.toggle('pinned', on);
+    if (on) bar.appendChild(e.wrap);
+  });
+  GROUPS.forEach(([g]) => {
+    const hd = groupEl.get(g);
+    const mine = KNOBS.filter(kn => kn.g === g && !pinned(kn.k));
+    /* a group whose every knob has been pinned out has no heading to earn */
+    hd.style.display = mine.length ? '' : 'none';
+    drawer.appendChild(hd);
+    mine.forEach(kn => drawer.appendChild(KNOB_EL.get(kn.k).wrap));
+  });
+  drawer.appendChild(hintEl);
+}
+function togglePin(k) {
+  const i = SET.pin.indexOf(k);
+  if (i >= 0) SET.pin.splice(i, 1); else SET.pin.push(k);
+  /* Opening the drawer on the way out. Unpinning a knob otherwise makes it
+     vanish — it went somewhere real, but somewhere the reader cannot see, and
+     a control that disappears when you touch it is indistinguishable from one
+     that broke. */
+  if (i >= 0) SET.adv = true;
+  layoutKnobs();
+  syncControls();
+  saveSet();
+  /* a shelf that just gained or lost a row is a deck of a different height,
+     and the panes below it are placed from that measured height */
+  layoutHUD();
+  toast(T(i >= 0 ? 'pin.off' : 'pin.on', { n: (KNOB_OF[k] || {}).label || k }));
+}
+
 function syncControls() {
   syncAdv();
   syncFolds();
-  $('r-arc').value = Math.round(SET.arc*100);
-  $('r-age').value = Math.round(SET.age*100);
-  $('r-trl').value = Math.round(SET.trl*100);
-  $('r-blm').value = Math.round(SET.blm*100);
-  $('v-age').textContent = SET.age < 0.02 ? 'OFF' : SET.age.toFixed(2);
-  $('v-trl').textContent = SET.trl < 0.02 ? 'OFF' : SET.trl.toFixed(2);
-  $('v-blm').textContent = SET.blm < 0.02 ? 'OFF' : SET.blm.toFixed(2) + '×';
-  $('r-spd').value = Math.round(SET.spd*100);
-  $('r-bri').value = Math.round(SET.bri*100);
-  $('r-ten').value = Math.round(SET.ten*100);
-  $('r-grv').value = Math.round(SET.grv*100);
-  $('r-str').value = Math.round(SET.str*100);
-  $('r-thr').value = Math.round(SET.thr*100);
-  $('r-lnk').value = Math.round(SET.lnk*100);
-  $('r-spr').value = Math.round(SET.spr*100);
-  $('r-gap').value = Math.round(SET.gap*100);
-  /* FLAT rather than 0.00×, because zero here is a shape — the arcs lie down
-     into the orbital plane and the bow carries them alone — not an absence */
-  $('v-arc').textContent = SET.arc < 0.02 ? 'FLAT' : SET.arc.toFixed(2) + '×';
-  $('v-spd').textContent = SET.spd.toFixed(2) + '×';
-  $('v-bri').textContent = SET.bri.toFixed(2) + '×';
-  $('v-ten').textContent = SET.ten.toFixed(2);
-  $('v-grv').textContent = SET.grv < 0.02 ? 'OFF' : SET.grv.toFixed(2) + '×';
-  $('v-str').textContent = SET.str < 0.02 ? 'OFF' : SET.str.toFixed(2) + '×';
-  $('v-thr').textContent = SET.thr.toFixed(2) + '×';
-  $('v-lnk').textContent = SET.lnk < 0.02 ? 'OFF' : SET.lnk.toFixed(2) + '×';
-  $('v-spr').textContent = SET.spr.toFixed(2) + '×';
-  $('v-gap').textContent = SET.gap.toFixed(2) + '×';
-  /* the step past the ceiling is the off position, so "no limit" is a place on
-     the same slider rather than a separate control */
-  $('r-cap').value = SET.maxNodes > 0 ? SET.maxNodes : MAX_NODES_CEIL + 500;
-  $('v-cap').textContent = SET.maxNodes > 0 ? SET.maxNodes : T('cap.off');
-  applyStarfield();
-}
-$('r-cap').addEventListener('input', e => {
-  const v = +e.target.value;
-  SET.maxNodes = v > MAX_NODES_CEIL ? 0 : v;
-  syncControls(); saveSet();
-});
-[['r-spd','spd'], ['r-bri','bri'], ['r-ten','ten'], ['r-arc','arc'],
- ['r-grv','grv'], ['r-str','str'], ['r-thr','thr'], ['r-age','age'],
- ['r-trl','trl'], ['r-blm','blm'],
- ['r-lnk','lnk'], ['r-spr','spr']].forEach(([id, key]) => {
-  $(id).addEventListener('input', e => {
-    SET[key] = (+e.target.value) / 100;
-    if (key === 'lnk') SET.lnk = clamp(SET.lnk, 0, LNK_MAX);
-    if (key === 'arc') SET.arc = clamp(SET.arc, 0, ARC_MAX);
-    if (key === 'blm') SET.blm = clamp(SET.blm, 0, BLM_MAX);
-    /* the only one of these that has to touch a buffer rather than be read
-       out of SET by the next frame */
-    if (key === 'age') recolour();
-    syncControls(); saveSet();
+  KNOBS.forEach(kn => {
+    const e = KNOB_EL.get(kn.k);
+    if (!e) return;
+    const on = pinned(kn.k);
+    e.inp.value = knobRaw(kn);
+    e.lab.textContent = kn.i18n ? T(kn.i18n) : kn.label;
+    e.val.textContent = kn.fmt(knobVal(kn));
+    e.pin.textContent = on ? '◆' : '◇';
+    /* the title says what clicking it will do, not what it currently is */
+    e.pin.title = T(on ? 'pin.off' : 'pin.on', { n: kn.label });
   });
-});
-/* ORBIT GAP used to rebuild the cosmos when the handle was let go: the
-   number followed the drag, the sky changed in one cut at the end, and the
-   camera was scaled to compensate so that the cut would not throw half the
-   vault out of frame. It worked and it read as an edit rather than as a
-   spacing control.
-
-   The layout's arithmetic is linear in this number — a ring's radius, the
-   clearance between systems and the room between orbits all scale together,
-   and the count of systems a ring holds does not change at all, because the
-   circumference and the clearance grow by the same factor. So the frame can
-   carry it: the slider moves a target, gapStep() springs toward it, and the
-   orbits widen and settle continuously under a camera that is left exactly
-   where it was. See GAPL / gapStep above; nothing here is rebuilt. */
-$('r-gap').addEventListener('input', e => {
-  SET.gap = (+e.target.value) / 100;
-  $('v-gap').textContent = SET.gap.toFixed(2) + '×';
-  saveSet();
-});
+  /* guarded, like the knobs above it: syncControls is what a language switch
+     calls, and the host can switch language during startup — before
+     buildKnobs has made any of this */
+  GROUPS.forEach(([g, key]) => {
+    const hd = groupEl.get(g);
+    if (hd) hd.textContent = T(key);
+  });
+  if (hintEl) hintEl.textContent = T('pin.hint');
+  applyStarfield();
+  applyVeil();
+}
 
 /* The FPS number is the natural place to ask for more of the same, so it is
    the handle rather than a keystroke nobody would find. Opening it starts the
@@ -9138,7 +10016,15 @@ $('advtog').onclick = () => {
 };
 
 $('b-rst').onclick = () => {
-  Object.assign(SET, SET_DEF); syncControls(); saveSet(); toast('CONTROLS RESET');
+  Object.assign(SET, SET_DEF);
+  /* The arrangement is an array, and SET_DEF holds the only copy of it. A
+     plain assign hands SET the defaults' own list — after which pinning
+     anything edits the defaults, and RESET has nothing left to reset to. */
+  SET.pin = PIN_DEF.slice();
+  /* RESET is a settings change like any other and every one of them is live,
+     so the audio graph and the tinted buffer both have to be told */
+  layoutKnobs(); syncControls(); recolour(); audioApply();
+  saveSet(); toast('CONTROLS RESET');
   /* RESET puts the folds back too, and a pane that has just unfolded is a
      pane whose neighbour has to be measured again */
   layoutHUD();
@@ -9826,6 +10712,9 @@ function bootStaged() {
 buildLayout(EMPTY);
 buildObjects();
 refreshHUD();
+/* the deck's sliders are made from the KNOBS table, so they have to exist
+   before anything writes a value into one */
+buildKnobs();
 syncControls();
 resize();
 $('g-layer').textContent = LAYERS[0].name;
