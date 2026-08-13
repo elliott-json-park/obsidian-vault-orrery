@@ -43,6 +43,19 @@ canvas{display:block}
   padding:6px 10px 5px;border-bottom:1px solid rgba(92,225,255,.16);display:flex;
   justify-content:space-between;align-items:center;gap:8px}
 .ttl b{font-weight:600}
+/* Folding was the control deck's alone, and the deck is not the only pane
+   that outstays its welcome: the shortcut list is pure reference, read once
+   and then in the way, and the legend can run to dozens of rows on a vault
+   with many folders. Any pane marked foldable gets the same title-bar click
+   and the same [ − ] / [ + ] the deck taught. layoutHUD() measures heights
+   rather than assuming them, so a folded pane hands its room to its
+   neighbour without being told to. */
+.pane.foldable>.ttl{cursor:pointer;user-select:none}
+.pane.fold>.bd{display:none}
+#leg.fold{overflow:visible}
+.ttl .tr{display:flex;align-items:center;gap:9px}
+.ttl .tr i{font-style:normal}
+.ttl .fx{color:rgba(223,246,255,.45);letter-spacing:.05em}
 .bd{padding:8px 10px 10px}
 .row{display:flex;justify-content:space-between;gap:10px;line-height:1.85;
   white-space:nowrap;font-size:10.5px}
@@ -81,8 +94,20 @@ canvas{display:block}
 #ctl.fold .bd{display:none}
 /* auto-fit rather than a fixed four: on a narrow deck the sliders reflow to
    two or three columns instead of being crushed to a few pixels each */
-#ctlgrid{flex:1 1 auto;min-width:0;display:grid;
+#ctlknobs{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:9px}
+#ctlgrid,#ctladv{min-width:0;display:grid;
   grid-template-columns:repeat(auto-fit,minmax(94px,1fr));gap:9px 14px}
+/* The deck had eleven knobs across, all equal, and the ones anybody reaches
+   for twice — speed, glow, gap — were no easier to find than STARFIELD, which
+   is set once in a lifetime. The five that get touched stay out; the six that
+   do not fold away behind a line you can open. Nothing is removed: a control
+   that is genuinely useless should be deleted, and none of these are. */
+#ctladv{display:none}
+#ctl.adv #ctladv{display:grid}
+#advtog{cursor:pointer;pointer-events:auto;user-select:none;font-size:8px;
+  letter-spacing:.18em;color:rgba(92,225,255,.5);transition:color .15s;
+  border-top:1px solid rgba(92,225,255,.12);padding-top:8px}
+#advtog:hover{color:var(--cy)}
 #ctl.tight .bd{flex-direction:column;gap:9px}
 #ctl.tight .sep{display:none}
 #ctl.tight .vs{width:auto;flex-direction:row;flex-wrap:wrap}
@@ -106,6 +131,20 @@ canvas{display:block}
 #gen-r{flex:1 1 auto;min-width:0}
 #gen-r::-webkit-slider-thumb{background:var(--am);box-shadow:0 0 10px var(--am)}
 #gen-r::-moz-range-thumb{background:var(--am);box-shadow:0 0 10px var(--am)}
+/* ---------- frame budget readout ----------
+   Off by default and opened by clicking the FPS row, because a number that is
+   only interesting when something is wrong should not be on screen when it is
+   not. The rows are the phases the frame loop is actually divided into, so a
+   bad frame points at the function to go and read. */
+/* the stroke key: three cells across the row rather than the usual two */
+.row.lk{font-size:7px;letter-spacing:.06em;line-height:1.5;opacity:.72;margin-top:1px}
+#perf{display:none;margin-top:6px;border-top:1px solid rgba(92,225,255,.14);padding-top:5px}
+#perf.on{display:block}
+#perf .row{line-height:1.6;font-size:8.5px;letter-spacing:.09em}
+#perf .row span:last-child{font-variant-numeric:tabular-nums;color:var(--cy);opacity:.85}
+#perf .row.hot span:last-child{color:var(--am)}
+#perf .hd{opacity:.4;letter-spacing:.2em;font-size:7.5px;margin:1px 0 2px}
+#s-fps{cursor:pointer}
 #ctl .sep{width:1px;background:rgba(92,225,255,.16);flex:0 0 auto}
 #ctl .vs{flex:0 0 auto;display:flex;flex-direction:column;gap:5px;width:118px}
 .mini{cursor:pointer;pointer-events:auto;font-size:8.5px;letter-spacing:.1em;padding:5px 6px;
@@ -625,60 +664,111 @@ body.ship #scanmsg{display:block}
       <!-- which link types are drawn, cycled with L. It used to sit in the
            gesture panel, which is gone; it is vault state, not hand state. -->
       <div class="row"><span>LINK LAYER</span><span id="g-layer">ALL</span></div>
+      <!-- the three link types now differ in stroke as well as in colour, and
+           a convention nobody is told is not a convention. Tinted to the
+           EDGE_TINT entries they stand for, so the key and the cosmos cannot
+           drift apart without it being visible here. -->
+      <div class="row lk">
+        <span style="color:#53d8ff">━━ WIKI</span>
+        <span style="color:#ff9d3c">━ ━ SRC</span>
+        <span style="color:#8b6bff">╍╍ LATENT</span>
+      </div>
       <div class="row"><span>RANGE</span><span id="s-dist">—</span></div>
-      <div class="row"><span>FPS</span><span id="s-fps">—</span></div>
+      <div class="row"><span>FPS</span><span id="s-fps" title="click for frame budget">—</span></div>
       <div class="bar"><i id="s-load" style="width:100%"></i></div>
+      <!-- opened by clicking FPS; see the PERF block for what fills it -->
+      <div id="perf">
+        <div class="hd">FRAME BUDGET · MS</div>
+        <div class="row"><span>SIM</span><span id="p-sim">—</span></div>
+        <div class="row"><span>PICK</span><span id="p-pick">—</span></div>
+        <div class="row"><span>BODIES</span><span id="p-inst">—</span></div>
+        <div class="row"><span>LINKS</span><span id="p-link">—</span></div>
+        <div class="row"><span>TRAILS</span><span id="p-trlms">—</span></div>
+        <div class="row"><span>SPRITES</span><span id="p-spr">—</span></div>
+        <div class="row"><span>SUBMIT</span><span id="p-draw">—</span></div>
+        <div class="row"><span>CPU TOTAL</span><span id="p-tot">—</span></div>
+        <div class="hd" style="margin-top:5px">GEOMETRY</div>
+        <div class="row"><span>LINK SEGS</span><span id="p-lv">—</span></div>
+        <div class="row"><span>OFF SCREEN</span><span id="p-cull">—</span></div>
+        <div class="row"><span>TRAILS</span><span id="p-trl">—</span></div>
+        <div class="row"><span>DRAW CALLS</span><span id="p-dc">—</span></div>
+      </div>
     </div>
   </div>
 
-  <div class="pane glass" id="leg">
-    <div class="ttl"><b>STAR SYSTEMS</b><span id="l-cnt">0</span></div>
+  <div class="pane glass foldable" id="leg">
+    <div class="ttl"><b>STAR SYSTEMS</b>
+      <span class="tr"><i id="l-cnt">0</i><i class="fx" id="legfold">[ − ]</i></span>
+    </div>
     <div class="bd" id="legbody"></div>
   </div>
 
   <div class="pane glass" id="ctl">
     <div class="ttl" id="ctltl"><b>ORRERY CONTROL</b><span id="ctlfold">[ − ]</span></div>
     <div class="bd">
-      <div id="ctlgrid">
-        <div class="sl">
-          <b>ORBIT SPEED<i id="v-spd">1.00×</i></b>
-          <input type="range" id="r-spd" min="0" max="400" step="1" value="100">
+      <div id="ctlknobs">
+        <!-- the five that get reached for -->
+        <div id="ctlgrid">
+          <div class="sl">
+            <b>ORBIT SPEED<i id="v-spd">1.00×</i></b>
+            <input type="range" id="r-spd" min="0" max="400" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>NODE GLOW<i id="v-bri">1.00×</i></b>
+            <input type="range" id="r-bri" min="10" max="260" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>LINK GLOW<i id="v-lnk">1.00×</i></b>
+            <input type="range" id="r-lnk" min="0" max="85" step="1" value="70">
+          </div>
+          <div class="sl">
+            <b>ORBIT GAP<i id="v-gap">1.00×</i></b>
+            <input type="range" id="r-gap" min="50" max="300" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b><span data-i18n="cap.label">최대 노드</span><i id="v-cap">3000</i></b>
+            <input type="range" id="r-cap" min="500" max="10500" step="500" value="3000">
+          </div>
         </div>
-        <div class="sl">
-          <b>NODE GLOW<i id="v-bri">1.00×</i></b>
-          <input type="range" id="r-bri" min="10" max="260" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>LINK TENSION<i id="v-ten">0.50</i></b>
-          <input type="range" id="r-ten" min="0" max="100" step="1" value="50">
-        </div>
-        <div class="sl">
-          <b>NODE GRAVITY<i id="v-grv">1.00×</i></b>
-          <input type="range" id="r-grv" min="0" max="300" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>STARFIELD<i id="v-str">1.00×</i></b>
-          <input type="range" id="r-str" min="0" max="200" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>SHIP THRUST<i id="v-thr">1.00×</i></b>
-          <input type="range" id="r-thr" min="20" max="400" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>LINK GLOW<i id="v-lnk">1.00×</i></b>
-          <input type="range" id="r-lnk" min="0" max="130" step="1" value="70">
-        </div>
-        <div class="sl">
-          <b>ORBIT SPREAD<i id="v-spr">1.00×</i></b>
-          <input type="range" id="r-spr" min="30" max="320" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b>ORBIT GAP<i id="v-gap">1.00×</i></b>
-          <input type="range" id="r-gap" min="50" max="300" step="1" value="100">
-        </div>
-        <div class="sl">
-          <b><span data-i18n="cap.label">최대 노드</span><i id="v-cap">3000</i></b>
-          <input type="range" id="r-cap" min="500" max="10500" step="500" value="3000">
+        <div id="advtog">▸ ADVANCED</div>
+        <!-- the six that are set once -->
+        <div id="ctladv">
+          <div class="sl">
+            <b>ARC HEIGHT<i id="v-arc">1.00×</i></b>
+            <input type="range" id="r-arc" min="0" max="250" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>LINK TENSION<i id="v-ten">0.50</i></b>
+            <input type="range" id="r-ten" min="0" max="100" step="1" value="50">
+          </div>
+          <div class="sl">
+            <b>AGE TINT<i id="v-age">0.60</i></b>
+            <input type="range" id="r-age" min="0" max="100" step="1" value="60">
+          </div>
+          <div class="sl">
+            <b>ORBIT TRAILS<i id="v-trl">0.70</i></b>
+            <input type="range" id="r-trl" min="0" max="100" step="1" value="70">
+          </div>
+          <div class="sl">
+            <b>BLOOM<i id="v-blm">0.60</i></b>
+            <input type="range" id="r-blm" min="0" max="150" step="1" value="60">
+          </div>
+          <div class="sl">
+            <b>NODE GRAVITY<i id="v-grv">1.00×</i></b>
+            <input type="range" id="r-grv" min="0" max="300" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>ORBIT SPREAD<i id="v-spr">1.00×</i></b>
+            <input type="range" id="r-spr" min="30" max="320" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>STARFIELD<i id="v-str">1.00×</i></b>
+            <input type="range" id="r-str" min="0" max="200" step="1" value="100">
+          </div>
+          <div class="sl">
+            <b>SHIP THRUST<i id="v-thr">1.00×</i></b>
+            <input type="range" id="r-thr" min="20" max="400" step="1" value="100">
+          </div>
         </div>
       </div>
       <div class="sep"></div>
@@ -690,13 +780,15 @@ body.ship #scanmsg{display:block}
         <div class="mini am" id="b-clear" style="display:none" data-i18n="btn.clear">✕ 볼트 비우기</div>
         <div class="mini" id="b-gen" data-i18n="btn.gen" data-i18n-title="btn.gen.t">◌ 항성계 생성</div>
         <div class="mini" id="b-post" data-i18n="btn.post" data-i18n-title="btn.post.t">⤓ 포스터</div>
+        <div class="mini" id="b-vid" data-i18n="btn.vid" data-i18n-title="btn.vid.t">⏺ 영상</div>
         <div class="mini" id="b-snd" data-i18n="btn.snd" data-i18n-title="btn.snd.t">♪ 사운드</div>
         <div class="mini" id="b-rst" data-i18n="btn.rst">↺ 설정 초기화</div>
       </div>
     </div>
   </div>
 
-  <div class="pane glass" id="keys">
+  <div class="pane glass foldable" id="keys">
+    <div class="ttl"><b>SHORTCUTS</b><span class="fx" id="keysfold">[ − ]</span></div>
     <div class="bd" style="padding:7px 10px">
       <div class="row" id="k-open" style="display:none"><span>OPEN NOTE</span><span>O · CTRL-CLICK</span></div>
       <div class="row"><span>SEARCH</span><span>/</span></div>
@@ -705,6 +797,7 @@ body.ship #scanmsg{display:block}
       <div class="row"><span>STAND ON PLANET</span><span>V</span></div>
       <div class="row"><span>GENESIS · TWINS</span><span>G · N</span></div>
       <div class="row"><span>RIPPLE · POSTER</span><span>SPACE · P</span></div>
+      <div class="row"><span>RECORD CLIP</span><span>C</span></div>
       <div class="row"><span>LINK LAYER</span><span>L</span></div>
       <div class="row"><span>RESET · HIDE HUD</span><span>R · H</span></div>
       <div class="row"><span>DRAG / WHEEL</span><span>ORBIT · ZOOM</span></div>
@@ -833,9 +926,12 @@ body.ship #scanmsg{display:block}
           <u id="mmz-fit" data-i18n-title="mm.fit.t" style="font-size:9px">⤢</u>
         </div>
         <div id="mmlegend">
+          <!-- the swatches carry the stroke as well as the colour now, because
+               the plate draws the stroke — a key that shows only half of what
+               distinguishes three things is a key you have to read twice -->
           <b><u style="background:#5cd8ff"></u><i data-i18n="leg.wiki" style="font-style:normal">위키링크</i></b>
-          <b><u style="background:#ff9d3c"></u><i data-i18n="leg.src" style="font-style:normal">출처</i></b>
-          <b><u style="background:#8b6bff"></u><i data-i18n="leg.tag" style="font-style:normal">태그공명</i></b>
+          <b><u style="background:repeating-linear-gradient(90deg,#ff9d3c 0 4px,transparent 4px 7px)"></u><i data-i18n="leg.src" style="font-style:normal">출처</i></b>
+          <b><u style="background:repeating-linear-gradient(90deg,#8b6bff 0 2px,transparent 2px 4px)"></u><i data-i18n="leg.tag" style="font-style:normal">태그공명</i></b>
           <b id="mmleg2" style="display:none"><u style="background:rgba(150,210,255,.4)"></u><i data-i18n="mm.hop2" style="font-style:normal">2홉</i></b>
         </div>
         <div id="mmhint" data-i18n="mm.hint">끌기 = 이동 · 놓으면 중력 복귀<br>더블클릭 = 중심 이동 · 휠 = 확대</div>
@@ -966,6 +1062,16 @@ const STR = {
 'btn.post':    ['⤓ 포스터','⤓ POSTER','⤓ ポスター','⤓ 海报'],
 'btn.post.t':  ['HUD 없이 고해상도 PNG 저장 [P]','Save a high-resolution PNG with no HUD [P]',
                 'HUDなしで高解像度PNGを保存 [P]','保存无HUD的高分辨率PNG [P]'],
+'btn.vid':     ['⏺ 영상','⏺ CAPTURE','⏺ 動画','⏺ 录制'],
+'btn.vid.t':   ['HUD 없이 12초 영상 녹화 [C]','Record a 12-second clip with no HUD [C]',
+                'HUDなしで12秒の動画を録画 [C]','录制12秒无HUD视频 [C]'],
+'btn.vid.stop':['■ 정지','■ STOP','■ 停止','■ 停止'],
+'vid.rec':     ['녹화 중 · {s}초 남음','RECORDING · {s}s LEFT','録画中 · 残り{s}秒','录制中 · 剩余{s}秒'],
+'vid.ok':      ['영상 저장됨 · {s}','Clip saved · {s}','動画を保存 · {s}','视频已保存 · {s}'],
+'vid.fail':    ['이 브라우저는 영상 녹화를 지원하지 않습니다',
+                'This browser cannot record video',
+                'このブラウザは動画録画に対応していません',
+                '此浏览器不支持视频录制'],
 'btn.snd':     ['♪ 사운드','♪ SOUND','♪ サウンド','♪ 声音'],
 'btn.snd.t':   ['앰비언트 사운드 켜기 / 끄기 [U]','Ambient sound on / off [U]',
                 'アンビエントサウンド オン / オフ [U]','环境音效 开 / 关 [U]'],
@@ -1402,33 +1508,60 @@ const bt = setInterval(() => {
 
 /* ================================================================ SETTINGS
    spd  orbital time · bri  node glow · ten  link tautness
+   arc  how high a link stands out of the orbital plane
    grv  how hard a dragged node is pulled home · str  background starfield
    thr  ship thrust · mmHop second hop in the mind map · mmOrb its orbits  */
-/* LINK GLOW used to run to 3.00×, and anywhere past about 1 the additive
-   line blending saturates to white and the cosmos turns into a wire ball.
-   The knob now tops out at 1.30 and rests at 0.70, which is where the links
-   read as light rather than as paint. */
-const LNK_MAX = 1.30;
+/* LINK GLOW used to run to 3.00×, then to 1.30×, and even 1.30 was a ceiling
+   worth nobody's while: additive line blending saturates to white well before
+   it, so the whole top third of the knob bought glare rather than glow. The
+   floor is the useful end and is left alone — OFF at zero, and every step up
+   from it still reads — while the top now stops at 0.85. The rest position
+   stays at 0.70, so nothing anyone is already looking at changes. */
+const LNK_MAX = 0.85;
 /* maxNodes is a performance ceiling, not a preference: a five-thousand-note
    vault running a spring simulation and four thousand instanced bodies will
    crawl on an integrated GPU. 3000 is where this stays comfortably interactive
    on a laptop; the slider goes to NO LIMIT for anyone who wants to find their
    own edge. */
 const MAX_NODES_CEIL = 10000;
-const SET_DEF = { spd:1, bri:1, ten:.5, grv:1, str:1, thr:1,
-                  lnk:.7, spr:1, gap:1, mmHop:false, mmOrb:true, snd:false,
-                  maxNodes:3000 };
+/* TENSION and ARC HEIGHT were one knob, and they are two questions. Tension
+   is how much curve there is at all; arc height is how much of that curve
+   stands up out of the plane the bodies orbit in rather than lying flat
+   inside it. Sharing a control meant you could not have a taut link that
+   still arched, or a slack one that stayed low, and the flat-looking default
+   was nobody's choice — it was the one shape the single knob could make. */
+const ARC_MAX = 2.50;
+const BLM_MAX = 1.50;
+const SET_DEF = { spd:1, bri:1, ten:.5, arc:1, grv:1, str:1, thr:1,
+                  lnk:.7, spr:1, gap:1, age:.6, trl:.7, blm:.6,
+                  mmHop:false, mmOrb:true, snd:false,
+                  adv:false, legFold:false, keysFold:false, maxNodes:3000 };
 const SET = Object.assign({}, SET_DEF);
 try { Object.assign(SET, JSON.parse(localStorage.getItem('orrery2.set') || '{}')); } catch(e){}
 /* a value saved back when the slider still went to 3× has to be pulled in,
    or the old setting survives the change that was meant to remove it */
 SET.lnk = clamp(+SET.lnk || 0, 0, LNK_MAX);
+/* ARC HEIGHT is new, so every settings blob written before today is missing
+   it. `+undefined || 0` would read that absence as a deliberate zero and lay
+   every link flat for exactly the people who never asked for it — so a value
+   that is not a number falls back to the default rather than to the floor. */
+SET.arc = Number.isFinite(+SET.arc) ? clamp(+SET.arc, 0, ARC_MAX) : SET_DEF.arc;
+/* same trap as ARC HEIGHT, three more times: a blob written before today has
+   none of these keys, and reading the absence as a zero would ship the new
+   look switched off to exactly the people who never chose that */
+SET.age = Number.isFinite(+SET.age) ? clamp(+SET.age, 0, 1)       : SET_DEF.age;
+SET.trl = Number.isFinite(+SET.trl) ? clamp(+SET.trl, 0, 1)       : SET_DEF.trl;
+SET.blm = Number.isFinite(+SET.blm) ? clamp(+SET.blm, 0, BLM_MAX) : SET_DEF.blm;
 function saveSet(){ try { localStorage.setItem('orrery2.set', JSON.stringify(SET)); } catch(e){} }
 
 let toastT = 0;
-function toast(msg) {
+/* The duration is a parameter now because one caller genuinely needs a
+   different one: a recording counting itself down wants each second to
+   replace the last without the message blinking out in between. */
+function toast(msg, ms) {
   const t = $('toast');
-  t.textContent = msg; t.classList.add('on'); toastT = performance.now() + 1300;
+  t.textContent = msg; t.classList.add('on');
+  toastT = performance.now() + (ms || 1300);
 }
 
 /* ================================================================== LAYOUT
@@ -1438,13 +1571,15 @@ function toast(msg) {
 const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, coreIdx,
-    spiralOf, datedOrder, P, RAD, COL, orb, catOf, alpha, edgeCache, SHELL_R, adj, hayOf,
+    spiralOf, datedOrder, P, RAD, COL, COLB, orb, catOf, alpha, edgeCache, SHELL_R, adj, hayOf,
     bornAt, freshMark, tagIdx,
     genT, genE, genOrder, genScale, ripN,
     DSP, DVL, PULL, linkProg, ringRadii = [],
     starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, sunObj,
+    starCore, starShell, starRing, starAlC, starAlS, starAlR,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
     EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
+    trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
     selRig, selRing, selRing2, selCage, hovRig, actRig, actRing, actRing2, actPip,
     ringMesh, ringIdx = [], ringQ = [], ringK = null, labels;
@@ -1494,13 +1629,37 @@ function gapStep(dt) {
   }
   gapSys = ringGapFor(gapNow) / (GAPL.rg || 1);
 }
-/* Samples per link. Nine draws a visibly smooth sag on the dozen-edge vaults
-   this was tuned on; on a seven-thousand-edge one it is a hundred and fifteen
-   thousand floats rewritten and re-uploaded every frame for a curve two
-   pixels tall. Set from the edge count in buildObjects, before the buffers
-   that depend on it are allocated. */
+/* Samples per link — now a *ceiling*, not a count. Nine draws a visibly
+   smooth sag on the dozen-edge vaults this was tuned on; on a seven-thousand
+   edge one it is a hundred and fifteen thousand floats rewritten and
+   re-uploaded every frame for a curve two pixels tall. Set from the edge
+   count in buildObjects, before the buffers that depend on it are allocated.
+
+   The edge count is the wrong question to answer on its own, though. What a
+   curve needs is set by how big it is *on screen*: the same link wants twelve
+   samples with the camera on top of it and three from across the vault, and
+   standing the arcs up made both ends of that more extreme. So the buffer is
+   sized for the worst case here and writeLinks spends per edge, from the
+   projected height of that edge's own arc. See segFor(). */
 let SEG = 9;
+/* Samples for an arc whose sagitta covers `px` pixels, at roughly a third of
+   a pixel of chord error — the point where a polyline stops being tellable
+   from a curve. Error for a quadratic bezier split into n falls as 1/n², so
+   the count goes as the square root and a curve ten times bigger costs three
+   times more rather than ten. Two is the floor: one straight segment, which
+   is all a link the size of a full stop can use. */
+function segFor(px, cap) {
+  if (!(px > 0.6)) return 2;
+  const n = 1 + Math.ceil(Math.sqrt(px * 3));
+  return n < 2 ? 2 : n > cap ? cap : n;
+}
 const PULSE = 260;                               // travelling data pulses
+/* Orbit trails. Module scope rather than beside the buffers they size, because
+   the frame loop and the budget readout both ask about them and buildObjects
+   is not somewhere either of those can see. */
+const TRAIL_CAP = 300;      // bodies that may carry one
+const TRAIL_SEG = 9;        // samples per trail, so eight drawn segments
+const TRAIL_SWEEP = 0.16;   // how far back it reaches, in orbital radians
 const EDGE_TINT = [ new THREE.Color(0x53d8ff), new THREE.Color(0xff9d3c),
                     new THREE.Color(0x8b6bff) ];
 const LAYERS = [
@@ -1566,6 +1725,94 @@ const STAR_TEMPS = [
   [1.00, 0.83, 0.64],   // K  — amber
   [1.00, 0.72, 0.46],   // M  — orange
 ];
+/* ---- age as colour temperature ----
+   The starfield has been coloured by stellar temperature since v1, and the
+   notes have not been coloured by anything but their folder. Which is a waste
+   of a ramp that is already here and already reads correctly to anyone who
+   has ever looked up: blue-white is hot, orange is cool, and "hot off the
+   press" is the same metaphor in a different register. So a note's age rides
+   the same scale — this year's writing burns blue, the oldest notes in the
+   vault have cooled to amber — and the vault's history becomes something you
+   can see across the room rather than something you read off a label.
+
+   Mixed *into* the folder colour rather than replacing it, at a strength the
+   knob sets, because the folder colour is what the legend promises and the
+   legend has to stay true. At the default third the hue is still recognisably
+   the folder's; at 1.00 age wins and the legend becomes a rough guide.
+
+   An undated note is left alone entirely. Tinting it would be inventing a
+   date, and the vaults where this matters most are exactly the ones with a
+   lot of undated material in them. */
+/* A white balance, not a wash.
+
+   The first version of this mixed each note's colour *toward* the temperature
+   colour. It reads correctly on paper and is nearly invisible on screen, for
+   a reason that only shows up once you look at it: the middle of the ramp is
+   cream, so most of the vault — everything that is neither the oldest nor the
+   newest — was being mixed toward white, and mixing cyan toward white gives
+   you slightly paler cyan. The ends worked. The eighty per cent in between
+   did nothing, which is the part that had to carry the reading.
+
+   Dividing the temperature by the middle of its own ramp turns it into a
+   multiplier instead: neutral for a note from the middle of the vault's life,
+   warm for old ones, cool for new ones. That is what a camera does about
+   colour temperature, and it moves every note rather than only the extremes
+   while leaving the folder's hue recognisably itself.
+
+   It cannot turn a saturated cyan into amber, and it should not: the folder
+   colour is what the legend promises. What it can do is make two notes from
+   the same folder ten years apart plainly different, which is the question
+   this was added to answer. The knob goes to 1.00 for anyone who wants the
+   date to shout rather than speak. */
+const AGE_NEUTRAL = STAR_TEMPS[3];      // the G row: the sun, cream
+function applyAgeTint() {
+  if (!N || !COLB) return;
+  const span = GEN.hi - GEN.lo;
+  const k = clamp(SET.age, 0, 1);
+  const c = new THREE.Color();
+  for (let i=0;i<N;i++){
+    const b0 = COLB[i*3], b1 = COLB[i*3+1], b2 = COLB[i*3+2];
+    /* the hub is the vault itself, not a note in it, and it has a colour of
+       its own that means "this is the centre" */
+    if (k <= 0.001 || i === coreIdx || !bornAt[i] || span <= 0) {
+      COL[i*3] = b0; COL[i*3+1] = b1; COL[i*3+2] = b2;
+      continue;
+    }
+    /* 0 at the newest note in the vault, 1 at the oldest — which is the
+       direction STAR_TEMPS already runs in */
+    starColor(1 - (bornAt[i] - GEN.lo) / span, c);
+    const mr = lerp(1, c.r / AGE_NEUTRAL[0], k);
+    const mg = lerp(1, c.g / AGE_NEUTRAL[1], k);
+    const mb = lerp(1, c.b / AGE_NEUTRAL[2], k);
+    COL[i*3]   = clamp(b0 * mr, 0, 1);
+    COL[i*3+1] = clamp(b1 * mg, 0, 1);
+    COL[i*3+2] = clamp(b2 * mb, 0, 1);
+  }
+}
+/* the knob moves after the buffers are built, so the buffers have to be told */
+function recolour() {
+  applyAgeTint();
+  if (!N) return;
+  if (bodies && bodies.instanceColor) {
+    for (let i=0;i<N;i++) bodies.setColorAt(i, _tmpCol.setRGB(COL[i*3], COL[i*3+1], COL[i*3+2]));
+    bodies.instanceColor.needsUpdate = true;
+  }
+  if (nodeGlow && gCl) {
+    for (let i=0;i<N*3;i++) gCl[i] = COL[i];
+    nodeGlow.geometry.attributes.aColor.needsUpdate = true;
+  }
+  /* the ring a heavily cited note wears is struck from its own colour */
+  if (ringMesh && ringMesh.instanceColor) {
+    ringIdx.forEach((i, k2) => ringMesh.setColorAt(k2, _tmpCol.setRGB(
+      lerp(COL[i*3], 1, .30), lerp(COL[i*3+1], 1, .30), lerp(COL[i*3+2], 1, .30))));
+    ringMesh.instanceColor.needsUpdate = true;
+  }
+  /* The legend is not redrawn, and should not be: its swatches are the folder
+     colours, one per system, and the tint is a per-note thing mixed on top of
+     them. A legend that drifted with the knob would stop being the key to
+     anything. */
+}
+const _tmpCol = new THREE.Color();
 function starColor(u, out) {
   const x = clamp(u, 0, 1) * (STAR_TEMPS.length - 1);
   const i = Math.min(STAR_TEMPS.length - 2, Math.floor(x)), f = x - i;
@@ -1929,6 +2176,10 @@ for (let i=0;i<N;i++) if (bornAt[i]) {
 if (!isFinite(GEN.lo)) { GEN.lo = 0; GEN.hi = 0; }
 GEN.dated = 0;
 for (let i=0;i<N;i++) if (bornAt[i]) GEN.dated++;
+/* the folder colours as built, before the age tint is mixed into them, so the
+   knob can be turned back down as well as up */
+COLB = COL.slice();
+applyAgeTint();
 GEN.u = 0; GEN.play = false; GEN.stage = -1; GEN.marksFor = null;
 
 /* ---- the formation schedule -----------------------------------------
@@ -2035,6 +2286,190 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false,
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setClearColor(0x02040a, 1);
 renderer.outputEncoding = THREE.sRGBEncoding;
+/* three zeroes its counters at the top of every render() call, which was fine
+   while a frame was one call and became a lie the moment the bloom chain made
+   it nine: the readout ended up describing whichever pass happened to be last
+   rather than the frame. Reset once a frame instead, in renderFrame, so DRAW
+   CALLS means the frame's draw calls again — bloom passes included, which is
+   the honest way to show what the effect costs. */
+renderer.info.autoReset = false;
+
+/* ======================================================== BLOOM
+   Everything that glows in here glowed by drawing a soft sprite behind it —
+   which puts a halo on the thing, and only on the thing. Real light does not
+   stop at the object: it spills into the lens, washes across whatever is next
+   to it, and turns a bright point into something the eye reads as *bright*
+   rather than as a pale pixel. Without that the core sun is a white disc and
+   a star system is a small hard dot, and no amount of additive sprite fixes
+   it, because the sprite is still bounded by the object it belongs to.
+
+   Written by hand rather than assembled from three's postprocessing examples.
+   That chain is five more files to vendor, licence and keep in step with a
+   pinned r128, for a bright-pass, two blurs and a composite — which is all
+   this is, and all of it is shorter than the wiring would have been.
+
+   The passes:
+     scene  -> RT0        the frame, in linear light, at half a pixel each way
+     RT0    -> BLUR_A     bright pass and downsample in one go
+     BLUR_A -> BLUR_B     horizontal gaussian
+     BLUR_B -> BLUR_A     vertical gaussian
+     RT0+A  -> canvas     add, then encode to sRGB
+
+   The encoding is the part that quietly ruins this, and it took two wrong
+   answers to get right. r128 picks a shader's output encoding from
+   `renderTarget.texture.encoding` when it is drawing to a target and from
+   `renderer.outputEncoding` when it is drawing to the canvas. Doing the sRGB
+   conversion by hand in the composite came out twice as bright as the plain
+   path; leaving it out came out half as bright. Neither, because the scene is
+   drawn by a mix of stock materials — which apply whatever encoding they are
+   told to — and hand-written ShaderMaterials like the glow points, which
+   include no encoding chunk and so apply none either way. No single
+   correction at the end can be right for both halves of that.
+
+   So the target is simply told to encode the way the canvas does. Then every
+   material behaves in the offscreen pass exactly as it did before, RT0 holds
+   what the canvas would have held, and the composite adds and passes through
+   without touching a curve. At zero bloom the two paths are identical, which
+   is a property that can be measured rather than argued about — and it was.
+
+   The cost is that the blur runs on encoded values instead of linear light,
+   which is not what a lens does. It is what most real-time bloom does, the
+   bright pass has already thrown away everything but the top of the range
+   where the two spaces are closest, and this is a look rather than a
+   simulation. Predictable beats principled here. */
+const BLOOM = {
+  ok: false, rt: null, a: null, b: null,
+  bright: null, blur: null, comp: null,
+  quad: null, cam: null, scene: null, w: 0, h: 0
+};
+const FS_V = `
+varying vec2 vUv;
+void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
+/* Bright pass. The knee is soft on purpose: a hard cut at a threshold makes
+   anything crossing it pop, so a body drifting into the light strobes. */
+const BRIGHT_F = `
+uniform sampler2D tSrc; uniform float uThresh; uniform float uKnee;
+varying vec2 vUv;
+void main(){
+  vec3 c = texture2D(tSrc, vUv).rgb;
+  float l = max(c.r, max(c.g, c.b));
+  float k = smoothstep(uThresh, uThresh + uKnee, l);
+  gl_FragColor = vec4(c * k, 1.0);
+}`;
+/* Nine taps, separable, on the linear-sampling hardware — so the five offsets
+   below buy nine samples' worth of blur for five fetches. */
+const BLUR_F = `
+uniform sampler2D tSrc; uniform vec2 uDir;
+varying vec2 vUv;
+void main(){
+  vec3 s = texture2D(tSrc, vUv).rgb * 0.2270270270;
+  s += texture2D(tSrc, vUv + uDir * 1.3846153846).rgb * 0.3162162162;
+  s += texture2D(tSrc, vUv - uDir * 1.3846153846).rgb * 0.3162162162;
+  s += texture2D(tSrc, vUv + uDir * 3.2307692308).rgb * 0.0702702703;
+  s += texture2D(tSrc, vUv - uDir * 3.2307692308).rgb * 0.0702702703;
+  gl_FragColor = vec4(s, 1.0);
+}`;
+const COMP_F = `
+uniform sampler2D tScene; uniform sampler2D tBloom; uniform float uAmt;
+varying vec2 vUv;
+void main(){
+  /* no curve applied either way: RT0 was written in the canvas's own encoding
+     and this is on its way straight back to the canvas */
+  gl_FragColor = vec4(texture2D(tScene, vUv).rgb +
+                      texture2D(tBloom, vUv).rgb * uAmt, 1.0);
+}`;
+function bloomInit() {
+  if (BLOOM.scene) return;
+  const mk = f => new THREE.ShaderMaterial({ vertexShader: FS_V, fragmentShader: f,
+    depthTest:false, depthWrite:false, uniforms:{} });
+  BLOOM.bright = mk(BRIGHT_F);
+  /* The threshold is in the canvas's own encoding, not in linear light, since
+     that is what RT0 holds. Half-bright is where a note stops being a lit
+     surface and starts being a source; the knee is wide so nothing crossing
+     it pops, which on an orrery full of things drifting through highlights
+     would be a scene that strobes. */
+  BLOOM.bright.uniforms = { tSrc:{value:null}, uThresh:{value:0.48}, uKnee:{value:0.40} };
+  BLOOM.blur = mk(BLUR_F);
+  BLOOM.blur.uniforms = { tSrc:{value:null}, uDir:{value:new THREE.Vector2()} };
+  BLOOM.comp = mk(COMP_F);
+  BLOOM.comp.uniforms = { tScene:{value:null}, tBloom:{value:null}, uAmt:{value:0.6} };
+  BLOOM.quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), BLOOM.bright);
+  BLOOM.quad.frustumCulled = false;
+  BLOOM.scene = new THREE.Scene();
+  BLOOM.scene.add(BLOOM.quad);
+  BLOOM.cam = new THREE.Camera();
+}
+function bloomSize(w, h) {
+  bloomInit();
+  if (BLOOM.w === w && BLOOM.h === h && BLOOM.rt) return;
+  [BLOOM.rt, BLOOM.a, BLOOM.b].forEach(r => { if (r) r.dispose(); });
+  const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+                format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false };
+  /* Eight bits, and sRGB — the canvas's own format, which is the point: the
+     bytes in here are the bytes that would have been on screen. Half float
+     would buy precision the plain path never had, and buy it at the price of
+     the identity that makes this safe. */
+  BLOOM.rt = new THREE.WebGLRenderTarget(w, h, opt);
+  BLOOM.rt.texture.encoding = THREE.sRGBEncoding;
+  const hw = Math.max(1, w >> 1), hh = Math.max(1, h >> 1);
+  BLOOM.a = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.b = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.w = w; BLOOM.h = h;
+  BLOOM.ok = true;
+}
+function bloomPass(mat, target) {
+  BLOOM.quad.material = mat;
+  renderer.setRenderTarget(target);
+  renderer.clear();
+  renderer.render(BLOOM.scene, BLOOM.cam);
+}
+/* The one place the frame is drawn. Every caller — the loop, the poster —
+   goes through here so that what is saved is what was on screen. */
+function renderFrame() {
+  renderer.info.reset();
+  const amt = SET.blm;
+  if (amt <= 0.02 || !BLOOM.ok) {
+    renderer.setRenderTarget(null);
+    renderer.render(scene, camera);
+    return false;
+  }
+  renderer.setRenderTarget(BLOOM.rt);
+  renderer.clear();
+  renderer.render(scene, camera);
+  /* the surface you are standing on belongs in the bloom too, or the ground
+     is the one thing in frame that light does not touch */
+  if (SKY.on) { renderer.autoClear = false; renderer.clearDepth();
+                renderer.render(stageScene, stageCam); renderer.autoClear = true; }
+
+  BLOOM.bright.uniforms.tSrc.value = BLOOM.rt.texture;
+  bloomPass(BLOOM.bright, BLOOM.a);
+  /* Three widening passes rather than one.
+     A single nine-tap blur reaches about five pixels, and five pixels of
+     spread is a soft edge, not a glow — the light has to travel far enough to
+     land on things that are not the source before anyone reads it as light.
+     Chaining blurs multiplies their kernels, so stepping the offset out 1, 3,
+     7 builds a wide falloff with a bright centre for six half-resolution
+     passes, which is nothing on any GPU that got this far. */
+  const hw = BLOOM.a.width, hh = BLOOM.a.height;
+  const steps = [1, 3, 7];
+  for (let k = 0; k < steps.length; k++) {
+    const r = steps[k];
+    BLOOM.blur.uniforms.tSrc.value = BLOOM.a.texture;
+    BLOOM.blur.uniforms.uDir.value.set(r/hw, 0);
+    bloomPass(BLOOM.blur, BLOOM.b);
+    BLOOM.blur.uniforms.tSrc.value = BLOOM.b.texture;
+    BLOOM.blur.uniforms.uDir.value.set(0, r/hh);
+    bloomPass(BLOOM.blur, BLOOM.a);
+  }
+
+  BLOOM.comp.uniforms.tScene.value = BLOOM.rt.texture;
+  BLOOM.comp.uniforms.tBloom.value = BLOOM.a.texture;
+  BLOOM.comp.uniforms.uAmt.value = amt;
+  BLOOM.quad.material = BLOOM.comp;
+  renderer.setRenderTarget(null);
+  renderer.render(BLOOM.scene, BLOOM.cam);
+  return true;                      // the ground is already in the composite
+}
 
 const scene = new THREE.Scene();
 /* thinner fog than v1: at ship speeds a heavy exponential fog turns the far
@@ -2813,6 +3248,36 @@ function ringTexture() {
   return RING_TEX;
 }
 
+/* A stock MeshBasicMaterial that also reads a per-instance alpha.
+
+   Patched rather than rewritten. A ShaderMaterial of our own would have been
+   fewer moving parts to explain, and it would also have dropped every chunk
+   three.js puts around a fragment — the output encoding among them, which is
+   the difference between a star that matches the rest of the scene and one
+   that does not. Two string replacements against two lines that have been in
+   the basic shader for as long as it has existed is the cheaper bet.
+
+   customProgramCacheKey earns its line: three.js keys compiled programs on a
+   material's parameters and never on what onBeforeCompile did to the source,
+   so without a key of its own a patched material and an unpatched one with
+   the same settings can be handed the same program — and which one gets the
+   alpha then depends on which was drawn first. */
+function starMat(opt) {
+  const m = new THREE.MeshBasicMaterial(Object.assign({
+    color: 0xffffff, transparent: true, opacity: 1 }, opt));
+  m.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute float aAlpha;\nvarying float vStarA;\n' +
+      sh.vertexShader.replace('void main() {', 'void main() {\n\tvStarA = aAlpha;');
+    sh.fragmentShader = 'varying float vStarA;\n' +
+      sh.fragmentShader.replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        'vec4 diffuseColor = vec4( diffuse, opacity * vStarA );\n' +
+        '\tif ( diffuseColor.a < 0.002 ) discard;');
+  };
+  m.customProgramCacheKey = () => 'starAlpha';
+  return m;
+}
+
 /* ================================================================== WORLD
    Every scene object derived from the vault lives under `world`, so loading a
    different vault is one disposeWorld() plus one buildLayout/buildObjects.
@@ -2821,44 +3286,90 @@ function buildObjects() {
 world = new THREE.Group();
 scene.add(world);
 
-/* ---------- category stars ---------- */
+/* ---------- category stars ----------
+   Three draw calls, not three per system.
+
+   Every star used to be a Group of its own three meshes, each with its own
+   material, which is three draw calls per folder: twenty-four on the vault
+   this was profiled on and sixty on a vault with twenty folders. Submitting
+   them was costing more than writing every link in the cosmos did, and it
+   grew with the folder count while the bodies and the links — instanced years
+   ago — did not.
+
+   The three layers are now one InstancedMesh each. What differed per system
+   and made that look impossible turns out to be nothing that instancing
+   cannot carry: the radius is a scale on a unit geometry, the colour is
+   instanceColor, and the spins and the ring's tilt go in the instance matrix
+   like any other transform.
+
+   The one thing an InstancedMesh has no room for is opacity, and opacity is
+   how a system switched off in the legend takes its light with it. Rather
+   than fake it — baking the fade into the colour would turn a fading core
+   into a black ball over the starfield instead of a vanishing one — each
+   layer carries a per-instance alpha attribute, injected into the stock
+   material by starMat(). */
 starGroup = new THREE.Group(); world.add(starGroup);
 starMeshes = [];
-cats.forEach(c => {
-  const R = c.R || (c.tier === 0 ? 8 : 5);
-  const g = new THREE.Group();
-  g.position.copy(c.pos);
+if (cats.length) {
+  const NS = cats.length;
+  /* Unit geometries. The radius that used to be built into each system's own
+     geometry is a scale in its instance matrix now, which is the same picture
+     and one buffer instead of one per folder. */
+  const coreGeo  = new THREE.IcosahedronGeometry(1, 3);
+  const shellGeo = new THREE.IcosahedronGeometry(1.75, 1);
+  const ringGeo  = new THREE.RingGeometry(2.6, 2.72, 96);
+
+  starAlC = new Float32Array(NS).fill(1);
+  starAlS = new Float32Array(NS).fill(1);
+  starAlR = new Float32Array(NS).fill(1);
+  coreGeo .setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlC, 1));
+  shellGeo.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlS, 1));
+  ringGeo .setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlR, 1));
+
   /* transparent even at rest: switching a system off in the legend has to be
-     able to take its light with it, and an opaque basic material cannot be
-     dimmed at all */
-  const core = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(R, 3),
-    new THREE.MeshBasicMaterial({ color: c.color.clone().lerp(new THREE.Color(0xffffff), .55),
-      transparent:true, opacity:1 })
-  );
-  g.add(core);
-  const shell = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(R*1.75, 1),
-    new THREE.MeshBasicMaterial({ color:c.color, wireframe:true, transparent:true,
-      opacity:.16, blending:THREE.AdditiveBlending, depthWrite:false })
-  );
-  g.add(shell);
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(R*2.6, R*2.72, 96),
-    new THREE.MeshBasicMaterial({ color:c.color, transparent:true, opacity:.26,
-      side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false })
-  );
-  ring.rotation.x = Math.PI/2 - (c.tier?0.1:0.36);
-  ring.rotation.z = Math.random()*TAU;
-  g.add(ring);
-  starGroup.add(g);
-  c.obj = g; c.shell = shell; c.ring = ring; c.core = core;
-  /* what "fully lit" means for this star, so the dimmer has somewhere to
-     return to rather than a hard-coded constant per material */
-  c.op0 = { core:1, shell:.16, ring:.26, glow: c.tier===0 ? .85 : .5 };
-  c.vis = 1;
-  starMeshes.push(c);
-});
+     able to take its light with it, and an opaque material cannot be dimmed */
+  starCore  = new THREE.InstancedMesh(coreGeo,  starMat({}), NS);
+  starShell = new THREE.InstancedMesh(shellGeo, starMat({ wireframe:true,
+    blending:THREE.AdditiveBlending, depthWrite:false }), NS);
+  starRing  = new THREE.InstancedMesh(ringGeo,  starMat({ side:THREE.DoubleSide,
+    blending:THREE.AdditiveBlending, depthWrite:false }), NS);
+
+  [starCore, starShell, starRing].forEach(m => {
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    /* the instance matrices are rewritten every frame from positions three.js
+       never sees, so its own bounds would be a guess that culls the lot */
+    m.frustumCulled = false;
+    starGroup.add(m);
+  });
+
+  cats.forEach((c, i) => {
+    c.si = i;
+    /* the star's drawn radius, kept beside c.R rather than written back into
+       it: c.R is the layout's number and the layout is built before this runs
+       — a rebuild that found its own fallback already there would be reading
+       last build's guess as this build's input */
+    c.sR = c.R || (c.tier === 0 ? 8 : 5);
+    /* the spins the frame loop advances, held per system rather than on a
+       mesh that no longer exists */
+    c.sx = 0; c.sy = 0;
+    c.rz = Math.random()*TAU;
+    c.rx = Math.PI/2 - (c.tier?0.1:0.36);
+    /* the core reads as the hot centre of the star, so it is the system's
+       colour pulled most of the way to white */
+    const cc = c.color.clone().lerp(new THREE.Color(0xffffff), .55);
+    starCore .setColorAt(i, cc);
+    starShell.setColorAt(i, c.color);
+    starRing .setColorAt(i, c.color);
+    /* what "fully lit" means for this star, so the dimmer has somewhere to
+       return to rather than a hard-coded constant per material */
+    c.op0 = { core:1, shell:.16, ring:.26, glow: c.tier===0 ? .85 : .5 };
+    c.vis = 1;
+    starMeshes.push(c);
+  });
+  [starCore, starShell, starRing].forEach(m => {
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
+  });
+}
 
 /* ---------- the concentric ring guides ----------
    Faint circles on the orbital plane, one per ring of systems. They cost
@@ -3147,13 +3658,16 @@ if (ringIdx.length) {
 
 /* ---------- links ---------- */
 EN = edges.length;
-/* Raised across the board now that the curve is an arc rather than a two
-   pixel sag: five samples on a shallow smile is smooth, and five on a real
-   bow is a bent straw. The counts still fall away with the edge count for
-   the reason written where SEG is declared — a big vault pays for this
-   every frame — but the small and middling vaults, which is nearly all of
-   them, can afford the curve they are now drawing. */
-SEG = EN > 4000 ? 6 : EN > 1500 ? 9 : 13;
+/* Raised again now that the arcs stand up — a standing arch has real
+   curvature where the old flat sag had two pixels of it, and five samples on
+   a real bow is a bent straw. What keeps the raise affordable is that this is
+   only the ceiling: segFor() spends it per edge from the arc's projected
+   height, so a big vault seen from map range still writes two or three
+   samples on nearly every link and only pays the ceiling for the handful of
+   arcs actually filling the screen. The ceiling still falls with the edge
+   count, because the ceiling is what sizes the buffer and the buffer is
+   re-uploaded whole every frame. */
+SEG = EN > 4000 ? 8 : EN > 1500 ? 12 : 16;
 edgeCache = new Array(EN);
 linkProg = new Float32Array(Math.max(1,EN)).fill(1);
 const linkVerts = Math.max(1, EN) * (SEG-1) * 2 * 3;
@@ -3168,6 +3682,46 @@ linkMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true,
 linkMesh = new THREE.LineSegments(linkGeo, linkMat);
 linkMesh.frustumCulled = false;
 world.add(linkMesh);
+
+/* ---------- orbit trails ----------
+   A body sliding along an invisible orbit reads as a dot that happens to be
+   somewhere else each time you look. A short arc trailing behind it reads as
+   something going round, and the whole cosmos stops being a slideshow of
+   positions and starts turning. It is the cheapest motion cue there is and
+   the one this had no version of.
+
+   No history buffer. Where a body was is not something worth remembering,
+   because the orbit is analytic — the same equation updatePositions solves
+   for `t` solves for `t - dt`, and stepping back is a rotation by a fixed
+   angle in the orbit's own plane. So a trail is the current point rotated
+   backwards a few times, exact and with nothing stored between frames.
+
+   Not on everything. Three thousand trails is a ball of wool, and the ones
+   worth watching are the ones big enough on screen to watch — so the set is
+   chosen per frame by projected size, capped, and each trail fades in with
+   the body's own growth rather than snapping on at a threshold. */
+/* Biggest first, so a cap that bites keeps the bodies worth watching rather
+   than whichever ones happen to come first in the file. Sorted once here; the
+   order cannot change, because a note's radius is its citation count and that
+   does not move while the vault is open. */
+trailPick = new Int32Array(TRAIL_CAP);
+trailOrder = new Int32Array(N);
+for (let i=0;i<N;i++) trailOrder[i] = i;
+trailOrder.sort((a,b) => RAD[b] - RAD[a]);
+{
+  const tv = TRAIL_CAP * (TRAIL_SEG-1) * 2 * 3;
+  trailPos = new Float32Array(tv);
+  trailCol = new Float32Array(tv);
+  trailGeo = new THREE.BufferGeometry();
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos,3));
+  trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol,3));
+  trailGeo.setDrawRange(0, 0);
+  trailMesh = new THREE.LineSegments(trailGeo, new THREE.LineBasicMaterial({
+    vertexColors:true, transparent:true, opacity:.85,
+    blending:THREE.AdditiveBlending, depthWrite:false }));
+  trailMesh.frustumCulled = false;
+  world.add(trailMesh);
+}
 
 /* travelling data pulses */
 pulseIdx = new Int32Array(PULSE); pulseT = new Float32Array(PULSE);
@@ -3304,7 +3858,9 @@ function disposeWorld() {
   scene.remove(world);
   world = null;
   spiralTrack = starGlow = boundary = bodies = nodeGlow = linkMesh = pulses = null;
+  trailMesh = trailGeo = trailPos = trailCol = null;
   selRig = hovRig = actRig = ringGuides = sunObj = null;
+  starCore = starShell = starRing = starAlC = starAlS = starAlR = null;
   ringMesh = null; ringIdx = []; ringQ = []; ringK = null;
   /* the shared ring canvas was one of the maps just disposed above, so the
      cache has to let go of it or the next vault draws from a dead texture */
@@ -4381,13 +4937,18 @@ function savePoster() {
        a fraction of the size it has on screen */
     const sc = innerHeight / (2 * Math.tan(camera.fov * Math.PI/360)) * scale;
     glowMats.forEach(m => { if (m.uniforms) m.uniforms.uScale.value = sc; });
-    renderer.render(scene, camera);
     /* a poster taken from a surface has to include the surface */
     if (SKY.on) {
       stageCam.aspect = innerWidth / innerHeight;
       stageCam.updateProjectionMatrix();
-      skyRender();
     }
+    /* The buffers are resized to the poster before it is drawn and put back
+       by resize() in the finally below. Skipping this would not merely blur
+       the bloom — it would sample a quarter of a 4K frame from a screen-sized
+       target and light the wrong half of the picture. */
+    bloomSize(Math.max(1, innerWidth * scale), Math.max(1, innerHeight * scale));
+    const composited = renderFrame();
+    if (SKY.on && !composited) skyRender();
 
     const src = renderer.domElement;
     const out = document.createElement('canvas');
@@ -4429,6 +4990,86 @@ function savePoster() {
   }
 }
 $('b-post').onclick = savePoster;
+
+/* ---- clip capture ----
+   The poster answers "what does my vault look like", and it answers it well.
+   It cannot answer the other one: this thing *moves* — orbits turn, pulses run
+   the links, a meteor crosses — and a still is the one format that throws all
+   of that away. So the canvas records itself.
+
+   Straight off the WebGL canvas via captureStream, which has a property worth
+   having on purpose: the stream carries the drawing buffer and nothing else,
+   so the HUD, which is DOM sitting on top, is simply not in it. No hiding
+   panels and putting them back the way the poster has to. What comes out is
+   the cosmos, clean, at whatever the window is showing.
+
+   No audio. The ambient bed is generated by WebAudio and could be piped in,
+   but a clip that starts playing a drone when it is dropped into a chat is a
+   worse guest than a silent one, and anything this is posted to will lay its
+   own sound over the top regardless. */
+const VID = { rec: null, chunks: [], timer: 0, left: 0 };
+const VID_SECS = 12;
+function vidMime() {
+  if (typeof MediaRecorder === 'undefined') return null;
+  /* vp9 where it exists, vp8 where it does not, and whatever the browser will
+     admit to as a last resort */
+  const want = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  for (const m of want) if (MediaRecorder.isTypeSupported(m)) return m;
+  return null;
+}
+function vidStop() {
+  if (VID.rec && VID.rec.state !== 'inactive') VID.rec.stop();
+}
+function vidSync() {
+  const b = $('b-vid');
+  b.textContent = VID.rec ? T('btn.vid.stop') : T('btn.vid');
+  b.classList.toggle('am', !!VID.rec);
+}
+function recordClip() {
+  if (VID.rec) { vidStop(); return; }
+  if (!N) { toast(T('need.vault')); return; }
+  const mime = vidMime();
+  if (!mime) { toast(T('vid.fail')); return; }
+  let stream;
+  try { stream = renderer.domElement.captureStream(60); }
+  catch (e) { toast(T('vid.fail')); return; }
+  try { VID.rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 }); }
+  catch (e) { toast(T('vid.fail')); return; }
+
+  VID.chunks = [];
+  VID.rec.ondataavailable = e => { if (e.data && e.data.size) VID.chunks.push(e.data); };
+  VID.rec.onstop = () => {
+    clearInterval(VID.timer); VID.timer = 0;
+    VID.rec = null; vidSync();
+    stream.getTracks().forEach(tr => tr.stop());
+    if (!VID.chunks.length) { toast(T('vid.fail')); return; }
+    const blob = new Blob(VID.chunks, { type: 'video/webm' });
+    VID.chunks = [];
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    /* the same filename rule the poster uses, so a vault named 지식정원 does
+       not export as ____ */
+    a.download = (DATA.meta.vault || 'vault')
+                   .replace(/[^\w가-힣ぁ-んァ-ヶー一-龥.-]+/g, '_') +
+                 '-orrery.webm';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast(T('vid.ok', { s: (blob.size/1048576).toFixed(1) + ' MB' }));
+  };
+  VID.rec.start(250);
+  VID.left = VID_SECS;
+  vidSync();
+  toast(T('vid.rec', { s: VID.left }));
+  /* a running count, because a recording with no visible end is one people
+     interrupt — and it doubles as the way to stop early */
+  VID.timer = setInterval(() => {
+    VID.left--;
+    if (VID.left <= 0) { vidStop(); return; }
+    toast(T('vid.rec', { s: VID.left }), 1200);
+  }, 1000);
+}
+$('b-vid').onclick = recordClip;
 
 /* ================================================================= SOUND
    Off by default, and deliberately so: v1 chose "소리 없는 정적" as one of
@@ -4651,7 +5292,8 @@ const MM = {
   age: 0, clock: 0, zoom: 1, px: 0, py: 0, trail: [], r1: 150, order: [], ax: 1,
   hint: null,                 // the live counts the map's caption quotes
   rings: [], hop2: false, orbit: true,
-  sky: null, bright: [], deep: null, deepR: 0, vig: null, spr: new Map()
+  sky: null, bright: [], deep: null, deepR: 0, vig: null, spr: new Map(),
+  bloom: null                  // the quarter-size buffer the glow is built in
 };
 const MM_MAX  = 26;           // first-ring neighbours; beyond this the wheel mushes
 const MM_HOP2 = 34;           // second ring, when it is asked for
@@ -4880,7 +5522,19 @@ function mmHalo(R, G, B) {
     x.fillStyle = g; x.fillRect(0, 0, S, S);
   });
 }
+/* The colour a note is drawn in, taken from the same array the orrery reads.
+
+   This used to go straight to the folder's colour, which was the same thing
+   right up until notes started carrying an age tint — and then the two views
+   quietly stopped agreeing. The same note was amber in the cosmos and cyan on
+   the plate, so whichever screen you were looking at was teaching you a
+   different meaning for colour. COL is where a node's colour is decided; this
+   asks there. */
 function mmRGB(i) {
+  if (COL && i >= 0 && i < N)
+    return [Math.round(COL[i*3] * 255),
+            Math.round(COL[i*3+1] * 255),
+            Math.round(COL[i*3+2] * 255)];
   const c = (catOf[i] && catOf[i].color) || CORE_COLOR;
   return [Math.round(c.r * 255), Math.round(c.g * 255), Math.round(c.b * 255)];
 }
@@ -5401,40 +6055,129 @@ function mindDraw(now) {
     const far = A.hop === 2 || B.hop === 2;
     const col = MM_LINK_COL[t];
     const g = linkGeom(A, B, grow);
+    const iz2 = 1 / MM.zoom;
     const path = () => {
       mctx.beginPath();
       mctx.moveTo(A.x, A.y);
       mctx.quadraticCurveTo(g.cx, g.cy, g.ex, g.ey);
       mctx.stroke();
     };
+    /* The stroke pattern the orrery uses for the same three kinds of link:
+       a written wikilink whole, a source tether broken now and then, an
+       inferred one broken twice as often. The two views were teaching
+       different conventions for the same fact — the cosmos had learned to say
+       "how firm is this" with a gap, and the plate was still saying it with
+       colour alone, which is the channel that goes first in a crowd.
+
+       Lengths are in screen pixels, divided back out by the zoom, so the
+       pattern holds its size as the plate is scaled — the same reasoning as
+       the pixel-period dashes on the orrery's arcs. */
+    const dashOf = ty => ty === 1 ? [7*iz2, 5*iz2] : ty === 2 ? [2.5*iz2, 4*iz2] : null;
+    const dash = dashOf(t);
+    const setDash = d => mctx.setLineDash(d || []);
+
+    /* ---- casing ----
+       A dark pass under the line, a little wider than it. On a plate where
+       two dozen curves cross each other this is the whole difference between
+       a graph and a ball of wool: at every crossing the line drawn later cuts
+       the one drawn earlier, and the eye gets to follow a single link from
+       one end to the other instead of losing it in the tangle.
+
+       It is the trick the labels already use to stay readable over the links
+       they sit on, pointed at the links themselves. Not opaque — the sky and
+       the dust behind have to survive it — but dark enough to break the line
+       underneath. Never dashed: a casing with gaps in it does not case
+       anything, so it is always the solid version of the same curve. */
+    const casing = (wide, alpha) => {
+      setDash(null);
+      mctx.strokeStyle = 'rgba(1,4,10,' + alpha + ')';
+      mctx.lineWidth = wide;
+      path();
+    };
+
     if (near) {
+      casing(7.2 * iz2, 0.72);
       /* a wide soft pass under the line reads as the link glowing rather than
          merely being thicker */
       mctx.strokeStyle = 'rgba(' + col + ',' + (0.16 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 6 / MM.zoom;
-      mctx.setLineDash([]);
+      mctx.lineWidth = 6 * iz2;
+      setDash(null);
       path();
       mctx.strokeStyle = 'rgba(' + col + ',' + (0.92 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 1.9 / MM.zoom;
+      mctx.lineWidth = 1.9 * iz2;
+      setDash(dash);
       path();
+      /* the travelling dash says which way the link runs, and rides on top of
+         the type pattern rather than replacing it — direction and firmness
+         are two different things to know about a link */
       mctx.strokeStyle = 'rgba(235,250,255,' + (0.55 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 1.5 / MM.zoom;
-      mctx.setLineDash([2.5 / MM.zoom, 11 / MM.zoom]);
-      mctx.lineDashOffset = -(now * 0.022) % (13.5 / MM.zoom);
+      mctx.lineWidth = 1.5 * iz2;
+      mctx.setLineDash([2.5 * iz2, 11 * iz2]);
+      mctx.lineDashOffset = -(now * 0.022) % (13.5 * iz2);
       path();
       mctx.setLineDash([]);
+      mctx.lineDashOffset = 0;
       return;
     }
-    mctx.setLineDash([]);
     /* At a line this thin on a background this dark the structure was only
        just visible, and dimming a node dropped its links out of the picture
        entirely — the shape of the graph is the point, so the quiet links are
        given enough weight to survive being quiet. The second hop is quieter
        again; it is context, not the subject. */
+    const lw = (far ? .7 : hot ? 1.3 : .95) * iz2;
+    /* the second hop is a thicket and casing every strand of it would print a
+       dark web over the dust; it is context, and context may overlap */
+    if (!far) casing(lw + 2.6 * iz2, 0.55 * grow);
+    setDash(dash);
     mctx.strokeStyle = 'rgba(' + col + ',' +
       ((far ? .13 : hot ? .46 : .22) * grow).toFixed(3) + ')';
-    mctx.lineWidth = (far ? .7 : hot ? 1.3 : .95) / MM.zoom;
+    mctx.lineWidth = lw;
     path();
+    mctx.setLineDash([]);
+  }
+
+  /* ---- orbit trails ----
+     The cosmos got these; the plate turns too, and for the same reason it
+     wanted them there. A node creeping round its ring reads as a dot that is
+     somewhere slightly different each time you look at it, and a short wake
+     behind it reads as a system going round.
+
+     Rest positions, not drawn positions: the wake is where the orbit has
+     been, and a node that has been flung out on its spring is somewhere the
+     orbit never took it. Stepping back is a rotation of the angle, so this is
+     one cos and one sin per node and no history to keep — the same trick the
+     orrery uses, and cheaper here, where there are sixty nodes rather than
+     three thousand.
+
+     Off when the orbits are, because then nothing has been anywhere. */
+  if (MM.orbit && SET.trl > 0.02 && age > 0.9) {
+    const amt = SET.trl;
+    const AX = MM.ax;
+    mctx.globalCompositeOperation = 'lighter';
+    mctx.lineCap = 'round';
+    MM.nodesL.forEach(n => {
+      if (n.root || !n.w) return;
+      const born = clamp((age - n.delay) / 0.34, 0, 1);
+      if (born < 0.6) return;
+      const [R, G, B] = mmRGB(n.i);
+      /* far enough back to be a wake, short enough not to become a ring */
+      const sweep = -0.30 * (n.w < 0 ? -1 : 1);
+      const M = 7;
+      let px2 = n.rx, py2 = n.ry;
+      for (let s = 1; s <= M; s++) {
+        const a2 = n.ang + sweep * (s / M);
+        const qx = Math.cos(a2) * n.ring * AX, qy = Math.sin(a2) * n.ring;
+        /* squared falloff, so it is brightest just behind the node and thins
+           to nothing rather than stopping */
+        const f = 1 - s / M;
+        mctx.strokeStyle = 'rgba(' + R + ',' + G + ',' + B + ',' +
+                           (f * f * 0.52 * amt * born).toFixed(3) + ')';
+        mctx.lineWidth = (n.r * 0.5 * f + 0.3) * iz;
+        mctx.beginPath(); mctx.moveTo(px2, py2); mctx.lineTo(qx, qy); mctx.stroke();
+        px2 = qx; py2 = qy;
+      }
+    });
+    mctx.globalCompositeOperation = 'source-over';
   }
 
   /* data pulses — the same travelling light the orrery runs along its links,
@@ -5548,7 +6291,65 @@ function mindDraw(now) {
   mmDrawLabels(labelQ, iz);
   mctx.restore();
 
+  mmBloom();
   if (MM.vig) mctx.drawImage(MM.vig, 0, 0);
+}
+
+/* ---- bloom, on a 2D canvas ----
+   The plate fakes light the way a painter does: every glowing thing carries
+   its own radial gradient. That puts a halo on the object and stops there, so
+   nothing here ever lights anything else, and the cosmos next door — which
+   now has a real bloom — reads as the more luminous of the two for no reason
+   the vault could explain.
+
+   Canvas2D will do this in three draws. The whole plate goes into a quarter
+   size buffer through a filter that doubles as the bright pass: `contrast`
+   pivots at mid grey, so cranking it drives everything below halfway to black
+   and everything above it to white, which is a threshold with a soft knee for
+   free. Blur while it is small — a five pixel blur at a quarter scale is a
+   twenty pixel spill at full — then lay it back over the plate with `lighter`.
+
+   Drawn after the transform is released and before the vignette: bloom is
+   light in the scene, and the vignette is the lens the scene is seen through.
+
+   `filter` is checked rather than assumed. It is on everywhere this plugin
+   can run, but a canvas that silently ignores the string would paint the
+   whole plate over itself at full strength, and a wash-out is a much worse
+   failure than no bloom. */
+let MM_FILTER_OK = null;
+function mmBloom() {
+  const amt = SET.blm;
+  if (amt <= 0.02) return;
+  if (MM_FILTER_OK === null) {
+    const p = document.createElement('canvas').getContext('2d');
+    p.filter = 'blur(1px)';
+    MM_FILTER_OK = p.filter === 'blur(1px)';
+  }
+  if (!MM_FILTER_OK) return;
+  const bw = Math.max(1, Math.round(MM.w * MM.dpr / 4));
+  const bh = Math.max(1, Math.round(MM.h * MM.dpr / 4));
+  let b = MM.bloom;
+  if (!b || b.canvas.width !== bw || b.canvas.height !== bh) {
+    const c = document.createElement('canvas');
+    c.width = bw; c.height = bh;
+    b = MM.bloom = c.getContext('2d');
+  }
+  b.setTransform(1, 0, 0, 1, 0, 0);
+  b.globalCompositeOperation = 'copy';
+  b.filter = 'brightness(1.1) contrast(2.7) blur(5px)';
+  b.drawImage(mmc, 0, 0, bw, bh);
+  b.filter = 'none';
+  b.globalCompositeOperation = 'source-over';
+
+  mctx.save();
+  mctx.setTransform(MM.dpr, 0, 0, MM.dpr, 0, 0);
+  mctx.globalCompositeOperation = 'lighter';
+  /* held below the orrery's own strength on the same knob: the plate is a
+     smaller, denser picture and the same spill closes its gaps up */
+  mctx.globalAlpha = Math.min(1, amt * 0.62);
+  mctx.imageSmoothingEnabled = true;
+  mctx.drawImage(b.canvas, 0, 0, MM.w, MM.h);
+  mctx.restore();
 }
 
 /* ---- the star at the centre ----
@@ -6105,7 +6906,10 @@ function shipFlyTo(j) {
   const to = new THREE.Vector3(P[j*3], P[j*3+1], P[j*3+2]);
   const d = from.distanceTo(to);
   const mid = from.clone().add(to).multiplyScalar(.5);
-  mid.y += d * 0.34 * (1 - SET.ten);          // the link's own sag
+  /* the link's own lift, ARC HEIGHT and all — the comment above says the ship
+     rides the curve the link is drawn on, and it only stays true if both read
+     the same knobs */
+  mid.y += d * (0.20 + 0.34 * (1 - SET.ten)) * SET.arc;
   ship.travel = { from, mid, to, t:0, dur: clamp(d / (baseThrust()*0.55), 0.7, 6.5),
                   target:j };
   ship.vel.set(0,0,0);
@@ -6531,6 +7335,7 @@ addEventListener('keydown', e => {
       return;
     }
     if (k === 'p') { e.preventDefault(); savePoster(); return; }
+    if (k === 'c') { e.preventDefault(); recordClip(); return; }
     if (k === 'r') { SKY.yaw = 0; SKY.pitch = 0.10; SKY.fov = 58; return; }
     return;
   }
@@ -6558,6 +7363,7 @@ addEventListener('keydown', e => {
   else if (k === 'n') { e.preventDefault(); twinsShow(selected); }
   else if (k === ' ') { e.preventDefault(); if (!e.repeat) rippleHere(); }
   else if (k === 'p') { e.preventDefault(); savePoster(); }
+  else if (k === 'c') { e.preventDefault(); recordClip(); }
   else if (k === 'u') { e.preventDefault(); audioSet(!AUD.on); }
   else if (k === 'h') $('hud').style.display = $('hud').style.display==='none'?'':'none';
   else if (k === 'escape') {
@@ -7087,6 +7893,11 @@ function resize() {
   camera.aspect = w/h; camera.updateProjectionMatrix();
   const sc = h / (2 * Math.tan(camera.fov * Math.PI/360));
   glowMats.forEach(m => { if (m.uniforms) m.uniforms.uScale.value = sc; });
+  /* the offscreen buffers are sized in device pixels, not CSS ones, or the
+     bloom is resampled from a frame at the wrong resolution on every screen
+     that is not exactly 1x */
+  const pr = renderer.getPixelRatio();
+  bloomSize(Math.max(1, Math.round(w * pr)), Math.max(1, Math.round(h * pr)));
   if (stageCam) { stageCam.aspect = w/h; stageCam.updateProjectionMatrix(); }
   layoutHUD();
   if (mindOpen) mmResize();
@@ -7108,7 +7919,6 @@ function updatePositions(dtms) {
     const a = c.oA0 + t * c.oSp;
     const oR = c.oR * gs;
     c.pos.set(Math.cos(a) * oR, c.oY * gs, Math.sin(a) * oR);
-    if (c.obj) c.obj.position.copy(c.pos);
     if (starGlow) {
       const gp = starGlow.geometry.attributes.position.array;
       gp[ci*3] = c.pos.x; gp[ci*3+1] = c.pos.y; gp[ci*3+2] = c.pos.z;
@@ -7116,12 +7926,12 @@ function updatePositions(dtms) {
     }
   });
   if (starMoved) starGlow.geometry.attributes.position.needsUpdate = true;
+  /* the spins are advanced here and written in updateStars, which runs after
+     every position in the frame is final — one place that composes a star's
+     matrix rather than three that each moved a piece of it */
   cats.forEach(c => {
-    if (!c.shell) return;
-    c.shell.rotation.y += 0.0016; c.shell.rotation.x += 0.0007;
-    c.ring.rotation.z += 0.0021;
-    const b = 1 + Math.sin(t*0.0011 + c.oA0*3.1) * 0.035;
-    c.core.scale.setScalar(b);
+    if (c.si === undefined) return;
+    c.sy += 0.0016; c.sx += 0.0007; c.rz += 0.0021;
   });
   /* the drawn guides are the layout made visible, so they have to move with
      it — the ring tracks, the spiral the archive rides, and the shell that
@@ -7228,6 +8038,7 @@ function updateVisibility(dt) {
    brightest thing in that corner of the sky was the one thing the click was
    supposed to remove. The star, its shell, its ring and its glow sprite now
    all ride the same damped value the notes do. */
+const _sq = new THREE.Quaternion(), _sEul = new THREE.Euler();
 function updateStars(dt) {
   if (!cats || !cats.length) return;
   const k = 1 - Math.pow(0.004, dt);
@@ -7240,16 +8051,86 @@ function updateStars(dt) {
     if (GEN.on) want *= GEN.u >= c.genT
       ? clamp((GEN.u - c.genT) / GEN.grow, 0, 1) : 0;
     const v = c.vis = lerp(c.vis === undefined ? want : c.vis, want, k);
-    const on = v > 0.006;
-    if (c.obj) c.obj.visible = on;
-    if (on) {
-      c.core.material.opacity  = c.op0.core  * v;
-      c.shell.material.opacity = c.op0.shell * v;
-      c.ring.material.opacity  = c.op0.ring  * v;
-    }
     if (ga) { ga.array[ci] = c.op0.glow * v; dirty = true; }
+    const i = c.si;
+    if (i === undefined || !starCore) return;
+    /* A star switched off is scaled away as well as faded out. The alpha
+       alone would do it — the patched shader discards at nothing — but a
+       collapsed instance never reaches the fragment stage at all, and an
+       instance is the one thing here that cannot simply be left out of the
+       draw. This is the `visible = false` the Group used to get. */
+    const R = v > 0.006 ? c.sR : 0;
+    const b = 1 + Math.sin(t*0.0011 + c.oA0*3.1) * 0.035;
+
+    _sq.identity();
+    _s.set(R*b, R*b, R*b);
+    _m.compose(c.pos, _sq, _s);
+    starCore.setMatrixAt(i, _m);
+    starAlC[i] = c.op0.core * v;
+
+    _sq.setFromEuler(_sEul.set(c.sx, c.sy, 0));
+    _s.set(R, R, R);
+    _m.compose(c.pos, _sq, _s);
+    starShell.setMatrixAt(i, _m);
+    starAlS[i] = c.op0.shell * v;
+
+    _sq.setFromEuler(_sEul.set(c.rx, 0, c.rz));
+    _m.compose(c.pos, _sq, _s);
+    starRing.setMatrixAt(i, _m);
+    starAlR[i] = c.op0.ring * v;
   });
   if (dirty) ga.needsUpdate = true;
+  if (starCore) {
+    starCore.instanceMatrix.needsUpdate = true;
+    starShell.instanceMatrix.needsUpdate = true;
+    starRing.instanceMatrix.needsUpdate = true;
+    starCore.geometry.attributes.aAlpha.needsUpdate = true;
+    starShell.geometry.attributes.aAlpha.needsUpdate = true;
+    starRing.geometry.attributes.aAlpha.needsUpdate = true;
+  }
+}
+
+/* ====================================================== VIEW STATE
+   Two things every writer below wants to know about this frame's camera, and
+   both used to be worked out by whoever needed them — which is how the links
+   and the nodes came to fog on different reference distances for one release.
+   Computed once, here, and read from there.
+
+   ---- fog ----
+   Additive glow has no occlusion and no falloff: a node behind the core
+   arrives at the eye exactly as bright as one in front of it, so a dense
+   vault reads as a flat disc of light with the far side painted over the near
+   one. The depth is in the scene and not on the screen.
+
+   The reference is the camera's own range, never an absolute distance. That
+   is the whole trick: fog pinned to world units either does nothing up close
+   or swallows the vault entirely when you pull back to look at it, whereas
+   fog measured against how far out you are currently standing is a depth cue
+   at every zoom. At the range you are focused on, nothing is attenuated; half
+   again as far and it is visibly behind; the floor stops the far side from
+   disappearing, because it is still your vault.
+
+   ---- frustum ----
+   Six planes, so the writers can ask whether a thing is on screen at all
+   before spending anything on drawing it. The link mesh has frustumCulled off
+   — it is one buffer holding every edge in the vault, so three.js can only
+   ever cull all of them or none — and this is the finer-grained replacement
+   that a single shared buffer otherwise gives up. */
+const FOG = { ref: 1, k: 1.15, floor: 0.30 };
+const FRU = new THREE.Frustum();
+const _fm = new THREE.Matrix4(), _fs = new THREE.Sphere();
+function fogAt(d) {
+  const f = 1 - (d/FOG.ref - 1) * FOG.k;
+  return f > 1 ? 1 : f < FOG.floor ? FOG.floor : f;
+}
+function viewStep() {
+  /* Standing on a planet the orbit rig's distance is stale — the surface
+     camera is its own — so the range is taken from where the eye actually is
+     relative to the core. Same for the ship, which is its own camera too. */
+  FOG.ref = Math.max(60, (ship.on || SKY.on) ? camera.position.length() : rig.dist);
+  camera.updateMatrixWorld();
+  FRU.setFromProjectionMatrix(
+    _fm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 }
 
 /* A node's size means something — citation count — so it must never move.
@@ -7259,6 +8140,7 @@ function writeInstances() {
   const ic = bodies.instanceColor.array;
   const bri = SET.bri;
   const gsc = GEN.on, rip = ripples.length > 0;
+  const cam = camera.position, ccx = cam.x, ccy = cam.y, ccz = cam.z;
   for (let i=0;i<N;i++){
     _pos.set(P[i*3], P[i*3+1], P[i*3+2]);
     /* the core has its own unlit geometry, so its instance is collapsed to
@@ -7309,6 +8191,22 @@ function writeInstances() {
     /* the halo of the world under your feet would be a wall of light across
        the whole frame */
     if (SKY.on && i === SKY.i) a = 0;
+    /* Depth fog, on the halo and not on the body.
+
+       The body is a lit mesh behind a depth test: it already carries distance
+       in its shading and in what covers it, and dimming it would only make a
+       far note muddy without telling anyone anything new. The halo is the
+       additive sprite that carries none of that, and it is the halo that a
+       thousand nodes stack into a flat wall of light. So the fog goes exactly
+       where the missing cue is.
+
+       The boosts above survive it for the same reason they do on the links:
+       selection at 2.1x and a scan target at 2.4x clear the 0.30 floor
+       several times over, so a marked node on the far side still reads over
+       an ordinary one in front of it. */
+    a *= fogAt(Math.sqrt((P[i*3]-ccx)*(P[i*3]-ccx) +
+                         (P[i*3+1]-ccy)*(P[i*3+1]-ccy) +
+                         (P[i*3+2]-ccz)*(P[i*3+2]-ccz)));
     gAl[i] = Math.min(2.6, a * bri);
     if (gsc || genSz) gSz[i] = gSz0[i] * (gsc ? genScale[i] : 1);
   }
@@ -7388,32 +8286,69 @@ function writeLinks() {
   if (!EN) return;
   /* Two curvatures, and they are not the same idea.
 
-     sag is weight: the link hangs below the line between the pair, and
-     TENSION is how taut it is. On its own it made every link a shallow
-     smile in one plane, and from directly above — which is where the map is
-     usually read from — a smile in the vertical plane is a straight line.
+     lift is height: the link rises above the line between the pair, out of
+     the orbital plane the bodies themselves lie in. This is the one that
+     carries the arc now. An arch that stands has somewhere to stand *from* —
+     the plane of the system — and the eye reads the gap underneath it as the
+     span, which is exactly what a link is. ARC HEIGHT scales it; TENSION
+     still decides how much curve there is to scale.
 
-     bow is the arc: the curve is pushed *outward*, away from the core, along
-     the direction the pair sits in. That is the curvature you actually see
-     from above, it never collapses to a chord whatever the viewing angle,
-     and it agrees with what the scene already is — a link between two bodies
-     going round the same centre reads as an arc round that centre rather
-     than as a wire strung between them. */
-  const sag = 0.20 * (1 - SET.ten);
-  const bow = 0.17 + 0.32 * (1 - SET.ten);
+     bow is the sideways push, *outward* from the core along the direction the
+     pair sits in. Led on its own it laid every arch flat into the plane, so
+     from the usual reading angle — down onto the map — the links were a mat
+     of curves lying in the same sheet as the bodies. It is kept, small, for
+     the one thing it does that lift cannot: seen from directly overhead a
+     purely vertical arc is a straight line, and a little bow keeps the curve
+     legible from up there too — including with ARC HEIGHT at zero, which is
+     the one setting where bow is all there is. */
+  const lift = (0.20 + 0.34 * (1 - SET.ten)) * SET.arc;
+  const bow  = 0.05 + 0.09 * (1 - SET.ten);
   const scanSet = (ship.on && ship.scan && ship.lock >= 0) ? scanLit : null;
   const lnk = SET.lnk, sel = selected, lock = ship.lock;
   const rip = ripples.length > 0 ? ripN : null;
   const VP = P, LP = linkPos, LC = linkCol, AL = alpha;
   const STRIP = (SEG-1)*2;
-  const inv = 1/(SEG-1);
   let w = 0, dirty = false;
+  /* Segments that carry colour, as against the ones collapsed for a gap, a
+     dead link or a sample the curve did not need. The frame budget readout
+     shows it against the ceiling, so the adaptive sampling above is something
+     you can watch work rather than something you have to take on faith.
+
+     Segments, and the readout says SEGS. It said VERTS for a day, which was
+     off by the factor of two between a line segment and its two endpoints —
+     a panel built to stop numbers going stale is the last place to leave a
+     wrong one. */
+  let live = 0;
+
+  /* ---- depth ----
+     Where the eye is and how many pixels a unit covers, for two jobs that
+     both used to be done blind: how bright a link is for its distance, and
+     how many samples its curve deserves. The fog reference and the frustum
+     come from viewStep(), shared with the node writer. */
+  const cam = camera.position;
+  const cx = cam.x, cy = cam.y, cz = cam.z;
+  const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  let culled = 0;
+
   for (let e=0;e<EN;e++){
     const ed = edges[e];
     const ia = ed[0], ib = ed[1], ty = ed[2];
     const prog = linkProg[e];
     const aa = AL[ia], ab = AL[ib];
-    let str = (aa < ab ? aa : ab) * (ty===0 ? .55 : ty===1 ? .30 : .16) * lnk;
+    /* .55 / .30 / .16 was a hierarchy doing two jobs. Brightness was the only
+       cue that survived a crowded frame — colour is the first thing lost to a
+       dim link or a bright neighbour, and lost outright to a colour-blind
+       reader — so the weaker kinds of link were held down to keep them from
+       being mistaken for wikilinks. It worked, at the price of a latent link
+       being nearly invisible, which is a strange thing to do to the one kind
+       of link the vault did not already know about.
+
+       The dashes carry that distinction now, and carry it in a way brightness
+       cannot: a gap is still a gap at any intensity. So this can go back to
+       meaning what it says — how much light a link contributes — and the
+       weaker two come up. Not to parity: a written link is still the firmer
+       fact, and should still read as one. */
+    let str = (aa < ab ? aa : ab) * (ty===0 ? .55 : ty===1 ? .40 : .28) * lnk;
     if (sel >= 0) str *= (ia===sel || ib===sel) ? 3.4 : .22;
     /* during a scan the target's own links burn bright and the rest recede,
        so the choice on offer is unambiguous */
@@ -7430,8 +8365,74 @@ function writeLinks() {
     if (!ec) ec = edgeCache[e] = {};
 
     const ax = VP[ia*3], ay = VP[ia*3+1], az = VP[ia*3+2];
+    const bx = VP[ib*3], by = VP[ib*3+1], bz = VP[ib*3+2];
 
-    if (prog <= 0.002 || str <= 0.002) {
+    /* One depth per edge, taken at the chord's midpoint. Per *sample* would be
+       a sqrt on every vertex of every link for a gradient nobody can see along
+       a line a few hundred units long — the fog is a cue about which side of
+       the vault a link is on, and an edge is on one side or the other. */
+    const hx = (ax+bx)*.5, hy = (ay+by)*.5, hz = (az+bz)*.5;
+    const ex = hx-cx, ey = hy-cy, ez = hz-cz;
+    const eyeD = Math.sqrt(ex*ex + ey*ey + ez*ez);
+    /* No exemption for the selected node or the scan target, and none is
+       needed: their 3.4x and 4.2x already clear the 0.30 floor several times
+       over, so a highlighted link on the far side still outranks an ordinary
+       one in front of it. Fog changes the ordering within a tier, which is
+       what it is for, and not between tiers, which would be a lie. */
+    str *= fogAt(eyeD);
+
+    const dx = ax-bx, dy = ay-by, dz = az-bz;
+    const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    /* the control point's offset from the chord midpoint, accumulated rather
+       than applied directly, because its length is also what decides how many
+       samples the curve is worth below */
+    let ox = 0, oy = 0, oz = 0;
+    /* the outward direction at the midpoint, with whatever of it ran along
+       the chord taken back out — an offset along the chord would slide the
+       control point toward one end and skew the arc instead of bending it */
+    const ml = Math.sqrt(hx*hx + hy*hy + hz*hz);
+    if (ml > 1e-4 && d > 1e-4) {
+      const rx = hx/ml, ry = hy/ml, rz = hz/ml;
+      const k = (rx*dx + ry*dy + rz*dz) / (d*d);
+      const ux = rx - k*dx, uy = ry - k*dy, uz = rz - k*dz;
+      const ul = Math.sqrt(ux*ux + uy*uy + uz*uz);
+      /* head-on to the core there is no outward left to bow along, and the
+         lift alone carries the curve */
+      if (ul > 0.08) {
+        const h = d * bow / ul;
+        ox += ux*h; oy += uy*h; oz += uz*h;
+      }
+    }
+    oy += d*lift;
+    const mx = hx+ox, my = hy+oy, mz = hz+oz;
+    const off = Math.sqrt(ox*ox + oy*oy + oz*oz);
+
+    /* ---- is it worth drawing at all? ----
+       Two reasons not to, and they collapse the strip the same way, so they
+       are asked together.
+
+       Dead: faded out by the layer filter, by the formation clock, or by a
+       selection pushing everything else back.
+
+       Off screen: the frustum test. It is done here rather than before the
+       geometry above because the *arc* is what has to be tested, and the arc
+       is not the chord — a link between two bodies both behind you can still
+       stand up through the middle of the frame, and one drawn as a straight
+       line between two visible endpoints can now bulge out past the top of
+       it. The bounding sphere is the one that holds the whole curve: a
+       quadratic bezier never leaves the hull of its three points, so a sphere
+       on the chord midpoint with half the chord plus half the control offset
+       for a radius contains all of it, with a little slack from using the sum
+       rather than the diagonal. Slack is the right way to be wrong here —
+       culling something still on screen is a hole in the picture, and culling
+       one thing too few costs a strip. */
+    let cull = false;
+    if (prog > 0.002 && str > 0.002) {
+      _fs.center.set(hx + ox*0.5, hy + oy*0.5, hz + oz*0.5);
+      _fs.radius = (d + off) * 0.5;
+      if (!FRU.intersectsSphere(_fs)) { cull = true; culled++; }
+    }
+    if (prog <= 0.002 || str <= 0.002 || cull) {
       if (ec.zero) { w += STRIP; ec.str = 0; ec.ty = ty; continue; }
       /* collapse the strip onto one point rather than skipping it — the
          vertex count has to stay constant for the shared buffer */
@@ -7446,55 +8447,202 @@ function writeLinks() {
     ec.zero = false;
     dirty = true;
 
-    const bx = VP[ib*3], by = VP[ib*3+1], bz = VP[ib*3+2];
-    const dx = ax-bx, dy = ay-by, dz = az-bz;
-    const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
-    let mx = (ax+bx)*.5, my = (ay+by)*.5, mz = (az+bz)*.5;
-    /* the outward direction at the midpoint, with whatever of it ran along
-       the chord taken back out — an offset along the chord would slide the
-       control point toward one end and skew the arc instead of bending it */
-    const ml = Math.sqrt(mx*mx + my*my + mz*mz);
-    if (ml > 1e-4 && d > 1e-4) {
-      const rx = mx/ml, ry = my/ml, rz = mz/ml;
-      const k = (rx*dx + ry*dy + rz*dz) / (d*d);
-      let ux = rx - k*dx, uy = ry - k*dy, uz = rz - k*dz;
-      const ul = Math.sqrt(ux*ux + uy*uy + uz*uz);
-      /* head-on to the core there is no outward left to bow along, and the
-         hang alone carries the curve */
-      if (ul > 0.08) {
-        const h = d * bow / ul;
-        mx += ux*h; my += uy*h; mz += uz*h;
-      }
+    /* How much curve this edge actually has on screen, which is what decides
+       how finely it is worth cutting. A quadratic bezier bulges half as far as
+       its control point is offset, so the sagitta is |o|/2 in world units, and
+       fpx/eyeD turns that into pixels. A link filling the screen gets the
+       ceiling; the same link seen from across the vault gets two samples and a
+       straight line, which is all anyone could tell it from anyway. */
+    const segE = segFor(0.5 * off * fpx / (eyeD > 1 ? eyeD : 1), SEG);
+    /* Dashes, and they carry the same meaning the colours already do — how
+       firm the link is. An explicit wiki link is drawn whole; a source link is
+       broken now and then; a latent one, inferred rather than written, is
+       broken twice as often. Colour alone was doing this work and colour is
+       the first thing lost to a dim link, a bright neighbour or a colour-blind
+       reader, whereas a gap survives all three. It costs nothing: the strip is
+       already a run of separate segments, so a dash is a segment not drawn.
+
+       The period is counted in pixels, not in samples. Skipping every third
+       sample was the obvious way to write this and it made the dash length a
+       hostage to the adaptive sampler: the same link cut into fourteen samples
+       up close and three from across the vault has its gaps three times closer
+       together at one end of the zoom than the other, so a dashed line slowly
+       turned into a dotted one as you flew toward it. Asking instead how many
+       samples fit in twenty-odd pixels holds the pattern still while
+       everything around it scales.
+
+       Only once the curve has segments to spare. Below six the pattern would
+       be eating a third of a line that is a few pixels long, and a link you
+       cannot see is not being told apart from anything. */
+    let dash = 0;
+    if (segE >= 6 && ty !== 0) {
+      const segPx = (d * fpx / (eyeD > 1 ? eyeD : 1)) / (segE - 1);
+      const wantPx = ty === 1 ? 26 : 13;      // source breaks half as often
+      dash = Math.round(wantPx / (segPx > 0.01 ? segPx : 0.01));
+      dash = dash < 2 ? 2 : dash > 7 ? 7 : dash;
     }
-    my += d*sag;
 
     const tint = EDGE_TINT[ty];
     const r = tint.r*str, gg = tint.g*str, bb = tint.b*str;
+    const inv = 1/(segE-1);
     let px = ax, py = ay, pz = az;
-    for (let s=1;s<SEG;s++){
+    for (let s=1;s<segE;s++){
       const u = s*inv*prog, iu = 1-u, i2 = iu*iu, u2 = u*u, k = 2*iu*u;
       const qx = i2*ax + k*mx + u2*bx;
       const qy = i2*ay + k*my + u2*by;
       const qz = i2*az + k*mz + u2*bz;
-      /* the retracting tip runs hot, like something being reeled in */
-      const hot = (prog < 1 && s >= SEG-2) ? 2.6 : 1;
-      const hr = r*hot, hg = gg*hot, hb = bb*hot;
-      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
-      LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
-      LP[w*3]=qx; LP[w*3+1]=qy; LP[w*3+2]=qz;
-      LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
+      if (dash && (s % dash) === 0) {
+        /* the gap. Collapsed onto the point it would have started from rather
+           than skipped, because the strip's vertex count is fixed. */
+        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+        LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
+        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+        LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
+      } else {
+        /* the retracting tip runs hot, like something being reeled in */
+        const hot = (prog < 1 && s >= segE-2) ? 2.6 : 1;
+        const hr = r*hot, hg = gg*hot, hb = bb*hot;
+        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+        LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
+        LP[w*3]=qx; LP[w*3+1]=qy; LP[w*3+2]=qz;
+        LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
+        live++;
+      }
       px = qx; py = qy; pz = qz;
+    }
+    /* the slots the ceiling reserved and this edge did not need, parked on the
+       curve's own last point */
+    for (let s=segE;s<SEG;s++){
+      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+      LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
+      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
+      LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
     }
     ec.ax=ax; ec.ay=ay; ec.az=az;
     ec.bx=bx; ec.by=by; ec.bz=bz;
     ec.mx=mx; ec.my=my; ec.mz=mz;
     ec.str=str; ec.ty=ty; ec.prog=prog;
   }
+  PERF.linkLive = live;
+  PERF.linkCap = EN * (SEG-1);
+  PERF.linkCull = culled;
   if (dirty) {
     linkGeo.attributes.position.needsUpdate = true;
     linkGeo.attributes.color.needsUpdate = true;
   }
 }
+
+/* One trail, written backwards from where the body is now.
+
+   The orbit is a circle of radius `orad` in a plane tilted by `inc`, centred
+   on the body's anchor, and updatePositions builds a point on it from cos and
+   sin of the current angle. Stepping back in time is therefore a rotation of
+   that (cos, sin) pair by a fixed negative angle, which is two multiplies and
+   two adds per sample and no trigonometry at all past the first pair.
+
+   The anchor is taken as it is now rather than rewound with the body. A star
+   creeps round the hub some hundreds of times slower than its planets go
+   round it, so rewinding it would move the trail by less than a pixel while
+   costing a second orbit solve per sample — and the arc you want to see is
+   the one round where the star *is*, not a smear of where it has been. */
+function writeTrails() {
+  if (!trailMesh) return;
+  const on = SET.trl > 0.02 && N > 0 && !mindOpen;
+  trailMesh.visible = on;
+  if (!on) { trailGeo.setDrawRange(0, 0); return; }
+
+  const cam = camera.position, cx = cam.x, cy = cam.y, cz = cam.z;
+  const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  const TP = trailPos, TC = trailCol, VP = P;
+  const gs = gapSys, spr = SET.spr, amt = SET.trl;
+  let n = 0, w = 0;
+
+  for (let k=0;k<N && n<TRAIL_CAP;k++){
+    const i = trailOrder[k];
+    const o = orb[i];
+    /* the hub does not orbit, and a note dragged out of its orbit is being
+       held by the reader — a trail on it would describe a path it is not on */
+    if (!o || o.kind === 'core' || !o.sp) continue;
+    const a0 = alpha[i];
+    if (a0 < 0.06) continue;
+    const dx = VP[i*3]-cx, dy = VP[i*3+1]-cy, dz = VP[i*3+2]-cz;
+    const d2 = dx*dx + dy*dy + dz*dz;
+    if (d2 < 1) continue;
+    const dist = Math.sqrt(d2);
+    /* How big this body is on screen, in pixels of radius, and how strongly it
+       is allowed to trail because of it.
+
+       The first cut of this asked for three pixels before drawing anything,
+       which was reasoned from how a trail looks up close and never checked
+       against the view the vault actually opens in: at the framing that fits
+       a whole cosmos on screen the largest planet is about two pixels across,
+       so the answer was no trails at all, ever, until you flew somewhere. The
+       floor is under a pixel now and the fade does the work — at map range the
+       big bodies draw the faintest of wakes and the specks draw nothing, which
+       is the long-exposure look this wanted in the first place, and coming
+       closer brings them up rather than switching them on. */
+    const px = RAD[i] * fpx / dist;
+    if (px < 0.9) continue;
+    const grow = px > 4 ? 1 : (px - 0.9) / 3.1;
+
+    /* the orbit this body is on, in the same terms updatePositions used */
+    let orad, cen, oy = o.y;
+    if (o.kind === 'moon') {
+      const p = o.anchorNode;
+      orad = o.r0 * spr;
+      _tp.set(VP[p*3], VP[p*3+1], VP[p*3+2]);
+      cen = _tp; oy = 0;
+    } else if (o.kind === 'wiki') {
+      const f = Math.max(0.05, (GAPL.step * gapNow + o.gapA) / (o.step0 || 1));
+      orad = (o.inner + (o.r0 - o.inner) * f) * spr;
+      cen = o.anchor.pos;
+    } else {
+      orad = o.r0 * gs; oy *= gs;
+      cen = o.anchor.pos;
+    }
+    if (!cen || !(orad > 0.01)) continue;
+
+    const ang = o.ph + t * o.sp;
+    const ci = Math.cos(o.inc), si = Math.sin(o.inc);
+    /* backwards along the direction of travel, whichever way that is */
+    const step = -TRAIL_SWEEP / (TRAIL_SEG-1) * (o.sp < 0 ? -1 : 1);
+    const cs = Math.cos(step), sn = Math.sin(step);
+    let ca = Math.cos(ang), sa = Math.sin(ang);
+
+    const cr = COL[i*3], cg = COL[i*3+1], cb = COL[i*3+2];
+    /* the trail is the body's own light, spent: bright where it just was and
+       gone by the far end, which is what makes it read as a wake rather than
+       as a wire hoop */
+    const base = amt * grow * clamp(a0, 0, 1) * (i === selected ? 1.7 : 1)
+                 * fogAt(dist) * 0.55;
+    let px0 = cen.x + ca*orad + DSP[i*3];
+    let py0 = cen.y + oy + sa*orad*si + DSP[i*3+1];
+    let pz0 = cen.z + sa*orad*ci + DSP[i*3+2];
+
+    for (let s=1;s<TRAIL_SEG;s++){
+      const nc = ca*cs - sa*sn, ns = sa*cs + ca*sn;
+      ca = nc; sa = ns;
+      const qx = cen.x + ca*orad + DSP[i*3];
+      const qy = cen.y + oy + sa*orad*si + DSP[i*3+1];
+      const qz = cen.z + sa*orad*ci + DSP[i*3+2];
+      /* squared, so the fade is fastest right behind the body and the tail
+         thins to nothing instead of stopping */
+      const f0 = 1 - (s-1)/(TRAIL_SEG-1), f1 = 1 - s/(TRAIL_SEG-1);
+      const g0 = base*f0*f0, g1 = base*f1*f1;
+      TP[w*3]=px0; TP[w*3+1]=py0; TP[w*3+2]=pz0;
+      TC[w*3]=cr*g0; TC[w*3+1]=cg*g0; TC[w*3+2]=cb*g0; w++;
+      TP[w*3]=qx; TP[w*3+1]=qy; TP[w*3+2]=qz;
+      TC[w*3]=cr*g1; TC[w*3+1]=cg*g1; TC[w*3+2]=cb*g1; w++;
+      px0 = qx; py0 = qy; pz0 = qz;
+    }
+    trailPick[n++] = i;
+  }
+  trailGeo.setDrawRange(0, w);
+  trailGeo.attributes.position.needsUpdate = true;
+  trailGeo.attributes.color.needsUpdate = true;
+  PERF.trails = n;
+}
+const _tp = new THREE.Vector3();
 
 function writePulses(dt) {
   if (!EN) return;
@@ -7528,6 +8676,21 @@ function writeLabels() {
       ? _pos.set(P[L.idx*3], P[L.idx*3+1], P[L.idx*3+2])
       : _pos.copy(L.get());
     const d = camPos.distanceTo(p);
+    /* Off screen before anything else. Every label is its own Sprite and so
+       its own draw call, and the alpha test below only asks whether a label is
+       far away — not whether it is behind you, which flying through the middle
+       of a vault makes the commoner case by a long way.
+
+       The radius is deliberately generous. A sprite is a flat card facing the
+       camera, so its centre can sit outside the frustum while a good part of
+       it is still on screen; the pad is the label's own offset plus a bound on
+       the height it is about to be scaled to, widened for the fact that a name
+       is wider than it is tall. Erring toward keeping is the cheap direction —
+       a label wrongly kept costs one draw call, a label wrongly dropped is a
+       name that flickers out at the edge of the frame. */
+    _fs.center.copy(p); _fs.center.y += L.off;
+    _fs.radius = L.off + 90 * clamp(d * 0.0016, .55, 5.2);
+    if (!FRU.intersectsSphere(_fs)) { L.sprite.visible = false; return; }
     let op;
     if (L.node) {
       const nd = nodes[L.idx];
@@ -7557,9 +8720,39 @@ function writeLabels() {
   });
 }
 
+/* one frame's budget, at 60fps, for colouring a row that is eating it */
+const BUDGET = 16.7;
+function perfRow(id, ms, share) {
+  const el = $(id);
+  el.textContent = ms < 0.1 ? '<0.1' : ms.toFixed(ms < 10 ? 1 : 0);
+  el.parentElement.classList.toggle('hot', ms > BUDGET * share);
+}
 function writeHUD(now) {
   if (frame % 6) return;
   $('s-fps').textContent = fps.toFixed(0);
+  if (PERF.on) {
+    /* the share of a frame each phase is allowed before the row goes amber.
+       They do not add to one: a third of the budget in any single phase is
+       already the answer to "what is slow", and the point of the colour is to
+       pick that phase out without reading the numbers. */
+    perfRow('p-sim',  PERF.sim,  0.35);
+    perfRow('p-pick', PERF.pick, 0.12);
+    perfRow('p-inst', PERF.inst, 0.20);
+    perfRow('p-link', PERF.link, 0.25);
+    perfRow('p-trlms', PERF.trl, 0.15);
+    perfRow('p-spr',  PERF.spr,  0.15);
+    perfRow('p-draw', PERF.draw, 0.30);
+    perfRow('p-tot',  PERF.tot,  0.90);
+    /* drawn against reserved: how much of the sample ceiling the arcs on
+       screen are actually claiming */
+    $('p-lv').textContent = PERF.linkCap
+      ? PERF.linkLive + ' / ' + PERF.linkCap : '—';
+    /* edges the frustum threw out this frame, against the vault's total —
+       zero when the whole cosmos is in frame, which is the honest answer */
+    $('p-cull').textContent = EN ? PERF.linkCull + ' / ' + EN : '—';
+    $('p-trl').textContent = PERF.trails + ' / ' + TRAIL_CAP;
+    $('p-dc').textContent = renderer.info.render.calls;
+  }
   $('s-dist').textContent = (ship.on ? ship.pos.length() : rig.dist).toFixed(0) + ' U';
   if (ship.on) {
     $('sh-spd').textContent = ship.speed.toFixed(0);
@@ -7600,6 +8793,38 @@ function writeHUD(now) {
    drain and, more to the point, a surprise.                                  */
 const RUN = { host: true, running: false, raf: 0 };
 
+/* ==================================================== FRAME BUDGET
+   Half the comments in this file argue about milliseconds — the link writer
+   was rewritten out of Vector3 because it cost eight of them, the sample
+   counts fall away with the edge count, the pick runs every frame now. Every
+   one of those numbers was measured once, by hand, on one machine, and then
+   written into a comment where it slowly stopped being true.
+
+   This measures them continuously instead, on whatever machine is actually
+   running. The phases are the frame loop's own divisions, so a row that goes
+   red names the function to go and open.
+
+   Cost of the instrument: eight performance.now() calls a frame, and the
+   arithmetic below, none of which runs unless the panel is open. It is left
+   compiled in rather than stripped from a release build, because a profiler
+   you have to rebuild to get is a profiler you do not use.
+
+   `sub` is honest about what it is. renderer.render() returns once the draw
+   calls are queued, not once the GPU has done them, so it measures how long
+   this thread spent asking — a real cost, and a different one from how long
+   the frame took to appear. When CPU total is small and the frame rate is
+   still poor, the answer is not in this panel. */
+const PERF = {
+  on: false, sim:0, pick:0, inst:0, link:0, trl:0, spr:0, draw:0, tot:0,
+  linkLive:0, linkCap:0, linkCull:0, trails:0, t0:0
+};
+/* One exponential average per row, at the same 0.92 the FPS counter uses.
+   Raw per-frame numbers on a six-frame readout are unreadable — they jitter
+   by a factor of three on garbage collection alone — and the question the
+   panel answers is "what does this cost", not "what did this one frame do". */
+function perfMix(k, v) { PERF[k] = PERF[k]*0.9 + v*0.1; }
+function perfNow() { return PERF.on ? performance.now() : 0; }
+
 function runShould() { return RUN.host && !document.hidden; }
 function runSync() { runShould() ? runResume() : runPause(); }
 
@@ -7637,8 +8862,9 @@ function frameLoop(now) {
   const dt = dtms/1000;
   fps = fps*0.92 + (1000/Math.max(1,dtms))*0.08;
   frame++;
-  if (!world) { renderer.render(scene, camera); return; }   /* mid-rebuild */
+  if (!world) { renderFrame(); return; }                    /* mid-rebuild */
 
+  const _p0 = perfNow();
   genStep(dt);
   genStepBodies();
   genScaffold();
@@ -7656,16 +8882,27 @@ function frameLoop(now) {
   meteorStep(dt);
   updateVisibility(dt);
   heroStep(dt);
+  const _p1 = perfNow();
   /* Now that this frame's positions are final, answer the pointer — every
      frame, not only when the mouse moves, because the bodies move too. */
   if (pointerIn && !ship.on && !SKY.on && !dragging && !mindOpen)
     hovered = pickAt(mouseNDC.x, mouseNDC.y, hovered);
+  const _p2 = perfNow();
   stepLinkLayers(dt);
+  /* the camera is final for this frame by here — the rig, the ship and the
+     surface camera have all had their say — so the fog range and the frustum
+     every writer below reads are settled once, before the first of them */
+  viewStep();
   writeInstances();
+  const _p3 = perfNow();
   writeLinks();
+  const _p3b = perfNow();
+  writeTrails();
+  const _p4 = perfNow();
   writePulses(dt);
   writeLabels();
   twinWrite();
+  const _p5 = perfNow();
   audioStep();
 
   if (mindOpen) { mindStep(dt); mindDraw(now); }
@@ -7745,9 +8982,26 @@ function frameLoop(now) {
   if (milkyObj)       milkyObj.rotation.y       = t * 0.0000008;
 
   writeHUD(now);
-  renderer.render(scene, camera);
-  /* the ground goes on last, over the sky it belongs to */
-  if (SKY.on) { skyRender(); skyHUD(); }
+  const _p6 = perfNow();
+  /* the ground goes on last, over the sky it belongs to — unless the bloom
+     path drew it already, which it has to, or the one surface in frame would
+     be the one thing light did not spill onto */
+  const composited = renderFrame();
+  if (SKY.on) { if (!composited) skyRender(); skyHUD(); }
+  if (PERF.on) {
+    const _p7 = performance.now();
+    perfMix('sim',  _p1-_p0);
+    perfMix('pick', _p2-_p1);
+    perfMix('inst', _p3-_p2);
+    perfMix('link', _p3b-_p3);
+    perfMix('trl',  _p4-_p3b);
+    perfMix('spr',  _p5-_p4);
+    perfMix('draw', _p7-_p6);
+    /* the sum of the phases plus everything between them — the rigs, the
+       parallax, the HUD write — rather than the phases added up, so a cost
+       that lives in none of the rows still shows up in the total */
+    perfMix('tot',  _p7-_p0);
+  }
 }
 
 /* ======================================================== CONTROL DECK */
@@ -7760,7 +9014,43 @@ function applyStarfield() {
     m.uniforms.uTwinkle.value = (m.userData.twinkle || 0) * clamp(b, 0, 1.2);
   });
 }
+/* the fold's two halves — the class the CSS reads and the arrow the reader
+   does — kept together so RESET can put both back at once */
+function syncAdv() {
+  $('ctl').classList.toggle('adv', !!SET.adv);
+  $('advtog').textContent = (SET.adv ? '▾ ' : '▸ ') + 'ADVANCED';
+}
+/* Same for the two side panes. The deck is deliberately not in here: its fold
+   is also driven automatically by layoutHUD when the leaf is short, and that
+   negotiation with `deckTouched` is its own thing — these two are only ever
+   folded because somebody folded them. */
+const FOLDERS = [['leg', 'legFold', 'legfold'], ['keys', 'keysFold', 'keysfold']];
+function syncFolds() {
+  FOLDERS.forEach(([pane, key, mark]) => {
+    const on = !!SET[key];
+    $(pane).classList.toggle('fold', on);
+    $(mark).textContent = on ? '[ + ]' : '[ − ]';
+  });
+}
+FOLDERS.forEach(([pane, key]) => {
+  $(pane).firstElementChild.onclick = () => {
+    SET[key] = !SET[key];
+    syncFolds(); saveSet();
+    /* the pane below now has more or less room to be given, and layoutHUD is
+       what hands it over */
+    layoutHUD();
+  };
+});
 function syncControls() {
+  syncAdv();
+  syncFolds();
+  $('r-arc').value = Math.round(SET.arc*100);
+  $('r-age').value = Math.round(SET.age*100);
+  $('r-trl').value = Math.round(SET.trl*100);
+  $('r-blm').value = Math.round(SET.blm*100);
+  $('v-age').textContent = SET.age < 0.02 ? 'OFF' : SET.age.toFixed(2);
+  $('v-trl').textContent = SET.trl < 0.02 ? 'OFF' : SET.trl.toFixed(2);
+  $('v-blm').textContent = SET.blm < 0.02 ? 'OFF' : SET.blm.toFixed(2) + '×';
   $('r-spd').value = Math.round(SET.spd*100);
   $('r-bri').value = Math.round(SET.bri*100);
   $('r-ten').value = Math.round(SET.ten*100);
@@ -7770,6 +9060,9 @@ function syncControls() {
   $('r-lnk').value = Math.round(SET.lnk*100);
   $('r-spr').value = Math.round(SET.spr*100);
   $('r-gap').value = Math.round(SET.gap*100);
+  /* FLAT rather than 0.00×, because zero here is a shape — the arcs lie down
+     into the orbital plane and the bow carries them alone — not an absence */
+  $('v-arc').textContent = SET.arc < 0.02 ? 'FLAT' : SET.arc.toFixed(2) + '×';
   $('v-spd').textContent = SET.spd.toFixed(2) + '×';
   $('v-bri').textContent = SET.bri.toFixed(2) + '×';
   $('v-ten').textContent = SET.ten.toFixed(2);
@@ -7790,12 +9083,18 @@ $('r-cap').addEventListener('input', e => {
   SET.maxNodes = v > MAX_NODES_CEIL ? 0 : v;
   syncControls(); saveSet();
 });
-[['r-spd','spd'], ['r-bri','bri'], ['r-ten','ten'],
- ['r-grv','grv'], ['r-str','str'], ['r-thr','thr'],
+[['r-spd','spd'], ['r-bri','bri'], ['r-ten','ten'], ['r-arc','arc'],
+ ['r-grv','grv'], ['r-str','str'], ['r-thr','thr'], ['r-age','age'],
+ ['r-trl','trl'], ['r-blm','blm'],
  ['r-lnk','lnk'], ['r-spr','spr']].forEach(([id, key]) => {
   $(id).addEventListener('input', e => {
     SET[key] = (+e.target.value) / 100;
     if (key === 'lnk') SET.lnk = clamp(SET.lnk, 0, LNK_MAX);
+    if (key === 'arc') SET.arc = clamp(SET.arc, 0, ARC_MAX);
+    if (key === 'blm') SET.blm = clamp(SET.blm, 0, BLM_MAX);
+    /* the only one of these that has to touch a buffer rather than be read
+       out of SET by the next frame */
+    if (key === 'age') recolour();
     syncControls(); saveSet();
   });
 });
@@ -7818,8 +9117,31 @@ $('r-gap').addEventListener('input', e => {
   saveSet();
 });
 
+/* The FPS number is the natural place to ask for more of the same, so it is
+   the handle rather than a keystroke nobody would find. Opening it starts the
+   measuring; closing it stops, and the rows keep their last values rather than
+   resetting, so a panel reopened after a stutter is not blank. */
+$('s-fps').onclick = () => {
+  PERF.on = !PERF.on;
+  $('perf').classList.toggle('on', PERF.on);
+  if (PERF.on) frame = 0;                 // read something on the next frame
+  /* ten rows appearing makes the identity pane taller, and the legend below it
+     is positioned from that pane's measured height — so the measurement has to
+     be retaken here rather than waiting for the next resize */
+  layoutHUD();
+};
+/* ADVANCED remembers, because a deck folded shut every time you reopen the
+   vault is a deck you stop putting anything in. */
+$('advtog').onclick = () => {
+  SET.adv = $('ctl').classList.toggle('adv');
+  syncAdv(); saveSet(); layoutHUD();
+};
+
 $('b-rst').onclick = () => {
   Object.assign(SET, SET_DEF); syncControls(); saveSet(); toast('CONTROLS RESET');
+  /* RESET puts the folds back too, and a pane that has just unfolded is a
+     pane whose neighbour has to be measured again */
+  layoutHUD();
 };
 /* Once the deck has been folded or unfolded by hand, layoutHUD() stops
    deciding for itself — see the auto-fold in there. */
@@ -7856,12 +9178,17 @@ function layoutHUD() {
      filters that star system out of the cosmos. */
   keys.style.display = '';
   let room = H - legTop - 34 - (keys.offsetHeight || 130);
-  if (room < 74) {
+  /* A folded legend is a title bar and needs a title bar's worth of room, not
+     a list's. Without this the pane a reader deliberately folded to make space
+     would still be judged against the height it no longer has, and hidden
+     outright on the leaf where folding it was the point. */
+  const legMin = leg.classList.contains('fold') ? 30 : 74;
+  if (room < legMin) {
     keys.style.display = 'none';
     room = H - legTop - 34;
   }
-  leg.style.display = room < 74 ? 'none' : '';
-  leg.style.maxHeight = Math.max(74, room) + 'px';
+  leg.style.display = room < legMin ? 'none' : '';
+  leg.style.maxHeight = Math.max(legMin, room) + 'px';
 
   const left = idp.offsetLeft + idp.offsetWidth + 14;
 
@@ -8604,6 +9931,12 @@ window.vaultOrrery = {
   clear() { swapVault(EMPTY); },
   destroy() {
     RUN.host = false; runPause();
+    /* a recording outlives the view otherwise: the interval keeps firing and
+       the recorder keeps holding a stream off a canvas nobody is drawing to */
+    if (VID.timer) { clearInterval(VID.timer); VID.timer = 0; }
+    try { vidStop(); } catch(e){}
+    [BLOOM.rt, BLOOM.a, BLOOM.b].forEach(r => { if (r) { try { r.dispose(); } catch(e){} } });
+    BLOOM.rt = BLOOM.a = BLOOM.b = null; BLOOM.ok = false;
     if (AUD.ctx) { try { AUD.ctx.close(); } catch(e){} AUD.ctx = null; }
     try { renderer.dispose(); } catch(e){}
   }
