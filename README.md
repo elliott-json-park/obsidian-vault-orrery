@@ -32,6 +32,10 @@ can be reading a second later.
 - **Every mode is a command**, so the spaceship, Genesis, the mind map, the
   surface, the poster and the rest can be bound to whatever keys you like. None
   is bound by default.
+- **You are told how to fly it once.** The first time a vault loads, a card
+  names the four moves that are enough to get going, over the cosmos it has
+  just built. Any key dismisses it and it is not shown again; `?` brings it
+  back when you want it.
 - **The vault stays current.** Notes written, created, renamed or deleted while
   the view is open re-derive the cosmos — with the camera and the selection
   left where they were, and no loading curtain over a view you are using.
@@ -132,6 +136,49 @@ they are not the same question.
 A dense folder — a few hundred notes in one place — is the case worth reaching
 for these on. Start with ORBIT GAP.
 
+**SUN SIZE**, **PLANET SIZE** and **MOON SIZE** scale a whole class of body at
+once, from 0.30× to 3.00×. They never change the *ratios* between notes — a
+body's radius is its citation count and that is worth reading — so what moves
+is how big the whole class is drawn. Three controls rather than one because the
+complaint is never "everything is too small": it is a hub that swallows its
+inner ring on a vault with one enormous folder, or moons that are specks from
+the deck of the ship. Moon orbits widen when planets do, so a planet turned up
+does not end up with its satellites inside it.
+
+---
+
+## Flying it
+
+`F` puts you in the cockpit. WASD moves, QE goes up and down, the mouse looks,
+`SHIFT` is the throttle.
+
+- **Arriving is a capture.** Travel to a note — from the inspector, from the
+  mind map, from search — and the ship falls into orbit around it and stays
+  there, in the plane it arrived on. Come in from below and you end up in a
+  polar orbit. Any key on the stick hands control back, with the speed the
+  orbit had.
+- **The deck says whether you are getting there.** Closing rate on whatever is
+  locked, and a time to arrival measured to the orbit you would end up in
+  rather than to the surface. Both account for the target's own motion: a note
+  is a planet, and it is going somewhere too.
+- **You are told which system you are in.** Crossing into a folder's territory
+  announces it, and the deck names it the whole time you are inside.
+- **The scanner reports everything it found.** The aiming cone usually holds
+  four or five bodies; the CONTACTS panel lists them, `1`–`6` holds one against
+  the cone's own opinion, `B` turns the cone round to see what you just passed,
+  and `T` filters it to one folder at a time.
+- **The radar has a third dimension.** It is a bowl, not a plan: the ship's
+  plane is an ellipse and height off it is a real vertical offset with a stalk
+  and a shadow, so above and below are told apart at a glance. The locked
+  note's links are drawn between blips.
+- **Do not fly into the star.** Inside six stellar radii the exposure goes, the
+  frame warms and an alarm pulses faster the closer you get.
+- **`X` flies it for you.** An ambient tour that walks the graph to notes you
+  have not visited, dwelling in orbit at each long enough to read its name.
+
+**SPEED FEEL** on the control panel scales the camera shake and the radial
+motion blur together, and goes to zero.
+
 ---
 
 ## Controls
@@ -142,6 +189,7 @@ for these on. Start with ORBIT GAP.
 | `/` | search |
 | `M` · double-click | mind map |
 | `F` | spaceship (WASD to fly, `SPACE` to scan links) |
+| in the cockpit | `1`–`6` hold a contact · `B` rear scan · `T` filter · `X` patrol · `[` `]` radar size |
 | `V` | stand on the selected planet |
 | `G` | Genesis — play the vault's formation |
 | `N` | find twins (notes alike but not yet linked) |
@@ -150,6 +198,7 @@ for these on. Start with ORBIT GAP.
 | `L` | cycle the link layer |
 | `U` | ambient sound |
 | `R` · `H` | reset view · hide HUD |
+| `?` | first-flight guide (also `[ ? ]` in the SHORTCUTS pane) |
 | drag / wheel | orbit · zoom |
 | right-drag · shift-drag | pan · move a node |
 

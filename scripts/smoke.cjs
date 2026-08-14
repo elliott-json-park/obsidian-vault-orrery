@@ -54,7 +54,7 @@ const mkApp = vault => ({
   /* Every mode the engine answers to has to be reachable from the palette, or
      it exists only for someone who already knows the single-letter key. */
   const modes = ['open','search','mindmap','ship','surface','genesis','twins',
-                 'ripple','poster','layer','sound','reset','hud'];
+                 'ripple','poster','layer','sound','reset','hud','help'];
   const missing = modes.filter(m => !calls.includes('command:mode-' + m));
   ok(missing.length === 0, 'every engine mode is a command -> ' +
      (missing.length ? 'missing ' + missing.join(', ') : modes.length + ' of them'));

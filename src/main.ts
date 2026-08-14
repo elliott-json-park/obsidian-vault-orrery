@@ -29,6 +29,7 @@ const MODE_COMMANDS: ReadonlyArray<[OrreryCommand, string]> = [
   ['sound',   'Ambient sound'],
   ['reset',   'Reset the view'],
   ['hud',     'Show or hide the HUD'],
+  ['help',    'Show the first-flight guide'],
 ];
 
 export default class VaultOrreryPlugin extends Plugin {
