@@ -93,6 +93,26 @@ window.__run = async () => {
      The half of the API Obsidian drives. None of it can be exercised by the
      build or the smoke test: every one of these runs against a live scene
      graph, and three of them are read back out of a frame. */
+  /* The first-flight card. It is the one thing here that shows itself rather
+     than being asked for, so the assertion is that it arrived at all — and
+     then that closing it is remembered, since a card that comes back every
+     time a vault loads is the pane this engine's comments complain about. */
+  await step('first flight shows once', async () => {
+    const card = root.querySelector('#intro');
+    await new Promise(r => setTimeout(r, 1200));
+    if (!card.classList.contains('on')) throw new Error('the card never appeared');
+    root.querySelector('#introgo').click();
+    if (card.classList.contains('on')) throw new Error('the button did not close it');
+    await api.load(FILES, 'demo-vault');
+    await new Promise(r => setTimeout(r, 1200));
+    if (card.classList.contains('on')) throw new Error('it came back on the next load');
+    root.querySelector('#keyshelp').click();
+    if (!card.classList.contains('on')) throw new Error('[ ? ] did not reopen it');
+    if (root.querySelector('#keys').classList.contains('fold'))
+      throw new Error('[ ? ] folded the pane it sits in');
+    root.querySelector('#introx').click();
+  });
+
   const opened = [];
   await step('setHostHooks',  () => api.setHostHooks({ open: (p, o) => opened.push([p, o]) }));
   await step('open button shown', () => {

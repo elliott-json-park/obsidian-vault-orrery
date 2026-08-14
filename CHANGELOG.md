@@ -4,6 +4,78 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.3.0
+
+The star at the centre gets a face, the bodies around it get a size you choose,
+and the spaceship stops being a camera with a crosshair and becomes something
+you fly from a cockpit.
+
+- **A star with a face.** The hub's photosphere was limb darkening and one
+  scale of convection, and the granulation was coarse enough to read as a
+  motif rather than as the material the star is made of. It now has two scales
+  of convection an order apart, a domain warp so the cells are uneven rather
+  than tiled, sunspots in the two active latitude bands with fibrous penumbrae
+  and a floor at a fifth of the disc's brightness, faculae brightening the
+  lanes near the limb against the darkening, a spicule fringe on the
+  chromosphere instead of a pencil line, and prominences standing a fifth of a
+  radius clear of the limb on a shell of their own. The whole face turns,
+  slowly, which is the only thing on screen that says the star rotates.
+- **Sun, planet and moon sizes.** Three controls in the drawer, 0.30× to
+  3.00×, scaling a whole class of body at once so the *ratios* between notes —
+  which are citation counts, and mean something — never move. Moon orbits are
+  re-derived when planets grow, so a doubled planet does not swallow its
+  satellites.
+- **Arriving is a capture, not a stop.** The autopilot used to run out of
+  bezier and leave the ship hanging motionless a few radii off a planet. It
+  now inserts into orbit, in the plane it arrived on, at three and a half body
+  radii, and stays there — so flying in from below leaves you in a polar
+  orbit. The trip also tracks the body while it flies: the endpoint was fixed
+  when the trip was booked and a note is a planet in orbit, so the ship had
+  been arriving at where the planet used to be.
+- **A cockpit rather than a HUD.** A canopy frame with rounded corners, corner
+  struts, a wrapping dash and two reflections drifting on periods that do not
+  divide into each other. `H` takes it down with the rest of the instruments.
+- **The deck answers "am I getting there".** Closing rate on the locked body,
+  differentiated from the range so that the target's own orbital motion is
+  already in it, and a time to arrival measured to the orbit you would end up
+  in rather than to the collision. Plus the star system you are currently
+  inside, announced across the frame when you cross into it.
+- **Contacts, not a contact.** The aiming cone usually holds four or five
+  bodies and which one the reticle settled on was decided by fractions of a
+  degree. All of them are listed now, `1`–`6` holds one against the cone's
+  own opinion, `B` turns the cone round to ask what you just passed, and `T`
+  filters it to one folder at a time.
+- **A radar with a third dimension.** Tilted thirty-eight degrees, so the
+  ship's plane is an ellipse you can see and height off it is a genuinely
+  vertical offset with a stalk and a shadow rather than a tick of unknown
+  sign. The locked body's links are drawn between blips.
+- **Speed you can feel.** Radial motion blur trailing to the edges with the
+  centre of the frame left sharp, and a camera shake on three incommensurable
+  periods — on the mount, not on the ship, so the reticle never loses its
+  target. One control, SPEED FEEL, and it goes to zero.
+- **The engine is somewhere.** The thruster pans to whichever one is firing,
+  a low shelf opens under it with the boost, and a note sounded while you are
+  closing on it is Doppler shifted — capped at a minor third, so it still
+  belongs to the scale the rest of the vault is tuned to.
+- **The star will kill you.** Inside six stellar radii the exposure goes,
+  the frame warms, a strip names it and an alarm pulses faster the closer it
+  gets. Bounded by the cosmos as well as by the star, so on a small vault it
+  is not lit for an ordinary flight past the hub.
+- **A tour that runs itself.** `X` walks the graph to notes you have not
+  visited, one hop at a time, dwelling in orbit long enough to read the name
+  before moving on — and jumping to the nearest unvisited note when the
+  component runs out, rather than reporting a fraction of a vault as the whole
+  of it.
+- **First flight.** The HUD is an instrument panel, and an instrument panel
+  says nothing to someone who has not been told what it flies. The first time
+  a vault loads, a card names the four moves that are enough to get going —
+  drag and wheel to look, `/` to find a note, `F` to fly it yourself, `O` to
+  open what you are looking at — over the cosmos it has just built, rather
+  than as a splash in front of nothing. It is shown once and remembered, any
+  key dismisses it, and `?` or the new `[ ? ]` in the SHORTCUTS title bar
+  brings it back. Also a command, *Show the first-flight guide*, so it can be
+  bound to a key or found by name.
+
 ## 1.2.0
 
 The control deck stops being one person's idea of which knobs matter, the

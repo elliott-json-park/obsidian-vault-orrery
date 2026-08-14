@@ -13,8 +13,8 @@
    things bridge that gap:
 
      · CSS is scoped under .vo-root, and .vo-root carries a transform, which
-       makes it the containing block for `position: fixed`. All eighteen fixed
-       panels then lay themselves out against the leaf instead of the window,
+       makes it the containing block for `position: fixed`. Every fixed
+       panel then lays itself out against the leaf instead of the window,
        with no changes to the stylesheet's own geometry.
      · innerWidth / innerHeight become the root's box.
      · Pointer coordinates are taken relative to the root, not the page. This
@@ -155,7 +155,7 @@ const cssRules = (css.match(/\{/g) || []).length;
 css = scopeCss(css);
 notes.push(`  ${String(cssRules).padStart(4)}  css blocks scoped under .${CLS}`);
 
-/* The root must be a containing block for the eighteen position:fixed panels,
+/* The root must be a containing block for the page's position:fixed panels,
    and must clip and size itself to the leaf. */
 css = `.${CLS}{position:relative;width:100%;height:100%;overflow:hidden;` +
       `transform:translateZ(0);contain:layout paint;}\n` + css;
