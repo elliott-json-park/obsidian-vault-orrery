@@ -1,16 +1,30 @@
 /* Obsidian's plugin policy forbids loading executable code from a remote host
-   at runtime, and this plugin's privacy claim depends on the same thing. This
-   is the check, runnable in CI: npm run check
+   at runtime. This is the check, runnable in CI: npm run check
    It reads the built artefacts, not the sources, so anything a bundler pulled
-   in is covered too. */
+   in is covered too.
+
+   What this proves, and what it does not. The patterns below match a URL
+   written as a literal at a load site, which is what pulling in remote code
+   looks like. They do not match a URL assembled at runtime — fetch(base + p)
+   passes this gate — so a green run here is evidence of no remote *code*, and
+   is not on its own evidence of no outbound *requests*.
+
+   The stronger claim in the README — that the plugin makes no network request
+   of any kind — rests on something else, and it is worth writing down where:
+   there is no call site to make one. No fetch, XMLHttpRequest, WebSocket,
+   EventSource, sendBeacon or dynamic import anywhere in the engine or the
+   plugin. three.js ships a FileLoader that uses XMLHttpRequest and it is
+   bundled, but the engine never constructs a loader of any kind — every
+   texture in the cosmos is a CanvasTexture generated in process. That absence
+   is the thing a reviewer should check, and this gate cannot check it for
+   them: an absence has no pattern to match. */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/* Everything checked lives in this folder ("옵시디언 등재", the plugin repo):
-   vault-orrery-v2.html is the engine source, main.js and src/engine.generated.js
-   are build output. */
+/* Everything checked lives in the repo root: vault-orrery-v2.html is the
+   engine source, main.js and src/engine.generated.js are build output. */
 const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ENGINE_HTML = path.join(PLUGIN_ROOT, 'vault-orrery-v2.html');
 

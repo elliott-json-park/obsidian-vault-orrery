@@ -1272,6 +1272,16 @@ const STR = {
 'insp.ripple': ['◉ 여기서 파문 일으키기 [SPACE]','◉ RIPPLE FROM HERE [SPACE]',
                 '◉ ここから波紋 [SPACE]','◉ 从此处泛起涟漪 [SPACE]'],
 'insp.nobody': ['(본문 없음)','(no body text)','（本文なし）','（无正文）'],
+/* ---- when the file was last written ------------------------------------
+   Only ever shown where a host reported it. An interval rather than a date:
+   the question this answers is "have I been near this lately", and a reader
+   asking that has to do the subtraction themselves if handed a timestamp. */
+'insp.touched': ['수정 {t}','touched {t}','更新 {t}','修改 {t}'],
+'ago.today':   ['오늘','today','今日','今天'],
+'ago.d':       ['{n}일 전','{n}d ago','{n}日前','{n}天前'],
+'ago.w':       ['{n}주 전','{n}w ago','{n}週前','{n}周前'],
+'ago.mo':      ['{n}개월 전','{n}mo ago','{n}か月前','{n}个月前'],
+'ago.y':       ['{n}년 전','{n}y ago','{n}年前','{n}年前'],
 /* ---- the host (Obsidian) ----------------------------------------------
    Only shown when a host has actually handed the engine a way to open a
    note. Standalone, the page has no editor to open one in, and these rows
@@ -1833,11 +1843,49 @@ const KNOBS = [
   { k:'ten', g:'cosmos', label:'LINK TENSION',  min:0,  max:100, sc:100, def:.5, fmt:v => v.toFixed(2) },
   { k:'age', g:'cosmos', label:'AGE TINT',      min:0,  max:100, sc:100, def:.6,
     fmt:v => offAt(v, v.toFixed(2)), apply: () => recolour() },
+  /* AGE TINT colours a note by when it was written. This lights one by when
+     it was last touched, and the two are different questions often enough to
+     be worth separate answers: a vault's oldest note can be the one its owner
+     edited an hour ago.
+
+     The knob is the window rather than the intensity, because the window is
+     the part with an argument in it. "How bright" is taste; "what counts as
+     recent" is a claim about how this person works, and a fortnight is only a
+     default. Zero is OFF and says so.
+
+     Days, not a multiplier, so the readout is the answer: 14d means the notes
+     lit are the ones touched inside a fortnight, brightest this morning and
+     gone by the far edge. */
+  { k:'frs', g:'cosmos', label:'RECENT WORK',   min:0,  max:90,  sc:1,   def:14,
+    fmt:v => !freshKnown() ? 'N/A' : v < 0.5 ? 'OFF' : Math.round(v) + 'd',
+    apply: () => computeFresh() },
   { k:'trl', g:'cosmos', label:'ORBIT TRAILS',  min:0,  max:100, sc:100, def:.7,
     fmt:v => offAt(v, v.toFixed(2)) },
   { k:'grv', g:'cosmos', label:'NODE GRAVITY',  min:0,  max:300, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
   { k:'spr', g:'cosmos', label:'ORBIT SPREAD',  min:30, max:320, sc:100, def:1, fmt:mult },
+  /* Every orbit the layout lays down is tilted, and every one of them is
+     tilted about the same world axis — there is no ascending node to turn
+     them around, so the inclinations differ in amount and never in
+     direction. The intent was that a flat cosmos reads as a diagram rather
+     than as a place, and close up it does. At map range it costs more than
+     it buys: a link drawn between two planets on differently-leaned rings
+     crosses the frame at an angle that describes neither of them, and a
+     vault with enough links is a ball of wool.
+
+     So the amount is the reader's, from FLAT to twice what the layout chose,
+     and it moves live — the inclination is read per frame rather than baked
+     into the orbit. FLAT rather than 0.00x for the same reason ARC HEIGHT
+     says it: zero here is a shape, the whole cosmos lying in one plane, not
+     a missing effect.
+
+     And FLAT is where it ships. The tilt was never the thing anyone came to
+     look at, and coplanar is what makes the link structure readable at the
+     range the vault actually opens in — which is the question this whole
+     instrument exists to answer. The lean is still one drag away for anyone
+     who wants the depth back. */
+  { k:'tlt', g:'cosmos', label:'ORBIT TILT',   min:0,  max:200, sc:100, def:0,
+    fmt:v => v < 0.02 ? 'FLAT' : mult(v) },
   /* ---- how big the bodies are drawn -------------------------------------
      A body's radius is its citation count, and that is worth reading, so
      these do not touch the *ratios* between notes — they scale a whole class
@@ -1977,12 +2025,13 @@ const GOLD = Math.PI * (3 - Math.sqrt(5));
 
 let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, coreIdx,
     spiralOf, datedOrder, P, RAD, RAD0, COL, COLB, orb, catOf, alpha, edgeCache, SHELL_R, adj, hayOf,
-    bornAt, freshMark, tagIdx,
+    bornAt, freshMark, touchAt, fresh, freshUpto = 0, freshHas = false, tagIdx,
     genT, genE, genOrder, genScale, ripN,
     DSP, DVL, PULL, linkProg, ringRadii = [],
     starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, sunObj,
     starCore, starShell, starRing, starAlC, starAlS, starAlR,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
+    bStar, bStarCol,
     EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
     trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
@@ -2291,6 +2340,57 @@ function recolour() {
      them. A legend that drifted with the knob would stop being the key to
      anything. */
 }
+/* ---- freshness, 0 at the edge of the window and 1 at this moment ----
+   Linear across the window rather than an exponential decay. A half-life
+   makes "how recent is recent" a number nobody can read back off the screen;
+   a window has an edge you can name — inside the fortnight, or not.
+
+   Recomputed when the knob moves and when the wall clock has drifted far
+   enough to matter, never per frame: the answer changes once a minute at the
+   outside, and N notes sixty times a second is a lot of arithmetic to arrive
+   at the number already in the array.
+
+   A vault whose host cannot report file times leaves touchAt all zeros, and
+   every note comes out 0 — no glow anywhere, rather than a cosmos uniformly
+   claiming to have been written in 1970. */
+/* How long ago, in the coarsest unit that still says something. Nobody reads
+   "touched 47 days ago" as a quantity — they read it as "a while back" — so
+   the unit steps up as soon as the number would stop being informative. */
+function sinceStr(ms) {
+  const d = Math.floor((Date.now() - ms) / 86400000);
+  if (d <= 0)  return T('ago.today');
+  if (d < 7)   return T('ago.d',  { n: d });
+  if (d < 31)  return T('ago.w',  { n: Math.floor(d / 7) });
+  if (d < 365) return T('ago.mo', { n: Math.floor(d / 30) });
+  return T('ago.y', { n: Math.floor(d / 365) });
+}
+const FRESH_RECOMPUTE = 30000;
+function computeFresh() {
+  /* Stamped before the early return, not after it. The frame loop asks for a
+     recompute by how stale this is, so a call that declines to do the work
+     without moving it on is a call that will be made again next frame, and
+     every frame after, for as long as no vault is loaded. */
+  const now = Date.now();
+  freshUpto = now;
+  if (!N || !fresh) return;
+  const days = SET.frs || 0;
+  if (days < 0.5) { fresh.fill(0); return; }
+  const span = days * 86400000;
+  for (let i=0;i<N;i++){
+    const t = touchAt[i];
+    if (!t) { fresh[i] = 0; continue; }
+    const age = now - t;
+    fresh[i] = age <= 0 ? 1 : age >= span ? 0 : 1 - age / span;
+  }
+}
+/* Whether this vault can answer the question at all. A dropped folder gives
+   the standalone page text and no file times, so RECENT WORK there is a knob
+   that moves and changes nothing — which is the one thing a control must
+   never be. The deck reads this and says N/A instead of a day count.
+
+   A cached flag rather than a scan, because the deck asks on every frame of a
+   slider drag and the answer only changes when a vault does. */
+function freshKnown() { return freshHas; }
 const _tmpCol = new THREE.Color();
 function starColor(u, out) {
   const x = clamp(u, 0, 1) * (STAR_TEMPS.length - 1);
@@ -2545,7 +2645,7 @@ cats.forEach(c => {
      its own stretch of history would be worse than one that never moved */
   c.oSp = c.tier === 1
         ? (c.year ? 0.000055 : 0.000024)
-        : 0.000048 * Math.sqrt(ORB_REF / Math.max(1, c.oR));
+        : 0.000048 * Math.pow(ORB_REF / Math.max(1, c.oR), 1.5);
 });
 
 /* --- per-node orbital params ---------------------------------------- */
@@ -2580,11 +2680,16 @@ for (let i = 0; i < N; i++) {
     const inner = (c.R || 6) * 3.2;
     const step = ((c.reach || inner + 40) - inner) / Math.max(1, c.orbRings || 1);
     rad = 2.6 + Math.log(1 + nd.inb) * 1.55 + Math.log(1 + nd.w/120) * .7;
+    /* Kepler: the period goes as the radius to the three halves, so the
+       angular rate falls as its inverse. The rings used to alternate
+       direction as well, and no system does that — everything condensed
+       from the same disc turns the same way. */
+    const rr0 = inner + 0.5 * step, rr = inner + (ring + 0.5) * step;
     o = {
       kind:'wiki', anchor:c,
       r: inner + (ring + 0.5) * step + (slot%2) * step * 0.16,
       ph: slot/6*TAU + ring*0.62,
-      sp: 0.00022 / (1 + ring*0.42) * (ring%2 ? -1 : 1),
+      sp: 0.00022 * Math.pow(rr0 / rr, 1.5),
       inc: 0.13 + ring*0.10, y: (slot%3-1)*4,
       /* what the live gap spring stretches: the clearance around the star
          stays, the room between the rings is what moves */
@@ -2609,7 +2714,8 @@ for (let i = 0; i < N; i++) {
       pr, mk: k % 4,
       r: pr * 3.4 + (k%4) * pr * 1.15,
       ph: k/Math.max(3, sibs.length)*TAU,
-      sp: 0.0016 - (k%4)*0.00022, inc: 0.5 + (k%5)*0.22, y:0
+      sp: 0.0016 * Math.pow(3.4 / (3.4 + (k%4)*1.15), 1.5),
+      inc: 0.5 + (k%5)*0.22, y:0
     };
     col.clone().lerp(new THREE.Color(0xfff0d0), .18).toArray(COL, i*3);
   } else {
@@ -2673,6 +2779,32 @@ for (let i=0;i<N;i++) if (bornAt[i]) {
 if (!isFinite(GEN.lo)) { GEN.lo = 0; GEN.hi = 0; }
 GEN.dated = 0;
 for (let i=0;i<N;i++) if (bornAt[i]) GEN.dated++;
+
+/* ---- when each body was last touched --------------------------------
+   `bornAt` is the vault's history and it is the only clock the cosmos has
+   ever had. It answers "when was this written", which is a question about
+   the note; it cannot answer "when did I last have my hands on this", which
+   is a question about the person. A note revised this morning and one left
+   alone since 2022 are the same object under an age tint if the dates
+   written inside them agree.
+
+   So this is a second clock, and deliberately not folded into the first.
+   The formation replay shows where the vault *was* busy; this shows where it
+   *is*. Only a host can supply it — see buildGraph on `mt` — and where none
+   does the array stays zero and every reader of it draws nothing, which is
+   the honest reading of "this vault cannot say".
+
+   Stored as a 0..1 freshness rather than a timestamp: the window it decays
+   over is the reader's, the wall clock moves under it, and both of those
+   would otherwise have to be re-derived at every site that draws it. */
+touchAt = new Float64Array(N);
+fresh   = new Float32Array(N);
+freshHas = false;
+for (let i=0;i<N;i++) {
+  touchAt[i] = +nodes[i].mt || 0;
+  if (touchAt[i]) freshHas = true;
+}
+computeFresh();
 /* the folder colours as built, before the age tint is mixed into them, so the
    knob can be turned back down as well as up */
 COLB = COL.slice();
@@ -3191,20 +3323,107 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x02040a, 0.00026);
 const camera = new THREE.PerspectiveCamera(52, 1, 0.6, 40000);
 
-/* One sun, at the centre of the vault. Anchoring the light at the core
-   instead of on the camera is what gives bodies a real terminator. */
-const ambient = new THREE.AmbientLight(0x40607f, .44);
+/* Every body is lit by its own star — see starLit() below — so the scene
+   lights are what is left over once that is true: the hub, which is the
+   brightest thing in anybody's sky and reaches everywhere, and a floor.
+
+   The floor used to be a third of the sun. Ambient at 0.44, a rim and a fill
+   on top of it — a studio, and it read as one: every night side hung in the
+   air as a soft blue ball, and no shadow was ever really dark. There is no
+   air in space to scatter light round a corner. The night side of a world
+   *is* a hole, and the small emissive on the material is all that keeps it
+   from being a bite out of the starfield. */
+const ambient = new THREE.AmbientLight(0x40607f, .13);
 scene.add(ambient);
-const coreLight = new THREE.PointLight(0xffd9a0, 3.6, 0, 1.6);
+const coreLight = new THREE.PointLight(0xffd9a0, .55, 0, 1.6);
 coreLight.position.set(0,0,0);
 scene.add(coreLight);
-const rimLight = new THREE.DirectionalLight(0x77ccff, .34);
+const rimLight = new THREE.DirectionalLight(0x77ccff, .12);
 rimLight.position.set(1, .6, .4);
 scene.add(rimLight);
-/* a cold fill from below so the night side reads as shadow, not as a hole */
-const fillLight = new THREE.DirectionalLight(0x24405f, .26);
+const fillLight = new THREE.DirectionalLight(0x24405f, .06);
 fillLight.position.set(-.6, -.8, -.3);
 scene.add(fillLight);
+
+/* ---------- lit by its own star ----------
+   The one point light in the scene sat at the hub, and it had no falloff:
+   every planet in every system, however far out, took its day and night from
+   the direction of the centre of the vault. Which is the diagram's idea of a
+   sun and not the sky's. A planet is lit by the star it goes round — from
+   forty units away, not four thousand — and once the orbits lie flat that
+   is the whole picture: the crescents all face inward, toward the star that
+   owns them, and a system reads as a system before you have read a label.
+
+   So the body shader carries its own light. Per instance: where the star is,
+   how far its light reaches, what colour it burns. Written every frame,
+   because the stars themselves creep round the hub. Moons take the star of
+   the planet they orbit; the archive out on the spiral takes the hub, which
+   is the star it actually goes round.
+
+   Falloff is inverse-square softened at the star's own scale — a planet on
+   the inner ring gets nearly full light and one at the edge of the reach a
+   quarter of it — so distance from the star is a thing you can see and the
+   outer planets do not vanish. Then the limb: a Fresnel term, on the day
+   side and across the terminator only, in a colour pulled toward blue. That
+   is the atmosphere — light forward-scattered through the air at the edge
+   of a world — and it is what the additive halo was standing in for at close
+   range without ever quite being. */
+const STAR_I = 1.55;
+function starLit(sh, instanced) {
+  sh.vertexShader = (instanced
+      ? 'attribute vec4 aStar; attribute vec4 aStarCol;\n'
+      : 'uniform vec4 uStar; uniform vec4 uStarCol;\n')
+    + 'varying vec4 vStar; varying vec4 vStarCol;\n' + sh.vertexShader;
+  sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>',
+    '#include <begin_vertex>\n' + (instanced
+      /* the instance is in the world group's space, so the star's position
+         goes through the same model matrix the vertices do */
+      ? '  vStar = vec4((viewMatrix * modelMatrix * vec4(aStar.xyz, 1.0)).xyz, aStar.w);\n  vStarCol = aStarCol;'
+      /* the hero is one mesh placed in world space: its model matrix is its
+         own position and scale, which the star must not be put through */
+      : '  vStar = vec4((viewMatrix * vec4(uStar.xyz, 1.0)).xyz, uStar.w);\n  vStarCol = uStarCol;'));
+  sh.fragmentShader = 'varying vec4 vStar; varying vec4 vStarCol;\nvec3 sDir; float sInt;\n' + sh.fragmentShader;
+  sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_begin>',
+    '#include <lights_fragment_begin>\n' +
+    '  {\n' +
+    '    vec3 lv = vStar.xyz - geometry.position;\n' +
+    '    float ld2 = dot(lv, lv);\n' +
+    '    sDir = lv * inversesqrt(max(ld2, 1e-6));\n' +
+    '    float s2 = max(vStar.w * vStar.w, 1e-3);\n' +
+    '    sInt = ' + STAR_I.toFixed(2) + ' / (1.0 + ld2 / s2);\n' +
+    '    IncidentLight sl;\n' +
+    '    sl.direction = sDir;\n' +
+    '    sl.color = vStarCol.rgb * sInt;\n' +
+    '    sl.visible = true;\n' +
+    '    RE_Direct(sl, geometry, material, reflectedLight);\n' +
+    '  }');
+  sh.fragmentShader = sh.fragmentShader.replace('#include <output_fragment>',
+    '  {\n' +
+    '    vec3 nn = normalize(normal);\n' +
+    '    float fr = pow(1.0 - max(dot(nn, normalize(vViewPosition)), 0.0), 3.5);\n' +
+    '    float day = smoothstep(-0.30, 0.45, dot(nn, sDir));\n' +
+    '    vec3 air = mix(diffuseColor.rgb, vec3(0.42, 0.62, 1.0), 0.55);\n' +
+    '    outgoingLight += air * fr * day * sInt * vStarCol.a * 0.9;\n' +
+    '  }\n' +
+    '#include <output_fragment>');
+}
+/* Which star lights body i, and how far that light reaches at 1x spread.
+   The hero globe and the instances both read these, so it is decided once,
+   when the orbits are. */
+let litStar, litS0;
+const HUB_LIGHT = new THREE.Color(0xffd9a0);
+function starLightAt(i, spr, gs, out) {
+  const c = litStar[i];
+  if (c) {
+    out[0] = c.pos.x; out[1] = c.pos.y; out[2] = c.pos.z;
+    out[3] = litS0[i] * spr;
+  } else if (coreIdx >= 0) {
+    out[0] = P[coreIdx*3]; out[1] = P[coreIdx*3+1]; out[2] = P[coreIdx*3+2];
+    out[3] = litS0[i] * gs;
+  } else {
+    out[0] = out[1] = out[2] = 0; out[3] = litS0[i] * gs;
+  }
+}
 /* the ship carries its own running light, or flying into the dark side of
    the archive means flying blind */
 const shipLight = new THREE.PointLight(0x9fd8ff, 0, 420, 1.7);
@@ -4518,26 +4737,16 @@ if (cats.length) {
 }
 
 /* ---------- the concentric ring guides ----------
-   Faint circles on the orbital plane, one per ring of systems. They cost
-   almost nothing and they are what makes the concentric layout legible as a
-   layout rather than as a coincidence. */
-ringGuides = new THREE.Group();
-world.add(ringGuides);
-ringRadii.forEach((r, k) => {
-  const S = 240, pos = new Float32Array(S*2*3);
-  for (let s=0;s<S;s++){
-    const a1 = s/S*TAU, a2 = (s+1)/S*TAU;
-    pos[s*6]   = Math.cos(a1)*r; pos[s*6+1] = 0; pos[s*6+2] = Math.sin(a1)*r;
-    pos[s*6+3] = Math.cos(a2)*r; pos[s*6+4] = 0; pos[s*6+5] = Math.sin(a2)*r;
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  const line = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-    color:0x2e7ea6, transparent:true, opacity: 0.11 - k*0.012,
-    blending:THREE.AdditiveBlending, depthWrite:false }));
-  line.frustumCulled = false;
-  ringGuides.add(line);
-});
+   Gone. There used to be a faint circle drawn on the orbital plane for each
+   ring of systems, on the argument that they made the concentric layout read
+   as a layout rather than as a coincidence. They did — but they also drew a
+   grid over a sky, and the systems turning on those rings say the same thing
+   without anybody having to draw the rails in. The stars are the layout.
+
+   `ringGuides` stays declared and stays null: everything that touched it —
+   the genesis fade, the ORBIT GAP scale in updatePositions, the teardown —
+   already guards on it, so the layer is simply never built. ringRadii is
+   still what the systems are placed on; only the drawing is dropped. */
 
 /* the time spiral itself, a luminous track the archive rides on. Colour
    walks the year palette, so the sweep 2022 → 2026 is readable. */
@@ -4711,6 +4920,7 @@ bodyMat.onBeforeCompile = sh => {
     /vUv \+ dSTdx/g, 'vUv * vSurf.z + vSurf.xy + dSTdx');
   sh.fragmentShader = sh.fragmentShader.replace(
     /vUv \+ dSTdy/g, 'vUv * vSurf.z + vSurf.xy + dSTdy');
+  starLit(sh, true);
 };
 bodies = new THREE.InstancedMesh(bodyGeo, bodyMat, Math.max(1, N));
 bodies.count = N;
@@ -4736,6 +4946,42 @@ if (bodies.instanceColor) {
     surf[i*3+2] = 1.0 + Math.min(2.6, RAD[i] * 0.10) + ((h >>> 20) & 7) * 0.12;
   }
   bodyGeo.setAttribute('aSurf', new THREE.InstancedBufferAttribute(surf, 3));
+}
+/* whose light each body sits in — see starLit(). The position half is
+   rewritten every frame; the colour and the reach are the layout's. */
+{
+  litStar = new Array(N); litS0 = new Float32Array(Math.max(1, N));
+  bStar = new Float32Array(Math.max(1, N) * 4);
+  bStarCol = new Float32Array(Math.max(1, N) * 4);
+  const white = new THREE.Color(0xffffff), _c = new THREE.Color();
+  for (let i=0;i<N;i++){
+    const o = orb[i];
+    let c = null;
+    if (o.kind === 'wiki') c = o.anchor;
+    else if (o.kind === 'moon') {
+      const po = orb[o.anchorNode];
+      c = po && po.kind === 'wiki' ? po.anchor : null;
+    }
+    litStar[i] = c;
+    /* the star's light reaches its own outermost orbit at a quarter; the
+       hub's reaches the archive shell, which is the orbit it owns */
+    litS0[i] = c ? Math.max(20, (c.reach || 60) * 0.55)
+                 : Math.max(300, (SHELL_R || 1600) * 0.9);
+    /* the colour is the star's core — its own hue most of the way to white,
+       exactly what starCore draws — so a planet's day side matches the thing
+       lighting it */
+    if (c) _c.copy(c.color).lerp(white, .55); else _c.copy(HUB_LIGHT);
+    _c.toArray(bStarCol, i*4);
+    /* how much air the limb has: a planet a full atmosphere, a moon almost
+       none, an archive rock a little, the hub nothing — it is unlit anyway */
+    bStarCol[i*4+3] = o.kind === 'wiki' ? 1 : o.kind === 'moon' ? .18
+                    : o.kind === 'core' ? 0 : .4;
+    starLightAt(i, SET.spr, 1, bStar.subarray(i*4, i*4+4));
+  }
+  const aStar = new THREE.InstancedBufferAttribute(bStar, 4);
+  aStar.setUsage(THREE.DynamicDrawUsage);
+  bodyGeo.setAttribute('aStar', aStar);
+  bodyGeo.setAttribute('aStarCol', new THREE.InstancedBufferAttribute(bStarCol, 4));
 }
 
 /* node glow */
@@ -5356,7 +5602,12 @@ function renderInspector() {
   $('i-empty').style.display = 'none'; $('i-real').style.display = '';
   $('i-kind').textContent = (nd.k === 'raw' ? 'RAW' : 'WIKI') + (nd.d ? ' · ' + nd.d : '');
   $('i-name').textContent = nd.n;
-  $('i-path').textContent = nd.p + '   ·   ' + nd.w + ' words   ·   ←' + nd.inb;
+  /* The date on the badge above is the note's own — what it says about when
+     the thing happened. This is the file's, and only a host has it. Shown as
+     an interval rather than a timestamp because that is the form the question
+     is asked in: not "the 14th of March" but "have I been near this lately". */
+  $('i-path').textContent = nd.p + '   ·   ' + nd.w + ' words   ·   ←' + nd.inb +
+                            (nd.mt ? '   ·   ' + T('insp.touched', { t: sinceStr(nd.mt) }) : '');
 
   /* the counts the whole redesign is about: how many bodies this note is
      tied to, how many satellites orbit it, how many orbit its neighbours */
@@ -9377,12 +9628,20 @@ addEventListener('blur', () => { keysDown.clear(); ship.boost = false; SKY.rate 
    that note's own generated world. One mesh, reused; the instanced copy is
    collapsed to nothing while it stands in. */
 let heroMesh = null, heroIdx = -1, heroSpin = 0, heroReady = false;
+/* the hero's star, as uniforms — one mesh, so no attribute to carry it */
+const heroStar = { uStar: { value: new THREE.Vector4(0,0,0,100) },
+                   uStarCol: { value: new THREE.Vector4(1,1,1,1) } };
+const _hs = new Float32Array(4);
 function heroBuild() {
   if (heroMesh) return;
-  heroMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 96, 64),
-    new THREE.MeshPhongMaterial({ shininess:16, specular:0x2c465c,
-      emissive:0x050c14, bumpScale:0.020 }));
+  const hm = new THREE.MeshPhongMaterial({ shininess:16, specular:0x2c465c,
+      emissive:0x050c14, bumpScale:0.020 });
+  hm.onBeforeCompile = sh => {
+    sh.uniforms.uStar = heroStar.uStar;
+    sh.uniforms.uStarCol = heroStar.uStarCol;
+    starLit(sh, false);
+  };
+  heroMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), hm);
   heroMesh.visible = false;
   /* on the scene rather than the world: the world is torn down on every
      vault load and this is released explicitly instead */
@@ -9427,6 +9686,14 @@ function heroStep(dt) {
   heroMesh.visible = true;
   heroMesh.position.set(P[heroIdx*3], P[heroIdx*3+1], P[heroIdx*3+2]);
   heroMesh.scale.setScalar(RAD[heroIdx]);
+  /* lit by the same star, from the same place, as the instance it stands in
+     for — or the swap would be visible as the light moving */
+  if (bStar) {
+    starLightAt(heroIdx, SET.spr, gapSys, _hs);
+    heroStar.uStar.value.set(_hs[0], _hs[1], _hs[2], _hs[3]);
+    heroStar.uStarCol.value.set(bStarCol[heroIdx*4], bStarCol[heroIdx*4+1],
+                                bStarCol[heroIdx*4+2], bStarCol[heroIdx*4+3]);
+  }
   /* a world that does not turn is a billboard */
   heroSpin += dt * 0.055 * Math.max(0.15, SET.spd);
   heroMesh.rotation.set(0.24, heroSpin, 0.06);
@@ -9890,6 +10157,16 @@ function resize() {
 }
 addEventListener('resize', resize);
 
+/* What ORBIT TILT actually multiplies.
+
+   The halo of loose undated notes is exempt, and deliberately: its `inc` is
+   not an inclination but a spherical distribution — acos of a uniform, so the
+   notes sit evenly over a shell rather than evenly over an angle — and
+   scaling that to zero does not flatten a shell, it stacks every one of them
+   on a single circle at a single radius. The archive spiral is already within
+   a couple of degrees of flat and scales harmlessly. */
+const incOf = o => (o.kind === 'shell' ? o.inc : o.inc * SET.tlt);
+
 function updatePositions(dtms) {
   /* orbital time is its own clock: SET.spd 0 freezes the sky without freezing
      the camera, the HUD, the ship or the gesture engine */
@@ -9977,7 +10254,7 @@ function updatePositions(dtms) {
     }
     const a = o.ph + t * o.sp;
     const ca = Math.cos(a), sa = Math.sin(a);
-    const ci = Math.cos(o.inc), si = Math.sin(o.inc);
+    const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
     /* A planet's orbit widens from the clearance around its own star; the
        archive out on the spiral rides the ring structure instead, so it
        moves with the systems rather than with them. */
@@ -10000,7 +10277,7 @@ function updatePositions(dtms) {
     if (o.kind !== 'moon') continue;
     const p = o.anchorNode;
     const a = o.ph + t * o.sp;
-    const ci = Math.cos(o.inc), si = Math.sin(o.inc);
+    const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
     const mr = o.r0 * spr;
     P[i*3]   = P[p*3]   + Math.cos(a)*mr        + DSP[i*3];
     P[i*3+1] = P[p*3+1] + Math.sin(a)*mr*si     + DSP[i*3+1];
@@ -10145,8 +10422,13 @@ function writeInstances() {
   const bri = SET.bri;
   const gsc = GEN.on, rip = ripples.length > 0;
   const cam = camera.position, ccx = cam.x, ccy = cam.y, ccz = cam.z;
+  const spr = SET.spr, gs = gapSys;
+  const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  const st = bodyGeo.attributes.aStar;
   for (let i=0;i<N;i++){
     _pos.set(P[i*3], P[i*3+1], P[i*3+2]);
+    /* where this body's light is coming from, this frame */
+    starLightAt(i, spr, gs, bStar.subarray(i*4, i*4+4));
     /* the core has its own unlit geometry, so its instance is collapsed to
        nothing rather than drawn black inside the sun */
     let s = (i === coreIdx && sunObj) ? 0 : RAD[i];
@@ -10173,24 +10455,51 @@ function writeInstances() {
     ic[i*3+2] = COL[i*3+2] * cf;
 
     gPos[i*3]=P[i*3]; gPos[i*3+1]=P[i*3+1]; gPos[i*3+2]=P[i*3+2];
-    let a = alpha[i] * (orb[i].kind==='wiki' ? .85 : orb[i].kind==='core' ? 1 : .6);
+    let a = alpha[i] * (orb[i].kind==='wiki' ? .62 : orb[i].kind==='core' ? 1 : .38);
+    const dcx = P[i*3]-ccx, dcy = P[i*3+1]-ccy, dcz = P[i*3+2]-ccz;
+    const dcam = Math.sqrt(dcx*dcx + dcy*dcy + dcz*dcz);
+    /* The halo is reflected light, and reflected light has a phase.
+
+       From across the vault a planet is a point, and the brightness of that
+       point is how much of its lit face is turned toward you: full when its
+       star is behind you, a sliver when the planet stands between you and
+       the star. So the halo carries the phase — the same dot product the
+       moon's shape is — and a system seen from the side has a bright half
+       and a dark half, which is what a system seen from the side has.
+
+       And it is a *point*. Come close enough that the disc resolves and the
+       halo goes, because a world seen from orbit does not glow; it is lit,
+       and the terminator and the limb are now doing the work the sprite was
+       faking. The floor keeps a breath of atmosphere. */
+    if (orb[i].kind !== 'core') {
+      const sx = bStar[i*4]-P[i*3], sy = bStar[i*4+1]-P[i*3+1], sz = bStar[i*4+2]-P[i*3+2];
+      const ls = Math.sqrt(sx*sx + sy*sy + sz*sz);
+      const ph = 0.5 * (1 + (sx*dcx + sy*dcy + sz*dcz) / (ls * dcam + 1e-6));
+      a *= 0.12 + 0.88 * ph;
+      const px = RAD[i] * fpx / Math.max(1, dcam);
+      if (px > 5) a *= Math.max(0.15, 1 - (px - 5) / 12);
+    }
     if (i === selected) a = Math.min(1.6, a*2.1);
     else if (neighbours.has(i)) a *= 1.5;
     /* what has just condensed burns for a while, so the formation shows you
        where the vault was busy rather than only how big it had got */
     if (gsc && freshMark[i]) a *= 2.6;
+    /* And what was touched lately still is. Added rather than multiplied: a
+       note far enough away to be dim would otherwise scale its way back to
+       invisible, and "where have I been working" is a question you ask of the
+       whole cosmos at once, from far enough out to see all of it.
+
+       Off during the replay, where the same halo is already saying something
+       else about the same body and two claims on one channel is neither. */
+    if (!gsc && fresh[i] > 0.002) a += fresh[i] * 1.9;
     /* the wave itself — this is the whole of the ripple, on the nodes */
     if (rip && ripN[i] > 0.004) a += ripN[i] * 2.2;
     if (ship.on) {
       if (i === ship.lock) a = Math.min(2.2, a*2.4);
       else if (scanLit && scanLit.has(i)) a = Math.min(2.0, a*1.9);
-      /* Bodies you are nearly on top of gain an atmosphere. The glow sprite
-         already grows with proximity; leaning into it is what turns a lit
-         ball into something with air around it as you come alongside. */
-      const dx = P[i*3]-ship.pos.x, dy = P[i*3+1]-ship.pos.y, dz = P[i*3+2]-ship.pos.z;
-      const near = RAD[i] * 14;
-      const d2 = dx*dx + dy*dy + dz*dz;
-      if (d2 < near*near) a *= 1 + (1 - Math.sqrt(d2)/near) * 0.85;
+      /* the atmosphere a body gained as you came alongside used to be this
+         sprite swelling; it is the limb in the body shader now — see
+         starLit() — which is on the world rather than round it */
     }
     /* the halo of the world under your feet would be a wall of light across
        the whole frame */
@@ -10208,9 +10517,7 @@ function writeInstances() {
        selection at 2.1x and a scan target at 2.4x clear the 0.30 floor
        several times over, so a marked node on the far side still reads over
        an ordinary one in front of it. */
-    a *= fogAt(Math.sqrt((P[i*3]-ccx)*(P[i*3]-ccx) +
-                         (P[i*3+1]-ccy)*(P[i*3+1]-ccy) +
-                         (P[i*3+2]-ccz)*(P[i*3+2]-ccz)));
+    a *= fogAt(dcam);
     gAl[i] = Math.min(2.6, a * bri);
     if (gsc || genSz) gSz[i] = gSz0[i] * (gsc ? genScale[i] : 1);
   }
@@ -10245,6 +10552,7 @@ function writeInstances() {
   if (gsc || genSz) { nodeGlowGeo.attributes.aSize.needsUpdate = true; genSz = gsc; }
   bodies.instanceMatrix.needsUpdate = true;
   bodies.instanceColor.needsUpdate = true;
+  if (st) st.needsUpdate = true;
   nodeGlowGeo.attributes.position.needsUpdate = true;
   nodeGlowGeo.attributes.aAlpha.needsUpdate = true;
 }
@@ -10607,7 +10915,7 @@ function writeTrails() {
     if (!cen || !(orad > 0.01)) continue;
 
     const ang = o.ph + t * o.sp;
-    const ci = Math.cos(o.inc), si = Math.sin(o.inc);
+    const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
     /* backwards along the direction of travel, whichever way that is */
     const step = -TRAIL_SWEEP / (TRAIL_SEG-1) * (o.sp < 0 ? -1 : 1);
     const cs = Math.cos(step), sn = Math.sin(step);
@@ -10889,6 +11197,12 @@ function frameLoop(now) {
   frame++;
   if (!world) { renderFrame(); return; }                    /* mid-rebuild */
 
+  /* The freshness window is measured against the wall clock, and a view left
+     open overnight would otherwise still be lighting yesterday's work as if
+     it were this minute's. Half a minute is far finer than the thing it
+     tracks and costs one comparison a frame to ask. */
+  if (SET.frs >= 0.5 && Date.now() - freshUpto > FRESH_RECOMPUTE) computeFresh();
+
   const _p0 = perfNow();
   genStep(dt);
   genStepBodies();
@@ -11040,6 +11354,23 @@ function frameLoop(now) {
   if (starFieldObj)   starFieldObj.rotation.y   = t * 0.0000011;
   if (brightStarObj)  brightStarObj.rotation.y  = t * 0.0000011;
   if (milkyObj)       milkyObj.rotation.y       = t * 0.0000008;
+  /* The far sky is centred on the eye, every frame. The stars, the band, the
+     gas and the veil were built on a shell fourteen thousand units out and
+     left there, and fourteen thousand is far but it is not *infinitely* far:
+     fly a few hundred units and the whole sky slid against itself, which is
+     what a painted dome does and what a sky never does. Real stars do not
+     move for any distance a ship can fly. So the shells go where the camera
+     goes — translation only, the slow spins above are still theirs — and
+     the sky becomes the one thing in the frame that flight cannot reach.
+     The dust disk stays: it is the galaxy this vault sits in, and near. */
+  {
+    const cp = camera.position;
+    if (starFieldObj)  starFieldObj.position.copy(cp);
+    if (brightStarObj) brightStarObj.position.copy(cp);
+    if (milkyObj)      milkyObj.position.copy(cp);
+    if (nebulaObj)     nebulaObj.position.copy(cp);
+    if (veilObj)       veilObj.position.copy(cp);
+  }
 
   writeHUD(now);
   const _p6 = perfNow();
@@ -11526,6 +11857,14 @@ function buildGraph(files, vaultName) {
       fm, body, hm,
       t: mergeTags(tagsOf(fm), hm && hm.tags),
       d: dateOf(fm, rel),
+      /* Last written, in epoch ms, and 0 where nobody can say. Only a host has
+         this: the standalone page is handed text, not a file system, and a
+         dropped folder's timestamps are the browser's to withhold. Every
+         reader of it has to treat 0 as "unknown" rather than as "1970", which
+         is why it is not defaulted to Date.now() here — a vault that cannot
+         report its own freshness should show none, not a false present. */
+      mt: hm && +hm.mtime > 0 ? +hm.mtime : 0,
+      ct: hm && +hm.ctime > 0 ? +hm.ctime : 0,
       w: (body.match(/\S+/g) || []).length,
       sz: f.text.length, x: excerptOf(body)
     };
@@ -11684,9 +12023,13 @@ function buildGraph(files, vaultName) {
       .forEach(([j]) => { if (push(i, j, 2)) latent++; });
   });
 
+  /* `g` used to be here, always the empty string, read by nothing. A field
+     that is never written and never read is not an extension point, it is a
+     column of blanks N rows deep — so it is gone rather than documented. */
   const outNodes = recs.map((r, i) => ({
     p: r.rel, fp: r.fp, n: r.name, k: kind[i], f: r.rel.split('/')[0] || '',
-    d: r.d, y: r.d ? +r.d.slice(0,4) : 0, t: r.t, g: '',
+    d: r.d, y: r.d ? +r.d.slice(0,4) : 0, t: r.t,
+    mt: r.mt, ct: r.ct,
     w: r.w, sz: r.sz, x: r.x, inb: cited[i], c: catKey[i]
   }));
   const years = [...new Set(outNodes.map(n => n.y).filter(Boolean))].sort();

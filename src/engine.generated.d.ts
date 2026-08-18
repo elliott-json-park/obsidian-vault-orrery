@@ -43,6 +43,14 @@ export interface OrreryFileMeta {
   broken?: number;
   /** Tags, with or without the leading '#', body and front matter alike. */
   tags?: string[];
+  /** When the file was last written, in epoch milliseconds. Distinct from the
+      date the engine reads out of the note: that one says when the thing
+      described happened, this one says when someone last touched the file.
+      Absent in the standalone page, which has no file stats to read. */
+  mtime?: number;
+  /** When the file was created, in epoch milliseconds. Used only where a note
+      carries no date of its own. */
+  ctime?: number;
 }
 
 /** Which mode a host command switches on. The engine owns what each one does;

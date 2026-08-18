@@ -295,6 +295,16 @@ export class OrreryView extends ItemView {
       links: links ? { ...links } : {},
       broken,
       tags: tags ? tags.map(t => t.replace(/^#/, '')) : [],
+      /* When the file was last written, which is not the same question as the
+         date inside it. A note's front matter says when the thing it describes
+         happened; the file system says when the person last had their hands on
+         it. The engine had only the first, so it could draw a vault's history
+         and not its present — a note rewritten this morning and one untouched
+         since 2022 were the same object if their dates matched.
+
+         Obsidian has both stats already, for free, on every TFile. */
+      mtime: f.stat.mtime,
+      ctime: f.stat.ctime,
     };
   }
 }

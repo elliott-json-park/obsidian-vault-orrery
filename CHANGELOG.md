@@ -4,6 +4,64 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.4.0
+
+The cosmos goes quiet. Almost nothing here is new; most of it is what was
+already drawn, made to stop arguing with the idea that this is space — orbits
+that lie flat, planets lit by the star they actually go round, a night side
+that is dark, and a sky that does not slide when you fly. Two things are
+subtracted rather than added. The one genuinely new thing is a second clock:
+the vault could draw its own history and never its present.
+
+- **A second clock: where you have been working.** The cosmos had one date per
+  note — the one written inside it — so it could draw the vault's history and
+  not its present. A note revised this morning and one untouched since 2022
+  were the same object if their front matter agreed. Obsidian knows both times
+  already, and now hands over the file's: `RECENT WORK` in the drawer lights
+  what has been touched inside a window you set, brightest today and gone by
+  the far edge, and the inspector says how long ago in the coarsest unit that
+  still means something. The knob is the window rather than the brightness,
+  because "how bright" is taste and "what counts as recent" is a claim about
+  how you work. A vault that cannot report file times — a folder dropped on
+  the standalone page — reads N/A rather than sitting at a value and changing
+  nothing.
+- **The empty column is gone.** Every note carried a field named `g`, always
+  the empty string, read by nothing. A field never written and never read is
+  not an extension point, it is a column of blanks as deep as the vault.
+- **The ring guides are gone.** A faint circle used to be drawn on the orbital
+  plane for each ring of systems, on the argument that they made the layout
+  read as a layout. They did — and they also drew a grid over a sky. The
+  systems turning on those rings say it without the rails.
+- **Orbits lie flat, and the lean is yours.** Every orbit was tilted, and all of
+  them about the same axis, so at map range a link between two planets crossed
+  the frame at an angle that described neither of them. `ORBIT TILT` in the
+  drawer, FLAT to 2.00×, read live rather than baked into the layout — and it
+  ships FLAT.
+- **A planet is lit by its own star.** The one point light sat at the hub with
+  no falloff, and every planet in every system took its day and night from the
+  centre of the vault. The body shader now carries its star per instance —
+  where it is, how far its light reaches, what colour it burns — so the
+  crescents face inward toward the star that owns them, moons take the star
+  of the planet they orbit, and the archive takes the hub. Falloff is
+  inverse-square softened at the star's own reach.
+- **The night side is dark.** Ambient was a third of the sun, with a rim and a
+  fill on top: a studio. It is a floor now, and the shadow side of a world is
+  a shadow.
+- **A limb, not a halo.** A Fresnel term on the day side and across the
+  terminator, pulled toward blue — the atmosphere the additive sprite was
+  standing in for at close range. The halo itself now carries phase, like
+  the reflected light it is: full when the star is behind you, a sliver when
+  the planet stands between you and its star. And it goes as the disc
+  resolves, because a world seen from orbit does not glow.
+- **Kepler.** Angular rate falls as the radius to the minus three halves —
+  planets, moons and the systems round the hub alike. Rings no longer
+  alternate direction; nothing condensed from one disc turns both ways.
+- **The sky does not move.** Stars, band, gas and veil were built fourteen
+  thousand units out and left there, and a few hundred units of flight slid
+  the whole dome against itself. They ride with the eye now — translation
+  only, their slow spins are still theirs — and become the one thing flight
+  cannot reach.
+
 ## 1.3.0
 
 The star at the centre gets a face, the bodies around it get a size you choose,

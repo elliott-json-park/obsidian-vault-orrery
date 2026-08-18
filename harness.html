@@ -74,6 +74,12 @@ const FILES = [
      tags from the body rather than the front matter. */
   mk('notes/aliased.md', '# Aliased\nsee [[The Optics Note]] #field/optics\n2024-05-02',
      { links: { 'research/optics.md': 1 }, broken: 0, tags: ['field/optics'] }),
+  /* File times, which only a host can report. This one carries a date from
+     2023 and was written minutes ago — the pair the recency channel exists
+     to tell apart, and one the engine's own parser can never see. */
+  mk('notes/touched.md', '# Touched\n[[notes/daily]]\n2023-01-15',
+     { links: { 'notes/daily.md': 1 }, broken: 0, tags: [],
+       mtime: Date.now() - 60000, ctime: Date.parse('2023-01-15') }),
 ];
 
 window.__run = async () => {
@@ -150,6 +156,20 @@ window.__run = async () => {
     const links = root.querySelector('#i-links').textContent;
     if (!/optics/i.test(links)) throw new Error('the alias link did not resolve: ' + links);
     if (!/optics/i.test(root.querySelector('#i-tags').textContent)) throw new Error('body tag missing');
+  });
+  /* The second clock. A note dated 2023 and saved a minute ago has to read as
+     recent, which is the whole distinction the file times were added for — and
+     a note with no file time at all has to read as nothing rather than as
+     1970, which is the part that would fail silently. */
+  await step('file times drive recency', () => {
+    if (!api.revealPath('notes/touched.md')) throw new Error('the touched note is missing');
+    const path = root.querySelector('#i-path').textContent;
+    if (!/today|touched/i.test(path))
+      throw new Error('the inspector did not report the file time: ' + path);
+    api.revealPath('archive/old.md');
+    const bare = root.querySelector('#i-path').textContent;
+    if (/touched/i.test(bare))
+      throw new Error('a note with no file time claimed one: ' + bare);
   });
   /* A reload the user did not ask for must not move the camera. */
   await step('quiet reload keeps the view', async () => {

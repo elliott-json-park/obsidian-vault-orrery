@@ -35,15 +35,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-/* PLUGIN_ROOT is this folder ("옵시디언 등재") — the plugin repo, holding
-   manifest.json, src/, vendor/, the whole build, and vault-orrery-v2.html
-   itself. The engine used to live one directory up in the personal workspace,
-   which meant a bare clone of this repo could not build: the source it reads
-   was not in it. Keeping the engine here instead costs nothing — the page is
-   still a real, openable file, developed and demoed by double-clicking it —
-   and it makes the repo self-contained, so a reviewer can both reproduce the
-   build and read the source it is generated from. The parent workspace now
-   holds only history: v1, the backup snapshot, and the dev journals. */
+/* PLUGIN_ROOT is the repo root, holding manifest.json, src/, vendor/, the
+   whole build, and vault-orrery-v2.html itself. The engine used to be kept
+   outside the repo, which meant a bare clone could not build: the source it
+   reads was not in it. Keeping the engine here instead costs nothing — the
+   page is still a real, openable file, developed and demoed by double-clicking
+   it — and it makes the repo self-contained, so a reviewer can both reproduce
+   the build and read the source it is generated from. */
 const PLUGIN_ROOT  = path.resolve(here, '..');
 const SRC  = path.join(PLUGIN_ROOT, 'vault-orrery-v2.html');
 const OUT  = path.join(PLUGIN_ROOT, 'src', 'engine.generated.js');
