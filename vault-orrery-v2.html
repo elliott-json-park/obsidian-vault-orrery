@@ -3454,12 +3454,34 @@ scene.add(shipLight);
    uFlare adds the cross-shaped diffraction spike a lens puts on anything
    genuinely bright; uBright is the live starfield knob. All three are
    per-material, so turning the background down leaves the nodes alone.  */
+/* ---- streaking ----
+   A point sprite cannot become a line, so it becomes a bigger sprite with a
+   line drawn inside it: the point grows by the stretch factor and the falloff
+   is squeezed to a fraction of that across, which is the same picture and
+   costs one varying.
+
+   The direction is radial from the vanishing point — where the ship is
+   pointed, in normalised device coordinates — because that is where a star's
+   apparent motion actually points when you are flying straight at something.
+   Stars near the centre of the frame barely move and barely streak; the ones
+   at the edge sweep past and stretch hardest. That gradient across the frame
+   is the whole of why this reads as travelling rather than as a filter.
+
+   uAspect corrects the horizontal, since NDC is square and the frame is not:
+   without it every streak leans toward the horizontal and the field looks
+   combed.
+
+   All of it is inert at uStreak 0, and the arithmetic is an identity there —
+   a rotation by vDir followed by its inverse — so nothing outside the cockpit
+   pays anything for this but two multiplies. */
 const GLOW_V = `
 attribute float aSize; attribute vec3 aColor; attribute float aAlpha;
 attribute float aPhase;
 varying vec3 vC; varying float vA; varying float vF;
+varying vec2 vDir; varying float vStr;
 uniform float uScale; uniform float uTime; uniform float uTwinkle;
 uniform float uFlare; uniform float uBright;
+uniform float uStreak; uniform vec2 uFocus; uniform float uAspect;
 void main(){
   float tw = 1.0 + uTwinkle * 0.42 * sin(uTime * 1.35 + aPhase * 63.0);
   vC = aColor;
@@ -3467,19 +3489,42 @@ void main(){
   vF = uFlare;
   vec4 mv = modelViewMatrix * vec4(position,1.0);
   float sz = aSize * (1.0 + uTwinkle * 0.10 * sin(uTime * 0.95 + aPhase * 41.0));
+  vec4 clip = projectionMatrix * mv;
+  vDir = vec2(1.0, 0.0);
+  vStr = 1.0;
+  if (uStreak > 0.001 && clip.w > 0.0001) {
+    vec2 rel = (clip.xy / clip.w - uFocus) * vec2(uAspect, 1.0);
+    float rl = length(rel);
+    if (rl > 0.0002) vDir = rel / rl;
+    /* the near end of the ramp is not zero: a star dead ahead is closing on
+       you, and a point that alone refused to stretch would read as a hole
+       punched in the middle of the effect */
+    vStr = 1.0 + uStreak * (0.9 + min(rl, 1.6) * 7.5);
+  }
+  sz *= vStr;
   gl_PointSize = sz * (uScale / max(1.0, -mv.z));
-  gl_Position = projectionMatrix * mv;
+  gl_Position = clip;
 }`;
 const GLOW_F = `
 varying vec3 vC; varying float vA; varying float vF;
+varying vec2 vDir; varying float vStr;
 void main(){
   vec2 d = gl_PointCoord - 0.5;
+  /* into the streak's own frame, then squeeze across it. At vStr 1 this is a
+     rotation and its inverse, so r is exactly what it was. */
+  d = vec2(dot(d, vDir), dot(d, vec2(-vDir.y, vDir.x)) * vStr);
   float r = length(d) * 2.0;
   float a = 0.0;
   if (r <= 1.0) a = pow(1.0 - r, 2.4) + pow(1.0 - r, 9.0) * 0.85;
+  /* the same light over a longer sprite is dimmer light, or a boost would
+     read as the sky being turned up rather than as the sky going past */
+  a /= 0.42 + 0.58 * vStr;
   float sp = 0.0;
   if (vF > 0.001) {
-    float ax = abs(d.x) * 2.0, ay = abs(d.y) * 2.0;
+    /* off the unstretched coordinate: a diffraction spike is made by the
+       lens and does not know how fast the ship is going */
+    vec2 ds = gl_PointCoord - 0.5;
+    float ax = abs(ds.x) * 2.0 * vStr, ay = abs(ds.y) * 2.0 * vStr;
     sp = max(0.0, 1.0 - ay * 11.0) * max(0.0, 1.0 - ax * 1.15)
        + max(0.0, 1.0 - ax * 11.0) * max(0.0, 1.0 - ay * 1.15);
     sp *= vF * 0.42;
@@ -3494,7 +3539,8 @@ function glowMat(scale, twinkle, flare, sky) {
   const m = new THREE.ShaderMaterial({
     uniforms:{ uScale:{ value: scale }, uTime:{ value: 0 },
                uTwinkle:{ value: twinkle || 0 }, uFlare:{ value: flare || 0 },
-               uBright:{ value: 1 } },
+               uBright:{ value: 1 }, uStreak:{ value: 0 },
+               uFocus:{ value: new THREE.Vector2(0, 0) }, uAspect:{ value: 1 } },
     vertexShader:GLOW_V, fragmentShader:GLOW_F,
     transparent:true, depthWrite:false, blending:THREE.AdditiveBlending
   });
@@ -9785,6 +9831,54 @@ function updateStars(dt) {
   }
 }
 
+/* ---- the stars, drawn as travel ---------------------------------------
+   Under thrust the background field stretches radially away from wherever
+   the nose is pointed. That is what motion at speed actually looks like out
+   of a window and it is the one cue this had no version of: the dust field
+   in front of the canopy said "something is going past", and something going
+   past close to you is not the same claim as the whole sky moving.
+
+   Only the background. The node halos are the atmospheres of bodies you are
+   flying between, and a planet whose glow smeared while the planet did not
+   would read as a rendering fault rather than as speed.
+
+   The ramp is late and steep, like the dust field's: nothing at a cruise,
+   everything once the boost is open. Boost is worth 1.9x on its own so that
+   holding SHIFT is a visible event and not a slightly faster version of not
+   holding it.
+
+   The focus point is the ship's own forward direction in normalised device
+   coordinates, which is very nearly the centre of the frame and deliberately
+   not assumed to be: the crosshair sits where the nose points, the camera
+   carries roll and shake, and a vanishing point half a degree off the one
+   the streaks radiate from is visible immediately even though nobody can say
+   what is wrong with it. */
+const _stk = new THREE.Vector3();
+function stepStreak() {
+  let amt = 0;
+  if (ship.on && !mindOpen) {
+    const s0 = clamp((ship.sf - 0.10) / 0.90, 0, 1);
+    amt = s0 * s0 * (ship.boost ? 1.9 : 1) * SET.mot;
+    if (amt > 1.35) amt = 1.35;
+  }
+  /* a frame that has nothing to say says it once, then stops writing */
+  if (amt < 0.002 && streakWas < 0.002) return;
+  streakWas = amt;
+  if (amt > 0.002) {
+    shipDirs();
+    _stk.copy(ship.pos).addScaledVector(_fwd, 1000).project(camera);
+  } else _stk.set(0, 0, 0);
+  const asp = Math.max(0.2, innerWidth / Math.max(1, innerHeight));
+  for (let i = 0; i < skyMats.length; i++) {
+    const u = skyMats[i].uniforms;
+    if (!u || !u.uStreak) continue;
+    u.uStreak.value = amt;
+    u.uFocus.value.set(_stk.x, _stk.y);
+    u.uAspect.value = asp;
+  }
+}
+let streakWas = 0;
+
 /* ====================================================== VIEW STATE
    Two things every writer below wants to know about this frame's camera, and
    both used to be worked out by whoever needed them — which is how the links
@@ -10675,6 +10769,7 @@ function frameLoop(now) {
   const gt = now * 0.001;
   for (let i=0;i<glowMats.length;i++)
     if (glowMats[i].uniforms) glowMats[i].uniforms.uTime.value = gt;
+  stepStreak();
 
   /* rigs */
   if (selected >= 0 && selected < N && selRig) {
