@@ -2111,7 +2111,7 @@ let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, co
     starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, gridPlane, sunObj,
     starCore, starShell, starRing, starRing2, starAlC, starAlS, starAlR, starAlR2,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
-    bStar, bStarCol, bOcc, bOccS,
+    bStar, bStarCol, bOcc, bOccS, bRing,
     EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
     trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
@@ -3616,18 +3616,37 @@ scene.add(fillLight);
 const STAR_I = 1.55;
 function starLit(sh, instanced) {
   sh.vertexShader = (instanced
-      ? 'attribute vec4 aStar; attribute vec4 aStarCol; attribute vec4 aOcc; attribute float aOccS;\n'
-      : 'uniform vec4 uStar; uniform vec4 uStarCol; uniform vec4 uOcc; uniform float uOccS;\n')
-    + 'varying vec4 vStar; varying vec4 vStarCol; varying vec4 vOcc; varying float vOccS;\n' + sh.vertexShader;
+      ? 'attribute vec4 aStar; attribute vec4 aStarCol; attribute vec4 aOcc; attribute float aOccS; attribute vec4 aRingS;\n'
+      : 'uniform vec4 uStar; uniform vec4 uStarCol; uniform vec4 uOcc; uniform float uOccS; uniform vec4 uRingS;\n')
+    + 'varying vec4 vStar; varying vec4 vStarCol; varying vec4 vOcc; varying float vOccS;\nvarying vec4 vRingS; varying vec3 vCen;\n' + sh.vertexShader;
   sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>',
     '#include <begin_vertex>\n' + (instanced
       /* the instance is in the world group's space, so the star's position
          goes through the same model matrix the vertices do */
-      ? '  vStar = vec4((viewMatrix * modelMatrix * vec4(aStar.xyz, 1.0)).xyz, aStar.w);\n  vStarCol = aStarCol;\n  vOcc = vec4((viewMatrix * modelMatrix * vec4(aOcc.xyz, 1.0)).xyz, aOcc.w);\n  vOccS = aOccS;'
+      ? '  vStar = vec4((viewMatrix * modelMatrix * vec4(aStar.xyz, 1.0)).xyz, aStar.w);\n  vStarCol = aStarCol;\n  vOcc = vec4((viewMatrix * modelMatrix * vec4(aOcc.xyz, 1.0)).xyz, aOcc.w);\n  vOccS = aOccS;\n  vRingS = vec4(normalize(mat3(viewMatrix) * mat3(modelMatrix) * aRingS.xyz), aRingS.w);\n  vCen = (modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;'
       /* the hero is one mesh placed in world space: its model matrix is its
          own position and scale, which the star must not be put through */
-      : '  vStar = vec4((viewMatrix * vec4(uStar.xyz, 1.0)).xyz, uStar.w);\n  vStarCol = uStarCol;\n  vOcc = vec4((viewMatrix * vec4(uOcc.xyz, 1.0)).xyz, uOcc.w);\n  vOccS = uOccS;'));
-  sh.fragmentShader = 'varying vec4 vStar; varying vec4 vStarCol; varying vec4 vOcc; varying float vOccS;\nvec3 sDir; float sInt; vec3 sTint;\n' + sh.fragmentShader;
+      : '  vStar = vec4((viewMatrix * vec4(uStar.xyz, 1.0)).xyz, uStar.w);\n  vStarCol = uStarCol;\n  vOcc = vec4((viewMatrix * vec4(uOcc.xyz, 1.0)).xyz, uOcc.w);\n  vOccS = uOccS;\n  vRingS = vec4(normalize(mat3(viewMatrix) * uRingS.xyz), uRingS.w);\n  vCen = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;'));
+  /* ---- the ring's own shadow, on the planet under it -----------------
+     The other half of the Saturn photograph, and the half nothing here
+     had. A ring lies flat over its planet's equator and the star is off to
+     one side, so the ring's shadow falls across the globe as a set of
+     hard-edged bands — and because the rings are not uniform, those bands
+     are not uniform either. The Cassini Division shows up on the planet as
+     a bright line inside a dark stripe. That single detail is most of what
+     makes a picture of Saturn look like a photograph and not a diagram.
+
+     The test is one ray. Walk from the fragment toward the star, find where
+     that ray crosses the ring plane, and ask what the ring's optical depth
+     is at the radius it crossed at. If it crossed outside the annulus, or
+     went the wrong way, nothing happens.
+
+     The depths are the ones the ring texture is drawn from, so the shadow
+     agrees with the thing casting it: the C ring stops about a tenth of the
+     light, the B ring most of it, the Cassini Division almost none, the A
+     ring somewhere between. Radii are in units of the ring's inner edge,
+     which is where the C ring starts. */
+  sh.fragmentShader = 'varying vec4 vStar; varying vec4 vStarCol; varying vec4 vOcc; varying float vOccS;\nvarying vec4 vRingS; varying vec3 vCen;\nvec3 sDir; float sInt; vec3 sTint;\nfloat rBand(float x, float a, float b){\n  return smoothstep(a - 0.010, a + 0.010, x) * (1.0 - smoothstep(b - 0.010, b + 0.010, x));\n}\nfloat ringTrans(float x){\n  if (x < 0.99 || x > 1.84) return 1.0;\n  float o = 0.10 * rBand(x, 1.000, 1.232)\n          + 0.78 * rBand(x, 1.232, 1.574)\n          + 0.08 * rBand(x, 1.574, 1.634)\n          + 0.39 * rBand(x, 1.634, 1.830);\n  return 1.0 - clamp(o, 0.0, 0.86);\n}\n' + sh.fragmentShader;
   sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_begin>',
     '#include <lights_fragment_begin>\n' +
     '  {\n' +
@@ -3661,6 +3680,14 @@ function starLit(sh, instanced) {
        rather than merely dimmed, and the colour is the one that every
        photograph of a total lunar eclipse has ever had. */
     '    sTint = vec3(1.0);\n' +
+    '    if (vRingS.w > 0.0) {\n' +
+    '      float dn = dot(sDir, vRingS.xyz);\n' +
+    '      if (abs(dn) > 1e-4) {\n' +
+    '        vec3 rel = geometry.position - vCen;\n' +
+    '        float tt = -dot(rel, vRingS.xyz) / dn;\n' +
+    '        if (tt > 0.0) sInt *= ringTrans(length(rel + sDir * tt) / vRingS.w);\n' +
+    '      }\n' +
+    '    }\n' +
     '    if (vOcc.w > 0.0) {\n' +
     '      vec3 oc = vOcc.xyz - geometry.position;\n' +
     '      float ot = dot(oc, sDir);\n' +
@@ -5725,6 +5752,11 @@ if (bodies.instanceColor) {
      radius are the layout's and do not move. */
   bOcc = new Float32Array(Math.max(1, N) * 4);
   bOccS = new Float32Array(Math.max(1, N));
+  /* the plane a body's own rings lie in, and where their inner edge is —
+     filled in by the ring block further down, which is where it is decided
+     who has rings at all. w stays zero for everyone else, and the shader's
+     ring-shadow branch is skipped for them. */
+  bRing = new Float32Array(Math.max(1, N) * 4);
   const white = new THREE.Color(0xffffff), _c = new THREE.Color();
   for (let i=0;i<N;i++){
     const o = orb[i];
@@ -5765,6 +5797,7 @@ if (bodies.instanceColor) {
     aOcc.setUsage(THREE.DynamicDrawUsage);
     bodyGeo.setAttribute('aOcc', aOcc);
     bodyGeo.setAttribute('aOccS', new THREE.InstancedBufferAttribute(bOccS, 1));
+    bodyGeo.setAttribute('aRingS', new THREE.InstancedBufferAttribute(bRing, 4));
   }
 }
 
@@ -5954,6 +5987,15 @@ if (ringIdx.length) {
        moves the whole annulus with it, and the outer edge stays under the
        2.44 the Roche limit allows however heavily a note is cited. */
     ringK[k] = 1.185 + ((nodes[i].inb | 0) / maxIn) * 0.135;
+    /* and the same plane, handed to the body shader so the ring can throw
+       its shadow across the globe underneath it. The ring geometry's own
+       normal is +Z and the quaternion above is a quarter turn on the
+       obliquity, so the plane's normal comes out as the spin axis — which
+       is the same statement as the ring being equatorial, said twice. */
+    bRing[i*4]     = 0;
+    bRing[i*4 + 1] = Math.cos(bodySpin[i*4]);
+    bRing[i*4 + 2] = Math.sin(bodySpin[i*4]);
+    bRing[i*4 + 3] = RAD[i] * ringK[k];
     ringMesh.setColorAt(k, new THREE.Color(
       lerp(COL[i*3],   1, .30), lerp(COL[i*3+1], 1, .30), lerp(COL[i*3+2], 1, .30)));
   });
@@ -10634,6 +10676,9 @@ const heroStar = { uStar: { value: new THREE.Vector4(0,0,0,100) },
                       is exactly the thing worth being close to */
                    uOcc: { value: new THREE.Vector4(0,0,0,0) },
                    uOccS: { value: 6 },
+                   /* and its rings, if it has any — the close-up is exactly
+                      where a ring shadow is worth having */
+                   uRingS: { value: new THREE.Vector4(0,1,0,0) },
                    aSurf: { value: new THREE.Vector3(0,0,8) } };
 const _hs = new Float32Array(4), _hseed = new Float32Array(3);
 function heroBuild() {
@@ -10646,6 +10691,7 @@ function heroBuild() {
     sh.uniforms.uStarCol = heroStar.uStarCol;
     sh.uniforms.uOcc = heroStar.uOcc;
     sh.uniforms.uOccS = heroStar.uOccS;
+    sh.uniforms.uRingS = heroStar.uRingS;
     /* the seed is a uniform here rather than an instanced attribute — one
        mesh has no instances to carry one */
     sh.uniforms.aSurf = heroStar.aSurf;
@@ -10700,6 +10746,8 @@ function heroStep(dt) {
     heroStar.uOcc.value.set(bOcc[heroIdx*4], bOcc[heroIdx*4+1],
                             bOcc[heroIdx*4+2], bOcc[heroIdx*4+3]);
     heroStar.uOccS.value = bOccS[heroIdx] || 6;
+    if (bRing) heroStar.uRingS.value.set(bRing[heroIdx*4], bRing[heroIdx*4+1],
+                                         bRing[heroIdx*4+2], bRing[heroIdx*4+3]);
   }
   /* the same rotation writeInstances gives the instance it replaced, from
      the same table — a body that changed its spin as you arrived would be
