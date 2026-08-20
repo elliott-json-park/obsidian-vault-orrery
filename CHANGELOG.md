@@ -4,6 +4,54 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.6.0
+
+The picture, mostly. 1.5.0 subtracted; this one goes back over what was left
+and makes it look like the thing it is describing.
+
+- **The bodies stop being mirror balls.** The plating lit every plate
+  independently, and a surface made of independently bright facets says
+  "covered in small reflectors" however the light falls on it — the sphere
+  underneath disappears. The plates vary by six per cent now instead of fifty,
+  the albedo is charcoal with the system's hue mixed into it rather than the
+  system's colour dimmed, and what makes a body legible is the star: a long
+  day gradient swept from well behind the terminator to past noon, and a
+  narrow lit-side limb so a dark planet in front of the starfield still has an
+  edge.
+- **The sun gets its glare**, which is what a star looks like once its disc is
+  too small to be one. It is keyed to the disc's size in pixels rather than to
+  distance, so it takes over exactly where the corona has become a dot, and it
+  is the only thing in the scene that grows as you back away from it.
+  **SUN HALO** turns it down.
+- **The folder stars stop being cages.** The shield was twenty wireframe
+  triangles the size of the star itself; it is eighty finer facets now, pulled
+  in and taken down to a third of its opacity. The ring went from 0.12 of the
+  radius thick to 0.035, and a second, fainter one leans against it at another
+  angle. What they lose in structure the star gains in light.
+- **The sky stretches under thrust.** Stars streak radially away from wherever
+  the nose is pointed — barely at the centre of the frame, hard at the edges,
+  which is the gradient that makes it read as travelling rather than as a
+  filter. Only the background: a planet whose glow smeared while the planet
+  did not would read as a fault.
+- **The control deck can be moved and resized.** Drag the title bar, pull the
+  bottom-right corner, and the sliders reflow into whatever width you leave
+  them. Double-click the title or press RESET to hand it back to the automatic
+  layout.
+- **PLANET GLOW and MOON GLOW run to 8.00×**, where the two light sources stop
+  at 3.00×.
+- **Genesis has a close button**, having been the one pane whose only exits
+  were a key you had to already know.
+- **The sound panel keeps six knobs**: MASTER, TUNING, SCALE, ROOM SIZE, ECHO
+  TAIL, ECHO TIME — and AMBIENT, which is what DRONE always was. The rest are
+  constants at exactly the values they shipped at, so switching sound on
+  sounds the way it did.
+- **New defaults.** Slower and wider (ORBIT SPEED 0.18×, GAP 4.37×, SPREAD
+  3.20×), darker between the bodies and brighter at them (LINK GLOW 0.05×
+  against NODE GLOW 2.60×), flat arcs and spherical orbits, and every ambient
+  effect turned down. MAX NODES ships with no ceiling: a cap that quietly
+  drops half a vault answers "show me my notes" with a subset.
+- **Gone:** the twelve-second clip recorder.
+
 ## 1.5.0
 
 A subtractive release. Six of the picture's knobs, one whole mode and about a

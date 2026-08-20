@@ -1,7 +1,7 @@
 {
   "id": "vault-orrery",
   "name": "Vault Orrery",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "minAppVersion": "1.7.2",
   "description": "Fly through your vault as a star system — a 3D graph with a spaceship, a surface mode and a formation timeline. Runs entirely offline.",
   "author": "Elliott Park",
