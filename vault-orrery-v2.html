@@ -63,11 +63,6 @@ canvas{display:block}
 .row span:last-child{color:var(--cy);font-variant-numeric:tabular-nums}
 .am{color:var(--am)!important}
 
-/* the scan lines used to fight the starfield; they are barely there now */
-#vig{position:fixed;inset:0;z-index:9;pointer-events:none;
-  background:
-   radial-gradient(ellipse at center,transparent 48%,rgba(0,0,0,.66) 100%),
-   repeating-linear-gradient(0deg,rgba(92,225,255,.012) 0 1px,transparent 1px 4px)}
 
 /* ---------- top-left : identity ---------- */
 #idp{top:16px;left:16px;width:238px}
@@ -572,55 +567,6 @@ canvas{display:block}
    entirely — the whole point is the sky, and a control deck across the top
    of a sunrise is vandalism. What is left is the name of the world you are
    on, where its sun is, and how to leave. */
-body.sky #ctl,body.sky #leg,body.sky #keys,
-body.sky #insp,body.sky #gen,body.sky #tgt{display:none}
-body.sky{cursor:grab}
-body.sky.look{cursor:grabbing}
-/* a dark band top and bottom, like a viewport: it frames the sky and it
-   gives the two readouts something to sit on */
-#skyfr{position:fixed;inset:0;z-index:8;pointer-events:none;display:none;
-  background:linear-gradient(180deg,rgba(2,5,12,.72) 0%,transparent 13%,
-    transparent 84%,rgba(2,5,12,.80) 100%)}
-body.sky #skyfr{display:block}
-
-#skytop{top:18px;left:50%;transform:translateX(-50%);display:none;
-  text-align:center;pointer-events:none;z-index:12}
-body.sky #skytop{display:block}
-#skytop u{display:block;text-decoration:none;font-family:var(--kr);font-size:23px;
-  letter-spacing:.05em;color:#eaf9ff;text-shadow:0 0 26px rgba(92,225,255,.6),
-  0 0 60px rgba(92,225,255,.25);text-transform:none;white-space:nowrap}
-#skytop s{display:block;text-decoration:none;font-size:8.5px;letter-spacing:.34em;
-  opacity:.5;margin-top:5px}
-
-#skyp{bottom:16px;left:50%;transform:translateX(-50%);width:min(560px,80vw);display:none}
-body.sky #skyp{display:block}
-#skyp .bd{display:flex;gap:0;padding:0}
-#skyp .cell{flex:1;padding:7px 10px 8px;border-right:1px solid rgba(92,225,255,.12);
-  min-width:0;text-align:center}
-#skyp .cell:last-child{border-right:0}
-#skyp .cell u{display:block;text-decoration:none;font-size:14px;color:var(--am);
-  font-variant-numeric:tabular-nums;text-shadow:0 0 14px rgba(255,182,72,.45);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#skyp .cell s{display:block;text-decoration:none;font-size:7.5px;letter-spacing:.14em;
-  opacity:.45;margin-top:3px}
-/* the day bar: where the local sun is, from midnight through noon and back */
-#skyday{height:3px;background:rgba(92,225,255,.14);margin-top:6px;position:relative}
-#skyday i{position:absolute;top:-2px;width:7px;height:7px;border-radius:50%;
-  background:var(--am);box-shadow:0 0 9px var(--am);transform:translateX(-50%)}
-#skykeys{position:fixed;z-index:12;bottom:16px;left:16px;display:none;
-  font-size:8.5px;letter-spacing:.13em;opacity:.34;line-height:2;pointer-events:none}
-body.sky #skykeys{display:block}
-/* a compass rose along the bottom of the sky, so a turn has a direction */
-#skycomp{position:fixed;z-index:11;left:0;right:0;bottom:96px;height:15px;display:none;
-  overflow:hidden;pointer-events:none;
-  mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent)}
-body.sky #skycomp{display:block}
-#skycomp i{position:absolute;top:0;transform:translateX(-50%);font-style:normal;
-  font-size:8px;letter-spacing:.2em;opacity:.5;white-space:nowrap}
-#skycomp i:after{content:"";position:absolute;left:50%;bottom:-4px;width:1px;height:4px;
-  background:rgba(92,225,255,.5)}
-
 /* ================= SHIP MODE ================= */
 body.ship{cursor:none}
 body.ship #ctl,body.ship #leg,body.ship #keys,body.ship #insp{display:none}
@@ -814,7 +760,6 @@ body.ship #heat.on{display:block}
 <body>
 
 <canvas id="gl"></canvas>
-<div id="vig"></div>
 <div id="warpvig"></div>
 
 <div id="hud">
@@ -908,7 +853,6 @@ body.ship #heat.on{display:block}
       <div class="row"><span>SEARCH</span><span>/</span></div>
       <div class="row"><span>MIND MAP</span><span>M · DBL-CLICK</span></div>
       <div class="row"><span>SPACESHIP</span><span>F</span></div>
-      <div class="row"><span>STAND ON PLANET</span><span>V</span></div>
       <div class="row"><span>GENESIS · TWINS</span><span>G · N</span></div>
       <div class="row"><span>RIPPLE · POSTER</span><span>SPACE · P</span></div>
       <div class="row"><span>RECORD CLIP</span><span>C</span></div>
@@ -940,7 +884,6 @@ body.ship #heat.on{display:block}
         <div class="mini host vio" id="i-open" style="margin-top:10px;display:none" data-i18n="insp.open">↗ 옵시디언에서 열기 [O]</div>
         <div class="mini am" id="i-go" style="margin-top:10px" data-i18n="insp.go">◎ 이동하기</div>
         <div class="mini" id="i-mm" data-i18n="insp.mm">◈ 마인드맵 열기 [M]</div>
-        <div class="mini am" id="i-sky" data-i18n="insp.sky">⛰ 이 행성에 내려서기 [V]</div>
         <div class="mini" id="i-twin" data-i18n="insp.twin">≈ 닮은 노트 찾기 [N]</div>
         <div class="mini" id="i-ripple" data-i18n="insp.ripple">◉ 여기서 파문 일으키기 [SPACE]</div>
       </div>
@@ -980,25 +923,8 @@ body.ship #heat.on{display:block}
     </div>
   </div>
 
-  <div class="pane" id="skytop">
-    <u id="sky-name">—</u><s id="sky-sub">SURFACE</s>
-  </div>
-
-  <div class="pane glass" id="skyp">
-    <div class="ttl"><b>SURFACE LOG</b><span id="sky-fov">58°</span></div>
-    <div class="bd">
-      <div class="cell"><u id="sky-sun">—</u><s data-i18n="sky.sun">모항성 고도</s>
-        <div id="skyday"><i></i></div></div>
-      <div class="cell"><u id="sky-vis">—</u><s data-i18n="sky.vis">하늘에 뜬 이웃</s></div>
-      <div class="cell"><u id="sky-loc">—</u><s data-i18n="sky.loc">위도 · 자전</s></div>
-    </div>
-  </div>
-
-  <div id="skycomp"></div>
-  <div id="skykeys" data-i18n="sky.keys">드래그 · 시야 돌리기</div>
 </div>
 
-<div id="skyfr"></div>
 
 <div id="xhair">
   <svg width="80" height="80" viewBox="0 0 80 80">
@@ -1267,7 +1193,6 @@ const STR = {
 'cnt.far':     ['연결 위성','FAR MOONS','接続衛星','连接卫星'],
 'insp.go':     ['◎ 이동하기','◎ TRAVEL','◎ 移動する','◎ 前往'],
 'insp.mm':     ['◈ 마인드맵 열기 [M]','◈ MIND MAP [M]','◈ マインドマップ [M]','◈ 思维导图 [M]'],
-'insp.sky':    ['⛰ 이 행성에 내려서기 [V]','⛰ LAND ON PLANET [V]','⛰ この惑星に降りる [V]','⛰ 降落到这颗行星 [V]'],
 'insp.twin':   ['≈ 닮은 노트 찾기 [N]','≈ FIND TWINS [N]','≈ 似たノートを探す [N]','≈ 查找相似笔记 [N]'],
 'insp.ripple': ['◉ 여기서 파문 일으키기 [SPACE]','◉ RIPPLE FROM HERE [SPACE]',
                 '◉ ここから波紋 [SPACE]','◉ 从此处泛起涟漪 [SPACE]'],
@@ -1340,17 +1265,6 @@ const STR = {
 'ship.nolock': ['먼저 대상에 충분히 가까이 접근하세요','Get close enough to a target first',
                 'まず対象に十分近づいてください','请先靠近目标'],
 'ship.scan':   ['{name} · 연결 {n} 표시','{name} · {n} links shown','{name} · 接続 {n} 件 表示','{name} · 显示 {n} 条连接'],
-'sky.sun':     ['모항성 고도','SUN ALTITUDE','恒星高度','恒星高度'],
-'sky.vis':     ['하늘에 뜬 이웃','NEIGHBOURS UP','空の隣人','天空中的邻居'],
-'sky.loc':     ['위도 · 자전','LAT · SPIN','緯度 · 自転','纬度 · 自转'],
-'sky.keys':    ['드래그 · 시야 돌리기<br>A D · 걸어서 경도 이동<br>W S · 위도 이동<br>휠 · 시야각 (망원 ↔ 광각)<br>SHIFT · 자전 가속<br>R · 시점 초기화<br>V 또는 ESC · 이 행성을 떠나기',
-                'DRAG · LOOK AROUND<br>A D · WALK IN LONGITUDE<br>W S · WALK IN LATITUDE<br>WHEEL · FIELD OF VIEW (TELE ↔ WIDE)<br>SHIFT · SPIN FASTER<br>R · RESET THE VIEW<br>V OR ESC · LEAVE THIS PLANET',
-                'ドラッグ · 視点を回す<br>A D · 経度方向に歩く<br>W S · 緯度方向に歩く<br>ホイール · 画角 (望遠 ↔ 広角)<br>SHIFT · 自転を加速<br>R · 視点リセット<br>V または ESC · この惑星を離れる',
-                '拖动 · 转动视角<br>A D · 沿经度行走<br>W S · 沿纬度移动<br>滚轮 · 视场角（长焦 ↔ 广角）<br>SHIFT · 加速自转<br>R · 重置视角<br>V 或 ESC · 离开这颗行星'],
-'sky.nocore':  ['중심 항성 표면에는 설 수 없습니다','You cannot stand on the central star',
-                '中心の恒星の表面には立てません','无法站在中心恒星表面'],
-'sky.land':    ['착륙 · {n}','LANDED · {n}','着陸 · {n}','着陆 · {n}'],
-'sky.leave':   ['이륙','LIFT-OFF','離陸','起飞'],
 'fam.gas':     ['가스 거인','GAS GIANT','ガス惑星','气态巨行星'],
 'fam.terra':   ['지구형 행성','TERRESTRIAL','地球型惑星','类地行星'],
 'fam.rock':    ['암석 행성','ROCKY','岩石惑星','岩石行星'],
@@ -1841,12 +1755,7 @@ const KNOBS = [
   { k:'arc', g:'cosmos', label:'ARC HEIGHT',    min:0,  max:ARC_MAX*100, sc:100, def:1,
     fmt:v => v < 0.02 ? 'FLAT' : mult(v) },
   { k:'ten', g:'cosmos', label:'LINK TENSION',  min:0,  max:100, sc:100, def:.5, fmt:v => v.toFixed(2) },
-  { k:'age', g:'cosmos', label:'AGE TINT',      min:0,  max:100, sc:100, def:.6,
-    fmt:v => offAt(v, v.toFixed(2)), apply: () => recolour() },
-  /* AGE TINT colours a note by when it was written. This lights one by when
-     it was last touched, and the two are different questions often enough to
-     be worth separate answers: a vault's oldest note can be the one its owner
-     edited an hour ago.
+  /* RECENT WORK lights a note by when it was last touched.
 
      The knob is the window rather than the intensity, because the window is
      the part with an argument in it. "How bright" is taste; "what counts as
@@ -1914,16 +1823,6 @@ const KNOBS = [
     fmt:v => offAt(v, mult(v)) },
   { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:.55,
     fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
-  { k:'fil', g:'light',  label:'FILM GRADE',    min:0,  max:150, sc:100, def:.55,
-    fmt:v => offAt(v, mult(v)) },
-  { k:'vig', g:'light',  label:'VIGNETTE',      min:0,  max:150, sc:100, def:.5,
-    fmt:v => offAt(v, mult(v)) },
-  { k:'grn', g:'light',  label:'FILM GRAIN',    min:0,  max:150, sc:100, def:.3,
-    fmt:v => offAt(v, mult(v)) },
-  { k:'abr', g:'light',  label:'LENS FRINGE',   min:0,  max:150, sc:100, def:.3,
-    fmt:v => offAt(v, mult(v)) },
-  { k:'drf', g:'light',  label:'CAMERA DRIFT',  min:0,  max:200, sc:100, def:.5,
-    fmt:v => offAt(v, mult(v)) },
   /* One knob for two effects, because they are one effect: the cockpit
      shaking and the frame smearing radially are both "how hard is this being
      flown", they only ever appear together, and a reader who turns one off
@@ -2292,34 +2191,8 @@ const STAR_TEMPS = [
    the same folder ten years apart plainly different, which is the question
    this was added to answer. The knob goes to 1.00 for anyone who wants the
    date to shout rather than speak. */
-const AGE_NEUTRAL = STAR_TEMPS[3];      // the G row: the sun, cream
-function applyAgeTint() {
-  if (!N || !COLB) return;
-  const span = GEN.hi - GEN.lo;
-  const k = clamp(SET.age, 0, 1);
-  const c = new THREE.Color();
-  for (let i=0;i<N;i++){
-    const b0 = COLB[i*3], b1 = COLB[i*3+1], b2 = COLB[i*3+2];
-    /* the hub is the vault itself, not a note in it, and it has a colour of
-       its own that means "this is the centre" */
-    if (k <= 0.001 || i === coreIdx || !bornAt[i] || span <= 0) {
-      COL[i*3] = b0; COL[i*3+1] = b1; COL[i*3+2] = b2;
-      continue;
-    }
-    /* 0 at the newest note in the vault, 1 at the oldest — which is the
-       direction STAR_TEMPS already runs in */
-    starColor(1 - (bornAt[i] - GEN.lo) / span, c);
-    const mr = lerp(1, c.r / AGE_NEUTRAL[0], k);
-    const mg = lerp(1, c.g / AGE_NEUTRAL[1], k);
-    const mb = lerp(1, c.b / AGE_NEUTRAL[2], k);
-    COL[i*3]   = clamp(b0 * mr, 0, 1);
-    COL[i*3+1] = clamp(b1 * mg, 0, 1);
-    COL[i*3+2] = clamp(b2 * mb, 0, 1);
-  }
-}
 /* the knob moves after the buffers are built, so the buffers have to be told */
 function recolour() {
-  applyAgeTint();
   if (!N) return;
   if (bodies && bodies.instanceColor) {
     for (let i=0;i<N;i++) bodies.setColorAt(i, _tmpCol.setRGB(COL[i*3], COL[i*3+1], COL[i*3+2]));
@@ -2808,7 +2681,6 @@ computeFresh();
 /* the folder colours as built, before the age tint is mixed into them, so the
    knob can be turned back down as well as up */
 COLB = COL.slice();
-applyAgeTint();
 GEN.u = 0; GEN.play = false; GEN.stage = -1; GEN.marksFor = null;
 
 /* ---- the formation schedule -----------------------------------------
@@ -3054,27 +2926,11 @@ void main(){
    having, and it now extends to the grade. */
 const COMP_F = `
 uniform sampler2D tScene; uniform sampler2D tBloom; uniform sampler2D tRay;
-uniform float uAmt, uRay, uFilm, uVig, uGrain, uAbr, uTime, uBlur, uHeat;
+uniform float uAmt, uRay, uBlur, uHeat;
 varying vec2 vUv;
-vec3 tonemap(vec3 x){
-  /* a shoulder, not a curve fit to anything in particular: it has to be
-     monotonic, leave the bottom two thirds nearly alone, and never reach 1 */
-  return (x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14);
-}
 void main(){
   vec2 d = vUv - 0.5;
-  float r2 = dot(d, d);
-  vec3 c;
-  if (uAbr > 0.001) {
-    /* quadratic in radius, like the aberration of a real lens: nothing at the
-       centre, and it never becomes the subject */
-    vec2 o = d * r2 * uAbr * 0.055;
-    c = vec3(texture2D(tScene, vUv + o).r,
-             texture2D(tScene, vUv).g,
-             texture2D(tScene, vUv - o).b);
-  } else {
-    c = texture2D(tScene, vUv).rgb;
-  }
+  vec3 c = texture2D(tScene, vUv).rgb;
   /* ---- radial blur ----
      What the warp streaks were standing in for. A streak field is a set of
      objects that happen to be long; motion blur is the whole frame being
@@ -3117,21 +2973,6 @@ void main(){
     c *= 1.0 + h * 0.50;
     c += vec3(0.12, 0.050, 0.018) * h;
   }
-  if (uFilm > 0.001) {
-    vec3 g = tonemap(c * (1.0 + uFilm * 0.22));
-    float l = dot(g, vec3(0.2126, 0.7152, 0.0722));
-    g *= mix(vec3(0.85, 0.94, 1.14), vec3(1.11, 1.02, 0.86),
-             smoothstep(0.09, 0.74, l));
-    c = mix(c, g, clamp(uFilm, 0.0, 1.0));
-  }
-  if (uVig > 0.001)
-    c *= mix(1.0, smoothstep(1.10, 0.16, r2 * 2.0), clamp(uVig, 0.0, 1.0) * 0.8);
-  if (uGrain > 0.001) {
-    float n = fract(sin(dot(vUv * 1024.0 + uTime, vec2(12.9898, 78.233))) * 43758.5453);
-    /* signed, and scaled with how dark the pixel already is: grain sits in
-       the shadows of a real frame and is invisible in its highlights */
-    c += (n - 0.5) * uGrain * 0.055 * (1.0 - smoothstep(0.0, 0.85, max(c.r, max(c.g, c.b))));
-  }
   gl_FragColor = vec4(c, 1.0);
 }`;
 function bloomInit() {
@@ -3152,9 +2993,8 @@ function bloomInit() {
                          uDecay:{value:0.945}, uWeight:{value:0.052} };
   BLOOM.comp = mk(COMP_F);
   BLOOM.comp.uniforms = { tScene:{value:null}, tBloom:{value:null}, tRay:{value:null},
-                          uAmt:{value:0.6}, uRay:{value:0}, uFilm:{value:0},
-                          uVig:{value:0}, uGrain:{value:0}, uAbr:{value:0},
-                          uTime:{value:0}, uBlur:{value:0}, uHeat:{value:0} };
+                          uAmt:{value:0.6}, uRay:{value:0},
+                          uBlur:{value:0}, uHeat:{value:0} };
   BLOOM.quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), BLOOM.bright);
   BLOOM.quad.frustumCulled = false;
   BLOOM.scene = new THREE.Scene();
@@ -3237,8 +3077,6 @@ function renderFrame() {
                        ((RAD[coreIdx] || 17) * 34) - 0.12, 0, 1);
     rayAmt = SET.ray * edge * room * room;
   }
-  /* the grade is four knobs and any one of them is reason enough to composite */
-  const film = SET.fil + SET.vig + SET.grn + SET.abr;
   /* The two cockpit passes. Both are zero everywhere except in the ship, and
      both have to be in the gate below or a frame that wants only them takes
      the plain path and silently drops them — which is how an effect comes to
@@ -3248,7 +3086,7 @@ function renderFrame() {
   /* The plain path stays exactly what it was, and is still taken whenever
      nothing has been asked for — the identity between it and the composite at
      zero was worth measuring once and is worth keeping. */
-  if ((amt <= 0.02 && rayAmt <= 0.02 && film <= 0.02 &&
+  if ((amt <= 0.02 && rayAmt <= 0.02 &&
        blur <= 0.02 && heat <= 0.02) || !BLOOM.ok) {
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
@@ -3257,10 +3095,6 @@ function renderFrame() {
   renderer.setRenderTarget(BLOOM.rt);
   renderer.clear();
   renderer.render(scene, camera);
-  /* the surface you are standing on belongs in the bloom too, or the ground
-     is the one thing in frame that light does not touch */
-  if (SKY.on) { renderer.autoClear = false; renderer.clearDepth();
-                renderer.render(stageScene, stageCam); renderer.autoClear = true; }
 
   /* The bright pass and the blur chain feed both the glow and the shafts, so
      they run if either is wanted — and are skipped entirely for a frame that
@@ -3301,16 +3135,8 @@ function renderFrame() {
   U.tRay.value   = BLOOM.c.texture;
   U.uAmt.value   = glow ? amt : 0;
   U.uRay.value   = rayAmt > 0.02 ? rayAmt : 0;
-  U.uFilm.value  = SET.fil;
-  U.uVig.value   = SET.vig;
-  U.uGrain.value = SET.grn;
-  U.uAbr.value   = SET.abr;
   U.uBlur.value  = blur;
   U.uHeat.value  = heat;
-  /* the grain has to move, or it is dirt on the sensor rather than noise in
-     it — and it has to move on the wall clock, since a frozen sky is still a
-     photograph being taken */
-  U.uTime.value  = (performance.now() * 0.001) % 1000;
   BLOOM.quad.material = BLOOM.comp;
   renderer.setRenderTarget(null);
   renderer.render(BLOOM.scene, BLOOM.cam);
@@ -5372,13 +5198,6 @@ function applyCam(dt) {
      On the wall clock, not the orbital one: freezing the sky with ORBIT SPEED
      is a decision about the cosmos, not about the camera holding it. */
   let cth = rig.th, cph = rig.ph, cdist = rig.dist, croll = rig.roll;
-  if (SET.drf > 0.004) {
-    const s = performance.now() * 0.001, d = SET.drf;
-    cth   += (Math.sin(s*0.083) * 0.011 + Math.sin(s*0.191 + 1.7) * 0.005) * d;
-    cph    = clamp(cph + Math.sin(s*0.127 + 0.6) * 0.008 * d, 0.10, Math.PI - 0.10);
-    cdist *= 1 + Math.sin(s*0.061 + 2.3) * 0.007 * d;
-    croll += Math.sin(s*0.047 + 0.9) * 0.011 * d;
-  }
   const sp = Math.sin(cph), cp = Math.cos(cph);
   camera.position.set(
     rig.tgt.x + cdist*sp*Math.sin(cth),
@@ -5985,7 +5804,7 @@ $('i-ripple').onclick = rippleHere;
    still a vault where everything is connected to everything else. */
 let ripNext = 9 + Math.random() * 8;
 function rippleAmbient(dt) {
-  if (!N || GEN.on || ship.on || SKY.on) return;
+  if (!N || GEN.on || ship.on) return;
   ripNext -= dt;
   if (ripNext > 0) return;
   ripNext = 16 + Math.random() * 16;
@@ -6383,15 +6202,14 @@ function meteorStep(dt) {
    back, at a raised pixel ratio, with the HUD out of the way. */
 function savePoster() {
   if (!N) { toast(T('need.vault')); return; }
-  const hud = $('hud'), vig = $('vig'), xh = $('xhair'), sf = $('skyfr');
-  const keep = [hud.style.display, vig.style.display, xh.style.display, sf.style.display];
+  const hud = $('hud'), xh = $('xhair');
+  const keep = [hud.style.display, xh.style.display];
   const pr0 = renderer.getPixelRatio();
   /* aim for a long edge near 4K without asking the GPU for something it will
      refuse to allocate */
   const scale = clamp(Math.round(3840 / Math.max(1, innerWidth)), 1, 4);
   try {
-    hud.style.display = 'none'; vig.style.display = 'none'; xh.style.display = 'none';
-    sf.style.display = 'none';
+    hud.style.display = 'none'; xh.style.display = 'none';
     renderer.setPixelRatio(scale);
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight;
@@ -6400,18 +6218,12 @@ function savePoster() {
        a fraction of the size it has on screen */
     const sc = innerHeight / (2 * Math.tan(camera.fov * Math.PI/360)) * scale;
     glowMats.forEach(m => { if (m.uniforms) m.uniforms.uScale.value = sc; });
-    /* a poster taken from a surface has to include the surface */
-    if (SKY.on) {
-      stageCam.aspect = innerWidth / innerHeight;
-      stageCam.updateProjectionMatrix();
-    }
     /* The buffers are resized to the poster before it is drawn and put back
        by resize() in the finally below. Skipping this would not merely blur
        the bloom — it would sample a quarter of a 4K frame from a screen-sized
        target and light the wrong half of the picture. */
     bloomSize(Math.max(1, innerWidth * scale), Math.max(1, innerHeight * scale));
-    const composited = renderFrame();
-    if (SKY.on && !composited) skyRender();
+    renderFrame();
 
     const src = renderer.domElement;
     const out = document.createElement('canvas');
@@ -6447,8 +6259,7 @@ function savePoster() {
     toast(T('poster.fail'));
   } finally {
     renderer.setPixelRatio(pr0);
-    hud.style.display = keep[0]; vig.style.display = keep[1]; xh.style.display = keep[2];
-    sf.style.display = keep[3];
+    hud.style.display = keep[0]; xh.style.display = keep[1];
     resize();                                   // puts uScale and the size back
   }
 }
@@ -9330,14 +9141,6 @@ const DBL_MS = 420, DBL_SLOP = 20;
 
 canvas.addEventListener('pointerdown', e => {
   if (ship.on) { if (!ship.scan) requestLook(); return; }
-  /* on a surface the drag turns your head. No pointer lock: the cursor is
-     still wanted for the panel, and you are not steering anything. */
-  if (SKY.on) {
-    dragging = 1; lx = e.clientX; ly = e.clientY;
-    document.body.classList.add('look');
-    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-    return;
-  }
   dragging = e.button === 2 ? 2 : 1;
   lx = e.clientX; ly = e.clientY; moved = 0; dragNodeIdx = -1;
   downX = e.clientX; downY = e.clientY;
@@ -9358,16 +9161,6 @@ canvas.addEventListener('pointerdown', e => {
 });
 canvas.addEventListener('pointermove', e => {
   if (ship.on) return;
-  if (SKY.on) {
-    if (!dragging) return;
-    const sx = e.clientX - lx, sy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
-    /* scaled by the field of view, so a telephoto sky pans as slowly as a
-       telephoto lens does rather than whipping across the frame */
-    const k = SKY.fov / 58 * 0.0030;
-    SKY.yaw -= sx * k;
-    SKY.pitch = clamp(SKY.pitch + sy * k, -0.42, 1.45);
-    return;
-  }
   const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY;
   mouseNDC.x = (e.clientX/innerWidth)*2-1;
   mouseNDC.y = -(e.clientY/innerHeight)*2+1;
@@ -9389,7 +9182,6 @@ canvas.addEventListener('pointerleave', () => {
 });
 addEventListener('pointerup', e => {
   if (ship.on) { dragging = 0; return; }
-  if (SKY.on) { dragging = 0; document.body.classList.remove('look'); return; }
   if (!dragging) return;
   const isClick = Math.hypot(e.clientX - downX, e.clientY - downY) <= CLICK_SLOP &&
                   moved < CLICK_PATH;
@@ -9437,10 +9229,6 @@ canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('wheel', e => {
   if (ship.on) return;
   e.preventDefault();
-  /* on a surface the wheel is a lens, not a dolly — you cannot step back
-     from a planet you are standing on, but you can narrow your eyes at the
-     star coming up over the ridge */
-  if (SKY.on) { SKY.fov = clamp(SKY.fov * Math.exp(e.deltaY * 0.0011), 11, 96); return; }
   zoomBy(Math.exp(e.deltaY * 0.0011));
 }, { passive:false });
 
@@ -9505,25 +9293,6 @@ addEventListener('keydown', e => {
     e.preventDefault(); openNote(selected, e); return;
   }
 
-  /* on a surface the movement keys walk you around the world rather than
-     flying you anywhere — the sky is what changes, not your address */
-  if (SKY.on) {
-    if (k === 'v' || k === 'escape') { e.preventDefault(); skyExit(); return; }
-    if (/^[wasd]$/.test(k)) { e.preventDefault(); keysDown.add(k); return; }
-    if (k === 'shift') { SKY.rate = 16; return; }
-    if (k === 'h') {
-      /* the letterbox is part of the HUD here, so it goes with it */
-      const off = $('hud').style.display !== 'none';
-      $('hud').style.display = off ? 'none' : '';
-      $('skyfr').style.display = off ? 'none' : '';
-      return;
-    }
-    if (k === 'p') { e.preventDefault(); savePoster(); return; }
-    if (k === 'c') { e.preventDefault(); recordClip(); return; }
-    if (k === 'r') { SKY.yaw = 0; SKY.pitch = 0.10; SKY.fov = 58; return; }
-    return;
-  }
-
   if (ship.on && /^[wasdqe]$/.test(k)) {
     keysDown.add(k); shipManual(); return;
   }
@@ -9586,7 +9355,6 @@ addEventListener('keydown', e => {
   else if (k === 'r') resetView();
   else if (k === 'l') cycleLayer();
   else if (k === 'g') { e.preventDefault(); toggleGenesis(); }
-  else if (k === 'v') { e.preventDefault(); toggleSky(); }
   else if (k === 'n') { e.preventDefault(); twinsShow(selected); }
   else if (k === ' ') { e.preventDefault(); if (!e.repeat) rippleHere(); }
   else if (k === 'p') { e.preventDefault(); savePoster(); }
@@ -9616,9 +9384,9 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => {
   const k = e.key.toLowerCase();
   keysDown.delete(k);
-  if (k === 'shift') { ship.boost = false; SKY.rate = 1; }
+  if (k === 'shift') { ship.boost = false; }
 });
-addEventListener('blur', () => { keysDown.clear(); ship.boost = false; SKY.rate = 1; });
+addEventListener('blur', () => { keysDown.clear(); ship.boost = false; });
 
 /* ============================================================ HERO PLANET
    The instanced body is a shared sphere wearing a patch of a shared texture,
@@ -9649,7 +9417,6 @@ function heroBuild() {
 }
 function heroWant() {
   if (!N || GEN.on) return -1;
-  if (SKY.on) return -1;                       // you are standing on it
   /* the hub already has its own unlit sun geometry — putting a lit rock over
      the top of it would be drawing a planet where the star is */
   const near = i => {
@@ -9706,434 +9473,6 @@ function heroDrop() {
   heroMesh = null; heroIdx = -1; heroReady = false;
 }
 
-/* ============================================================== SKY VIEW
-   Stand on a note and look up.
-
-   The trick is that two things are being drawn at once and they cannot share
-   a scale. The sky is the real cosmos, at its real distances — the folder's
-   star is genuinely forty units away and genuinely eight units across, which
-   from the surface is a sun twenty times the width of ours, and the point of
-   this view is that you did not have to fake that. The ground cannot be the
-   real body: standing on a sphere of radius three gives you the horizon of a
-   pebble. So the ground is a *stage* — a world-sized sphere, built from this
-   note's own surface, rendered in a second pass over the first with the
-   depth buffer cleared between them. Both cameras carry the same field of
-   view and the same pitch relative to their own up vector, so the horizon
-   sits where the sky says it should.
-
-   Everything else falls out of that honestly:
-     · the standing point rotates about the planet's tilted axis, so the star
-       rises, crosses and sets, and the cosmos wheels overhead
-     · the sky's own light is the star's altitude — at dusk the airglow drains
-       out of it and the vault's starfield comes through
-     · the ground is lit by a directional light aimed the way the real star
-       actually lies, so the terminator on the ground agrees with the sky   */
-const SKY = {
-  on:false, i:-1, yaw:0, pitch:0.10, fov:58,
-  lat:0.30, lon:0, spin:0, rate:1, dayF:0.5, sunAlt:0
-};
-const GROUND_R = 1500, EYE_H = 16;
-let stageScene = null, stageCam = null, groundMesh = null, airglow = null,
-    sunA = null, sunB = null, stageAmb = null, sunDisc = null, sunHaze = null;
-const _sn = new THREE.Vector3(), _se = new THREE.Vector3(), _snr = new THREE.Vector3(),
-      _sd = new THREE.Vector3(), _sun = new THREE.Vector3(), _eye = new THREE.Vector3(),
-      _axis = new THREE.Vector3(), _e1 = new THREE.Vector3(), _e2 = new THREE.Vector3();
-
-const AIR_V = `
-varying vec3 vDir;
-void main(){
-  vDir = position;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}`;
-/* An atmosphere is a horizon that glows, a sun that bleeds into the air
-   around it, and a zenith that lets the stars through. All three are here
-   and all three fade together as the star goes down. */
-const AIR_F = `
-precision highp float;
-varying vec3 vDir;
-uniform vec3 uSun;        // sun direction, stage space
-uniform vec3 uSky;        // the air's own colour
-uniform vec3 uWarm;       // the star's colour, for the glow around it
-uniform float uDay;       // 1 noon, 0 night
-uniform float uThick;     // how much atmosphere this world has
-void main(){
-  vec3 d = normalize(vDir);
-  float alt = clamp(d.y, -1.0, 1.0);
-  /* thickest along the horizon, thinning to nothing overhead — the reason
-     a real sky is pale at the rim and deep blue at the top */
-  float horiz = exp(-max(alt, 0.0) * 3.1);
-  float sunDot = max(dot(d, uSun), 0.0);
-  float bloom  = pow(sunDot, 46.0) * 1.30 + pow(sunDot, 5.0) * 0.34;
-  /* the sunset band: bright along the azimuth the star is setting on, and
-     only near the horizon, which is what makes a sunset a *direction* */
-  vec3 sunFlat = normalize(vec3(uSun.x, 0.0, uSun.z) + vec3(1e-4));
-  float az = pow(max(dot(normalize(vec3(d.x, 0.0, d.z) + vec3(1e-4)), sunFlat), 0.0), 3.4);
-  float band = az * horiz * (1.0 - smoothstep(0.30, 0.75, abs(uSun.y)));
-  vec3 col = mix(uSky, uWarm, clamp(bloom * 0.85 + band * 0.85, 0.0, 1.0));
-  float a = (0.055 + horiz * 0.68 + band * 0.30 + bloom * 0.45) * uDay * uThick;
-  /* below the horizon the ground covers this anyway, but the few degrees
-     just under it are haze and should stay solid */
-  a += smoothstep(0.0, -0.06, alt) * 0.22 * uDay * uThick;
-  gl_FragColor = vec4(col, clamp(a, 0.0, 1.0));
-}`;
-
-function skyBuild() {
-  if (stageScene) return;
-  stageScene = new THREE.Scene();
-  stageCam = new THREE.PerspectiveCamera(SKY.fov, 1, 0.4, 26000);
-
-  /* the ground. Sphere rather than plane, because the curve of the horizon
-     is most of what says "world" instead of "field" — and displaced, because
-     a perfectly smooth arc says "billiard ball" instead of "world". */
-  const g = new THREE.SphereGeometry(GROUND_R, 200, 120);
-  groundMesh = new THREE.Mesh(g, new THREE.MeshPhongMaterial({
-    shininess:3, specular:0x0d1520, color:0xffffff }));
-  groundMesh.position.set(0, -GROUND_R, 0);
-  groundMesh.renderOrder = 0;
-  stageScene.add(groundMesh);
-
-  airglow = new THREE.Mesh(
-    new THREE.SphereGeometry(9000, 48, 32),
-    new THREE.ShaderMaterial({
-      vertexShader:AIR_V, fragmentShader:AIR_F, side:THREE.BackSide,
-      transparent:true, depthWrite:false, depthTest:true,
-      uniforms:{ uSun:{value:new THREE.Vector3(0,1,0)},
-                 uSky:{value:new THREE.Color(0x3d7fbe)},
-                 uWarm:{value:new THREE.Color(0xffb469)},
-                 uDay:{value:1}, uThick:{value:1} }
-    }));
-  airglow.renderOrder = 2;
-  stageScene.add(airglow);
-
-  /* the local star's glare, painted in the stage so it sits in front of the
-     air rather than behind it. The disc itself is the real body in the sky
-     pass; this is what the air around it does with the light. */
-  const S = 256, cv = document.createElement('canvas');
-  cv.width = cv.height = S;
-  const cx = cv.getContext('2d');
-  const rg = cx.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
-  rg.addColorStop(0.00,'rgba(255,255,255,0.95)');
-  rg.addColorStop(0.06,'rgba(255,236,196,0.62)');
-  rg.addColorStop(0.22,'rgba(255,190,120,0.20)');
-  rg.addColorStop(0.55,'rgba(255,150,80,0.045)');
-  rg.addColorStop(1.00,'rgba(0,0,0,0)');
-  cx.fillStyle = rg; cx.fillRect(0,0,S,S);
-  const tex = new THREE.CanvasTexture(cv);
-  tex.minFilter = THREE.LinearFilter;
-  /* depth-tested so the ground can cut it off at the horizon — that clipped
-     half-disc at sunset is the whole reason a sunset reads as a sunset. Fog
-     off, or the stage's own haze would swallow it whole. */
-  sunHaze = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex, transparent:true,
-    depthWrite:false, depthTest:true, fog:false,
-    blending:THREE.AdditiveBlending, opacity:0.9 }));
-  sunHaze.renderOrder = 3;
-  stageScene.add(sunHaze);
-
-  sunA = new THREE.DirectionalLight(0xfff0d8, 2.5);
-  sunB = new THREE.DirectionalLight(0xffcf9a, 0.5);
-  stageAmb = new THREE.AmbientLight(0x2a4360, 0.5);
-  stageScene.add(sunA, sunB, stageAmb);
-  stageScene.fog = new THREE.Fog(0x213b52, GROUND_R*0.02, GROUND_R*0.30);
-}
-
-/* the ground is rebuilt for each world: its relief comes from the same noise
-   that drew its texture, so the horizon you see is this note's terrain */
-function skyTerrain(i) {
-  const seed = hashStr((nodes[i].p || '') + '|' + i);
-  const h = mkHash3(seed + 991);
-  const fam = familyOf(i);
-  /* gas giants get a soft rolling cloud deck; rock and ice get real relief */
-  const amp = fam === 'gas' ? GROUND_R*0.0045
-            : fam === 'terra' ? GROUND_R*0.0130
-            : fam === 'ice' ? GROUND_R*0.0090 : GROUND_R*0.0165;
-  const pos = groundMesh.geometry.attributes.position;
-  const a = pos.array;
-  const base = groundMesh.geometry.userData.base ||
-               (groundMesh.geometry.userData.base = a.slice());
-  for (let k=0;k<a.length;k+=3){
-    const x = base[k]/GROUND_R, y = base[k+1]/GROUND_R, z = base[k+2]/GROUND_R;
-    const n = fbm3(h, x*7.5, y*7.5, z*7.5, 5, .52)
-            + fbm3(h, x*23, y*23, z*23, 3) * 0.28;
-    const d = 1 + (n/1.28 - 0.5) * (amp/GROUND_R) * 2;
-    a[k] = base[k]*d; a[k+1] = base[k+1]*d; a[k+2] = base[k+2]*d;
-  }
-  pos.needsUpdate = true;
-  groundMesh.geometry.computeVertexNormals();
-  const s = surfaceGround(i);
-  groundMesh.material.map = s.map;
-  groundMesh.material.bumpMap = s.bump;
-  groundMesh.material.bumpScale = amp * 0.012;
-  groundMesh.material.needsUpdate = true;
-  return fam;
-}
-
-/* which body lights this world. A note in a folder is lit by its folder's
-   star; everything else falls back on the hub at the centre of the vault. */
-function skySunOf(i) {
-  const o = orb[i];
-  let c = catOf[i];
-  if (o.kind === 'moon' && catOf[o.anchorNode]) c = catOf[o.anchorNode];
-  if (c && c.tier === 0 && c.pos) return { pos:c.pos, col:c.color, cat:c, R:c.R || 8 };
-  return { pos:ORIGIN.pos, col:CORE_COLOR, cat:null, R:RAD[coreIdx] || 30 };
-}
-
-function skyEnter(i) {
-  if (i < 0 || i >= N) { toast(T('need.node')); return; }
-  if (i === coreIdx) { toast(T('sky.nocore')); return; }
-  if (GEN.on) genSet(false);
-  if (ship.on) exitShip();
-  closeSearch(); closeMind();
-  skyBuild();
-  SKY.on = true; SKY.i = i;
-  SKY.yaw = 0; SKY.pitch = 0.10; SKY.fov = 58;
-  SKY.lat = 0.30; SKY.lon = 0; SKY.spin = 0; SKY.rate = 1;
-  document.body.classList.add('sky');
-  /* [H] hides the HUD by writing an inline style; landing again has to clear
-     it, or the frame stays hidden on every later visit */
-  $('hud').style.display = ''; $('skyfr').style.display = '';
-  const fam = skyTerrain(i);
-  /* Land in the light. Where on a turning world you happen to arrive is
-     arbitrary, and half of the arbitrary answers are the middle of the night
-     — so the standing point is chosen to put the star a little way up, which
-     is the hour everything looks best in anyway. Search rather than solve:
-     seventy-two samples of the world's own rotation is nothing, and it stays
-     correct however the axis is tilted. */
-  let bestSpin = 0, bestErr = 1e9;
-  for (let k=0;k<72;k++){
-    SKY.spin = k / 72 * TAU;
-    skyStep(0);
-    const err = Math.abs(SKY.sunAlt - 0.42);        // ~25 degrees up
-    if (err < bestErr) { bestErr = err; bestSpin = SKY.spin; }
-  }
-  SKY.spin = bestSpin;
-  skyStep(0);
-  /* and face it, with the horizon left in the bottom of the frame */
-  _sd.copy(_sun).sub(_eye).normalize();
-  SKY.yaw = Math.atan2(_sd.dot(_se), _sd.dot(_snr));
-  SKY.pitch = clamp(Math.asin(clamp(_sd.dot(_sn), -1, 1)) * 0.62, -0.10, 0.75);
-  $('mode').textContent = 'SURFACE';
-  $('sky-name').textContent = nodes[i].n;
-  SKY.fam = fam;
-  skySub();
-  buildCompass();
-  toast(T('sky.land', { n: nodes[i].n }));
-}
-function skyExit() {
-  if (!SKY.on) return;
-  SKY.on = false;
-  document.body.classList.remove('sky', 'look');
-  camera.fov = ORRERY_FOV; camera.updateProjectionMatrix();
-  $('mode').textContent = 'MOUSE';
-  /* hand the orrery rig a view of the world you were just standing on, from
-     just off its shoulder, so leaving reads as lifting off rather than as a
-     cut to somewhere else */
-  const i = SKY.i;
-  if (i >= 0 && i < N) {
-    rig.follow = i;
-    rig.tgtD.set(P[i*3], P[i*3+1], P[i*3+2]);
-    rig.tgt.copy(rig.tgtD);
-    rig.distD = clamp(RAD[i] * 11 + 26, 30, 900);
-    rig.dist = rig.distD * 0.35;
-    rig.thV = rig.phV = 0; nudge();
-  }
-  SKY.i = -1;
-  toast(T('sky.leave'));
-}
-/* the standing-on-a-planet subtitle: what kind of world, and whose system */
-function skySub() {
-  const i = SKY.i;
-  if (i < 0 || i >= N) return;
-  $('sky-sub').textContent = familyName(SKY.fam) + ' · ' +
-    (catOf[i] ? catLabel(catOf[i]) : '—');
-}
-function toggleSky() {
-  if (SKY.on) { skyExit(); return; }
-  const i = selected >= 0 ? selected : (ship.on ? ship.lock : -1);
-  skyEnter(i);
-}
-$('i-sky').onclick = () => skyEnter(selected);
-
-/* the compass strip is fixed marks that slide with the yaw */
-const COMPASS = [['N',0],['NE',45],['E',90],['SE',135],['S',180],['SW',225],['W',270],['NW',315]];
-function buildCompass() {
-  const box = $('skycomp');
-  if (box.childElementCount) return;
-  COMPASS.forEach(([l]) => {
-    const e = document.createElement('i');
-    e.textContent = l;
-    box.appendChild(e);
-  });
-}
-
-/* One step of the world's own rotation, then the frame it gives you. */
-function skyStep(dt) {
-  const i = SKY.i;
-  if (i < 0 || i >= N) return;
-
-  /* the axis is the note's own — deterministic, and tilted, because a world
-     with no axial tilt has no seasons and a boring sky */
-  const hh = hashStr((nodes[i].p || '') + '|axis');
-  const tilt = 0.12 + ((hh & 255) / 255) * 0.55;
-  const tAz = ((hh >>> 8) & 1023) / 1024 * TAU;
-  _axis.set(Math.sin(tilt)*Math.cos(tAz), Math.cos(tilt), Math.sin(tilt)*Math.sin(tAz)).normalize();
-  /* any two vectors perpendicular to the axis will do for a prime meridian,
-     as long as they are the same two every frame */
-  _e1.set(0,1,0);
-  if (Math.abs(_e1.dot(_axis)) > 0.9) _e1.set(1,0,0);
-  _e1.crossVectors(_e1, _axis).normalize();
-  _e2.crossVectors(_axis, _e1).normalize();
-
-  /* walking. A and D carry you around a parallel, W and S up and down a
-     meridian — you are moving over the world, so the sky moves with you and
-     the pole climbs or drops as it should. */
-  if (dt > 0) {
-    const step = dt * 0.34;
-    if (keysDown.has('a')) SKY.lon -= step;
-    if (keysDown.has('d')) SKY.lon += step;
-    if (keysDown.has('w')) SKY.lat = clamp(SKY.lat + step, -1.40, 1.40);
-    if (keysDown.has('s')) SKY.lat = clamp(SKY.lat - step, -1.40, 1.40);
-  }
-  const spinRate = 0.055 + ((hh >>> 18) & 63) / 63 * 0.06;
-  SKY.spin += dt * spinRate * SKY.rate;
-  const ang = SKY.spin + SKY.lon;
-  const cl = Math.cos(SKY.lat), sl = Math.sin(SKY.lat);
-  /* where we are standing, in world space */
-  _sn.copy(_axis).multiplyScalar(sl)
-     .addScaledVector(_e1, Math.cos(ang)*cl)
-     .addScaledVector(_e2, Math.sin(ang)*cl).normalize();
-  /* east is the direction the world turns you toward */
-  _se.crossVectors(_axis, _sn).normalize();
-  if (_se.lengthSq() < 1e-6) _se.set(1,0,0);
-  _snr.crossVectors(_sn, _se).normalize();     // toward the pole, along the ground
-
-  _eye.set(P[i*3], P[i*3+1], P[i*3+2]).addScaledVector(_sn, RAD[i]);
-
-  const S = skySunOf(i);
-  _sun.copy(S.pos);
-  _sd.copy(_sun).sub(_eye).normalize();
-  SKY.sunAlt = _sd.dot(_sn);
-  SKY.dayF = (Math.atan2(_sd.dot(_se), _sd.dot(_snr)) / TAU + 0.5);
-
-  /* the look direction, built in the local frame so pitch is always relative
-     to this world's horizon and never to the vault's ecliptic */
-  const cp = Math.cos(SKY.pitch), sp2 = Math.sin(SKY.pitch);
-  const look = _tmp.set(0,0,0)
-    .addScaledVector(_se,  Math.sin(SKY.yaw) * cp)
-    .addScaledVector(_snr, Math.cos(SKY.yaw) * cp)
-    .addScaledVector(_sn,  sp2).normalize();
-
-  camera.fov = SKY.fov;
-  camera.position.copy(_eye);
-  camera.up.copy(_sn);
-  camera.lookAt(_tmp2.copy(_eye).add(look));
-  camera.updateProjectionMatrix();
-
-  /* the same framing again, in the stage's own coordinates: up is +Y, north
-     is +Z, east is +X. Identical fov and identical pitch, so the horizon the
-     ground draws lands where the sky expects it. */
-  stageCam.fov = SKY.fov;
-  stageCam.aspect = camera.aspect;
-  stageCam.position.set(0, EYE_H, 0);
-  stageCam.up.set(0,1,0);
-  stageCam.lookAt(Math.sin(SKY.yaw)*cp, EYE_H + sp2, Math.cos(SKY.yaw)*cp);
-  stageCam.updateProjectionMatrix();
-
-  /* the star, expressed in the stage frame, so the ground's terminator and
-     the sky's sunset are the same event */
-  const sx = _sd.dot(_se), sy = _sd.dot(_sn), sz = _sd.dot(_snr);
-  sunA.position.set(sx, sy, sz).multiplyScalar(2000);
-  /* Mostly white. A star's colour belongs in the sky it lights, not smeared
-     over the rock at your feet — a fully tinted key light made the ground
-     brighter and more saturated than the air above it, which inverts the
-     whole composition: you are here to look up. */
-  sunA.color.copy(S.col).lerp(new THREE.Color(0xffffff), 0.74);
-  /* a folder's star lights its own planets; the hub lights everything, from
-     much further away */
-  const dSun = _eye.distanceTo(_sun);
-  sunA.intensity = clamp(1.7 * (260 / Math.max(60, dSun)), 0.42, 2.3);
-  /* the vault's hub as a second, colder sun — two suns in one sky is what
-     this layout actually implies, and it looks it */
-  _tmp.copy(ORIGIN.pos).sub(_eye).normalize();
-  sunB.position.set(_tmp.dot(_se), _tmp.dot(_sn), _tmp.dot(_snr)).multiplyScalar(2000);
-  sunB.intensity = S.cat ? 0.42 : 0;
-
-  const day = clamp((SKY.sunAlt + 0.16) / 0.42, 0, 1);
-  const u = airglow.material.uniforms;
-  u.uSun.value.set(sx, sy, sz);
-  u.uDay.value = day;
-  u.uWarm.value.copy(S.col).lerp(new THREE.Color(0xffd9a8), 0.45);
-  /* the air itself takes its colour from the star it is lit by, so a cool
-     blue folder gets a cold sky and an amber one a warm haze */
-  u.uSky.value.copy(S.col).lerp(new THREE.Color(0x2f6ea8), 0.62)
-    .multiplyScalar(0.55 + day * 0.55);
-  /* a gas giant is all atmosphere; an airless rock has none, and its sky
-     stays black with the stars burning through it at noon */
-  const fam = familyOf(i);
-  u.uThick.value = fam === 'gas' ? 1.35 : fam === 'terra' ? 1.0
-                 : fam === 'ice' ? 0.42 : 0.14;
-
-  sunHaze.position.set(sx, sy, sz).multiplyScalar(4000);
-  sunHaze.scale.setScalar(1100 + 2200 * clamp(1 - Math.abs(sy), 0, 1));
-  sunHaze.material.opacity = 0.30 + day * 0.55;
-  sunHaze.material.color.copy(u.uWarm.value);
-
-  /* haze in proportion to the air there is. On an airless rock the far ridge
-     is as sharp as the near one, which is exactly why the Moon looks wrong
-     to eyes raised on an atmosphere — and worth getting right. */
-  stageScene.fog.color.copy(u.uSky.value).multiplyScalar(0.55 + day*0.5);
-  stageScene.fog.near = GROUND_R * 0.02;
-  stageScene.fog.far  = GROUND_R * (0.20 + day * 0.16) / Math.max(0.22, u.uThick.value);
-  /* skylight — the ground's fill comes from the air above it, so it is the
-     one place the star's colour does belong, and it stays weak */
-  stageAmb.intensity = (0.10 + day * 0.24) * (0.55 + u.uThick.value * 0.45);
-  stageAmb.color.copy(u.uSky.value);
-}
-
-/* the second pass. The cosmos is already on the framebuffer; the depth is
-   cleared so the stage cannot be rejected by it, and the ground is drawn
-   over the bottom of it with its own atmosphere composited on top. */
-function skyRender() {
-  renderer.autoClear = false;
-  renderer.clearDepth();
-  renderer.render(stageScene, stageCam);
-  renderer.autoClear = true;
-}
-
-function skyHUD() {
-  const i = SKY.i;
-  if (i < 0 || i >= N) return;
-  const alt = Math.asin(clamp(SKY.sunAlt, -1, 1)) * 180 / Math.PI;
-  $('sky-sun').textContent = (alt >= 0 ? '+' : '') + alt.toFixed(0) + '°';
-  $('sky-fov').textContent = SKY.fov.toFixed(0) + '°';
-  $('skyday').firstElementChild.style.left = (SKY.dayF * 100).toFixed(1) + '%';
-  /* how much of the vault this note can actually see from where it stands —
-     the number the whole view exists to make felt */
-  let vis = 0;
-  for (let j=0;j<N;j++){
-    if (j === i || alpha[j] < 0.15) continue;
-    const dx = P[j*3]-_eye.x, dy = P[j*3+1]-_eye.y, dz = P[j*3+2]-_eye.z;
-    const L = Math.sqrt(dx*dx+dy*dy+dz*dz) || 1;
-    if ((dx*_sn.x + dy*_sn.y + dz*_sn.z) / L <= 0.02) continue;   // below the horizon
-    /* only what would actually be a disc or a bright point, not the whole
-       far side of the vault reported as "in your sky" */
-    if (RAD[j] / L > 0.0022) vis++;
-  }
-  $('sky-vis').textContent = String(vis);
-  $('sky-loc').textContent = (SKY.lat*180/Math.PI).toFixed(0) + '°  ·  ' +
-                             (SKY.rate > 1 ? SKY.rate + '×' : '1×');
-  /* the compass slides under a fixed centre mark */
-  const half = SKY.fov * (innerWidth / Math.max(1, innerHeight)) * 0.5;
-  const box = $('skycomp').children;
-  for (let k=0;k<box.length;k++){
-    const deg = COMPASS[k][1];
-    let d = deg - SKY.yaw * 180 / Math.PI;
-    d = ((d + 180) % 360 + 360) % 360 - 180;
-    const on = Math.abs(d) < half;
-    box[k].style.display = on ? '' : 'none';
-    if (on) box[k].style.left = (50 + d / half * 50).toFixed(2) + '%';
-  }
-}
-
 /* =============================================================== LOOP */
 let last = performance.now(), fps = 60, t = 0, frame = 0;
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
@@ -10151,7 +9490,6 @@ function resize() {
      that is not exactly 1x */
   const pr = renderer.getPixelRatio();
   bloomSize(Math.max(1, Math.round(w * pr)), Math.max(1, Math.round(h * pr)));
-  if (stageCam) { stageCam.aspect = w/h; stageCam.updateProjectionMatrix(); }
   layoutHUD();
   if (mindOpen) mmResize();
 }
@@ -10408,7 +9746,7 @@ function viewStep() {
   /* Standing on a planet the orbit rig's distance is stale — the surface
      camera is its own — so the range is taken from where the eye actually is
      relative to the core. Same for the ship, which is its own camera too. */
-  FOG.ref = Math.max(60, (ship.on || SKY.on) ? camera.position.length() : rig.dist);
+  FOG.ref = Math.max(60, ship.on ? camera.position.length() : rig.dist);
   camera.updateMatrixWorld();
   FRU.setFromProjectionMatrix(
     _fm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -10432,11 +9770,8 @@ function writeInstances() {
     /* the core has its own unlit geometry, so its instance is collapsed to
        nothing rather than drawn black inside the sun */
     let s = (i === coreIdx && sunObj) ? 0 : RAD[i];
-    /* two bodies are drawn by something other than this instanced mesh: the
-       one whose own world has been generated, and the one you are standing
-       on — which is under your feet, not in front of your face */
+    /* the body whose own world has been generated is drawn by the hero mesh */
     if (i === heroIdx && heroReady) s = 0;
-    else if (SKY.on && i === SKY.i) s = 0;
     /* during the formation a body is still condensing, and the ripple gives
        whatever the wave is passing over a momentary swell */
     if (gsc) s *= genScale[i];
@@ -10501,9 +9836,6 @@ function writeInstances() {
          sprite swelling; it is the limb in the body shader now — see
          starLit() — which is on the world rather than round it */
     }
-    /* the halo of the world under your feet would be a wall of light across
-       the whole frame */
-    if (SKY.on && i === SKY.i) a = 0;
     /* Depth fog, on the halo and not on the body.
 
        The body is a lit mesh behind a depth test: it already carries distance
@@ -10533,7 +9865,7 @@ function writeInstances() {
          the close-up planet is exactly where a ring is worth seeing. The
          world under your feet is the one case: from the ground, its own ring
          would be a bar across the whole sky. */
-      let s = (SKY.on && i === SKY.i) ? 0 : RAD[i] * ringK[k];
+      let s = RAD[i] * ringK[k];
       /* A ring only a few pixels across is not read as a ring; it is read as
          a smudge on a dot, and forty of them is a rash across the map. So it
          grows in with approach rather than being drawn at every range: from
@@ -11008,7 +10340,6 @@ function writeLabels() {
       const nd = nodes[L.idx];
       /* naming the world you are standing on, in letters across the sky,
          from a sprite centred on your own eye */
-      if (SKY.on && L.idx === SKY.i) { L.sprite.visible = false; return; }
       op = clamp((L.far - d) / L.far, 0, 1) *
            (alpha[L.idx] < .05 ? 0 : alpha[L.idx] > .5 ? 1 : 0.12);
       op *= L.idx === selected ? 1.4 : (nd.inb > 12 ? 1 : .55);
@@ -11101,7 +10432,7 @@ function writeHUD(now) {
 
   /* hover tag — suppressed in the cockpit, the crosshair already says it */
   const TG = $('tgt');
-  if (hovered >= 0 && hovered < N && !ship.on && !SKY.on) {
+  if (hovered >= 0 && hovered < N && !ship.on) {
     _pos.set(P[hovered*3],P[hovered*3+1],P[hovered*3+2]).project(camera);
     if (_pos.z < 1) {
       TG.style.display = 'block';
@@ -11209,14 +10540,13 @@ function frameLoop(now) {
   genScaffold();
   rippleAmbient(dt);
   rippleStep(dt);
-  if (ship.on) shipStep(dt); else if (!SKY.on) applyCam(dt);
+  if (ship.on) shipStep(dt); else applyCam(dt);
   stepDisplacement(dt);
   gapStep(dt);
   updatePositions(dtms);
   /* the surface camera is placed from this frame's positions, not the last
      one's — standing on a body that is itself in orbit, a frame of lag is a
      frame of the whole sky sliding */
-  if (SKY.on) skyStep(dt);
   cometStep(dt);
   meteorStep(dt);
   updateVisibility(dt);
@@ -11224,7 +10554,7 @@ function frameLoop(now) {
   const _p1 = perfNow();
   /* Now that this frame's positions are final, answer the pointer — every
      frame, not only when the mouse moves, because the bodies move too. */
-  if (pointerIn && !ship.on && !SKY.on && !dragging && !mindOpen)
+  if (pointerIn && !ship.on && !dragging && !mindOpen)
     hovered = pickAt(mouseNDC.x, mouseNDC.y, hovered);
   const _p2 = perfNow();
   stepLinkLayers(dt);
@@ -11378,7 +10708,6 @@ function frameLoop(now) {
      path drew it already, which it has to, or the one surface in frame would
      be the one thing light did not spill onto */
   const composited = renderFrame();
-  if (SKY.on) { if (!composited) skyRender(); skyHUD(); }
   if (PERF.on) {
     const _p7 = performance.now();
     perfMix('sim',  _p1-_p0);
@@ -12093,7 +11422,7 @@ function swapVault(data, keep) {
   closeMind();
   /* everything that holds a node index from the old vault has to let go
      before the indices mean something else */
-  skyExit(); heroDrop(); surfCacheClear();
+  heroDrop(); surfCacheClear();
   rippleClear(); twinsClear(); visited.clear(); cometEnd(); genSet(false);
   selected = -1; hovered = -1; filterTxt = ''; neighbours.clear();
   if (ship.on) exitShip();
@@ -12268,7 +11597,6 @@ function relocalize() {
   renderInspector();                  // counts, excerpt placeholder, go-label
   if (twinState) twinsShow(twinState.i);
   if (GEN.on) syncGen(true);
-  if (SKY.on) skySub();
   if (mindOpen && MM.sel >= 0) { mmHint(); mmSide(MM.sel); }
   if (typeof pendingFiles !== 'undefined' && pendingFiles) bootStaged();
 }
@@ -12385,7 +11713,6 @@ const CMD = {
   search:  openSearch,
   mindmap: toggleMind,
   ship:    toggleShip,
-  surface: toggleSky,
   genesis: toggleGenesis,
   twins:   () => twinsShow(selected),
   ripple:  rippleHere,

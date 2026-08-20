@@ -178,11 +178,11 @@ js = subRx(js, /\(e\.clientX\/innerWidth\)\*2-1/g,   'ndcX(e)', 3, 'pointer x ->
 js = subRx(js, /-\(e\.clientY\/innerHeight\)\*2\+1/g, 'ndcY(e)', 3, 'pointer y -> root-relative NDC');
 
 /* 3. viewport size -> the leaf's box */
-js = subRx(js, /\binnerWidth\b/g,  'VW()', 10, 'innerWidth -> VW()');
-js = subRx(js, /\binnerHeight\b/g, 'VH()', 10, 'innerHeight -> VH()');
+js = subRx(js, /\binnerWidth\b/g,  'VW()', 8, 'innerWidth -> VW()');
+js = subRx(js, /\binnerHeight\b/g, 'VH()', 8, 'innerHeight -> VH()');
 
 /* 4. mode flags live on the root, not on <body> */
-js = subRx(js, /document\.body\.classList/g, 'root.classList', 7, 'body.classList -> root.classList');
+js = subRx(js, /document\.body\.classList/g, 'root.classList', 3, 'body.classList -> root.classList');
 
 /* 5. the i18n sweep and the language chips must not reach outside this view */
 js = subRx(js, /document\.querySelectorAll/g, 'root.querySelectorAll', 5, 'querySelectorAll scoped');

@@ -53,7 +53,7 @@ const mkApp = vault => ({
   ok(calls.includes('settingTab'), 'registers the settings tab');
   /* Every mode the engine answers to has to be reachable from the palette, or
      it exists only for someone who already knows the single-letter key. */
-  const modes = ['open','search','mindmap','ship','surface','genesis','twins',
+  const modes = ['open','search','mindmap','ship','genesis','twins',
                  'ripple','poster','layer','sound','reset','hud','help'];
   const missing = modes.filter(m => !calls.includes('command:mode-' + m));
   ok(missing.length === 0, 'every engine mode is a command -> ' +

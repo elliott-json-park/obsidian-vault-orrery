@@ -20,7 +20,6 @@ const MODE_COMMANDS: ReadonlyArray<[OrreryCommand, string]> = [
   ['search',  'Search the cosmos'],
   ['mindmap', 'Mind map of the selected note'],
   ['ship',    'Spaceship mode'],
-  ['surface', 'Stand on the selected planet'],
   ['genesis', 'Genesis — play the vault\'s formation'],
   ['twins',   'Find twins of the selected note'],
   ['ripple',  'Ripple from the selected note'],
