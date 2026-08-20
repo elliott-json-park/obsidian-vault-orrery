@@ -7,10 +7,10 @@ become stars, notes become planets, and the sources they cite become moons.
 
 > **Not another galaxy graph.** Several plugins draw your vault as a starfield.
 > This one is a *flight simulator* for it: a WASD spaceship with a scanner and
-> radar, a surface mode where you stand on a note and watch its neighbours rise
-> over the horizon, and a Genesis timeline that plays the vault's formation
-> from void to present. If you only want a prettier graph, the other plugins
-> are lighter and you should use one of those.
+> radar, orbits you can open from a disc into a sphere, and a Genesis timeline
+> that plays the vault's formation from void to present. If you only want a
+> prettier graph, the other plugins are lighter and you should use one of
+> those.
 
 ---
 
@@ -30,8 +30,8 @@ can be reading a second later.
   command, **Show in Vault Orrery** is on every note's context menu, and the
   camera will follow the editor if you turn that on in settings.
 - **Every mode is a command**, so the spaceship, Genesis, the mind map, the
-  surface, the poster and the rest can be bound to whatever keys you like. None
-  is bound by default.
+  reference plane, the poster and the rest can be bound to whatever keys you
+  like. None is bound by default.
 - **You are told how to fly it once.** The first time a vault loads, a card
   names the four moves that are enough to get going, over the cosmos it has
   just built. Any key dismisses it and it is not shown again; `?` brings it
@@ -136,14 +136,48 @@ they are not the same question.
 A dense folder — a few hundred notes in one place — is the case worth reaching
 for these on. Start with ORBIT GAP.
 
-**SUN SIZE**, **PLANET SIZE** and **MOON SIZE** scale a whole class of body at
-once, from 0.30× to 3.00×. They never change the *ratios* between notes — a
-body's radius is its citation count and that is worth reading — so what moves
-is how big the whole class is drawn. Three controls rather than one because the
+**SUN SIZE**, **SYSTEM SIZE**, **PLANET SIZE** and **MOON SIZE** scale a whole
+class of body at once. They never change the *ratios* between notes — a body's
+radius is its citation count and that is worth reading — so what moves is how
+big the whole class is drawn. Four controls rather than one because the
 complaint is never "everything is too small": it is a hub that swallows its
 inner ring on a vault with one enormous folder, or moons that are specks from
-the deck of the ship. Moon orbits widen when planets do, so a planet turned up
-does not end up with its satellites inside it.
+the deck of the ship. Orbits widen with the body they stand off from, so
+nothing turned up ends up with its satellites inside it.
+
+**SUN GLOW**, **SYSTEM GLOW**, **PLANET GLOW** and **MOON GLOW** do the same
+for brightness. NODE GLOW is still the master and moves all of them together;
+these are the balance between the four, which is the question you are actually
+asking when the hub is a white hole in the middle of the frame or the moons
+have gone to nothing against their planets.
+
+**ORBIT SHELL** opens each system from a disc into a sphere. Every orbit in the
+layout is tilted about the same axis, so a system is a flat ring however far
+ORBIT TILT leans it over; turn this up and each body takes an orbit plane of
+its own, spread evenly over every direction. DISC at zero, SPHERE at one, and
+the numbers in between are one opening into the other.
+
+**`X`** draws a reference plane: a polar grid on the plane the systems are
+actually laid out on, with rings at the radii they sit on rather than at round
+numbers. Space has no floor, and without one "further out" and "further away"
+look identical — which is the one thing a picture of a graph must not be vague
+about. It is off until you ask for it.
+
+---
+
+## Which note is the centre
+
+The hub — the star everything else turns around — is chosen for you: a note
+named like an index (`index`, `README`, `home`, `MOC`, `인덱스`, `목차`),
+largest and shallowest first, and failing that the most cited note in the
+vault.
+
+Select any note and the inspector offers **★ make this the central star**. The
+whole layout is measured from the hub, so choosing a new one rebuilds the
+cosmos — the framing you were at is kept, so it arrives where you were already
+looking. Your choice is remembered as a path, so it survives reloads and
+renames around it. The hub's own inspector is where you hand the choice back to
+the vault.
 
 ---
 
@@ -157,10 +191,15 @@ does not end up with its satellites inside it.
   there, in the plane it arrived on. Come in from below and you end up in a
   polar orbit. Any key on the stick hands control back, with the speed the
   orbit had.
-- **The deck says whether you are getting there.** Closing rate on whatever is
-  locked, and a time to arrival measured to the orbit you would end up in
-  rather than to the surface. Both account for the target's own motion: a note
-  is a planet, and it is going somewhere too.
+- **The deck says whether you are getting there.** A time to arrival on
+  whatever is locked, measured to the orbit you would end up in rather than to
+  the body itself, and accounting for the target's own motion — a note is a
+  planet, and it is going somewhere too. The reticle reaches two thirds of the
+  way across the cosmos, so it answers about places you can see and have not
+  reached yet rather than only about what you are nearly on top of.
+- **A scan stays taken.** `SPACE` lights up everything the locked note is tied
+  to, and it keeps them lit while you turn to look at where they went. Only
+  `SPACE` again puts them out.
 - **You are told which system you are in.** Crossing into a folder's territory
   announces it, and the deck names it the whole time you are inside.
 - **The scanner reports everything it found.** The aiming cone usually holds
@@ -190,12 +229,12 @@ motion blur together, and goes to zero.
 | `M` · double-click | mind map |
 | `F` | spaceship (WASD to fly, `SPACE` to scan links) |
 | in the cockpit | `1`–`6` hold a contact · `B` rear scan · `T` filter · `X` patrol · `[` `]` radar size |
-| `V` | stand on the selected planet |
 | `G` | Genesis — play the vault's formation |
 | `N` | find twins (notes alike but not yet linked) |
 | `SPACE` | ripple from the selected note |
 | `P` | save a poster (high-resolution PNG, no HUD) |
 | `L` | cycle the link layer |
+| `X` | the reference plane on the layout's own plane |
 | `U` | ambient sound |
 | `R` · `H` | reset view · hide HUD |
 | `?` | first-flight guide (also `[ ? ]` in the SHORTCUTS pane) |

@@ -4,6 +4,66 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.5.0
+
+A subtractive release. Six of the picture's knobs, one whole mode and about a
+thousand lines of the renderer are gone, and what is added in their place is
+mostly control over things that were previously decided for you.
+
+- **You choose the centre.** The hub was whichever note was literally called
+  `wiki/index.md`, which is one vault's convention stated as if it were
+  everyone's. Any note named like an index now qualifies — `index`, `README`,
+  `home`, `MOC`, `인덱스`, `목차` — largest and shallowest first, and the
+  inspector's **★ make this the central star** overrides all of it. The choice
+  is held as a path, so it survives reloads and renames; the hub's own
+  inspector hands it back to the vault.
+- **The folder stars have a size.** They are the middle term of the whole
+  picture — the hub is the vault, a planet is a note, this is the folder — and
+  they had no control at all: the radius came out of the note count and stopped
+  there. **SYSTEM SIZE** scales it and the clearance its planets stand off from
+  follows, so growing a star pushes its system outward instead of swallowing
+  it.
+- **Every class of body has its own glow.** **SUN**, **SYSTEM**, **PLANET** and
+  **MOON GLOW** under NODE GLOW, which stays the master. "The hub is a white
+  hole" and "the moons have vanished" are opposite complaints and one slider
+  answers only one of them.
+- **ORBIT SHELL opens the discs into spheres.** Every orbit in the layout is
+  tilted about the same axis, so a system is a flat ring however far it is
+  leaned over. Each body now also carries an orbit plane of its own, spread
+  evenly over every direction, and the knob blends between the two: DISC at
+  zero, SPHERE at one.
+- **A reference plane, on `X`.** Space has no floor and the layout has one.
+  Without something to read it against, "further out" and "further away" look
+  identical — the one thing a picture of a graph must not be vague about. A
+  polar grid on the layout's own plane, at the radii the systems actually sit
+  on, off until you ask for it.
+- **One planet design, at every range.** A body used to be an instanced sphere
+  wearing a patch of a shared texture from far off and a wholly different,
+  generated world — gas giant, terrestrial, cratered rock — up close. The swap
+  was the most conspicuous event in the frame. There is one machined shell now,
+  computed in the shader from the sphere's own direction, and the high-detail
+  mesh is rounder rather than different.
+- **A scan stays taken.** `SPACE` lit the locked note's connections and lost
+  them the moment the reticle moved on — so pressing space to find out where
+  the links go, and then turning to look at where they went, erased the marks.
+  Only `SPACE` again puts them out now.
+- **The reticle reaches.** It could only name a target within a sixth of the
+  cosmos, which meant the range and the arrival estimate arrived when you were
+  most of the way there. Two thirds now, with the estimate's ceiling raised to
+  match.
+- **The control deck holds one group at a time**, chosen from a strip of names,
+  with a find box beside it that searches every group at once — in the deck's
+  language and in the original. Opening ADVANCED shows eight or ten rows
+  instead of thirty. The pins are invisible until the pointer is on their row.
+- **Gone:** film grade, vignette, film grain, lens fringe, camera drift and age
+  tint — a photographic treatment laid over an instrument, costing a
+  full-screen pass to apply. The surface mode, where you stood on a note and
+  looked up: a second renderer, camera, scene and input layer for a view that
+  answered no question the cosmos does not. The archive's drawn spiral track
+  and two thirds of the selection marker. And the mind map's deep field,
+  vignette, graduation ticks and entry wave — scenery in front of an answer
+  about six links.
+
 ## 1.4.0
 
 The cosmos goes quiet. Almost nothing here is new; most of it is what was
