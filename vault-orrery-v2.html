@@ -2890,7 +2890,23 @@ for (let i = 0; i < N; i++) {
       ecc: Math.min(0.03 + ((eh & 1023) / 1024) * 0.13,
                     0.38 * step / Math.max(1, aSemi)),
       aop: (((eh >>> 10) & 1023) / 1024) * TAU,
-      inc: 0.13 + ring*0.10, y: (slot%3-1)*4,
+      /* ---- how far off the plane, which is not far -------------------
+         The inclination used to grow with the ring index: 7 degrees on the
+         innermost lane and 36 on the sixth. That is a fan rather than a
+         system, and it has the trend backwards besides. A planetary system
+         is flat because it condensed out of a disc, and the Solar System's
+         inclinations to the invariable plane are Jupiter 0.3, Neptune 0.7,
+         Saturn 0.9, Uranus 1.0, Earth 1.6, Mars 1.7, Venus 2.2 — and
+         Mercury, the innermost, the largest at 6.3. Small everywhere, and
+         *falling* outward, because the inner region is where the giants'
+         secular forcing and the Sun's own oblateness are felt.
+
+         So the ramp runs the other way and is an order of magnitude
+         shallower, which makes a system read as the disc it is. Anyone who
+         wants it opened out into a shell already has the knob for it —
+         ORBIT SHELL is the setting that stops this from being a
+         restriction, and it ships at 1.00. */
+      inc: Math.max(0.012, 0.110 - ring*0.016), y: (slot%3-1)*4,
       /* what the live gap spring stretches: the clearance around the star
          stays, the room between the rings is what moves */
       inner, step0: step, gapA: step - RING_STEP * SET.gap,
@@ -2928,7 +2944,30 @@ for (let i = 0; i < N; i++) {
       r: pr * 3.4 + (k%4) * pr * 1.15,
       ph: k/Math.max(3, sibs.length)*TAU,
       sp: 0.0016 * Math.pow(3.4 / (3.4 + (k%4)*1.15), 1.5),
-      inc: 0.5 + (k%5)*0.22, y:0
+      /* ---- the Laplace plane -------------------------------------------
+         A regular satellite orbits in its planet's equatorial plane, and it
+         is not a coincidence that its planet's rings are there too: both are
+         held by the same thing. A planet is oblate, its equatorial bulge
+         torques anything orbiting off the equator, and within a few
+         precession periods what is left is in the equator and nothing is
+         anywhere else. Io is 0.05 degrees off Jupiter's, Ganymede 0.2,
+         Titan 0.35, Callisto 0.2. These were between 29 and 79 degrees,
+         which is not a satellite system, it is a cloud.
+
+         The parent's obliquity comes from the same hash bodySpin will read
+         later — the tables are built after the orbits are, so it is derived
+         here rather than looked up — and the sign is negated because a
+         normal at inclination i works out as (0, -cos i, sin i) against a
+         spin axis of (0, cos t, sin t). A degree or two of scatter on top,
+         which is what the real ones have and what keeps four moons from
+         drawing one line.
+
+         Rings and moons therefore share a plane now, which is the thing
+         about a giant planet that a photograph shows before anything
+         else. */
+      inc: -(((hashStr(nodes[pIdx].p + '#r') & 255) / 255 - 0.5) * 0.62)
+           + (((mh >>> 20) & 63) / 64 - 0.5) * 0.055,
+      y:0
     };
     col.clone().lerp(new THREE.Color(0xfff0d0), .18).toArray(COL, i*3);
   } else {
