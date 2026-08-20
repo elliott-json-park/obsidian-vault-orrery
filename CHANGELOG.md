@@ -102,6 +102,42 @@ cosmos, telling the truth about more of itself.
   photograph shows before anything else. ORBIT SHELL still opens any of it
   back out into a sphere, and still ships at 1.00.
 
+- **The corona is drawn from Baumbach's law, and it is white.** Coronal
+  brightness has been measured since 1937 and is a sum of three power laws —
+  0.0532 r⁻²·⁵ + 1.425 r⁻⁷ + 2.565 r⁻¹⁷ — of which the last term is the inner
+  corona, the middle one the middle, and the first is not corona at all but
+  sunlight scattered off interplanetary dust, which is why the glow goes on
+  and on instead of stopping. Five hand-picked gradient stops cannot produce
+  a curve that falls by a factor of two thousand. The colour was amber and
+  should never have been: a corona is photospheric light Thomson-scattered
+  off free electrons, which comes out pearl and very slightly blue. The amber
+  belonged to the chromosphere, which is a different layer drawn separately.
+  Streamers now thread it, growing in contrast outward the way they do.
+
+- **The glare comes from the CIE glare equation.** 10/θ³ + 5/θ² + 0.0025,
+  the published standard for disability glare, where the cube is scattering
+  in the cornea and lens, the square is the retina, and the constant is the
+  diffuse floor. It replaces a sum of exponentials that had been reasoned to
+  after a reciprocal was tried at the wrong angular scale and blamed for
+  being the wrong shape. The core saturates and the curve is compressed
+  photographically, and both of those are labelled as display rather than
+  optics.
+
+- **The parked orbit feels its own altitude.** A circuit took twenty-one
+  seconds whatever the body and whatever the height. The first half of that
+  is right and provably so — constant density gives GM ∝ R³, a parking orbit
+  at a fixed number of body radii gives r ∝ R, and the third law then makes
+  the period independent of the body. The altitude was the missing half: r^3/2
+  within one body, which is the piece of orbital mechanics a pilot can
+  actually feel. Low passes whip round now and high ones are stately.
+
+- **The galactic arms are logarithmic, and there are four of them.** An arm
+  crosses every circle at the same angle — the pitch, ten to fourteen degrees
+  for the Milky Way's major arms — which makes it a logarithmic spiral. These
+  were Archimedean, so the winding stayed constant instead of tightening
+  inward and the arms straightened into spokes past halfway out. And the
+  Milky Way's four are two heavy and two thin rather than three even ones.
+
 - **The comet has both its tails.** The dust tail is grains pushed out by
   radiation pressure while keeping the comet's own orbital velocity, so it
   curves and is the colour of reflected sunlight. The ion tail is CO⁺ picked

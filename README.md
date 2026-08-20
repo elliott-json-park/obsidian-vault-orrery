@@ -229,6 +229,10 @@ the opposite one: if the code uses a word, the word has to be doing work in it.
   its poles on the measured law, and its spot bands walk toward the equator
   over a cycle. Colours come out of Planck's law and the CIE colour matching
   functions rather than off a palette.
+- **The corona follows Baumbach's measured brightness law** and is pearl-white
+  rather than amber, because that is what Thomson-scattered photospheric
+  light is. The glare around a star is the published CIE glare equation, not
+  a curve picked to look right.
 - **The comet has two tails**, because comets do: a curved dust tail the
   colour of reflected sunlight, and a straight blue ion tail along the
   anti-solar line where the solar wind has taken the gas.
