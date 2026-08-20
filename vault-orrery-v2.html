@@ -6745,8 +6745,35 @@ $('i-twin').onclick = () => twinsShow(selected);
    it. A comet falls in from outside on a real two-body arc — the curve comes
    out of the integration, not out of a spline — and its tail is swept away
    from the core, which is the one thing everyone knows about comets and the
-   one thing a trailing streak alone does not show. */
+   one thing a trailing streak alone does not show.
+
+   It had one tail. Comets have two, and they are two different objects made
+   by two different forces, which is why they point in two different
+   directions in every photograph ever taken of a bright one.
+
+     the dust tail   Grains a micron or so across, pushed out by radiation
+                     pressure — which is feeble. A grain leaves the nucleus
+                     carrying the comet's own orbital velocity and keeps most
+                     of it, so it falls behind along the orbit while being
+                     nudged outward, and the tail is the locus of all the
+                     grains released at all the different times. That is a
+                     curve, broad and diffuse, and it is yellow-white because
+                     what you are seeing is reflected sunlight.
+     the ion tail    Carbon monoxide ionised by the ultraviolet and then
+                     picked up by the solar wind, which is going four hundred
+                     kilometres a second. Against that the comet's own thirty
+                     is nothing, so the ions go straight out along the
+                     anti-solar line with no lag worth drawing — narrow,
+                     straight, and knotted along its length where the wind's
+                     magnetic field has been folded round the head. And it is
+                     blue, not by scattering but because CO+ fluoresces at
+                     420 nanometres: one emission line, the same blue every
+                     time.
+
+   The old tail was the dust tail's shape wearing the ion tail's colour on
+   half the comets at random. Both are drawn now, out of one buffer. */
 const COMET_TAIL = 52;
+const COMET_ION = 26;
 let comet = null, cometHead = null, cometTailObj = null,
     cometTailPos = null, cometTailCol = null, cometNext = 14;
 
@@ -6760,8 +6787,8 @@ function cometBuild() {
   cometHead.visible = false;
   cometHead.renderOrder = 3;
 
-  cometTailPos = new Float32Array(COMET_TAIL * 2 * 3);
-  cometTailCol = new Float32Array(COMET_TAIL * 2 * 3);
+  cometTailPos = new Float32Array((COMET_TAIL + COMET_ION) * 2 * 3);
+  cometTailCol = new Float32Array((COMET_TAIL + COMET_ION) * 2 * 3);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(cometTailPos, 3));
   g.setAttribute('color', new THREE.BufferAttribute(cometTailCol, 3));
@@ -6784,7 +6811,13 @@ function cometSpawn() {
                 .multiplyScalar(R * (0.10 + Math.random() * 0.20));
   const vel = aim.clone().sub(pos).normalize().multiplyScalar(R * 0.052);
   comet = { pos, vel, life: 0, R,
-            warm: Math.random() < 0.38,
+            /* How dusty this one is. Comets genuinely differ: Hale-Bopp threw
+               off so much dust that its dust tail dominated, and plenty of
+               others are gas-rich and show almost nothing but the blue. One
+               number decides which tail this comet leads with, which is a
+               better use of the coin flip than deciding what colour its
+               single tail was going to be. */
+            dusty: 0.35 + Math.random() * 0.9,
             trail: [] };
   cometHead.visible = true; cometTailObj.visible = true;
 }
@@ -6828,7 +6861,7 @@ function cometStep(dt) {
   cometHead.geometry.attributes.aAlpha.needsUpdate = true;
 
   const tr = comet.trail, n = tr.length;
-  const warm = comet.warm;
+  const dusty = comet.dusty;
   for (let k=0;k<COMET_TAIL;k++){
     const o = k*6;
     if (k+1 >= n) {
@@ -6853,15 +6886,65 @@ function cometStep(dt) {
     cometTailPos[o+5] = B.z + B.z/db * push * f1 * f1;
     /* a shallower falloff than square: the far end of a real tail is faint
        but it is still there, and squaring made it vanish by a third of the way */
-    const fade = (1 - f0) * (1 - f0*0.72) * heat * 1.35;
-    const fb   = (1 - f1) * (1 - f1*0.72) * heat * 1.35;
-    const cr = warm ? 1.0 : 0.55, cg = warm ? 0.78 : 0.90, cb = warm ? 0.52 : 1.0;
+    const fade = (1 - f0) * (1 - f0*0.72) * heat * 1.15 * dusty;
+    const fb   = (1 - f1) * (1 - f1*0.72) * heat * 1.15 * dusty;
+    /* sunlight off dust. The grains are large against a wavelength, so they
+       scatter without much preference and the tail comes out very nearly the
+       colour of the star lighting it. */
+    const cr = 1.0, cg = 0.87, cb = 0.66;
     cometTailCol[o]   = cr*fade; cometTailCol[o+1] = cg*fade; cometTailCol[o+2] = cb*fade;
     cometTailCol[o+3] = cr*fb;   cometTailCol[o+4] = cg*fb;   cometTailCol[o+5] = cb*fb;
+  }
+
+  /* ---- the ion tail ----
+     Straight out along the anti-solar line from the head, because the solar
+     wind is an order of magnitude faster than anything the comet is doing and
+     the lag does not survive being drawn. Two things keep it from being a
+     ruled line: it wanders a little with distance, and it is knotted. Real
+     ion tails are rayed and kinked and now and then break off entirely, all
+     of it the wind's magnetic field being folded round the head. The knots
+     ride the comet's own clock, so they crawl outward rather than flickering
+     where they stand. */
+  {
+    const p0 = comet.pos, d = p0.length() || 1;
+    const ux = p0.x/d, uy = p0.y/d, uz = p0.z/d;
+    /* two directions across the anti-solar line, for the kink to live in */
+    const ax = Math.abs(ux) < 0.9 ? 1 : 0, ay = Math.abs(ux) < 0.9 ? 0 : 1;
+    let kx = ay*uz, ky = -ax*uz, kz = ax*uy - ay*ux;
+    const kl = Math.hypot(kx, ky, kz) || 1; kx/=kl; ky/=kl; kz/=kl;
+    const jx = uy*kz - uz*ky, jy = uz*kx - ux*kz, jz = ux*ky - uy*kx;
+    const len = comet.R * 0.62 * heat;
+    /* a gas-rich comet leads with this one, so it is the complement of the
+       dust weighting rather than a second free number */
+    const ion = heat * 1.25 * (1.35 - dusty * 0.55);
+    const T = comet.life;
+    const pt = (f, out) => {
+      const w = Math.sin(f * 7.4 + T * 1.9) * 0.055 * f
+              + Math.sin(f * 3.1 - T * 1.1) * 0.030 * f;
+      const v = Math.sin(f * 5.3 - T * 1.5) * 0.048 * f;
+      const L = len * f;
+      out[0] = p0.x + ux*L + (kx*w + jx*v) * len;
+      out[1] = p0.y + uy*L + (ky*w + jy*v) * len;
+      out[2] = p0.z + uz*L + (kz*w + jz*v) * len;
+    };
+    const A = _ionA, B = _ionB;
+    const knot = f => 0.72 + 0.55 * Math.abs(Math.sin(f * 9.1 + T * 2.3));
+    for (let k=0;k<COMET_ION;k++){
+      const o = (COMET_TAIL + k) * 6;
+      const f0 = k / COMET_ION, f1 = (k+1) / COMET_ION;
+      pt(f0, A); pt(f1, B);
+      cometTailPos[o]   = A[0]; cometTailPos[o+1] = A[1]; cometTailPos[o+2] = A[2];
+      cometTailPos[o+3] = B[0]; cometTailPos[o+4] = B[1]; cometTailPos[o+5] = B[2];
+      const g0 = (1 - f0) * (1 - f0*0.55) * ion * knot(f0);
+      const g1 = (1 - f1) * (1 - f1*0.55) * ion * knot(f1);
+      cometTailCol[o]   = 0.42*g0; cometTailCol[o+1] = 0.72*g0; cometTailCol[o+2] = 1.0*g0;
+      cometTailCol[o+3] = 0.42*g1; cometTailCol[o+4] = 0.72*g1; cometTailCol[o+5] = 1.0*g1;
+    }
   }
   cometTailObj.geometry.attributes.position.needsUpdate = true;
   cometTailObj.geometry.attributes.color.needsUpdate = true;
 }
+const _ionA = [0,0,0], _ionB = [0,0,0];
 
 /* ======================================================== SHOOTING STARS
    The one piece of sky here that is honestly a lie, and worth it.
