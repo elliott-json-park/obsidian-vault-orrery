@@ -83,7 +83,28 @@ canvas{display:block}
 /* left / width are written by layoutHUD() so the deck fits the gap the side
    columns actually leave, rather than a gap assumed at one window size */
 #ctl{top:16px;left:50%;transform:translateX(-50%);width:880px;min-width:0}
-#ctl .ttl{cursor:pointer;user-select:none}
+/* the title bar is a handle first and a fold second — see the click that
+   tells them apart by how far the pointer travelled */
+#ctl .ttl{cursor:grab;user-select:none;pointer-events:auto}
+#ctl .ttl:active{cursor:grabbing}
+#ctl{position:fixed}
+/* ---------- the resize grip ----------
+   Bottom right, and drawn as two hairlines rather than as a control. It is
+   the corner of a pane that can be pulled; anything more emphatic would be a
+   button sitting in the middle of the sliders' own row. */
+#ctlgrip{position:absolute;right:0;bottom:0;width:16px;height:16px;
+  cursor:nwse-resize;pointer-events:auto;z-index:2}
+#ctlgrip:before,#ctlgrip:after{content:"";position:absolute;right:3px;
+  background:rgba(92,225,255,.28);transition:background .15s}
+#ctlgrip:before{bottom:3px;width:9px;height:1px}
+#ctlgrip:after{bottom:3px;width:1px;height:9px}
+#ctlgrip:hover:before,#ctlgrip:hover:after{background:var(--cy)}
+#ctl.fold #ctlgrip{display:none}
+/* While a drag is running the pointer must not be able to select the labels
+   it is passing over, and the canvas underneath must not take the move as an
+   orbit. Both are one class on the body. */
+body.dragdeck{user-select:none}
+body.dragdeck #hud{cursor:grabbing}
 #ctl .ttl span{color:rgba(223,246,255,.45)}
 #ctl .bd{display:flex;gap:12px;align-items:stretch;padding:10px 12px 12px}
 #ctl.fold .bd{display:none}
@@ -1405,6 +1426,8 @@ const STR = {
 'pin.on':      ['{n} · 기본 바에 고정','{n} · pinned to the bar','{n} · バーに固定','{n} · 已固定到基本栏'],
 'pin.off':     ['{n} · 서랍으로 내림','{n} · moved to the drawer','{n} · 引き出しへ','{n} · 已移入抽屉'],
 'grp.cosmos':  ['운동','MOTION','運動','运动'],
+'deck.reset':  ['제어판 위치를 자동으로 되돌렸습니다','Deck placement handed back to the layout',
+                'パネル位置を自動に戻しました','已恢复面板的自动布局'],
 'ctl.find':    ['컨트롤 찾기','FIND A CONTROL','コントロール検索','查找控件'],
 'ctl.none':    ['해당하는 컨트롤이 없습니다','Nothing by that name',
                 '該当するコントロールがありません','没有找到相应的控件'],
@@ -1973,8 +1996,12 @@ const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
 /* coreNote is a path, not an index: indices are rebuilt on every load and a
    saved one would name a different note by the next morning. Empty means
    "work it out", which is what every vault gets before anybody chooses. */
+/* Where the deck has been put, if it has been put anywhere. Null means "you
+   have not moved it", which is a different state from "you moved it back to
+   the middle" — the first follows the automatic layout for ever and the
+   second is a placement that happens to coincide with it today. */
 const SET_DEF = { mmHop:false, mmOrb:true, snd:false, coreNote:'', grid:false,
-                  tab:'cosmos',
+                  tab:'cosmos', deckAt:null,
                   adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
 const SET = Object.assign({}, SET_DEF, { pin: PIN_DEF.slice() });
@@ -1998,6 +2025,14 @@ KNOBS.forEach(kn => {
 SET.maxNodes = Number.isFinite(+SET.maxNodes)
   ? clamp(+SET.maxNodes, 0, MAX_NODES_CEIL) : SET_DEF.maxNodes;
 if (typeof SET.coreNote !== 'string') SET.coreNote = '';
+/* A placement saved on a wide monitor and reopened in a narrow leaf is the
+   ordinary case, not the corner one, and layoutHUD clamps it on every resize.
+   What it cannot survive is a blob that is not the right shape at all — an
+   older version's value, or a hand-edited store — so the whole thing is
+   dropped rather than repaired. Falling back to the automatic layout is
+   always a correct answer; a deck placed at NaN is not. */
+if (SET.deckAt && !(Number.isFinite(+SET.deckAt.x) && Number.isFinite(+SET.deckAt.y)
+                    && +SET.deckAt.w > 0)) SET.deckAt = null;
 /* A saved arrangement naming a knob that no longer exists would leave the bar
    one control short and no way to find out which; one naming the same knob
    twice would append the same element to the grid twice, which is a move
@@ -11199,6 +11234,8 @@ $('b-rst').onclick = () => {
      so the audio graph and the tinted buffer both have to be told */
   knobFind = '';
   if (findEl) findEl.value = '';
+  /* the arrangement includes where the thing is, not only what is in it */
+  SET.deckAt = null;
   layoutKnobs(); syncControls(); recolour(); audioApply();
   saveSet(); toast('CONTROLS RESET');
   /* RESET puts the folds back too, and a pane that has just unfolded is a
@@ -11213,6 +11250,112 @@ $('ctltl').onclick = () => {
   const folded = $('ctl').classList.toggle('fold');
   $('ctlfold').textContent = folded ? '[ + ]' : '[ − ]';
 };
+
+/* ---------------------------------------------- moving the deck about
+   The deck is the one pane with thirty controls in it and no fixed idea of
+   how tall it should be, and it is centred at the top of the frame — which
+   is directly over the thing it is controlling. Everywhere else in this HUD
+   the automatic layout is right, because every other pane is a readout that
+   belongs in a corner. This one is a tool, and where a tool should be
+   depends on what you are doing with it.
+
+   So it can be picked up by its title bar and pulled by its bottom-right
+   corner, and where it ends up is remembered. Both work in the leaf's own
+   coordinates rather than the window's, so a deck dragged to the left edge
+   of an Obsidian pane stays at that pane's left edge and not the monitor's.
+
+   The floor on the width is where the auto-fit grid stops being a grid: one
+   column of sliders and a stack of buttons is still a usable deck, and half
+   a column is not.
+
+   Note what is NOT here: no height. The deck's height is its contents — a
+   group of eight knobs is a different height from a group of thirteen, and
+   a stored height would either clip the taller one or leave a hole under the
+   shorter. Dragging the corner sets the width and the rows reflow into it,
+   which is the only degree of freedom that means anything. */
+const DECK_MIN_W = 240;
+/* Assigned inside the block below and listened for outside it. The window
+   listeners have to be written at column zero — that is the shape build-engine
+   rewrites into the tracked form the plugin unbinds on unload, and a listener
+   it does not rewrite is one that outlives the leaf it was made for. */
+let deckDragMove = null;
+let deckDragUp = null;
+function deckPlace(x, y, w) {
+  SET.deckAt = {
+    x: Math.round(x), y: Math.round(y),
+    w: Math.round(clamp(w, DECK_MIN_W, Math.max(DECK_MIN_W, innerWidth - 24)))
+  };
+  layoutHUD();
+}
+{
+  const ctl = $('ctl'), tl = $('ctltl');
+  /* Where the deck is right now, in the numbers deckPlace wants — read off
+     the element rather than off SET, so the first drag starts from wherever
+     the automatic layout had left it instead of jumping to a default. */
+  const here = () => ({ x: ctl.offsetLeft, y: ctl.offsetTop, w: ctl.offsetWidth });
+  let mode = 0, ox = 0, oy = 0, base = null, moved = 0;
+
+  const grip = document.createElement('div');
+  grip.id = 'ctlgrip';
+  grip.title = 'DRAG TO RESIZE';
+  ctl.appendChild(grip);
+
+  deckDragMove = e => {
+    if (!mode) return;
+    const dx = e.clientX - ox, dy = e.clientY - oy;
+    /* Only a title-bar drag counts as travel. The click that follows a
+       *resize* never reaches the title bar, so letting the corner accumulate
+       here left the next click on the title swallowed by a gesture it had
+       nothing to do with. */
+    if (mode === 1) {
+      moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
+      deckPlace(base.x + dx, base.y + dy, base.w);
+    } else deckPlace(base.x, base.y, base.w + dx);
+  };
+  deckDragUp = () => {
+    if (!mode) return;
+    mode = 0;
+    document.body.classList.remove('dragdeck');
+    saveSet();
+  };
+  const start = (e, m) => {
+    /* the fold arrow and the knobs inside the bar are not handles */
+    if (e.button !== 0) return;
+    mode = m;
+    if (m === 1) moved = 0;
+    base = here();
+    /* the first drag is also what takes the deck out of the automatic
+       layout, so the geometry it starts from is the one on screen */
+    ox = e.clientX; oy = e.clientY;
+    document.body.classList.add('dragdeck');
+    e.preventDefault();
+  };
+  tl.addEventListener('pointerdown', e => {
+    if (e.target === $('ctlfold')) return;      // that one still folds
+    start(e, 1);
+  });
+  grip.addEventListener('pointerdown', e => start(e, 2));
+  /* A title bar that both moves the deck and folds it has to tell the two
+     apart, and the only thing that separates them is whether the pointer
+     travelled. Four pixels is under the accidental movement in a click and
+     well under a deliberate drag. */
+  tl.onclick = () => {
+    if (moved > 4) { moved = 0; return; }
+    deckTouched = true;
+    const folded = ctl.classList.toggle('fold');
+    $('ctlfold').textContent = folded ? '[ + ]' : '[ − ]';
+  };
+  /* Double-clicking the title hands the deck back to the automatic layout.
+     Somewhere has to, or a deck dragged half off a screen that has since
+     been resized smaller is a deck with no way home. */
+  tl.addEventListener('dblclick', () => {
+    SET.deckAt = null; saveSet(); layoutHUD();
+    toast(T('deck.reset'));
+  });
+}
+addEventListener('pointermove', e => { if (deckDragMove) deckDragMove(e); });
+addEventListener('pointerup', () => { if (deckDragUp) deckDragUp(); });
+addEventListener('pointercancel', () => { if (deckDragUp) deckDragUp(); });
 
 /* ================================================================ HUD FIT
    The HUD is three columns and the middle one has to live in whatever the
@@ -11263,9 +11406,24 @@ function layoutHUD() {
      leaf — a wider minimum only pushed the deck off the right edge, which is
      not a better answer than a cramped deck. */
   const free = Math.max(180, W - 32 - left);
-  const w = Math.min(880, free);
-  ctl.style.width = w + 'px';
-  ctl.style.left  = Math.round(left + free / 2) + 'px';
+  let w;
+  if (SET.deckAt) {
+    /* Placed by hand. The automatic fit stops deciding, exactly the way it
+       stops deciding the fold once the title bar has been clicked — but the
+       clamp stays, because a window that has been made much smaller since
+       must not be able to strand the deck off its own edge. */
+    w = clamp(SET.deckAt.w, DECK_MIN_W, Math.max(DECK_MIN_W, W - 24));
+    ctl.style.width = w + 'px';
+    ctl.style.left  = Math.round(clamp(SET.deckAt.x, 8, Math.max(8, W - w - 8))) + 'px';
+    ctl.style.top   = Math.round(clamp(SET.deckAt.y, 8, Math.max(8, H - 46))) + 'px';
+    ctl.style.transform = 'none';
+  } else {
+    w = Math.min(880, free);
+    ctl.style.width = w + 'px';
+    ctl.style.left  = Math.round(left + free / 2) + 'px';
+    ctl.style.top   = '';
+    ctl.style.transform = '';
+  }
   /* past this the sliders and the buttons cannot sit side by side */
   ctl.classList.toggle('tight', w < 430);
 
