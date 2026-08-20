@@ -6648,7 +6648,7 @@ const MM = {
   age: 0, clock: 0, zoom: 1, px: 0, py: 0, trail: [], r1: 150, order: [], ax: 1,
   hint: null,                 // the live counts the map's caption quotes
   rings: [], hop2: false, orbit: true,
-  sky: null, bright: [], deep: null, deepR: 0, vig: null, spr: new Map(),
+  sky: null, bright: [], spr: new Map(),
   bloom: null                  // the quarter-size buffer the glow is built in
 };
 const MM_MAX  = 26;           // first-ring neighbours; beyond this the wheel mushes
@@ -6685,7 +6685,7 @@ function mmResize() {
   MM.w = w; MM.h = h;
   mmc.width  = Math.round(w * MM.dpr);
   mmc.height = Math.round(h * MM.dpr);
-  if (changed) { mmBuildSky(); mmBuildVignette(); }
+  if (changed) mmBuildSky();
 }
 
 /* ---- deterministic noise ----
@@ -6756,70 +6756,15 @@ function mmBuildSky() {
   }
 }
 
-function mmBuildVignette() {
-  const W = Math.ceil(MM.w), H = Math.ceil(MM.h);
-  const c = MM.vig || (MM.vig = document.createElement('canvas'));
-  c.width = Math.max(1, W); c.height = Math.max(1, H);
-  const x = c.getContext('2d');
-  x.clearRect(0, 0, W, H);
-  /* an ellipse, not a circle, so a wide canvas does not get dark bands down
-     the sides while the top and bottom stay open */
-  const g = x.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * 0.62);
-  g.addColorStop(0.00, 'rgba(0,0,0,0)');
-  g.addColorStop(0.58, 'rgba(0,0,0,0)');
-  g.addColorStop(1.00, 'rgba(1,3,9,.72)');
-  x.fillStyle = g; x.fillRect(0, 0, W, H);
-}
+/* ---- the deep field ----
+   Gone. It was a nebula of twenty-six dim blobs and twenty-four hundred dust
+   motes in three spiral arms, baked onto a plate and turned slowly under the
+   orbits. It was the best-looking thing on this canvas and it was answering a
+   question nobody brought here: the mind map exists to show what one note is
+   connected to, and a galaxy behind the answer is scenery in front of it.
 
-/* ---- the deep field, in world space ----
-   Spiral dust and nebula on the orbital plane, baked into one plate that is
-   drawn additively under the orbits and turns against them. Rebuilt only
-   when the ring scale changes, which is once per buildMind at most. */
-function mmBuildDeep(R1) {
-  const R = R1 * 4.4;
-  if (MM.deep && Math.abs(MM.deepR - R) < 1.5) return;
-  MM.deepR = R;
-  const S = 860, half = S / 2, k = half / R;     // world units -> plate pixels
-  const c = MM.deep || (MM.deep = document.createElement('canvas'));
-  c.width = c.height = S;
-  const x = c.getContext('2d');
-  const rnd = mmRng(913377);
-  x.clearRect(0, 0, S, S);
-  x.translate(half, half);
-
-  /* nebula: a few very large, very dim blobs. Overlapping they read as gas;
-     individually they read as nothing at all, which is the point. */
-  for (let i = 0; i < 26; i++) {
-    const rr = R * (0.18 + Math.pow(rnd(), 0.7) * 0.95);
-    const a = rnd() * TAU;
-    const px = Math.cos(a) * rr * k, py = Math.sin(a) * rr * k;
-    const rad = (0.10 + rnd() * 0.26) * S;
-    const violet = rnd() < 0.38;
-    const g = x.createRadialGradient(px, py, 0, px, py, rad);
-    const al = 0.020 + rnd() * 0.030;
-    g.addColorStop(0, violet
-      ? 'rgba(150,110,255,' + al.toFixed(3) + ')'
-      : 'rgba(70,180,255,' + al.toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    x.fillStyle = g;
-    x.beginPath(); x.arc(px, py, rad, 0, TAU); x.fill();
-  }
-
-  /* three spiral arms, same construction as the orrery's dust disk */
-  for (let i = 0; i < 2400; i++) {
-    const t = Math.pow(rnd(), 0.62);
-    const rr = R * 0.06 + t * R;
-    const arm = Math.floor(rnd() * 3) * (TAU / 3);
-    const a = arm + rr * (5.6 / R) + (rnd() - 0.5) * (0.5 + 1.6 / (1 + rr * (11 / R)));
-    const px = (Math.cos(a) * rr + (rnd() - 0.5) * R * 0.03) * k;
-    const py = (Math.sin(a) * rr + (rnd() - 0.5) * R * 0.03) * k;
-    const s = (0.4 + rnd() * 1.2);
-    x.fillStyle = 'rgba(' + (rnd() < 0.3 ? '150,205,255,' : '110,225,240,') +
-                  (0.05 + rnd() * 0.13).toFixed(3) + ')';
-    x.beginPath(); x.arc(px, py, s, 0, TAU); x.fill();
-  }
-  x.setTransform(1, 0, 0, 1, 0, 0);
-}
+   What stays is the starfield, which is a backdrop rather than a subject —
+   it says "space" in one layer and then gets out of the way. */
 
 /* ---- cached bodies ----
    Two radial gradients per node per frame was the whole cost of this canvas.
@@ -7036,7 +6981,6 @@ function buildMind(root, opts) {
   for (let k = 0; k < np; k++)
     MM.pulses.push({ e: (k * 7) % Math.max(1, MM.links.length), u: k / Math.max(1, np) });
 
-  mmBuildDeep(R1);
 
   /* the caption is rebuilt on every language switch, so the counts it quotes
      have to be kept rather than baked into the string */
@@ -7279,22 +7223,6 @@ function mmDrawSky(now) {
   mctx.globalCompositeOperation = 'source-over';
 }
 
-function mmDrawDeep() {
-  if (!MM.deep) return;
-  const R = MM.deepR;
-  mctx.save();
-  mctx.globalCompositeOperation = 'lighter';
-  /* the dust turns against the orbits, and much slower — the two rates
-     disagreeing is most of why the plate reads as depth rather than as a
-     picture that happens to be spinning */
-  mctx.rotate(-MM.clock * 0.008);
-  mctx.globalAlpha = clamp(MM.age / 0.8, 0, 1);
-  /* flattened the same way the orbits are, so the disc and what turns in it
-     agree about which way is wide */
-  mctx.drawImage(MM.deep, -R * MM.ax, -R, R * 2 * MM.ax, R * 2);
-  mctx.restore();
-}
-
 function mindDraw(now) {
   const w = MM.w, h = MM.h;
   mctx.setTransform(MM.dpr, 0, 0, MM.dpr, 0, 0);
@@ -7311,58 +7239,33 @@ function mindDraw(now) {
 
   const age = MM.age;
   const iz = 1 / MM.zoom;
-  mmDrawDeep();
 
-  /* The orbits themselves, drawn as the faintest of guides. A system held by
-     springs is constantly a little out of true, and without something to read
-     it against the layout looks like scatter rather than structure. They come
-     up after the burst has passed so they never compete with it. */
+  /* The orbits, drawn as one hairline each.
+
+     This used to be a polar plot: eight rotating spokes under everything, a
+     nine-pixel glow bed under each ring, the ring itself over that, and
+     twenty-four graduation ticks around each one, all turning. It read as an
+     instrument, which was the intent, and an instrument is a thing with a lot
+     of markings on it — so the markings were competing with the six or eight
+     bodies they exist to position.
+
+     One line per ring is enough to say "these are at the same radius", which
+     is the only thing the guides have to say. They still come up after the
+     entry has passed, so they never compete with it. */
   const gr = clamp((age - 0.75) / 1.1, 0, 1);
   if (gr > 0.004) {
-    /* spokes first, under everything: an orrery chart is a polar plot */
     const AX = MM.ax;
-    mctx.strokeStyle = 'rgba(120,200,255,' + (0.028 * gr).toFixed(4) + ')';
     mctx.lineWidth = iz;
-    const outer = MM.rings[MM.rings.length - 1] || MM.r1;
-    for (let s = 0; s < 8; s++) {
-      const a = s / 8 * TAU + MM.clock * 0.004;
-      const c = Math.cos(a) * AX, si = Math.sin(a);
-      mctx.beginPath();
-      mctx.moveTo(c * MM.r1 * 0.42, si * MM.r1 * 0.42);
-      mctx.lineTo(c * outer * 1.06, si * outer * 1.06);
-      mctx.stroke();
-    }
-    MM.rings.forEach((R, ri) => {
-      const a = [0.17, 0.125, 0.078][ri] || 0.07;
-      mctx.strokeStyle = 'rgba(110,195,255,' + (a * 0.34 * gr).toFixed(4) + ')';
-      mctx.lineWidth = 9 * iz;
+    MM.rings.forEach(R => {
+      mctx.strokeStyle = 'rgba(150,220,255,' + (0.11 * gr).toFixed(4) + ')';
       mctx.beginPath(); mctx.ellipse(0, 0, rad0(R*AX), rad0(R), 0, 0, TAU); mctx.stroke();
-      mctx.strokeStyle = 'rgba(150,220,255,' + (a * gr).toFixed(4) + ')';
-      mctx.lineWidth = iz;
-      mctx.beginPath(); mctx.ellipse(0, 0, rad0(R*AX), rad0(R), 0, 0, TAU); mctx.stroke();
-      /* graduation ticks, so the orbit reads as an instrument */
-      mctx.strokeStyle = 'rgba(150,220,255,' + (a * 0.8 * gr).toFixed(4) + ')';
-      for (let s = 0; s < 24; s++) {
-        const ta = s / 24 * TAU + MM.clock * 0.004;
-        const c = Math.cos(ta), si = Math.sin(ta);
-        mctx.beginPath();
-        mctx.moveTo(c * R * AX, si * R);
-        mctx.lineTo(c * (R * AX + 3.5 * iz), si * (R + 3.5 * iz));
-        mctx.stroke();
-      }
     });
   }
 
-  /* one slow ring of light leaving the star — a single wave reads as an
-     event, three read as a screensaver */
-  if (age < 1.5) {
-    const u = clamp(age / 1.25, 0, 1);
-    const e = 1 - Math.pow(1 - u, 3);
-    const R = Math.max(w, h) * 0.62 / MM.zoom;
-    mctx.strokeStyle = 'rgba(150,225,255,' + ((1-u)*(1-u)*0.34).toFixed(3) + ')';
-    mctx.lineWidth = (1 - u) * 2.4 + 0.35;
-    mctx.beginPath(); mctx.arc(0, 0, rad0(e*R), 0, TAU); mctx.stroke();
-  }
+  /* The ring of light that used to leave the star on open is gone with the
+     rest of it. It announced an arrival that the nodes flying to their orbits
+     already announce, and it was the one element on this canvas that had
+     nothing at all to do with the note being looked at. */
 
   /* the leash, drawn faintly, so "it comes back" is visible before it does */
   if (MM.drag > 0) {
@@ -7648,7 +7551,6 @@ function mindDraw(now) {
   mctx.restore();
 
   mmBloom();
-  if (MM.vig) mctx.drawImage(MM.vig, 0, 0);
 }
 
 /* ---- bloom, on a 2D canvas ----
