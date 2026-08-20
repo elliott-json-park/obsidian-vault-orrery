@@ -4,6 +4,32 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.6.1
+
+Five corrections to 1.6.0, four of them things that were built and could not
+be seen.
+
+- **The folder stars are white-hot.** They were drawn as the system colour
+  mixed halfway to white, which is a lit rock rather than a light source —
+  and they have been lighting their own planets all along. White through the
+  middle, the folder hue kept at the limb, driven past 1.0 so the bloom finds
+  them.
+- **The sun halo is actually a halo.** Its falloff put essentially all the
+  light inside the first twentieth of the radius, so on a sprite a third of
+  the frame across it was a bright dot on an empty card. Three exponentials
+  replace it: thirty per cent of the light now falls outside half the radius
+  where thirteen did, and the skirt is eleven to twenty-five times brighter
+  where a halo actually lives. It also opens much earlier and runs to 3.00x.
+- **The control deck resizes from all four corners**, each holding its own
+  opposite edge. Fixes a jump on the first drag: while the deck was still
+  placed automatically, its CSS left was the centre and offsetLeft did not
+  know it.
+- **The mind map is furnished.** Engraved orbit rings, a bezel and claws
+  around the star, a collet on whatever is being read, a tapered rule under
+  the subject’s name, and a breath of warm light on the air between the
+  reader and the plate. Structure made fine, not decoration added beside it.
+- **AMBIENT ships at 0.20x.**
+
 ## 1.6.0
 
 The picture, mostly. 1.5.0 subtracted; this one goes back over what was left
