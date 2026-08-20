@@ -8038,7 +8038,7 @@ function mmBody(R, G, B) {
     const g = x.createRadialGradient(c - r * 0.44, c - r * 0.10, r * 0.05, c, c, r * 1.02);
     g.addColorStop(0.00, 'rgb(' + up(R,120) + ',' + up(G,120) + ',' + up(B,120) + ')');
     g.addColorStop(0.30, 'rgb(' + up(R,46)  + ',' + up(G,46)  + ',' + up(B,46)  + ')');
-    g.addColorStop(0.66, 'rgb(' + R + ',' + G + ',\n' + ')');
+    g.addColorStop(0.66, 'rgb(' + R + ',' + G + ',' + B + ')');
     g.addColorStop(1.00, 'rgb(' + dn(R,.20) + ',' + dn(G,.20) + ',' + dn(B,.24) + ')');
     x.fillStyle = g;
     x.beginPath(); x.arc(c, c, r, 0, TAU); x.fill();
@@ -8065,9 +8065,9 @@ function mmHalo(R, G, B) {
   return mmPlate('h' + R + ',' + G + ',' + B, 128, (x, S) => {
     const c = S / 2;
     const g = x.createRadialGradient(c, c, 0, c, c, c);
-    g.addColorStop(0.00, 'rgba(' + R + ',' + G + ',\n' + ',.30)');
-    g.addColorStop(0.35, 'rgba(' + R + ',' + G + ',\n' + ',.10)');
-    g.addColorStop(1.00, 'rgba(' + R + ',' + G + ',\n' + ',0)');
+    g.addColorStop(0.00, 'rgba(' + R + ',' + G + ',' + B + ',.30)');
+    g.addColorStop(0.35, 'rgba(' + R + ',' + G + ',' + B + ',.10)');
+    g.addColorStop(1.00, 'rgba(' + R + ',' + G + ',' + B + ',0)');
     x.fillStyle = g; x.fillRect(0, 0, S, S);
   });
 }
@@ -8799,7 +8799,7 @@ function mindDraw(now) {
         /* squared falloff, so it is brightest just behind the node and thins
            to nothing rather than stopping */
         const f = 1 - s / M;
-        mctx.strokeStyle = 'rgba(' + R + ',' + G + ',\n' + ',' +
+        mctx.strokeStyle = 'rgba(' + R + ',' + G + ',' + B + ',' +
                            (f * f * 0.52 * amt * born).toFixed(3) + ')';
         mctx.lineWidth = (n.r * 0.5 * f + 0.3) * iz;
         mctx.beginPath(); mctx.moveTo(px2, py2); mctx.lineTo(qx, qy); mctx.stroke();
@@ -9019,7 +9019,7 @@ function mmDrawStar(n, pr, R, G, B, now) {
   g.addColorStop(0.00, 'rgba(255,250,232,.50)');
   g.addColorStop(0.09, 'rgba(' + wR + ',' + wG + ',' + wB + ',.30)');
   g.addColorStop(0.30, 'rgba(' + wR + ',' + wG + ',' + wB + ',.10)');
-  g.addColorStop(0.62, 'rgba(' + R + ',' + G + ',\n' + ',.035)');
+  g.addColorStop(0.62, 'rgba(' + R + ',' + G + ',' + B + ',.035)');
   g.addColorStop(1.00, 'rgba(0,0,0,0)');
   mctx.fillStyle = g;
   mctx.beginPath(); mctx.arc(n.x, n.y, cr, 0, TAU); mctx.fill();
