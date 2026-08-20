@@ -3851,9 +3851,23 @@ void main(){
   gl_PointSize = sz * (uScale / max(1.0, -mv.z));
   gl_Position = clip;
 }`;
+/* sinc squared, which is the intensity a straight edge diffracts into.
+   Guarded at the origin, where the limit is one and the quotient is not. */
+const GLOW_SINC = `
+float sinc2(float u){
+  if (u < 1e-3) return 1.0;
+  float s = sin(u);
+  return (s * s) / (u * u);
+}
+/* The same pattern with its own decay divided back out: one at the centre,
+   zero at every null, one at every secondary peak. Which is the fringes on
+   their own, and the fringes on their own are what a spike needs — see the
+   note in main(). */
+float fringe(float u){ return sinc2(u) * max(1.0, u * u); }`;
 const GLOW_F = `
 varying vec3 vC; varying float vA; varying float vF;
 varying vec2 vDir; varying float vStr;
+${GLOW_SINC}
 void main(){
   vec2 d = gl_PointCoord - 0.5;
   /* into the streak's own frame, then squeeze across it. At vStr 1 this is a
@@ -3865,19 +3879,53 @@ void main(){
   /* the same light over a longer sprite is dimmer light, or a boost would
      read as the sky being turned up rather than as the sky going past */
   a /= 0.42 + 0.58 * vStr;
-  float sp = 0.0;
+  vec3 sp = vec3(0.0);
   if (vF > 0.001) {
     /* off the unstretched coordinate: a diffraction spike is made by the
        lens and does not know how fast the ship is going */
     vec2 ds = gl_PointCoord - 0.5;
     float ax = abs(ds.x) * 2.0 * vStr, ay = abs(ds.y) * 2.0 * vStr;
-    sp = max(0.0, 1.0 - ay * 11.0) * max(0.0, 1.0 - ax * 1.15)
-       + max(0.0, 1.0 - ax * 11.0) * max(0.0, 1.0 - ay * 1.15);
-    sp *= vF * 0.42;
+    /* A spike is not a wedge.
+
+       It is the Fraunhofer pattern of a straight edge — one vane of the
+       spider holding the secondary in place — and that pattern is sinc
+       squared: a bright centre, then a run of secondary maxima falling off
+       as the inverse square of their order. Which is why a real spike is
+       *beaded* rather than ruled, and it is what every long exposure of a
+       bright star shows that a linear taper cannot.
+
+       Drawn as fringes on an envelope rather than as the raw law, and that
+       split is the honest description of what a photograph is. Sinc
+       squared falls off so fast that by a fifth of the way along the arm
+       it is at a tenth — put it on screen literally and the spike is a
+       stub. It does not look like a stub in any photograph because the arm
+       is grossly overexposed for most of its length: the law is far above
+       the sensor ceiling out to where it finally is not, so the 1/u² decay
+       reads as a slow taper and what you actually see is the interference.
+       So the taper carries the decay and fringe() carries the pattern,
+       which is sinc squared with its own envelope divided back out.
+
+       And the fringes are chromatic. Their spacing goes as the wavelength,
+       so at any distance along an arm the red maxima sit further out than
+       the blue, and the arm breaks into colour toward its tip. Three
+       scales, one per channel, at 680 : 550 : 440 nm — the same three the
+       atmospheres are scattered at, for the same reason: that is where the
+       eye keeps its three answers. */
+    float uh = ax * 15.0, uv = ay * 15.0;
+    vec3 fh = vec3(fringe(uh * 0.809), fringe(uh), fringe(uh * 1.250));
+    vec3 fv = vec3(fringe(uv * 0.809), fringe(uv), fringe(uv * 1.250));
+    float eh = max(0.0, 1.0 - ax * 1.15) * max(0.0, 1.0 - ay * 11.0);
+    float ev = max(0.0, 1.0 - ay * 1.15) * max(0.0, 1.0 - ax * 11.0);
+    sp = ((0.52 + 0.48 * fh) * eh + (0.52 + 0.48 * fv) * ev) * vF * 0.44;
   }
-  float t = a + sp;
+  /* The spike carries its own colour now, so the fragment can no longer be
+     one colour and one alpha. Summed per channel and then split back into
+     the pair additive blending multiplies together again, which leaves the
+     result identical for anything that has no spike on it. */
+  vec3 sum = vC * ((1.0 + a * 1.1) * a + sp);
+  float t = max(sum.r, max(sum.g, sum.b));
   if (t < 0.0025) discard;
-  gl_FragColor = vec4(vC * (1.0 + a * 1.1), t * vA);
+  gl_FragColor = vec4(sum / t, t * vA);
 }`;
 const glowMats = [];
 const skyMats  = [];     // the background ones the STARFIELD knob owns
