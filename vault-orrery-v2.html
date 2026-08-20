@@ -3603,11 +3603,16 @@ scene.add(fillLight);
    Falloff is inverse-square softened at the star's own scale — a planet on
    the inner ring gets nearly full light and one at the edge of the reach a
    quarter of it — so distance from the star is a thing you can see and the
-   outer planets do not vanish. Then the limb: a Fresnel term, on the day
-   side and across the terminator only, in a colour pulled toward blue. That
-   is the atmosphere — light forward-scattered through the air at the edge
-   of a world — and it is what the additive halo was standing in for at close
-   range without ever quite being. */
+   outer planets do not vanish.
+
+   Then two things that happen to the light rather than to the surface, and
+   both have their own block below with the reasoning in it. The limb is
+   Rayleigh and Mie scattering through the world's air: blue at noon, copper
+   at the terminator where the path is long, and a white forward halo when
+   the star is behind. And the light can be interrupted — a moon behind its
+   planet goes into an umbra with a real penumbra round it, and the umbra is
+   copper rather than black, because the only light getting in has come the
+   long way through the eclipsing world's own atmosphere. */
 const STAR_I = 1.55;
 function starLit(sh, instanced) {
   sh.vertexShader = (instanced
@@ -4351,10 +4356,10 @@ function machineBody(sh, instanced) {
    used to spin at different rates, which made the moment one replaced the
    other visible as the planet lurching.
 
-   Axis tilt and phase come from the seed; the rate falls with the radius,
-   because a small body that turned as slowly as a large one would look
-   becalmed and a large one turning as fast as a small one looks like a prop.
-   On the orbital clock, so freezing the sky freezes the spin with it. */
+   Obliquity and phase come from the seed, the rate rises with the radius —
+   see buildBodySpin for why both of those are what they are — and a moon
+   does not read the rate at all, because a moon is locked. All of it on the
+   orbital clock, so freezing the sky freezes the spin with it. */
 let bodySpin = null, bodyLock = null;
 function buildBodySpin() {
   bodySpin = new Float32Array(Math.max(1, N) * 4);
