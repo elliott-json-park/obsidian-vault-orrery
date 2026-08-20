@@ -4,6 +4,92 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.8.0
+
+The astronomy audited against itself. Every term this view uses as a name for
+something — Kepler, limb darkening, the Roche limit, Rayleigh, tidal locking —
+was checked to see whether the code behind it does what the word means, and
+where it did not, it does now. Nothing here is a new feature. It is the same
+cosmos, telling the truth about more of itself.
+
+- **All three of Kepler's laws hold.** Every orbit was a circle turned at a
+  constant rate, with the star at the centre of it, which is a turntable
+  rather than an orbit.
+
+  *First.* Each ring lane carries an eccentricity and a direction of
+  periapsis, and a body's position is measured from the focus. The numbers are
+  the Solar System's own — Venus 0.007, Earth 0.017, Jupiter 0.048 — and each
+  is capped by the clearance to the next lane, so no two orbits saw through
+  each other. Notes sharing a lane share the ellipse and differ only in where
+  they are on it, which is what keeps six bodies at one radius from ever
+  meeting.
+
+  *Second.* Kepler's equation, solved per body per frame. Equal areas in equal
+  times hold to three thousandths of a per cent, and what it looks like is a
+  planet hurrying through the near side of its orbit and loitering at the far.
+
+  *Third.* The mean motion goes as the semi-major axis to the minus three
+  halves against the geometry as it currently is, not as it was when the
+  layout was computed. ORBIT SPREAD and ORBIT GAP used to move the radii and
+  leave the periods where they were.
+
+- **The moons are tidally locked.** Every large moon in the Solar System keeps
+  one face to the body it orbits, because its own tidal bulge bleeds its spin
+  away until the two periods match. These now turn once per revolution off the
+  same clock that places them, so the lock cannot drift. Libration comes with
+  it for nothing: rotation is uniform and travel is not, so the face rocks a
+  couple of degrees each way over an orbit and you see a little round each
+  limb in turn. A locked satellite also loses most of its obliquity, the way
+  tides drive one into a Cassini state.
+
+- **A world's limb has wavelengths in it.** The atmosphere was one blue
+  constant at every angle to the star. It is Rayleigh scattering at λ⁻⁴ now,
+  with its own phase function; an air-mass term, so the fringe goes blue at
+  noon and copper at the terminator the way an orbital photograph of a sunset
+  does; and a Mie forward lobe at g = 0.76, which is what puts a white halo
+  round a world with its star behind it and nothing at all round one lit from
+  the side.
+
+- **The rings are inside the Roche limit, and on the equator.** They ran from
+  2.4 to 7.2 planetary radii, where rubble accretes into a moon within a few
+  orbits rather than staying a ring. The annulus is Saturn's now — 1.239 to
+  2.267 radii — with Saturn's own measured profile in it: the faint C ring,
+  the bright banded B, the Cassini Division dark but not empty, the A ring at
+  two thirds of B, and the Encke gap where Pan holds it open. And the plane is
+  the planet's equator rather than a seed of its own, because a ring off the
+  equator is dragged into it by the planet's oblateness. The innermost moon
+  orbits at 3.4 radii, so ring and moons now fall either side of the limit
+  that decides which is which.
+
+- **The planet's shadow falls across its rings**, and the rings are brighter
+  seen from the far side than from the lit one — ring particles are enormous
+  against a wavelength and scatter forwards almost entirely, which is why
+  Cassini's pictures from Saturn's night side look nothing like the ones from
+  its day side.
+
+- **The sky is coloured by Planck's law.** The six spectral rows were typed in
+  by eye and were close. They are computed now: Planck for the spectrum, the
+  CIE 1931 colour matching functions for what the eye does with it, the sRGB
+  matrix for what a screen can show. Checked against Mitchell Charity's
+  blackbody table. The star at the centre takes its two colours from two
+  brightness temperatures of its own gas — about 6300 K looking straight into
+  the disc, about 4800 K where the sight line skims the limb — rather than
+  from two rows of a table of unrelated stars.
+
+- **The star does not turn as one piece.** Its equator goes round faster than
+  its poles, on the measured law, which is why it has spots at all: the shear
+  winds the field up until the tubes go buoyant and break the surface. And the
+  spot bands walk down toward the equator over a cycle and wax and wane with
+  it — Maunder's butterfly, on a clock compressed to be watchable.
+
+- **The comet has both its tails.** The dust tail is grains pushed out by
+  radiation pressure while keeping the comet's own orbital velocity, so it
+  curves and is the colour of reflected sunlight. The ion tail is CO⁺ picked
+  up by the solar wind at four hundred kilometres a second, so it runs dead
+  straight along the anti-solar line, knotted where the field has folded, and
+  blue because that molecule fluoresces at 420 nm. There was one tail before,
+  wearing the wrong colour half the time.
+
 ## 1.7.0
 
 - **SUN HALO grows an ice display.** Low on the knob it is what it was: a
