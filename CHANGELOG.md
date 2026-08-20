@@ -4,6 +4,18 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.6.2
+
+- **SUN HALO is gone.** It was added in 1.6.0 and fixed in 1.6.1 — the fix
+  was real, the arithmetic was wrong and then it was right — and with the
+  folder stars turned into emitters there is nothing left for it to do that
+  the corona and the bloom were not already doing better. Removed rather than
+  defaulted to zero: a knob nobody should turn up is a knob that should not be
+  in the drawer.
+- **SUN GLOW ships at 0.65x and SYSTEM GLOW at 0.60x.** The stars are white
+  through the middle and driven past 1.0 as of 1.6.1; at 3.00x and 1.26x they
+  were burning out everything they were meant to be lighting.
+
 ## 1.6.1
 
 Five corrections to 1.6.0, four of them things that were built and could not

@@ -1946,8 +1946,8 @@ const KNOBS = [
      Zero is OFF and says so, except on the hub: a sun turned off is a cosmos
      with no light source in it, so its floor is a dim ember rather than
      nothing. */
-  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:3, fmt:mult },
-  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:1.26,
+  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:.65, fmt:mult },
+  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:.6,
     fmt:v => offAt(v, mult(v)) },
   /* Planets and moons run to 8x where the sun and the folder stars stop at
      3x, and the asymmetry is the point: those two are light sources and the
@@ -1964,14 +1964,6 @@ const KNOBS = [
   { k:'blm', g:'light',  label:'BLOOM',         min:0,  max:BLM_MAX*100, sc:100, def:.7,
     fmt:v => offAt(v, mult(v)) },
   { k:'ray', g:'light',  label:'SUN RAYS',      min:0,  max:150, sc:100, def:.7,
-    fmt:v => offAt(v, mult(v)) },
-  /* The scattering halo, which is the whole of what a star looks like once
-     its disc is too small to be one. Separate from SUN RAYS because the rays
-     are a screen-space march that only exists while the sun is in frame, and
-     this is the star itself being too bright for the space between you and
-     it — they peak at opposite ranges and one knob would have had to be a
-     compromise between them. */
-  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
   { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:0,
     fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
@@ -3665,7 +3657,7 @@ function pointsFrom(n, fill, mat) {
 const SKY_R = 14000;                       // far enough that the ship never
                                            // outruns the background
 let starFieldObj = null, brightStarObj = null, nebulaObj = null,
-    milkyObj = null, dustObj = null, coronaObj = null, coronaRay = null, glareObj = null,
+    milkyObj = null, dustObj = null, coronaObj = null, coronaRay = null,
     veilObj = null;
 
 starFieldObj = pointsFrom(13000, (i, pos, sz, cl, al) => {
@@ -4420,94 +4412,6 @@ void main(){
   coronaObj.renderOrder = 2;
   coronaObj.visible = false;
   scene.add(coronaObj);
-
-  /* ---------- the glare ----------
-     What you actually see when you look at the sun from a long way off, and
-     the one thing this was missing.
-
-     A star at map range is four pixels of disc, and four pixels of disc is
-     not what the sun looks like from Earth: what it looks like is an
-     enormous soft bloom with a small unbearable centre, because the light
-     scatters — in the atmosphere, in the eye, in the lens. None of that is
-     the star; all of it is what the star does to whatever is between you and
-     it. So it belongs to the *viewer's distance*, not to the star's size,
-     and it is the only thing in this scene that gets bigger as you back
-     away from it.
-
-     Drawn as its own sprite rather than by widening the corona, because the
-     two answer to opposite things. The corona is the atmosphere around the
-     star: it shrinks against the disc as you approach and hands over to the
-     photosphere. This grows without limit and dominates at exactly the range
-     where the corona has become a dot.
-
-     Depth-tested off, unlike the corona: scattered light is in front of
-     everything, including the planet that happens to be crossing the star.
-     That is what makes a body silhouetted against it read as silhouetted.
-
-     A power curve rather than a gradient with stops. The falloff a scattering
-     halo has is roughly 1/r^2 with a floor, which spends almost all of its
-     brightness in the first tenth of the radius and then trails for the rest
-     — a stopped gradient gives visible rings at the stops, and rings are the
-     one thing this must not have. */
-  const G = 512, gc = document.createElement('canvas');
-  gc.width = gc.height = G;
-  const gx = gc.getContext('2d');
-  const gim = gx.createImageData(G, G), gd = gim.data;
-  const half = G / 2;
-  for (let py = 0; py < G; py++) {
-    for (let px = 0; px < G; px++) {
-      const dx = (px - half) / half, dy = (py - half) / half;
-      const r = Math.sqrt(dx*dx + dy*dy);
-      let a = 0;
-      if (r < 1) {
-        /* Exponentials, not reciprocals.
-
-           The first cut used 1/(1 + r²k) with k at 190 and 4200, and those
-           numbers put essentially all of the brightness inside the first
-           twentieth of the radius: at r = 0.05 the falloff is already down to
-           a quarter and by r = 0.2 it is a fortieth. Scaled to a sprite a
-           third of the frame across, that is a bright dot in the middle of a
-           large empty card — which is exactly what it looked like, and why
-           there appeared to be no halo at all.
-
-           A scattering halo does not fall off like that. It has a bright core
-           and then a genuinely wide skirt that is still visible several
-           radii out, which is a sum of exponentials — one narrow, one broad,
-           one very broad. These three put a third of the light outside half
-           the radius, which is where a halo actually lives. */
-        a = 0.42 * Math.exp(-r * 2.4)
-          + 0.34 * Math.exp(-r * 6.5)
-          + 0.30 * Math.exp(-r * 17.0);
-        /* A whisper of a ring, well out. Nothing in a real sky puts a hard
-           edge here, but a completely featureless skirt reads as a lens
-           artefact rather than as air — the eye wants one thing to catch on.
-           At three per cent it is under the threshold of being seen and over
-           the threshold of being felt. */
-        a += 0.030 * Math.exp(-Math.pow((r - 0.46) * 7.0, 2.0));
-        /* taken to nothing exactly at the edge, so the sprite has no rim */
-        a *= 1 - r * r;
-      }
-      const o = (py * G + px) * 4;
-      /* Warm at the centre, cooling outward — scattered light is redder the
-         further it has been scattered, which is why a low sun is orange. The
-         cooling runs further out now that there is a further out to run to. */
-      gd[o]   = 255;
-      gd[o+1] = 240 - Math.min(88, r * 92);
-      gd[o+2] = 214 - Math.min(150, r * 168);
-      gd[o+3] = Math.max(0, Math.min(255, a * 255)) | 0;
-    }
-  }
-  gx.putImageData(gim, 0, 0);
-  const gtex = new THREE.CanvasTexture(gc);
-  gtex.minFilter = THREE.LinearFilter;
-  glareObj = new THREE.Sprite(new THREE.SpriteMaterial({ map:gtex,
-    transparent:true, depthWrite:false, depthTest:false,
-    blending:THREE.AdditiveBlending, opacity:0 }));
-  glareObj.scale.setScalar(600);
-  /* after the corona and the crown, so it lies over both */
-  glareObj.renderOrder = 4;
-  glareObj.visible = false;
-  scene.add(glareObj);
 
   /* ---------- the crown ----------
      A smooth radial falloff is a lamp. Every photograph of a star in eclipse
@@ -5329,9 +5233,6 @@ if (coronaRay) {
   coronaRay.visible = N > 0;
   coronaRay.scale.setScalar(Math.max(120, (RAD[coreIdx] || 17) * 15) * 1.62);
 }
-/* the glare is placed and sized entirely by the frame — see the block that
-   reads glarePx — so all a new vault owes it is a clean slate */
-if (glareObj) { glareObj.visible = false; glareObj.material.opacity = 0; }
 /* the air and the far plane are sized from the cosmos, and this is a new one.
    gapStep would get to it, but only on a frame where the spring is moving —
    a vault opened at a gap it is already settled at would keep the last
@@ -11109,9 +11010,6 @@ function frameLoop(now) {
   /* the sun stays at the core; only a faint fill tracks the viewer, so the
      far side of a body never goes completely black */
   rimLight.position.copy(camera.position).normalize();
-  /* half the viewport height over tan(fov/2): multiply by a radius and divide
-     by a distance and the answer is that radius in pixels */
-  const glarePx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
   if (coronaObj && N) {
     /* the corona has to shrink with distance more slowly than a sphere does,
        or it either vanishes up close or eats the screen from far away */
@@ -11147,43 +11045,6 @@ function frameLoop(now) {
       const surge = 1 + Math.sin(t * 0.00043 + 0.8) * 0.075;
       coronaRay.scale.setScalar(base * 1.62 * surge);
       coronaRay.material.opacity = (0.34 + 0.16 * Math.sin(t * 0.00067)) * ig;
-    }
-    if (glareObj) {
-      /* Keyed to how small the disc has become on screen, not to raw
-         distance: that is the quantity the effect is actually about — the
-         glare takes over precisely when there is no longer a disc to look
-         at, and a vault whose hub is scaled to twice the size should hold it
-         off twice as long. It is also what makes SUN SIZE and ORBIT GAP not
-         need to know about any of this.
-
-         px is the disc's radius in pixels. Below about forty it starts to
-         matter; by two it is the whole of what you can see. */
-      const px = (RAD[coreIdx] || 17) * glarePx / Math.max(1, d);
-      /* From ninety pixels rather than forty, and linear rather than squared.
-
-         Squaring a ramp that only opened at forty pixels meant the halo was
-         still at a tenth of its strength when the disc was fifteen pixels
-         across — which is most of the range anybody looks at this from. The
-         effect existed and was never seen. It comes up gently from the point
-         where the disc stops being a disc you can read a face on, and it is
-         at full strength by the time the star is a few pixels. */
-      const far = clamp((90 - px) / 80, 0, 1);
-      const amt = SET.glare * far * ig;
-      glareObj.visible = amt > 0.004;
-      if (glareObj.visible) {
-        glareObj.position.copy(coronaObj.position);
-        /* Grows with distance rather than with the star. Held to a share of
-           the frame at the top end — a scattering halo that fills the view
-           is a white screen, and a white screen is not a picture of a sun.
-
-           Wider than it was, because the skirt is now doing the work: with
-           the old falloff the sprite could be enormous and still read as a
-           dot, so its size was set by what looked safe rather than by what
-           the halo needed. */
-        const span = clamp(d * 0.52, base * 2.2, d * 0.88);
-        glareObj.scale.setScalar(span);
-        glareObj.material.opacity = Math.min(0.95, amt * 0.78);
-      }
     }
   }
   /* parallax: each shell turns at its own rate, which is most of why the
