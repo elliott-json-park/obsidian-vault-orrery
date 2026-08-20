@@ -886,6 +886,7 @@ body.ship #heat.on{display:block}
         <div class="mini" id="i-mm" data-i18n="insp.mm">◈ 마인드맵 열기 [M]</div>
         <div class="mini" id="i-twin" data-i18n="insp.twin">≈ 닮은 노트 찾기 [N]</div>
         <div class="mini" id="i-ripple" data-i18n="insp.ripple">◉ 여기서 파문 일으키기 [SPACE]</div>
+        <div class="mini" id="i-core" data-i18n="insp.core">★ 이 노트를 중심 항성으로</div>
       </div>
     </div>
   </div>
@@ -1194,6 +1195,14 @@ const STR = {
 'insp.go':     ['◎ 이동하기','◎ TRAVEL','◎ 移動する','◎ 前往'],
 'insp.mm':     ['◈ 마인드맵 열기 [M]','◈ MIND MAP [M]','◈ マインドマップ [M]','◈ 思维导图 [M]'],
 'insp.twin':   ['≈ 닮은 노트 찾기 [N]','≈ FIND TWINS [N]','≈ 似たノートを探す [N]','≈ 查找相似笔记 [N]'],
+'insp.core':   ['★ 이 노트를 중심 항성으로','★ MAKE THIS THE CENTRAL STAR',
+                '★ このノートを中心恒星に','★ 将这篇笔记设为中心恒星'],
+'insp.core.on':['☆ 중심 항성 해제 (자동 선택)','☆ RELEASE THE CENTRE (AUTO)',
+                '☆ 中心恒星を解除 (自動)','☆ 解除中心恒星 (自动)'],
+'core.set':    ['{n} · 이제 이 항성계의 중심입니다','{n} is the centre now',
+                '{n} · この星系の中心になりました','{n} · 现在是这个星系的中心'],
+'core.auto':   ['중심 항성을 자동으로 되돌렸습니다','The centre is chosen automatically again',
+                '中心恒星を自動選択に戻しました','已恢复自动选择中心恒星'],
 'insp.ripple': ['◉ 여기서 파문 일으키기 [SPACE]','◉ RIPPLE FROM HERE [SPACE]',
                 '◉ ここから波紋 [SPACE]','◉ 从此处泛起涟漪 [SPACE]'],
 'insp.nobody': ['(본문 없음)','(no body text)','（本文なし）','（无正文）'],
@@ -1903,7 +1912,10 @@ const GROUPS = [['cosmos','grp.cosmos'], ['bodies','grp.bodies'],
    thing — what is on the bar — and a list of five strings survives a knob
    being renamed or dropped in a way that thirty booleans do not. */
 const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
-const SET_DEF = { mmHop:false, mmOrb:true, snd:false,
+/* coreNote is a path, not an index: indices are rebuilt on every load and a
+   saved one would name a different note by the next morning. Empty means
+   "work it out", which is what every vault gets before anybody chooses. */
+const SET_DEF = { mmHop:false, mmOrb:true, snd:false, coreNote:'',
                   adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
 const SET = Object.assign({}, SET_DEF, { pin: PIN_DEF.slice() });
@@ -1926,6 +1938,7 @@ KNOBS.forEach(kn => {
 });
 SET.maxNodes = Number.isFinite(+SET.maxNodes)
   ? clamp(+SET.maxNodes, 0, MAX_NODES_CEIL) : SET_DEF.maxNodes;
+if (typeof SET.coreNote !== 'string') SET.coreNote = '';
 /* A saved arrangement naming a knob that no longer exists would leave the bar
    one control short and no way to find out which; one naming the same knob
    twice would append the same element to the grid twice, which is a move
@@ -1951,6 +1964,13 @@ function toast(msg, ms) {
    folder arrives. The bindings live at module scope; buildLayout() and
    buildObjects() re-assign them and disposeWorld() tears the old one down. */
 const GOLD = Math.PI * (3 - Math.sqrt(5));
+/* how many folders deep a path sits. A root-level index outranks one filed
+   three levels down, whatever their citation counts say. */
+function depthOf(path) {
+  let n = 0;
+  for (let i = 0; i < path.length; i++) if (path.charCodeAt(i) === 47) n++;
+  return n;
+}
 
 let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, coreIdx,
     spiralOf, datedOrder, P, RAD, RAD0, COL, COLB, orb, catOf, alpha, edgeCache, SHELL_R, adj, hayOf,
@@ -2416,8 +2436,33 @@ edges.forEach(([a,b,t]) => {
 adj = Array.from({length:N}, () => new Set());
 edges.forEach(([a,b]) => { if (a !== b) { adj[a].add(b); adj[b].add(a); } });
 
-/* --- core node ----------------------------------------------------- */
-coreIdx = nodes.findIndex(n => n.p === 'wiki/index.md');
+/* --- core node -------------------------------------------------------
+   Which note the whole cosmos turns around. Three answers, in order:
+
+     1. the one the reader chose. SET.coreNote is a path, so it survives a
+        reload, a rename of everything around it and a vault that has grown
+        by a thousand notes since. A path that no longer resolves falls
+        through to the next answer rather than leaving the vault with no
+        centre — a saved preference should never be able to break a view.
+     2. the biggest index. This used to be the literal string
+        'wiki/index.md', which is one vault's convention stated as if it were
+        everyone's: a vault whose entry point is README.md, or index.md at
+        the root, or 인덱스.md, got the fallback and never knew why. Any note
+        *named* like an index counts, and the largest of them wins, because a
+        vault with six folder-level index files means the one at the top.
+     3. the most cited note, which is where this always ended up anyway. */
+const INDEX_RE = /(^|\/)(index|readme|home|moc|인덱스|목차)\.md$/i;
+const coreWeight = i => (nodes[i].inb|0) * 40 + (nodes[i].w|0) - depthOf(nodes[i].p) * 500;
+coreIdx = -1;
+if (SET.coreNote) coreIdx = nodes.findIndex(n => n.p === SET.coreNote);
+if (coreIdx < 0 && N) {
+  let best = -1;
+  for (let i=0;i<N;i++){
+    if (!INDEX_RE.test(nodes[i].p)) continue;
+    if (best < 0 || coreWeight(i) > coreWeight(best)) best = i;
+  }
+  coreIdx = best;
+}
 if (coreIdx < 0 && N) {
   let b0 = 0;
   for (let i=1;i<N;i++) if ((nodes[i].inb|0) > (nodes[b0].inb|0)) b0 = i;
@@ -5190,10 +5235,38 @@ function renderInspector() {
   const go = $('i-go');
   const short = nd.n.length > 12 ? nd.n.slice(0,12) + '…' : nd.n;
   go.textContent = goLabel(short, ship.on);
+  /* On the hub the button is the way back out: the note it would promote is
+     already the centre, so it offers to hand the choice back to the vault
+     instead. That is the only place the release is reachable from, and it is
+     the one place a reader would look for it. */
+  const core = $('i-core');
+  const isCore = selected === coreIdx;
+  core.textContent = T(isCore && SET.coreNote ? 'insp.core.on' : 'insp.core');
+  core.style.display = isCore && !SET.coreNote ? 'none' : '';
 }
 $('i-go').onclick = () => {
   if (selected < 0) return;
   if (ship.on) shipFlyTo(selected); else focusNode(selected, true);
+};
+/* Choosing the centre is a change to the layout, not to the camera: the ring
+   the systems sit on, every orbit inside them and the spiral the archive
+   rides are all measured from the hub, so the cosmos has to be rebuilt rather
+   than re-pointed. Which is why this is a button in the inspector and not a
+   click on a body — it is a deliberate act with a visible cost, and a stray
+   double-click should never be able to rearrange the vault.
+
+   The framing is kept across the rebuild, so the new centre arrives where you
+   were already looking instead of throwing the view back to the fit. */
+$('i-core').onclick = () => {
+  if (!lastData) return;
+  const path = selected >= 0 && selected !== coreIdx ? nodes[selected].p : '';
+  const name = selected >= 0 ? nodes[selected].n : '';
+  SET.coreNote = path;
+  saveSet();
+  const keep = viewMark();
+  try { swapVault(lastData, keep); }
+  catch (err) { console.error(err); toast(T('load.render')); }
+  toast(path ? T('core.set', { n: name }) : T('core.auto'));
 };
 $('i-open').onclick = e => openNote(selected, e);
 /* Obsidian's own hover preview, offered from the one element that is
@@ -11191,7 +11264,12 @@ function viewRestore(m) {
   nudge();
 }
 
+/* The graph the current cosmos was built from. Kept because two things now
+   rebuild without reloading a single file: choosing a different centre, and
+   anything else that changes the layout rather than the vault. */
+let lastData = null;
 function swapVault(data, keep) {
+  lastData = data;
   closeSearch();
   closeMind();
   /* everything that holds a node index from the old vault has to let go
