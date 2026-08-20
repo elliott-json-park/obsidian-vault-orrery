@@ -3907,11 +3907,23 @@ let starFieldObj = null, brightStarObj = null, nebulaObj = null,
     milkyObj = null, dustObj = null, coronaObj = null, coronaRay = null, glareObj = null,
     veilObj = null;
 
+/* ---- and it is isotropic ----
+   The shell was squashed to 0.62 of its height, which is not a distribution
+   of stars in space, it is a distribution of stars in an oblate shell — and
+   seen from the middle of it that is not neutral. Squashing the shell pushes
+   directions toward its equator, so the sky came out with visibly more stars
+   round the sides than overhead, which is a thing no sky does.
+
+   The field stars near us are not organised. What organises the real sky is
+   the galactic plane, and that is drawn separately, deliberately, as its own
+   band with its own bulge and its own dust lane. A background that leans the
+   same way is the band's job being done twice, once badly. acos(2u-1) is
+   already the right sampling for a sphere; it only needed to be left alone. */
 starFieldObj = pointsFrom(13000, (i, pos, sz, cl, al) => {
   const r = SKY_R * (0.62 + Math.random()*0.38);
   const th = Math.random()*TAU, ph = Math.acos(2*Math.random()-1);
   pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
-  pos[i*3+1] = r*Math.cos(ph)*.62;
+  pos[i*3+1] = r*Math.cos(ph);
   pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
   /* A steep magnitude distribution: a very few bright, a great many at the
      edge of visible. A flat one gives an evenly speckled dome, which is what
@@ -3926,7 +3938,7 @@ brightStarObj = pointsFrom(150, (i, pos, sz, cl, al) => {
   const r = SKY_R * (0.70 + Math.random()*0.30);
   const th = Math.random()*TAU, ph = Math.acos(2*Math.random()-1);
   pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
-  pos[i*3+1] = r*Math.cos(ph)*.66;
+  pos[i*3+1] = r*Math.cos(ph);
   pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
   sz[i] = (6 + Math.random()*12) * 2.4;
   al[i] = .40 + Math.random()*.42;
