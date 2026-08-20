@@ -82,6 +82,26 @@ cosmos, telling the truth about more of itself.
   spot bands walk down toward the equator over a cycle and wax and wane with
   it — Maunder's butterfly, on a clock compressed to be watchable.
 
+- **A moon goes into its planet's shadow, and goes copper there.** The
+  geometry is the real one — an umbra that closes to a point and a penumbra
+  that opens out, so the edge of the shadow is soft because it is the region
+  where part of the star is still visible. Totality is not black: the only
+  light reaching a fully eclipsed moon has come through the ring of
+  atmosphere round the world eclipsing it, which takes the blue end out by
+  the same λ⁻⁴ the limbs are drawn with. Every sunrise on that planet at
+  once, projected onto its moon.
+
+- **Systems are flat, and moons share their planet's plane.** Orbital
+  inclination used to grow with distance from the star — 7° on the innermost
+  lane and 36° on the sixth — which is a fan rather than a disc, and has the
+  trend backwards: the Solar System's inclinations are all under two degrees
+  except Mercury's, and they fall outward, not inward. And moons ran between
+  29° and 79° off their planet's equator when Io is 0.05° off Jupiter's,
+  because a planet's equatorial bulge drags anything else into line. Rings
+  and moons now share a plane, which is the thing about a giant planet a
+  photograph shows before anything else. ORBIT SHELL still opens any of it
+  back out into a sphere, and still ships at 1.00.
+
 - **The comet has both its tails.** The dust tail is grains pushed out by
   radiation pressure while keeping the comet's own orbital velocity, so it
   curves and is the colour of reflected sunlight. The ion tail is CO⁺ picked

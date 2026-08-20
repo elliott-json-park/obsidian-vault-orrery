@@ -212,6 +212,14 @@ the opposite one: if the code uses a word, the word has to be doing work in it.
   plane, because that is the only place a ring can be and the only plane it
   can survive in. The band across them is Saturn's measured profile, Cassini
   Division and Encke gap included, and the planet's shadow falls across it.
+- **A moon eclipsed by its planet goes copper, not black**, because the only
+  light that reaches it has been through that planet's air — with a soft
+  shadow edge, because that is the part of the shadow from which some of the
+  star is still visible.
+- **A system is flat and its moons lie in their planet's equator**, the way a
+  thing condensed from a disc and held by an equatorial bulge has to be. Turn
+  ORBIT SHELL up and it opens out into a sphere anyway; that is a knob and
+  not a claim.
 - **A world's limb is Rayleigh and Mie scattering**, not a blue outline: it
   goes blue at noon and copper at the terminator because that is what a long
   path through air does to light, and a world with its star behind it wears a
