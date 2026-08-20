@@ -2111,7 +2111,7 @@ let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, co
     starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, gridPlane, sunObj,
     starCore, starShell, starRing, starRing2, starAlC, starAlS, starAlR, starAlR2,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
-    bStar, bStarCol,
+    bStar, bStarCol, bOcc, bOccS,
     EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
     trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
@@ -3611,18 +3611,18 @@ scene.add(fillLight);
 const STAR_I = 1.55;
 function starLit(sh, instanced) {
   sh.vertexShader = (instanced
-      ? 'attribute vec4 aStar; attribute vec4 aStarCol;\n'
-      : 'uniform vec4 uStar; uniform vec4 uStarCol;\n')
-    + 'varying vec4 vStar; varying vec4 vStarCol;\n' + sh.vertexShader;
+      ? 'attribute vec4 aStar; attribute vec4 aStarCol; attribute vec4 aOcc; attribute float aOccS;\n'
+      : 'uniform vec4 uStar; uniform vec4 uStarCol; uniform vec4 uOcc; uniform float uOccS;\n')
+    + 'varying vec4 vStar; varying vec4 vStarCol; varying vec4 vOcc; varying float vOccS;\n' + sh.vertexShader;
   sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>',
     '#include <begin_vertex>\n' + (instanced
       /* the instance is in the world group's space, so the star's position
          goes through the same model matrix the vertices do */
-      ? '  vStar = vec4((viewMatrix * modelMatrix * vec4(aStar.xyz, 1.0)).xyz, aStar.w);\n  vStarCol = aStarCol;'
+      ? '  vStar = vec4((viewMatrix * modelMatrix * vec4(aStar.xyz, 1.0)).xyz, aStar.w);\n  vStarCol = aStarCol;\n  vOcc = vec4((viewMatrix * modelMatrix * vec4(aOcc.xyz, 1.0)).xyz, aOcc.w);\n  vOccS = aOccS;'
       /* the hero is one mesh placed in world space: its model matrix is its
          own position and scale, which the star must not be put through */
-      : '  vStar = vec4((viewMatrix * vec4(uStar.xyz, 1.0)).xyz, uStar.w);\n  vStarCol = uStarCol;'));
-  sh.fragmentShader = 'varying vec4 vStar; varying vec4 vStarCol;\nvec3 sDir; float sInt;\n' + sh.fragmentShader;
+      : '  vStar = vec4((viewMatrix * vec4(uStar.xyz, 1.0)).xyz, uStar.w);\n  vStarCol = uStarCol;\n  vOcc = vec4((viewMatrix * vec4(uOcc.xyz, 1.0)).xyz, uOcc.w);\n  vOccS = uOccS;'));
+  sh.fragmentShader = 'varying vec4 vStar; varying vec4 vStarCol; varying vec4 vOcc; varying float vOccS;\nvec3 sDir; float sInt; vec3 sTint;\n' + sh.fragmentShader;
   sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_begin>',
     '#include <lights_fragment_begin>\n' +
     '  {\n' +
@@ -3631,9 +3631,47 @@ function starLit(sh, instanced) {
     '    sDir = lv * inversesqrt(max(ld2, 1e-6));\n' +
     '    float s2 = max(vStar.w * vStar.w, 1e-3);\n' +
     '    sInt = ' + STAR_I.toFixed(2) + ' / (1.0 + ld2 / s2);\n' +
+    /* ---- the shadow of the world this one goes round -------------------
+       A moon passes behind its planet, and nothing used to happen when it
+       did. What should happen is an eclipse, and the geometry of one is
+       two lines: a star of radius Rs at distance D casts, behind a body of
+       radius Rp, a full shadow that closes to a point and a partial one
+       that opens out. At a distance t behind the body their radii are
+
+           umbra     Rp - t(Rs - Rp)/D
+           penumbra  Rp + t(Rs + Rp)/D
+
+       and between the two you can see part of the star and not the rest of
+       it. That is what makes the edge of an eclipse shadow soft rather
+       than a line, and it is why both radii are worth carrying instead of
+       fudging one falloff.
+
+       The floor is not black, and that is the good part. A totally
+       eclipsed moon does not go out — it goes copper. The only light
+       reaching it has come through the ring of atmosphere round the world
+       eclipsing it, which is thousands of kilometres of air, and that path
+       takes the blue end out by exactly the lambda-to-the-minus-four the
+       limb above is drawn with. Every sunrise and sunset on the eclipsing
+       planet at once, projected onto its moon. So the umbra is tinted
+       rather than merely dimmed, and the colour is the one that every
+       photograph of a total lunar eclipse has ever had. */
+    '    sTint = vec3(1.0);\n' +
+    '    if (vOcc.w > 0.0) {\n' +
+    '      vec3 oc = vOcc.xyz - geometry.position;\n' +
+    '      float ot = dot(oc, sDir);\n' +
+    '      if (ot > 0.0) {\n' +
+    '        float od = length(oc - sDir * ot);\n' +
+    '        float oD = max(length(vStar.xyz - vOcc.xyz), 1e-3);\n' +
+    '        float ru = max(vOcc.w - ot * (vOccS - vOcc.w) / oD, 0.0);\n' +
+    '        float rp = max(vOcc.w + ot * (vOccS + vOcc.w) / oD, ru + 1e-4);\n' +
+    '        float ec = smoothstep(ru, rp, od);\n' +
+    '        sInt *= mix(0.055, 1.0, ec);\n' +
+    '        sTint = mix(vec3(1.0, 0.33, 0.11), vec3(1.0), ec);\n' +
+    '      }\n' +
+    '    }\n' +
     '    IncidentLight sl;\n' +
     '    sl.direction = sDir;\n' +
-    '    sl.color = vStarCol.rgb * sInt;\n' +
+    '    sl.color = vStarCol.rgb * sTint * sInt;\n' +
     '    sl.visible = true;\n' +
     '    RE_Direct(sl, geometry, material, reflectedLight);\n' +
     '  }');
@@ -3686,7 +3724,7 @@ function starLit(sh, instanced) {
     '    float den = 1.5776 - 1.52 * cth;\n' +
     '    float phM = min(0.06 * 0.4224 / max(den * sqrt(max(den, 1e-4)), 0.01), 2.2);\n' +
     '    vec3 air = BR * phR * 0.62 + vec3(0.86, 0.90, 1.0) * phM;\n' +
-    '    air = air * tr + diffuseColor.rgb * 0.22;\n' +
+    '    air = (air * tr + diffuseColor.rgb * 0.22) * sTint;\n' +
     '    outgoingLight += air * fr * day * sInt * vStarCol.a * 0.9;\n' +
     '  }\n' +
     '#include <output_fragment>');
@@ -4262,7 +4300,7 @@ function machineBody(sh, instanced) {
     '    float dp = dot(nn2, sDir);\n' +
     '    float day = smoothstep(-0.45, 0.85, dp);\n' +
     '    float lit = day * day * sInt * vStarCol.a;\n' +
-    '    outgoingLight += mix(mTint, vStarCol.rgb, 0.34) * lit * 0.62;\n' +
+    '    outgoingLight += mix(mTint, vStarCol.rgb, 0.34) * sTint * lit * 0.62;\n' +
     '    float edge = pow(1.0 - max(dot(nn2, normalize(vViewPosition)), 0.0), 4.0);\n' +
     '    outgoingLight += mix(mTint, vec3(1.0), 0.45) * edge * smoothstep(-0.15, 0.6, dp)\n' +
     '                     * sInt * vStarCol.a * 0.85;\n' +
@@ -5537,6 +5575,14 @@ if (bodies.instanceColor) {
   litStar = new Array(N); litS0 = new Float32Array(Math.max(1, N));
   bStar = new Float32Array(Math.max(1, N) * 4);
   bStarCol = new Float32Array(Math.max(1, N) * 4);
+  /* Who, if anyone, can get between this body and its star. Only a moon has
+     one — a planet is not eclipsed by anything, and the archive out on the
+     spiral has nothing near enough to matter — so w stays zero everywhere
+     else and the shader's whole eclipse branch is skipped for it. xyz is
+     rewritten each frame with the parent's position; w and the star's own
+     radius are the layout's and do not move. */
+  bOcc = new Float32Array(Math.max(1, N) * 4);
+  bOccS = new Float32Array(Math.max(1, N));
   const white = new THREE.Color(0xffffff), _c = new THREE.Color();
   for (let i=0;i<N;i++){
     const o = orb[i];
@@ -5560,12 +5606,24 @@ if (bodies.instanceColor) {
        none, an archive rock a little, the hub nothing — it is unlit anyway */
     bStarCol[i*4+3] = o.kind === 'wiki' ? 1 : o.kind === 'moon' ? .18
                     : o.kind === 'core' ? 0 : .4;
+    if (o.kind === 'moon') {
+      bOcc[i*4+3] = RAD[o.anchorNode] || 0;
+      /* the radius of the star doing the casting, which is what decides how
+         fast the umbra closes and how wide the penumbra opens */
+      bOccS[i] = c ? (c.R || 6) : (coreIdx >= 0 ? RAD[coreIdx] : 34);
+    }
     starLightAt(i, SET.spr, 1, bStar.subarray(i*4, i*4+4));
   }
   const aStar = new THREE.InstancedBufferAttribute(bStar, 4);
   aStar.setUsage(THREE.DynamicDrawUsage);
   bodyGeo.setAttribute('aStar', aStar);
   bodyGeo.setAttribute('aStarCol', new THREE.InstancedBufferAttribute(bStarCol, 4));
+  {
+    const aOcc = new THREE.InstancedBufferAttribute(bOcc, 4);
+    aOcc.setUsage(THREE.DynamicDrawUsage);
+    bodyGeo.setAttribute('aOcc', aOcc);
+    bodyGeo.setAttribute('aOccS', new THREE.InstancedBufferAttribute(bOccS, 1));
+  }
 }
 
 /* node glow */
@@ -10411,6 +10469,10 @@ let heroMesh = null, heroIdx = -1, heroReady = false;
 /* the hero's star, as uniforms — one mesh, so no attribute to carry it */
 const heroStar = { uStar: { value: new THREE.Vector4(0,0,0,100) },
                    uStarCol: { value: new THREE.Vector4(1,1,1,1) },
+                   /* the close-up body can be a moon, and a moon in eclipse
+                      is exactly the thing worth being close to */
+                   uOcc: { value: new THREE.Vector4(0,0,0,0) },
+                   uOccS: { value: 6 },
                    aSurf: { value: new THREE.Vector3(0,0,8) } };
 const _hs = new Float32Array(4), _hseed = new Float32Array(3);
 function heroBuild() {
@@ -10421,6 +10483,8 @@ function heroBuild() {
   hm.onBeforeCompile = sh => {
     sh.uniforms.uStar = heroStar.uStar;
     sh.uniforms.uStarCol = heroStar.uStarCol;
+    sh.uniforms.uOcc = heroStar.uOcc;
+    sh.uniforms.uOccS = heroStar.uOccS;
     /* the seed is a uniform here rather than an instanced attribute — one
        mesh has no instances to carry one */
     sh.uniforms.aSurf = heroStar.aSurf;
@@ -10472,6 +10536,9 @@ function heroStep(dt) {
     heroStar.uStar.value.set(_hs[0], _hs[1], _hs[2], _hs[3]);
     heroStar.uStarCol.value.set(bStarCol[heroIdx*4], bStarCol[heroIdx*4+1],
                                 bStarCol[heroIdx*4+2], bStarCol[heroIdx*4+3]);
+    heroStar.uOcc.value.set(bOcc[heroIdx*4], bOcc[heroIdx*4+1],
+                            bOcc[heroIdx*4+2], bOcc[heroIdx*4+3]);
+    heroStar.uOccS.value = bOccS[heroIdx] || 6;
   }
   /* the same rotation writeInstances gives the instance it replaced, from
      the same table — a body that changed its spin as you arrived would be
@@ -11031,6 +11098,13 @@ function writeInstances() {
     _pos.set(P[i*3], P[i*3+1], P[i*3+2]);
     /* where this body's light is coming from, this frame */
     starLightAt(i, spr, gs, bStar.subarray(i*4, i*4+4));
+    /* and where the thing that can get in front of it is. Read out of P
+       rather than off the parent's own orbit, so a planet dragged by the
+       reader takes its shadow with it the way it takes its moons. */
+    if (bOcc[i*4+3] > 0) {
+      const q = orb[i].anchorNode;
+      bOcc[i*4] = P[q*3]; bOcc[i*4+1] = P[q*3+1]; bOcc[i*4+2] = P[q*3+2];
+    }
     /* the core has its own unlit geometry, so its instance is collapsed to
        nothing rather than drawn black inside the sun */
     let s = (i === coreIdx && sunObj) ? 0 : RAD[i];
@@ -11159,6 +11233,7 @@ function writeInstances() {
   bodies.instanceMatrix.needsUpdate = true;
   bodies.instanceColor.needsUpdate = true;
   if (st) st.needsUpdate = true;
+  if (bodies.geometry.attributes.aOcc) bodies.geometry.attributes.aOcc.needsUpdate = true;
   nodeGlowGeo.attributes.position.needsUpdate = true;
   nodeGlowGeo.attributes.aAlpha.needsUpdate = true;
 }
