@@ -1369,7 +1369,8 @@ const STR = {
 'pin.on':      ['{n} · 기본 바에 고정','{n} · pinned to the bar','{n} · バーに固定','{n} · 已固定到基本栏'],
 'pin.off':     ['{n} · 서랍으로 내림','{n} · moved to the drawer','{n} · 引き出しへ','{n} · 已移入抽屉'],
 'grp.cosmos':  ['운동과 구조','MOTION & STRUCTURE','運動と構造','运动与结构'],
-'grp.light':   ['빛과 필름','LIGHT & FILM','光とフィルム','光与胶片'],
+'grp.bodies':  ['천체','BODIES','天体','天体'],
+'grp.light':   ['빛','LIGHT','光','光'],
 'grp.sound':   ['소리','SOUND','サウンド','声音'],
 
 /* ---- dependencies · limits · exclusions -------------------------------- */
@@ -1803,12 +1804,44 @@ const KNOBS = [
      The floor is 0.30x rather than zero. A body scaled to nothing is still
      pickable, still labelled, still locked onto by the ship's reticle, and a
      cosmos of invisible targets is a bug report, not a setting. */
-  { k:'szSun', g:'cosmos', label:'SUN SIZE',    min:30, max:300, sc:100, def:1,
+  { k:'szSun', g:'bodies', label:'SUN SIZE',    min:30, max:300, sc:100, def:1,
     fmt:mult, apply: () => applySizes() },
-  { k:'szPl',  g:'cosmos', label:'PLANET SIZE', min:30, max:300, sc:100, def:1,
+  /* ---- the folder stars ------------------------------------------------
+     A system's star is the middle term of the whole picture: the hub is the
+     vault, a planet is a note, and this is the folder they are filed under.
+     It had no controls at all — its radius came out of the note count and
+     that was the end of it — so on a vault of many small folders the middle
+     term was a speck, and on one of few enormous folders it swallowed its
+     own inner ring.
+
+     Size and glow separately, for the same reason the bodies have them
+     separately: "I cannot see which system this is" and "the stars are
+     drowning out their planets" are opposite complaints and one knob answers
+     only one of them. The clearance the planets orbit at follows the size —
+     see applySizes — so growing a star pushes its own system outward rather
+     than growing over it. */
+  { k:'szSys', g:'bodies', label:'SYSTEM SIZE',  min:30, max:400, sc:100, def:1,
     fmt:mult, apply: () => applySizes() },
-  { k:'szMn',  g:'cosmos', label:'MOON SIZE',   min:30, max:300, sc:100, def:1,
+  { k:'szPl',  g:'bodies', label:'PLANET SIZE', min:30, max:300, sc:100, def:1,
     fmt:mult, apply: () => applySizes() },
+  { k:'szMn',  g:'bodies', label:'MOON SIZE',   min:30, max:300, sc:100, def:1,
+    fmt:mult, apply: () => applySizes() },
+  /* ---- and how brightly each class burns -------------------------------
+     NODE GLOW moves all of them at once and stays: it is the master. These
+     are the balance between the four, which is a different question — the
+     one you ask when the hub is a white hole in the middle of the frame, or
+     when the moons have gone to nothing against their planets.
+
+     Zero is OFF and says so, except on the hub: a sun turned off is a cosmos
+     with no light source in it, so its floor is a dim ember rather than
+     nothing. */
+  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:1, fmt:mult },
+  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:300, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:300, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)) },
   { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:1,
     fmt:v => offAt(v, mult(v)), apply: () => applyStarfield() },
   { k:'thr', g:'cosmos', label:'SHIP THRUST',   min:20, max:400, sc:100, def:1, fmt:mult },
@@ -1863,7 +1896,8 @@ const KNOBS = [
 ];
 const KNOB_OF = {};
 KNOBS.forEach(kn => { KNOB_OF[kn.k] = kn; });
-const GROUPS = [['cosmos','grp.cosmos'], ['light','grp.light'], ['sound','grp.sound']];
+const GROUPS = [['cosmos','grp.cosmos'], ['bodies','grp.bodies'],
+                ['light','grp.light'], ['sound','grp.sound']];
 
 /* The arrangement is a list rather than a flag per knob, because it is one
    thing — what is on the bar — and a list of five strings survives a knob
@@ -2032,10 +2066,34 @@ function applyDepth() {
    whole on every drag of the slider — for a difference nobody can see while
    they are dragging it. */
 function applySizes() {
+  /* The folder stars first, because the planets' clearance is measured from
+     them. c.R is the layout's number and never moves; c.sR is what is drawn
+     and what the inner orbit stands off from, so the two have to be kept
+     apart or a second call would compound on its own output. */
+  if (cats) cats.forEach(c => {
+    if (c.R === undefined) return;
+    const k = c.tier === 0 ? SET.szSys : 1;
+    c.sR = c.R * k;
+    if (c.gz0 !== undefined && starGlow) {
+      const a = starGlow.geometry.attributes.aSize;
+      if (a && c.si !== undefined) { a.array[c.si] = c.gz0 * k; a.needsUpdate = true; }
+    }
+  });
   if (!N || !RAD0 || !RAD) return;
   for (let i = 0; i < N; i++) {
     const k = orb[i] ? orb[i].kind : 'wiki';
     RAD[i] = RAD0[i] * (k === 'core' ? SET.szSun : k === 'moon' ? SET.szMn : SET.szPl);
+  }
+  /* a planet's innermost orbit is set by the size of its star, so a star
+     grown by SYSTEM SIZE pushes its own ring out rather than swallowing it */
+  for (let i = 0; i < N; i++) {
+    const o = orb[i];
+    if (o && o.kind === 'wiki' && o.inner0) {
+      const inner = o.inner0 * SET.szSys;
+      /* the spacing between the rings is kept; only where they start moves */
+      o.r0 = o.r00 + (inner - o.inner0);
+      o.inner = inner;
+    }
   }
   for (let i = 0; i < N; i++) {
     const o = orb[i];
@@ -2562,7 +2620,10 @@ for (let i = 0; i < N; i++) {
       inc: 0.13 + ring*0.10, y: (slot%3-1)*4,
       /* what the live gap spring stretches: the clearance around the star
          stays, the room between the rings is what moves */
-      inner, step0: step, gapA: step - RING_STEP * SET.gap
+      inner, step0: step, gapA: step - RING_STEP * SET.gap,
+      /* what SYSTEM SIZE moves this orbit from: the clearance at 1x, and the
+         radius that went with it */
+      inner0: inner, r00: inner + (ring + 0.5) * step + (slot%2) * step * 0.16
     };
     col.toArray(COL, i*3);
   } else if (parentOf[i] >= 0) {
@@ -4337,7 +4398,8 @@ world.add(boundary);
         cl = new Float32Array(n*3), al = new Float32Array(n);
   cats.forEach((c,i)=>{
     c.pos.toArray(pos, i*3);
-    sz[i] = c.R * (c.tier===0 ? 11 : 7);
+    c.gz0 = c.R * (c.tier===0 ? 11 : 7);
+    sz[i] = c.gz0;
     al[i] = c.tier===0 ? .85 : .5;
     c.color.clone().lerp(new THREE.Color(0xffffff), .3).toArray(cl, i*3);
   });
@@ -9255,6 +9317,12 @@ function updatePositions(dtms) {
        sun, with the light it casts on everything else coming up with it */
     const ig = GEN.on ? genScale[coreIdx] : 1;
     sunObj.visible = ig > 0.001;
+    /* SUN GLOW is the one brightness knob that is not only a matter of how
+       the frame looks: the hub is the vault's light source, so turning it
+       down darkens everything it lights, which is the point. */
+    const sb = SET.briSun;
+    u.halo.material.opacity = 0.085 * sb;
+    u.rimMat.uniforms.uAmt.value *= clamp(sb, 0.15, 2.4);
     /* The three shells are built at the radius the layout gave the hub, and
        SUN SIZE moves that radius without rebuilding them: the group carries
        the ratio instead. Everything else that reads RAD[coreIdx] — the
@@ -9262,7 +9330,7 @@ function updatePositions(dtms) {
     sunObj.scale.setScalar(ig * (RAD[coreIdx] / (u.R || 1)));
     u.surface.scale.setScalar(b);
     u.halo.scale.setScalar(1 + Math.sin(t*0.00061 + 1.4) * 0.05);
-    coreLight.intensity = u.lit * clamp(ig, 0, 1);
+    coreLight.intensity = u.lit * clamp(ig, 0, 1) * SET.briSun;
   }
 
   /* ORBIT SPREAD only touches what orbits something — planets round their
@@ -9358,7 +9426,12 @@ function updateStars(dt) {
     if (GEN.on) want *= GEN.u >= c.genT
       ? clamp((GEN.u - c.genT) / GEN.grow, 0, 1) : 0;
     const v = c.vis = lerp(c.vis === undefined ? want : c.vis, want, k);
-    if (ga) { ga.array[ci] = c.op0.glow * v; dirty = true; }
+    /* SYSTEM GLOW rides on the wiki stars only. The archive beacons out on
+       the spiral are the same kind of object to the renderer and a different
+       kind of thing to the reader, and a knob labelled SYSTEM should not be
+       quietly lighting the years as well. */
+    const sb = c.tier === 0 ? SET.briSys : 1;
+    if (ga) { ga.array[ci] = c.op0.glow * v * sb; dirty = true; }
     const i = c.si;
     if (i === undefined || !starCore) return;
     /* A star switched off is scaled away as well as faded out. The alpha
@@ -9373,18 +9446,18 @@ function updateStars(dt) {
     _s.set(R*b, R*b, R*b);
     _m.compose(c.pos, _sq, _s);
     starCore.setMatrixAt(i, _m);
-    starAlC[i] = c.op0.core * v;
+    starAlC[i] = c.op0.core * v * clamp(sb, 0.06, 1);
 
     _sq.setFromEuler(_sEul.set(c.sx, c.sy, 0));
     _s.set(R, R, R);
     _m.compose(c.pos, _sq, _s);
     starShell.setMatrixAt(i, _m);
-    starAlS[i] = c.op0.shell * v;
+    starAlS[i] = c.op0.shell * v * sb;
 
     _sq.setFromEuler(_sEul.set(c.rx, 0, c.rz));
     _m.compose(c.pos, _sq, _s);
     starRing.setMatrixAt(i, _m);
-    starAlR[i] = c.op0.ring * v;
+    starAlR[i] = c.op0.ring * v * sb;
   });
   if (dirty) ga.needsUpdate = true;
   if (starCore) {
@@ -9442,10 +9515,22 @@ function viewStep() {
 
 /* A node's size means something — citation count — so it must never move.
    Dimming therefore rides on colour and glow alpha only. */
+/* NODE GLOW times the balance knob for whatever this body is. One lookup per
+   frame rather than three branches per node. */
+const KIND_BRI = { core:1, wiki:1, moon:1, spiral:1, shell:1 };
+function kindBri() {
+  KIND_BRI.core = SET.briSun;
+  KIND_BRI.wiki = SET.briPl;
+  KIND_BRI.moon = SET.briMn;
+  /* the archive is neither planet nor moon; it follows the planets, which is
+     what it is made of */
+  KIND_BRI.spiral = KIND_BRI.shell = SET.briPl;
+}
 function writeInstances() {
   if (!N || !bodies || !bodies.instanceColor) return;
   const ic = bodies.instanceColor.array;
   const bri = SET.bri;
+  kindBri();
   const gsc = GEN.on, rip = ripples.length > 0;
   const cam = camera.position, ccx = cam.x, ccy = cam.y, ccz = cam.z;
   const spr = SET.spr, gs = gapSys;
@@ -9472,7 +9557,8 @@ function writeInstances() {
     if (i === selected) dim = 1;
     else if (i === hovered) dim = Math.min(1, dim * 1.35);
     if (rip && ripN[i] > 0.004) dim += ripN[i] * 0.9;
-    const cf = Math.min(1.8, dim * (0.55 + bri * 0.45));
+    const kb = KIND_BRI[orb[i].kind] || 1;
+    const cf = Math.min(1.8, dim * (0.55 + bri * kb * 0.45));
     ic[i*3]   = COL[i*3]   * cf;
     ic[i*3+1] = COL[i*3+1] * cf;
     ic[i*3+2] = COL[i*3+2] * cf;
@@ -9538,7 +9624,7 @@ function writeInstances() {
        several times over, so a marked node on the far side still reads over
        an ordinary one in front of it. */
     a *= fogAt(dcam);
-    gAl[i] = Math.min(2.6, a * bri);
+    gAl[i] = Math.min(2.6, a * bri * kb);
     if (gsc || genSz) gSz[i] = gSz0[i] * (gsc ? genScale[i] : 1);
   }
   /* The ringed bodies, which are few — the top tenth by incoming links, and
