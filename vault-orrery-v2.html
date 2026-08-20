@@ -2925,6 +2925,17 @@ for (let i = 0; i < N; i++) {
     rad = 1.05 + Math.log(1 + nd.w/90) * .42;
     const pr = 2.6 + Math.log(1 + nodes[pIdx].inb) * 1.55
                    + Math.log(1 + nodes[pIdx].w/120) * .7;
+    /* ---- one thing here is knowingly not to scale ----
+       A moon has to orbit inside its planet's Hill sphere — a(m/3M)^(1/3),
+       past which the star pulls harder than the planet does and the moon
+       is not a moon for long. These orbits are well outside it, and there
+       is no version of this file in which they are not: the bodies are
+       drawn several hundred times larger against their orbits than real
+       ones are, because a note you cannot see is not a note, and once a
+       planet is a fifth the width of its own orbital ring there is nowhere
+       inside a true Hill radius left to put a satellite. The compression
+       is in the sizes; everything about the shape of the orbit below is
+       exact. */
     /* A moon's own ellipse. Distinct slots mean distinct semi-major axes,
        so unlike the planets sharing a lane these can each carry one —
        capped again by the room to the next slot out. Our own Moon is at

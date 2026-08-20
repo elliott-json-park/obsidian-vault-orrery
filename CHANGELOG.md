@@ -67,6 +67,20 @@ cosmos, telling the truth about more of itself.
   Cassini's pictures from Saturn's night side look nothing like the ones from
   its day side.
 
+- **The rings throw their shadow onto the planet.** A ring lies over its
+  planet's equator with the star off to one side, so the shadow lands on the
+  globe as bands — and since the rings are not uniform, neither are they. The
+  Cassini Division shows up on the planet as a bright line inside a dark
+  stripe, which is most of what makes a picture of Saturn read as a
+  photograph. The optical depths are the ones the ring itself is drawn from,
+  so the shadow agrees with the thing casting it.
+
+- **The starfield is isotropic.** Its shell was squashed to 0.62 of its
+  height, which pushes directions toward the equator, so there were visibly
+  more stars round the sides than overhead. Nothing organises the field stars
+  near us; what organises the real sky is the galactic plane, and that is
+  drawn separately as its own band.
+
 - **The sky is coloured by Planck's law.** The six spectral rows were typed in
   by eye and were close. They are computed now: Planck for the spectrum, the
   CIE 1931 colour matching functions for what the eye does with it, the sRGB

@@ -237,9 +237,17 @@ the opposite one: if the code uses a word, the word has to be doing work in it.
   colour of reflected sunlight, and a straight blue ion tail along the
   anti-solar line where the solar wind has taken the gas.
 
-Some clocks are compressed and the code says so where they are — a star that
-turned once in twenty-seven days would never appear to turn at all. What is
-never done is inventing the shape of a thing.
+What is deliberately not to scale is said out loud where it happens, and
+there are two kinds of it. Clocks are compressed: a star that turned once in
+twenty-seven days would never appear to turn at all, and a spot cycle at its
+true length would be a constant. And bodies are drawn far larger against
+their orbits than they are, because a note you cannot see is not a note —
+which is why satellite systems here are wider relative to their planets than
+a Hill sphere would allow, and could not be otherwise while a planet is
+several pixels across from three rings away.
+
+Neither of those is licence to invent the shape of a thing, and the shapes
+are what this list is about.
 
 ---
 
