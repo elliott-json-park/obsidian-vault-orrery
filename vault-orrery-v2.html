@@ -1913,6 +1913,14 @@ const KNOBS = [
     fmt:v => offAt(v, mult(v)) },
   { k:'ray', g:'light',  label:'SUN RAYS',      min:0,  max:150, sc:100, def:.5,
     fmt:v => offAt(v, mult(v)) },
+  /* The scattering halo, which is the whole of what a star looks like once
+     its disc is too small to be one. Separate from SUN RAYS because the rays
+     are a screen-space march that only exists while the sun is in frame, and
+     this is the star itself being too bright for the space between you and
+     it — they peak at opposite ranges and one knob would have had to be a
+     compromise between them. */
+  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:200, sc:100, def:1,
+    fmt:v => offAt(v, mult(v)) },
   { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:.55,
     fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
   /* One knob for two effects, because they are one effect: the cockpit
@@ -2029,7 +2037,7 @@ let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, co
     genT, genE, genOrder, genScale, ripN,
     DSP, DVL, PULL, linkProg, ringRadii = [],
     starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, gridPlane, sunObj,
-    starCore, starShell, starRing, starAlC, starAlS, starAlR,
+    starCore, starShell, starRing, starRing2, starAlC, starAlS, starAlR, starAlR2,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
     bStar, bStarCol,
     EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
@@ -3547,7 +3555,7 @@ function pointsFrom(n, fill, mat) {
 const SKY_R = 14000;                       // far enough that the ship never
                                            // outruns the background
 let starFieldObj = null, brightStarObj = null, nebulaObj = null,
-    milkyObj = null, dustObj = null, coronaObj = null, coronaRay = null,
+    milkyObj = null, dustObj = null, coronaObj = null, coronaRay = null, glareObj = null,
     veilObj = null;
 
 starFieldObj = pointsFrom(13000, (i, pos, sz, cl, al) => {
@@ -4303,6 +4311,71 @@ void main(){
   coronaObj.visible = false;
   scene.add(coronaObj);
 
+  /* ---------- the glare ----------
+     What you actually see when you look at the sun from a long way off, and
+     the one thing this was missing.
+
+     A star at map range is four pixels of disc, and four pixels of disc is
+     not what the sun looks like from Earth: what it looks like is an
+     enormous soft bloom with a small unbearable centre, because the light
+     scatters — in the atmosphere, in the eye, in the lens. None of that is
+     the star; all of it is what the star does to whatever is between you and
+     it. So it belongs to the *viewer's distance*, not to the star's size,
+     and it is the only thing in this scene that gets bigger as you back
+     away from it.
+
+     Drawn as its own sprite rather than by widening the corona, because the
+     two answer to opposite things. The corona is the atmosphere around the
+     star: it shrinks against the disc as you approach and hands over to the
+     photosphere. This grows without limit and dominates at exactly the range
+     where the corona has become a dot.
+
+     Depth-tested off, unlike the corona: scattered light is in front of
+     everything, including the planet that happens to be crossing the star.
+     That is what makes a body silhouetted against it read as silhouetted.
+
+     A power curve rather than a gradient with stops. The falloff a scattering
+     halo has is roughly 1/r^2 with a floor, which spends almost all of its
+     brightness in the first tenth of the radius and then trails for the rest
+     — a stopped gradient gives visible rings at the stops, and rings are the
+     one thing this must not have. */
+  const G = 512, gc = document.createElement('canvas');
+  gc.width = gc.height = G;
+  const gx = gc.getContext('2d');
+  const gim = gx.createImageData(G, G), gd = gim.data;
+  const half = G / 2;
+  for (let py = 0; py < G; py++) {
+    for (let px = 0; px < G; px++) {
+      const dx = (px - half) / half, dy = (py - half) / half;
+      const r = Math.sqrt(dx*dx + dy*dy);
+      let a = 0;
+      if (r < 1) {
+        /* the wide scattering skirt, and a small hot centre on top of it */
+        a = 0.30 / (1 + r * r * 190) + 0.85 / (1 + r * r * 4200);
+        /* taken to nothing exactly at the edge, so the sprite has no rim */
+        a *= 1 - r * r;
+      }
+      const o = (py * G + px) * 4;
+      /* warm at the centre, cooling outward — scattered light is redder the
+         further it has been scattered, which is why a low sun is orange */
+      gd[o]   = 255;
+      gd[o+1] = 236 - Math.min(70, r * 90);
+      gd[o+2] = 205 - Math.min(130, r * 175);
+      gd[o+3] = Math.max(0, Math.min(255, a * 255)) | 0;
+    }
+  }
+  gx.putImageData(gim, 0, 0);
+  const gtex = new THREE.CanvasTexture(gc);
+  gtex.minFilter = THREE.LinearFilter;
+  glareObj = new THREE.Sprite(new THREE.SpriteMaterial({ map:gtex,
+    transparent:true, depthWrite:false, depthTest:false,
+    blending:THREE.AdditiveBlending, opacity:0 }));
+  glareObj.scale.setScalar(600);
+  /* after the corona and the crown, so it lies over both */
+  glareObj.renderOrder = 4;
+  glareObj.visible = false;
+  scene.add(glareObj);
+
   /* ---------- the crown ----------
      A smooth radial falloff is a lamp. Every photograph of a star in eclipse
      shows the other thing: streamers, of uneven length, standing out of the
@@ -4450,16 +4523,36 @@ if (cats.length) {
   /* Unit geometries. The radius that used to be built into each system's own
      geometry is a scale in its instance matrix now, which is the same picture
      and one buffer instead of one per folder. */
-  const coreGeo  = new THREE.IcosahedronGeometry(1, 3);
-  const shellGeo = new THREE.IcosahedronGeometry(1.75, 1);
-  const ringGeo  = new THREE.RingGeometry(2.6, 2.72, 96);
+  /* Detail 4, not 3. This is a light source and it is looked at from across
+     the vault, so the one place a polyhedron gives itself away — the
+     silhouette — is the one that matters. Eighty more triangles per system.  */
+  const coreGeo  = new THREE.IcosahedronGeometry(1, 4);
+  /* The shield was a detail-1 icosahedron: twenty faces, so a wireframe of
+     twenty triangles the size of the star itself. At the range these are read
+     from that is not a shell, it is a cage drawn over a lamp. Detail 2 gives
+     eighty smaller facets, which at this opacity reads as a fine mesh rather
+     than as scaffolding, and it sits closer in at 1.42 so it is a halo on the
+     star rather than a structure around it. */
+  const shellGeo = new THREE.IcosahedronGeometry(1.42, 2);
+  /* From 0.12 of the radius thick to 0.035 — a line, where it used to be a
+     band. And pulled in from 2.60 to 2.20, because a ring that stands well
+     clear of its star reads as a separate object in orbit; one close in reads
+     as part of it. */
+  const ringGeo  = new THREE.RingGeometry(2.20, 2.235, 128);
+  /* ---- a second, wider ring ----
+     One ring is a diagram. Two of unequal weight, at unequal radii, is an
+     instrument — and the outer one being fainter and thinner than the inner
+     is what gives the pair a direction to be read in. */
+  const ring2Geo = new THREE.RingGeometry(2.86, 2.882, 128);
 
   starAlC = new Float32Array(NS).fill(1);
   starAlS = new Float32Array(NS).fill(1);
   starAlR = new Float32Array(NS).fill(1);
+  starAlR2 = new Float32Array(NS).fill(1);
   coreGeo .setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlC, 1));
   shellGeo.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlS, 1));
   ringGeo .setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlR, 1));
+  ring2Geo.setAttribute('aAlpha', new THREE.InstancedBufferAttribute(starAlR2, 1));
 
   /* transparent even at rest: switching a system off in the legend has to be
      able to take its light with it, and an opaque material cannot be dimmed */
@@ -4468,8 +4561,10 @@ if (cats.length) {
     blending:THREE.AdditiveBlending, depthWrite:false }), NS);
   starRing  = new THREE.InstancedMesh(ringGeo,  starMat({ side:THREE.DoubleSide,
     blending:THREE.AdditiveBlending, depthWrite:false }), NS);
+  starRing2 = new THREE.InstancedMesh(ring2Geo, starMat({ side:THREE.DoubleSide,
+    blending:THREE.AdditiveBlending, depthWrite:false }), NS);
 
-  [starCore, starShell, starRing].forEach(m => {
+  [starCore, starShell, starRing, starRing2].forEach(m => {
     m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     /* the instance matrices are rewritten every frame from positions three.js
        never sees, so its own bounds would be a guess that culls the lot */
@@ -4495,13 +4590,21 @@ if (cats.length) {
     starCore .setColorAt(i, cc);
     starShell.setColorAt(i, c.color);
     starRing .setColorAt(i, c.color);
+    starRing2.setColorAt(i, c.color);
     /* what "fully lit" means for this star, so the dimmer has somewhere to
        return to rather than a hard-coded constant per material */
-    c.op0 = { core:1, shell:.16, ring:.26, glow: c.tier===0 ? .85 : .5 };
+    /* The shield and the rings come down hard — .16 and .26 were tuned when
+       they were the only thing giving the star any structure, and the star is
+       now a graded emitter in its own right. What they are for is a hint of
+       an edge on something that otherwise has none, and a hint is what these
+       numbers are. The glow goes up to compensate, because the light is now
+       where the object is. */
+    c.op0 = { core:1, shell:.055, ring:.115, ring2:.055,
+              glow: c.tier===0 ? 1.05 : .58 };
     c.vis = 1;
     starMeshes.push(c);
   });
-  [starCore, starShell, starRing].forEach(m => {
+  [starCore, starShell, starRing, starRing2].forEach(m => {
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
   });
 }
@@ -4621,7 +4724,12 @@ gridPlane = (function mountGrid(){
         cl = new Float32Array(n*3), al = new Float32Array(n);
   cats.forEach((c,i)=>{
     c.pos.toArray(pos, i*3);
-    c.gz0 = c.R * (c.tier===0 ? 11 : 7);
+    /* Wider and softer than it was. The point sprite is what carries a star
+       from across the vault — the geometry is four pixels at that range — and
+       at 11x the radius with a hard falloff it read as a bright dot rather
+       than as something emitting. The shells it sits over are now faint
+       enough that this has to do the work, so it is given the room to. */
+    c.gz0 = c.R * (c.tier===0 ? 17 : 10);
     sz[i] = c.gz0;
     al[i] = c.tier===0 ? .85 : .5;
     c.color.clone().lerp(new THREE.Color(0xffffff), .3).toArray(cl, i*3);
@@ -4632,7 +4740,13 @@ gridPlane = (function mountGrid(){
   g.setAttribute('aColor', new THREE.BufferAttribute(cl,3));
   g.setAttribute('aAlpha', new THREE.BufferAttribute(al,1));
   addPhase(g, n);
-  starGlow = new THREE.Points(g, glowMat(600, .18, 1));   // suns get spikes
+  /* Less twinkle and less spike than before. A scintillating star is a star
+     seen through air, and there is no air out here — the shimmer was reading
+     as the sprite flickering rather than as the star being far away. The
+     spike stays, small: it is what says "this is a source" rather than "this
+     is a disc", which is the whole distinction between a folder star and a
+     planet at the range these are read from. */
+  starGlow = new THREE.Points(g, glowMat(600, .07, .62));
   starGlow.frustumCulled = false;
   world.add(starGlow);
 })();
@@ -5043,6 +5157,9 @@ if (coronaRay) {
   coronaRay.visible = N > 0;
   coronaRay.scale.setScalar(Math.max(120, (RAD[coreIdx] || 17) * 15) * 1.62);
 }
+/* the glare is placed and sized entirely by the frame — see the block that
+   reads glarePx — so all a new vault owes it is a clean slate */
+if (glareObj) { glareObj.visible = false; glareObj.material.opacity = 0; }
 /* the air and the far plane are sized from the cosmos, and this is a new one.
    gapStep would get to it, but only on a frame where the spring is moving —
    a vault opened at a gap it is already settled at would keep the last
@@ -5094,7 +5211,8 @@ function disposeWorld() {
   gridPlane = null;
   trailMesh = trailGeo = trailPos = trailCol = null;
   selRig = hovRig = actRig = ringGuides = sunObj = null;
-  starCore = starShell = starRing = starAlC = starAlS = starAlR = null;
+  starCore = starShell = starRing = starRing2 = null;
+  starAlC = starAlS = starAlR = starAlR2 = null;
   ringMesh = null; ringIdx = []; ringQ = []; ringK = null;
   /* the shared ring canvas was one of the maps just disposed above, so the
      cache has to let go of it or the next vault draws from a dead texture */
@@ -9646,15 +9764,24 @@ function updateStars(dt) {
     _m.compose(c.pos, _sq, _s);
     starRing.setMatrixAt(i, _m);
     starAlR[i] = c.op0.ring * v * sb;
+
+    /* The outer ring leans the other way and turns against the inner one, at
+       a rate slow enough that neither is ever caught moving. Two rings that
+       shared a plane would be one thick ring with a gap in it. */
+    _sq.setFromEuler(_sEul.set(c.rx * 0.72, c.rz * 0.30, -c.rz * 0.86));
+    _m.compose(c.pos, _sq, _s);
+    starRing2.setMatrixAt(i, _m);
+    /* and it breathes out of phase with the core, so the star is never
+       presenting the same face twice */
+    starAlR2[i] = c.op0.ring2 * v * sb *
+                  (0.72 + 0.38 * Math.sin(t * 0.00052 + c.oA0 * 2.3));
   });
   if (dirty) ga.needsUpdate = true;
   if (starCore) {
-    starCore.instanceMatrix.needsUpdate = true;
-    starShell.instanceMatrix.needsUpdate = true;
-    starRing.instanceMatrix.needsUpdate = true;
-    starCore.geometry.attributes.aAlpha.needsUpdate = true;
-    starShell.geometry.attributes.aAlpha.needsUpdate = true;
-    starRing.geometry.attributes.aAlpha.needsUpdate = true;
+    [starCore, starShell, starRing, starRing2].forEach(m => {
+      m.instanceMatrix.needsUpdate = true;
+      m.geometry.attributes.aAlpha.needsUpdate = true;
+    });
   }
 }
 
@@ -10596,6 +10723,9 @@ function frameLoop(now) {
   /* the sun stays at the core; only a faint fill tracks the viewer, so the
      far side of a body never goes completely black */
   rimLight.position.copy(camera.position).normalize();
+  /* half the viewport height over tan(fov/2): multiply by a radius and divide
+     by a distance and the answer is that radius in pixels */
+  const glarePx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
   if (coronaObj && N) {
     /* the corona has to shrink with distance more slowly than a sphere does,
        or it either vanishes up close or eats the screen from far away */
@@ -10631,6 +10761,30 @@ function frameLoop(now) {
       const surge = 1 + Math.sin(t * 0.00043 + 0.8) * 0.075;
       coronaRay.scale.setScalar(base * 1.62 * surge);
       coronaRay.material.opacity = (0.34 + 0.16 * Math.sin(t * 0.00067)) * ig;
+    }
+    if (glareObj) {
+      /* Keyed to how small the disc has become on screen, not to raw
+         distance: that is the quantity the effect is actually about — the
+         glare takes over precisely when there is no longer a disc to look
+         at, and a vault whose hub is scaled to twice the size should hold it
+         off twice as long. It is also what makes SUN SIZE and ORBIT GAP not
+         need to know about any of this.
+
+         px is the disc's radius in pixels. Below about forty it starts to
+         matter; by two it is the whole of what you can see. */
+      const px = (RAD[coreIdx] || 17) * glarePx / Math.max(1, d);
+      const far = clamp((40 - px) / 38, 0, 1);
+      const amt = SET.glare * far * far * ig;
+      glareObj.visible = amt > 0.004;
+      if (glareObj.visible) {
+        glareObj.position.copy(coronaObj.position);
+        /* Grows with distance rather than with the star. Held to a share of
+           the frame at the top end — a scattering halo that fills the view
+           is a white screen, and a white screen is not a picture of a sun. */
+        const span = clamp(d * 0.30, base * 1.6, d * 0.55);
+        glareObj.scale.setScalar(span);
+        glareObj.material.opacity = Math.min(0.92, amt * 0.80);
+      }
     }
   }
   /* parallax: each shell turns at its own rate, which is most of why the
