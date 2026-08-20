@@ -4150,23 +4150,55 @@ function buildDust(outer) {
        round. r0 is where the arms start; inside it the angle is held, which
        is roughly what a bar does to the gas anyway. */
     const r0 = R * 0.20;
+    /* ---- across the arm, and which side of it ------------------------
+       A spiral arm is a standing wave and not a stream of material. Gas on
+       its way round the disc overtakes the pattern, piles up as it enters,
+       and is shocked — and that shock is the dust lane, which lies on the
+       arm's concave side and is the darkest thing in any photograph of a
+       spiral galaxy. What the shock makes is stars, and the massive ones
+       burn out so fast that they never get far from where they formed, so
+       the blue associations stand in a line just outside the lane.
+
+       Warm dust on the inside, blue fire on the outside, a dark rule
+       between them. That is the structure the eye recognises a spiral by,
+       and one uniformly warm population has none of it.
+
+       Azimuth is the arm's own normal here: the ridge at azimuth a sits at
+       radius r0·exp((a-arm)·tan p), so a point at the same radius and a
+       *larger* azimuth is inside the ridge, and a smaller one is outside
+       it. Which is why the lane is at positive offsets and the young stars
+       at negative ones. */
+    const off = Math.random() * 2 - 1;
     const a = arm + Math.log(Math.max(r, r0) / r0) / 0.2126
-              + (Math.random()-.5)*(0.5 + 1.6/(1+r*(11/R)));
+              + off * (0.25 + 0.8/(1+r*(11/R)));
+    const lane  = off > 0.14 && off < 0.58;
+    const young = off < -0.10 && Math.random() < 0.22;
     pos[i*3]   = Math.cos(a)*r + (Math.random()-.5)*R*0.026;
     pos[i*3+1] = (Math.random()-.5)*(R*0.015 + r*0.045);
     pos[i*3+2] = Math.sin(a)*r + (Math.random()-.5)*R*0.026;
-    sz[i] = (.8 + Math.random()*2.4) * 2.2;
+    sz[i] = (young ? 1.4 + Math.random()*2.4 : .8 + Math.random()*2.4) * 2.2;
     /* Dimmer than it was, by a lot. This is starlight scattered off dust in
        the plane, and scattered light is faint — at the brightness it used to
        carry it read as a lit floor, which told you the scene had a designer.
        An arm you can only just make out is doing its job: it gives the space
-       between the systems a structure without becoming the subject. */
-    al[i] = .020 + Math.random()*.070;
-    /* Warm and nearly colourless. Interstellar dust reddens what passes
-       through it — that is the one optical fact about it anyone would
-       recognise — so it can be anything here except blue. */
-    hsl(26 + Math.random()*18, .22 + Math.random()*.18, .46 + Math.random()*.18)
-      .toArray(cl, i*3);
+       between the systems a structure without becoming the subject.
+
+       The lane is drawn as a near-absence rather than as a darkness, since
+       nothing here can subtract: against a sky this dark, a fifth of the
+       brightness beside a full one reads as the gap it is. */
+    al[i] = (.020 + Math.random()*.070) * (lane ? 0.22 : 1) * (young ? 1.5 : 1);
+    if (young) {
+      /* O and B stars, which are the only things in a galaxy that are
+         actually blue — and they are blue because they are hot, which is
+         the same table the starfield is coloured from */
+      hsl(212 + Math.random()*22, .46, .60).toArray(cl, i*3);
+    } else {
+      /* Warm and nearly colourless. Interstellar dust reddens what passes
+         through it — that is the one optical fact about it anyone would
+         recognise — so the dust itself can be anything here except blue. */
+      hsl(26 + Math.random()*18, .22 + Math.random()*.18, .46 + Math.random()*.18)
+        .toArray(cl, i*3);
+    }
   }, glowMat(700, 0, 0, true));
   dustObj.name = 'dust';
 }
