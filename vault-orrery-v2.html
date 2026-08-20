@@ -103,10 +103,36 @@ canvas{display:block}
    deleted, and none of these are. */
 #ctladv{display:none}
 #ctl.adv #ctladv{display:grid}
-/* a heading spans the whole auto-fit grid rather than taking a cell of it */
-.slhd{grid-column:1/-1;font-size:7.5px;letter-spacing:.2em;opacity:.42;
-  border-bottom:1px solid rgba(92,225,255,.10);padding-bottom:3px;margin-top:3px}
-.slhd:first-child{margin-top:0}
+/* ---------- the drawer's tab strip ----------
+   One group at a time. The drawer used to hold every unpinned knob under
+   three headings, which on a laptop is about thirty rows — a deck taller than
+   the vault it controls, and a scroll to reach the sound.
+
+   The strip is a row of names and a find box, not buttons: the active one is
+   lit and underlined and the rest are quiet, which is what a set of names
+   with one of them chosen looks like. */
+/* out only when the drawer is: the strip is the drawer's own furniture */
+#ctltabs{display:none;align-items:center;gap:2px;flex-wrap:wrap;
+  border-bottom:1px solid rgba(92,225,255,.12);padding-bottom:6px}
+#ctl.adv #ctltabs{display:flex}
+#ctltabs u{text-decoration:none;cursor:pointer;pointer-events:auto;user-select:none;
+  font-size:7.5px;letter-spacing:.18em;padding:4px 8px;
+  color:rgba(223,246,255,.38);border-bottom:1px solid transparent;
+  transition:color .15s,border-color .15s}
+#ctltabs u:hover{color:rgba(223,246,255,.75)}
+#ctltabs u.on{color:var(--cy);border-bottom-color:var(--cy);
+  text-shadow:0 0 9px rgba(92,225,255,.4)}
+/* a group whose every knob has been pinned onto the bar is still reachable —
+   unpinning one has to put it somewhere — but it is plainly empty */
+#ctltabs u.empty{opacity:.34}
+/* the find box takes whatever the names leave, and looks like the readouts
+   rather than like a form field */
+#ctlfind{flex:1 1 90px;min-width:70px;margin-left:auto;pointer-events:auto;
+  background:rgba(92,225,255,.05);border:1px solid rgba(92,225,255,.14);
+  color:var(--cy);font-family:var(--mono);font-size:8px;letter-spacing:.12em;
+  padding:4px 7px;outline:0;transition:border-color .15s}
+#ctlfind:focus{border-color:rgba(92,225,255,.42)}
+#ctlfind::placeholder{color:rgba(223,246,255,.3);letter-spacing:.1em}
 #ctlhint{grid-column:1/-1;font-size:7px;letter-spacing:.06em;opacity:.34;
   line-height:1.6;margin-top:3px}
 #advtog{cursor:pointer;pointer-events:auto;user-select:none;font-size:8px;
@@ -123,6 +149,9 @@ canvas{display:block}
 .sl{min-width:0;display:flex;flex-direction:column;justify-content:center}
 .sl>b{font-size:8.5px;letter-spacing:.15em;opacity:.55;font-weight:400;margin-bottom:6px;
   display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+/* the row lights as a whole when the pointer is on it, so the thing being
+   dragged is legible while it is being dragged */
+.sl:hover>b{opacity:.9}
 .sl>b i{font-style:normal;color:var(--cy);opacity:.95;font-variant-numeric:tabular-nums;
   letter-spacing:.04em}
 /* the label and its pin travel together on the left; the value stays right */
@@ -133,8 +162,15 @@ canvas{display:block}
    lit when the knob is on the bar, and a hit area big enough to be a target
    rather than a pixel. */
 .sl>b .pin{font-style:normal;text-decoration:none;cursor:pointer;pointer-events:auto;
-  flex:0 0 auto;font-size:7px;line-height:1;color:rgba(92,225,255,.30);
-  padding:2px 3px;margin:-2px -1px -2px -3px;transition:color .15s,text-shadow .15s}
+  flex:0 0 auto;font-size:7px;line-height:1;color:rgba(92,225,255,0);
+  padding:2px 3px;margin:-2px -1px -2px -3px;
+  transition:color .15s,text-shadow .15s}
+/* Invisible until the row is under the pointer. Thirty diamonds down the
+   deck were a column of decoration that read as part of every label; the pin
+   is an action on the row you are already on, and it does not need to
+   advertise from the rows you are not. A pinned one stays lit, because that
+   one is telling you something rather than offering something. */
+.sl:hover>b .pin{color:rgba(92,225,255,.42)}
 .sl>b .pin:hover{color:var(--cy);text-shadow:0 0 8px var(--cy)}
 .sl.pinned>b .pin{color:rgba(92,225,255,.85);text-shadow:0 0 7px rgba(92,225,255,.45)}
 .sl.pinned>b{opacity:.72}
@@ -1369,13 +1405,16 @@ const STR = {
    The knob names themselves stay English instrument-lettering, like the rest
    of the HUD chrome. Only the sentence explaining the ◆ is prose, and prose
    moves. */
-'pin.hint':    ['◆ 를 누르면 그 조절기가 위 기본 바와 이 서랍 사이를 오갑니다.',
-                'Click ◆ on any control to move it between the bar above and this drawer.',
-                '◆ を押すと、そのつまみが上のバーとこの引き出しの間を移動します。',
-                '点击 ◆ 可将该控制项在上方基本栏与此抽屉之间移动。'],
+'pin.hint':    ['조절기 위에 커서를 올리면 ◇ 가 나타납니다 — 누르면 위 기본 바와 이 서랍 사이를 오갑니다.',
+                'Hover a control and a ◇ appears — click it to move that control between the bar above and this drawer.',
+                'つまみにカーソルを合わせると ◇ が現れます — 押すと上のバーとこの引き出しの間を移動します。',
+                '将光标移到控制项上会出现 ◇ — 点击可在上方基本栏与此抽屉之间移动。'],
 'pin.on':      ['{n} · 기본 바에 고정','{n} · pinned to the bar','{n} · バーに固定','{n} · 已固定到基本栏'],
 'pin.off':     ['{n} · 서랍으로 내림','{n} · moved to the drawer','{n} · 引き出しへ','{n} · 已移入抽屉'],
-'grp.cosmos':  ['운동과 구조','MOTION & STRUCTURE','運動と構造','运动与结构'],
+'grp.cosmos':  ['운동','MOTION','運動','运动'],
+'ctl.find':    ['컨트롤 찾기','FIND A CONTROL','コントロール検索','查找控件'],
+'ctl.none':    ['해당하는 컨트롤이 없습니다','Nothing by that name',
+                '該当するコントロールがありません','没有找到相应的控件'],
 'grid.on':     ['기준 평면 켜짐','REFERENCE PLANE ON','基準平面 オン','基准平面 开'],
 'grid.off':    ['기준 평면 꺼짐','REFERENCE PLANE OFF','基準平面 オフ','基准平面 关'],
 'grp.bodies':  ['천체','BODIES','天体','天体'],
@@ -1921,6 +1960,7 @@ const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
    saved one would name a different note by the next morning. Empty means
    "work it out", which is what every vault gets before anybody chooses. */
 const SET_DEF = { mmHop:false, mmOrb:true, snd:false, coreNote:'', grid:false,
+                  tab:'cosmos',
                   adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
 const SET = Object.assign({}, SET_DEF, { pin: PIN_DEF.slice() });
@@ -10726,6 +10766,40 @@ function knobPut(kn, raw) {
 function knobVal(kn) { return kn.get ? kn.get() : SET[kn.k]; }
 function pinned(k) { return SET.pin.indexOf(k) >= 0; }
 
+/* ---- the drawer's tab strip -----------------------------------------
+   Built here rather than written into the markup for the same reason the
+   knobs are: the groups are a fact about the KNOBS table, and a strip spelt
+   out in HTML is a second copy of that fact waiting to disagree with the
+   first. */
+function buildTabs() {
+  const strip = document.createElement('div');
+  strip.id = 'ctltabs';
+  GROUPS.forEach(([g]) => {
+    const b = document.createElement('u');
+    b.dataset.g = g;
+    b.onclick = () => {
+      SET.tab = g;
+      /* picking a group is an answer to "where is that knob"; a filter still
+         standing would then hide it inside the group just chosen */
+      if (findEl) findEl.value = '';
+      knobFind = '';
+      layoutKnobs(); syncControls(); saveSet(); layoutHUD();
+    };
+    strip.appendChild(b);
+    tabEl.set(g, b);
+  });
+  findEl = document.createElement('input');
+  findEl.id = 'ctlfind';
+  findEl.type = 'text';
+  findEl.spellcheck = false;
+  findEl.oninput = () => {
+    knobFind = findEl.value.trim().toLowerCase();
+    layoutKnobs(); syncControls(); layoutHUD();
+  };
+  strip.appendChild(findEl);
+  return strip;
+}
+
 function buildKnobs() {
   KNOBS.forEach(kn => {
     const wrap = document.createElement('div');
@@ -10751,13 +10825,11 @@ function buildKnobs() {
     });
     KNOB_EL.set(kn.k, { wrap, lab, val, inp, pin });
   });
-  GROUPS.forEach(([g]) => {
-    const hd = document.createElement('div');
-    hd.className = 'slhd';
-    groupEl.set(g, hd);
-  });
+  /* one heading, and it only appears while a search is spanning the groups —
+     a tab strip already says which group is on screen */
   hintEl = document.createElement('div');
   hintEl.id = 'ctlhint';
+  $('ctladv').parentNode.insertBefore(buildTabs(), $('ctladv'));
   layoutKnobs();
 }
 /* Which shelf each knob is on, and the drawer's headings. Walked in the
@@ -10768,8 +10840,30 @@ function buildKnobs() {
    deck is set in syncControls instead, which is also what a language switch
    calls, so a heading cannot be correct on the shelf it was built on and
    stale on the one it was moved to. */
-const groupEl = new Map();
-let hintEl = null;
+const tabEl = new Map();
+let hintEl = null, findEl = null, knobFind = '';
+/* Does this knob answer to what has been typed? Both its own label and the
+   translated one, so a Korean deck finds ORBIT SPEED and an English one finds
+   궤도 속도 — the reader may well know the control by the name it had in the
+   language they first met it in. */
+function knobMatches(kn) {
+  if (!knobFind) return false;
+  const a = kn.label.toLowerCase();
+  const b = (kn.i18n ? T(kn.i18n) : '').toLowerCase();
+  return a.indexOf(knobFind) >= 0 || (!!b && b.indexOf(knobFind) >= 0);
+}
+/* Which shelf each knob is on.
+
+   The drawer used to hold every unpinned knob at once, under three headings —
+   about thirty rows, which on a laptop is a deck taller than the vault it is
+   controlling and a scroll to reach SOUND. It holds one group at a time now,
+   chosen from the strip above it, so opening ADVANCED shows eight or ten rows
+   rather than thirty.
+
+   Typing in the find box overrides the group entirely: a reader who knows
+   what the control is called should not have to know which drawer it was
+   filed in. Nothing is hidden that a tab would not also have hidden, and an
+   empty box puts the group straight back. */
 function layoutKnobs() {
   const bar = $('ctlgrid'), drawer = $('ctladv');
   KNOBS.forEach(kn => {
@@ -10778,14 +10872,27 @@ function layoutKnobs() {
     e.wrap.classList.toggle('pinned', on);
     if (on) bar.appendChild(e.wrap);
   });
-  GROUPS.forEach(([g]) => {
-    const hd = groupEl.get(g);
-    const mine = KNOBS.filter(kn => kn.g === g && !pinned(kn.k));
-    /* a group whose every knob has been pinned out has no heading to earn */
-    hd.style.display = mine.length ? '' : 'none';
-    drawer.appendChild(hd);
-    mine.forEach(kn => drawer.appendChild(KNOB_EL.get(kn.k).wrap));
+  const tab = GROUPS.some(([g]) => g === SET.tab) ? SET.tab : GROUPS[0][0];
+  const show = KNOBS.filter(kn => !pinned(kn.k) &&
+    (knobFind ? knobMatches(kn) : kn.g === tab));
+  show.forEach(kn => drawer.appendChild(KNOB_EL.get(kn.k).wrap));
+  /* Anything the filter or the tab left out has to actually leave the drawer,
+     not merely stop being appended: appendChild moves a node, and a knob that
+     was in here last time is still in here until something takes it out. */
+  KNOBS.forEach(kn => {
+    const e = KNOB_EL.get(kn.k);
+    if (!pinned(kn.k) && show.indexOf(kn) < 0 && e.wrap.parentNode === drawer)
+      drawer.removeChild(e.wrap);
   });
+  GROUPS.forEach(([g]) => {
+    const b = tabEl.get(g);
+    if (!b) return;
+    b.classList.toggle('on', !knobFind && g === tab);
+    /* a group with nothing left in it — every knob pinned out — is not a
+       place worth going */
+    b.classList.toggle('empty', !KNOBS.some(kn => kn.g === g && !pinned(kn.k)));
+  });
+  drawer.classList.toggle('found', !!knobFind);
   drawer.appendChild(hintEl);
 }
 function togglePin(k) {
@@ -10823,10 +10930,14 @@ function syncControls() {
      calls, and the host can switch language during startup — before
      buildKnobs has made any of this */
   GROUPS.forEach(([g, key]) => {
-    const hd = groupEl.get(g);
-    if (hd) hd.textContent = T(key);
+    const b = tabEl.get(g);
+    if (b) b.textContent = T(key);
   });
-  if (hintEl) hintEl.textContent = T('pin.hint');
+  if (findEl) findEl.placeholder = T('ctl.find');
+  /* the hint is about the pin, and while a search is on screen the thing that
+     needs saying is what to do when it finds nothing */
+  if (hintEl) hintEl.textContent = knobFind && !KNOBS.some(knobMatches)
+    ? T('ctl.none') : T('pin.hint');
   applyStarfield();
   applyVeil();
 }
@@ -10859,6 +10970,8 @@ $('b-rst').onclick = () => {
   SET.pin = PIN_DEF.slice();
   /* RESET is a settings change like any other and every one of them is live,
      so the audio graph and the tinted buffer both have to be told */
+  knobFind = '';
+  if (findEl) findEl.value = '';
   layoutKnobs(); syncControls(); recolour(); audioApply();
   saveSet(); toast('CONTROLS RESET');
   /* RESET puts the folds back too, and a pane that has just unfolded is a
