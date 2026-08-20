@@ -2349,14 +2349,65 @@ function hsl(h, s, l) { return new THREE.Color().setHSL(h/360, s, l); }
    contained between them. Note how little colour there is in any of them:
    the most extreme star in the sky is less saturated than the faintest chip
    on the control deck. */
-const STAR_TEMPS = [
-  [0.61, 0.69, 1.00],   // B  — blue-white
-  [0.79, 0.85, 1.00],   // A  — white with a blue cast
-  [0.97, 0.97, 1.00],   // F  — white
-  [1.00, 0.96, 0.90],   // G  — the sun, cream
-  [1.00, 0.83, 0.64],   // K  — amber
-  [1.00, 0.72, 0.46],   // M  — orange
-];
+/* ---- what colour a thing at temperature T is ---------------------------
+   The six rows below used to be typed in. They were close — closer than
+   hand-picked colours have any business being — but "close to the right
+   answer" is a different kind of thing from the right answer, and this one
+   is not a matter of taste at any point along the way. It is Planck's law,
+   the CIE colour matching functions, and the sRGB primaries, and each of
+   the three is a published table that has not moved in decades.
+
+     Planck   B(λ,T) = 2hc²/λ⁵ · 1/(exp(hc/λkT) - 1), which is how much
+              power a black body radiates per wavelength. The two radiation
+              constants are folded: c₁ = 3.74183e-16 W·m², c₂ = 1.4388e-2
+              m·K. A star is not a black body — it has absorption lines cut
+              through it, thousands of them — but for a colour, which is
+              three numbers integrated over the whole visible band, the
+              difference is small and in one direction, and stellar colour
+              tables are all built this way for that reason.
+     CIE 1931 The eye's own three responses, as the analytic multi-lobe
+              Gaussian fit of Wyman, Sloan and Shirley (2013), which is
+              within a per cent of the tabulated curves and is nine lines
+              instead of four hundred and seventy.
+     sRGB     The standard matrix out of XYZ, then the transfer function.
+              Negative components are clipped, which is what has to happen
+              to a colour outside the gamut of a screen, and the result is
+              normalised so the brightest channel is 1 — brightness is not
+              what this is for, and every published stellar colour table
+              does the same.
+
+   Checked against Mitchell Charity's blackbody table, which is the one
+   everybody uses: 30000 K comes out within a couple of levels of #9bb2ff
+   and the Sun within one of #fff4e8. What it changes on screen is small
+   and all in the same direction — the cool end is a little less saturated
+   than the hand values were, because a 4500 K black body really is nearer
+   apricot than amber. */
+function blackbody(T) {
+  const G = (x, mu, s1, s2) => {
+    const t = (x - mu) * (x < mu ? 1/s1 : 1/s2);
+    return Math.exp(-0.5 * t * t);
+  };
+  let X = 0, Y = 0, Z = 0;
+  for (let w = 360; w <= 830; w += 5) {
+    const l = w * 1e-9;
+    const B = 3.74183e-16 / (Math.pow(l, 5) * (Math.exp(1.4388e-2 / (l * T)) - 1));
+    X += B * (1.056*G(w,599.8,37.9,31.0) + 0.362*G(w,442.0,16.0,26.7) - 0.065*G(w,501.1,20.4,26.2));
+    Y += B * (0.821*G(w,568.8,46.9,40.5) + 0.286*G(w,530.9,16.3,31.1));
+    Z += B * (1.217*G(w,437.0,11.8,36.0) + 0.681*G(w,459.0,26.0,13.8));
+  }
+  let r = Math.max(0,  3.2406*X - 1.5372*Y - 0.4986*Z);
+  let g = Math.max(0, -0.9689*X + 1.8758*Y + 0.0415*Z);
+  let b = Math.max(0,  0.0557*X - 0.2040*Y + 1.0570*Z);
+  const m = Math.max(r, g, b) || 1;
+  const enc = v => (v /= m) <= 0.0031308 ? 12.92*v : 1.055*Math.pow(v, 1/2.4) - 0.055;
+  return [enc(r), enc(g), enc(b)];
+}
+/* The effective temperatures of the main sequence, one per spectral class,
+   taken at the middle of each: B5, A5, F5, G2 (which is the Sun's own
+   5772 K), K5, M2. O is left out on purpose — there are about twenty
+   thousand of them in the entire galaxy and none of them is going to be in
+   a picture of a filing system. */
+const STAR_TEMPS = [15200, 8200, 6600, 5772, 4400, 3550].map(blackbody);
 /* ---- age as colour temperature ----
    The starfield has been coloured by stellar temperature since v1, and the
    notes have not been coloured by anything but their folder. Which is a waste
@@ -4306,9 +4357,11 @@ function machineSeed(i, out, o) {
                       Drawn as its own shell so it sits *outside* the disc's
                       silhouette, which is the whole of why it reads.
 
-   The colours are the palette the rest of the sky is already built from:
-   STAR_TEMPS[3] is the G row, our own sun's cream, and STAR_TEMPS[4] is the K
-   row it cools to at the edge. Nothing here is invented. */
+   The colours are two brightness temperatures put through the same
+   Planck's-law function the starfield is coloured from — about 6300 K
+   looking straight down into the disc and about 4800 K where the sight line
+   skims the limb and gives out in a higher, cooler layer. They are the Sun's
+   own numbers. Nothing here is invented. */
 const SUN_V = `
 varying vec3 vN; varying vec3 vE; varying vec3 vP;
 void main(){
@@ -5298,8 +5351,18 @@ if (N && coreIdx >= 0) {
                    and the M row for the limb. Both are rows of the same table
                    the starfield is coloured from, so the hub cannot drift out
                    of the palette the sky around it is built on. */
-                uCore: { value: new THREE.Color().fromArray(STAR_TEMPS[3]) },
-                uEdge: { value: new THREE.Color().fromArray(STAR_TEMPS[5]) } }
+                /* Not two rows of the spectral ramp — two brightness
+                   temperatures of the same star. The disc's centre and its
+                   limb are the same gas seen to different depths, and what
+                   differs is where the line of sight stops: around 6300 K
+                   looking straight down into it, around 4800 K where the
+                   sight line skims and gives out in a higher, cooler layer.
+                   Those are the Sun's own numbers, and putting them through
+                   Planck's law is what makes the gradient across the face
+                   the gradient a photograph has rather than a walk down a
+                   table of unrelated stars. */
+                uCore: { value: new THREE.Color().fromArray(blackbody(6300)) },
+                uEdge: { value: new THREE.Color().fromArray(blackbody(4800)) } }
   });
   const surface = new THREE.Mesh(new THREE.IcosahedronGeometry(SR, 5), surfMat);
   sunObj.add(surface);
