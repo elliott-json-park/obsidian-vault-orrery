@@ -5252,105 +5252,263 @@ function starMat(opt, hot) {
 let haloObj = null;
 function haloBuild() {
   if (haloObj) return haloObj;
+  /* ---- what an ice display is made of ---------------------------------
+     Every feature here is one path through one shape of crystal, and the
+     angle each lands at is a consequence of the crystal's geometry and
+     nothing else. Ice grows hexagonal, so its faces meet at sixty and at
+     ninety degrees, and those two numbers make the whole display:
+
+       the 22 ring       light through two alternate side faces, a sixty
+                         degree prism, minimum deviation 21.84 degrees
+       the sun dogs      the same prism, but through crystals that have
+                         settled flat as they fall, so the ring collapses
+                         into two concentrations either side of the sun
+       tangent arcs      the same prism again in column crystals lying with
+                         their long axis horizontal — one arc above the ring
+                         and one below it
+       the 46 ring       a side face and an end face, a ninety degree prism,
+                         minimum deviation 45.7 degrees
+       the CZA           that same ninety degree prism in a plate crystal,
+                         entered through the top and left through a side
+       the pillar        no prism at all: reflection off the flat bottoms of
+                         plate crystals, which is why it is white
+       parhelic circle   reflection off vertical side faces, also white, and
+                         it runs right round the sky at the sun's own height
+
+     Two things were wrong before and both were about how it reads rather
+     than where things are. The rings were perfectly even, and no photograph
+     of a halo shows an even ring — it shows two thirds of one, brighter on
+     one side, with a gap somewhere, because a halo is made by whatever
+     crystals happen to lie along that line of sight and cirrus is not
+     evenly loaded. And the ratio between the two rings was two, where it is
+     46/22. */
   const S = 768, half = S / 2;
-  const R22 = 0.40, R46 = 0.80;
+  const R22 = 0.40, R46 = R22 * (46 / 22);
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const x = c.getContext('2d');
   const im = x.createImageData(S, S), d = im.data;
+  /* accumulated in float and normalised afterwards, because what the
+     brightest feature turns out to be depends on the cloud and a divisor
+     typed in by hand goes stale the moment anything above it moves */
+  const acc = new Float32Array(S * S * 3);
+  let peak = 1e-6;
+
   const gauss = (v, sd) => Math.exp(-(v * v) / (2 * sd * sd));
+  const sat = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+  /* ---- the cloud ----
+     One field, sampled by every refraction feature, because they are all
+     being made by the same crystals: where the ring is thin, the dog on
+     that side is thin with it. Three harmonics is enough to be uneven
+     without being noisy, and its floor is a third rather than nothing: a
+     halo that has whole quadrants missing is a rarer thing than one that is
+     merely uneven, and the uneven one is what this is for. Between the
+     floor and the peak is about three and a half to one, which is what the
+     photographs show. */
+  const cloudAt = (th, k) => Math.max(0.34,
+      0.78 + 0.46 * (0.54 * Math.sin(th * 1.0 + k)
+                   + 0.29 * Math.sin(th * 2.3 + k * 1.7 + 1.1)
+                   + 0.17 * Math.sin(th * 4.1 - k * 0.9 + 2.7)));
+  /* the reflection features take a gentler draw from the same field. They
+     are made by a different crystal habit doing a different thing, and a
+     pillar that guttered wherever the ring was thin would be tying two
+     independent populations together. */
+  const softAt = (th, k) => 0.70 + 0.30 * cloudAt(th, k);
+  /* and a finer grain over the top of it, which is the cirrus itself */
+  const grainAt = (th, rr) => 0.84 + 0.22 * Math.sin(th * 17.0 + rr * 41.0)
+                                  + 0.13 * Math.sin(th * 31.0 - rr * 23.0 + 2.0);
+
+  /* ---- what a prism does to sunlight, at the saturations a halo has ----
+     Not a rainbow. Light leaves a tumbling crystal over a spread of
+     deviations rather than one, so every colour past the red edge is
+     overlapping every other, and the overlap washes the short end out: a
+     halo runs red, orange, yellow, white, and stops. The exception is the
+     circumzenithal arc, which is one clean ninety degree prism in a crystal
+     that has settled level — one orientation, one deviation, nothing to
+     overlap it — and it keeps the blue. It is the most coloured thing in
+     the sky when it is there, and this is why. */
+  const HC = [0, 0, 0];
+  const disp = (t, pure) => {
+    t = sat(t);
+    HC[0] = 1.0;
+    /* The red is an *edge*, not the body of the feature. Ramping it out
+       slowly made the whole ring orange, where a photograph shows a thin
+       red rim and then yellow-white for the rest of the width. */
+    HC[1] = 0.40 + 0.60 * sat((t - 0.02) / 0.38);
+    HC[2] = 0.14 + 0.86 * sat((t - 0.10) / 0.48);
+    if (pure) {
+      const over = sat((t - 0.66) / 0.34);
+      HC[0] -= 0.74 * over;
+      HC[1] -= 0.24 * over;
+    }
+    return HC;
+  };
+
   for (let py = 0; py < S; py++) {
-    /* canvas y runs down, so this is negated to make up mean up */
+    /* canvas y runs down, so dy is positive downward and up() negates it */
     const dy = (py - half) / half;
     for (let px = 0; px < S; px++) {
       const dx = (px - half) / half;
       const r = Math.sqrt(dx*dx + dy*dy);
       if (r >= 1) continue;
+      const o = (py * S + px) * 3;
       let R = 0, G = 0, B = 0;
-      const add = (amt, cr, cg, cb) => { R += amt*cr; G += amt*cg; B += amt*cb; };
+      const add = (amt, col) => { R += amt*col[0]; G += amt*col[1]; B += amt*col[2]; };
 
-      /* ---- the 22 ring ---- */
-      const dr = r - R22;
-      let ring = gauss(dr, 0.017);
-      /* A minimum deviation has a hard edge on the inside and a tail on the
-         outside — light cannot be bent by less than the minimum, so the space
-         inside the ring is genuinely empty. Halving the inner side is what
-         puts the "hole" in the middle that every photograph of one shows. */
-      if (dr < 0) ring *= 0.42;
-      ring *= 0.46;
-      if (ring > 0.002) {
-        /* red on the inner edge, white going out: the prism disperses, and
-           red is bent least so it lands closest to the sun */
-        const t = clamp((dr + 0.018) / 0.055, 0, 1);
-        add(ring, 1.0, 0.52 + 0.44*t, 0.26 + 0.66*t);
-      }
-
-      /* ---- the sun dogs ---- */
-      /* angular distance from the horizontal, either side */
       const th = Math.atan2(dy, dx);
-      const ang = Math.min(Math.abs(th), Math.abs(Math.abs(th) - Math.PI));
-      let dog = gauss(ang, 0.15) * gauss(dr, 0.030);
-      /* the tail: a sun dog is a smear running away from the sun, not a spot */
-      if (dr > 0) dog += 0.40 * gauss(ang, 0.085) * Math.exp(-dr / 0.11);
-      dog *= 0.95;
-      if (dog > 0.002) {
-        const t = clamp((dr + 0.02) / 0.075, 0, 1);
-        add(dog, 1.0, 0.60 + 0.38*t, 0.30 + 0.64*t);
+      const up = r > 1e-4 ? -dy / r : 0;
+      const cl = cloudAt(th, 0.0), gr = grainAt(th, r);
+      const dr = r - R22;
+
+      /* ---- the 22 ring ----
+         A minimum deviation has a hard edge on the inside and a tail on the
+         outside: nothing can be bent by less than the minimum, so the space
+         inside the ring is genuinely empty, and everything bent by more than
+         it piles up beyond. The tail is what makes the hole read as a hole —
+         without something just outside the ring to compare it with, the
+         middle is only dark, and dark is what the rest of the card is too.
+
+         The width varies round the ring because the crystals are not equally
+         well formed all the way round, and a ring of constant sharpness is
+         the other half of what made this look drawn. */
+      {
+        const w = 0.0155 * (0.80 + 0.38 * cloudAt(th, 2.2));
+        let ring = gauss(dr, w) * (dr < 0 ? 0.34 : 1.0);
+        if (dr > 0) ring += 0.17 * Math.exp(-dr / 0.14);
+        ring *= 0.46 * cl * gr;
+        if (ring > 0.002) add(ring, disp((dr + 0.016) / 0.052, false));
       }
 
-      /* ---- the pillar ---- */
-      /* Squared, so it is a shaft rather than a stripe: a linear falloff down
-         the length reads as a drawn line and the square reads as light. */
-      let pil = gauss(dx, 0.030) * Math.max(0, 1 - Math.abs(dy) / 0.95);
-      pil = pil * pil * 0.62;
-      if (pil > 0.002) add(pil, 1.0, 0.93, 0.76);
-
-      /* ---- the parhelic circle ---- */
-      /* White, and the only white thing here: it is reflection off vertical
-         faces rather than refraction through a prism, so nothing splits it. */
-      const pc = gauss(dy, 0.013) * Math.max(0, 1 - Math.abs(dx) / 0.99) * 0.22;
-      if (pc > 0.002) add(pc, 0.94, 0.97, 1.0);
-
-      /* ---- the 46 ring ---- */
-      const dr46 = r - R46;
-      let r46 = gauss(dr46, 0.022);
-      if (dr46 < 0) r46 *= 0.45;
-      r46 *= 0.11;
-      if (r46 > 0.002) {
-        const t = clamp((dr46 + 0.02) / 0.06, 0, 1);
-        add(r46, 1.0, 0.62 + 0.34*t, 0.40 + 0.55*t);
+      /* ---- the tangent arcs ----
+         Column crystals fall with their long axis horizontal, which lines
+         their prisms up instead of leaving them to tumble, and the ring
+         collapses into two arcs touching it at the top and the bottom. There
+         is one at each end. The lower one is under the sun, usually the
+         fainter of the two, and that is the only reason pictures leave it
+         out. */
+      {
+        const uta = gauss(dr, 0.019) * Math.pow(sat(up), 5.0) * 0.60 * cl;
+        if (uta > 0.002) add(uta, disp((dr + 0.020) / 0.062, false));
+        const lta = gauss(dr, 0.025) * Math.pow(sat(-up), 6.0) * 0.28 * cl;
+        if (lta > 0.002) add(lta, disp((dr + 0.024) / 0.070, false));
       }
 
-      /* ---- the upper tangent arc ---- */
-      /* Where the crystals are lined up instead of tumbling, which happens at
-         the top. The sixth power is what keeps it a cap rather than a third
-         of the ring. */
-      const up = r > 1e-4 ? clamp(-dy / r, 0, 1) : 0;
-      const uta = gauss(dr, 0.021) * Math.pow(up, 6) * 0.62;
-      if (uta > 0.002) add(uta, 1.0, 0.86, 0.62);
+      /* ---- the sun dogs ----
+         The same sixty degree prism as the ring, in plates that have settled
+         flat, so all of that light arrives from two directions instead of
+         from every direction. Each dog gets its own draw from the cloud
+         rather than sharing the ring's: they are two different patches of
+         sky, and in most displays one is plainly brighter than the other.
 
-      /* Scaled so the brightest feature lands just under one.
+         The tail is a separate term because it is a different colour. A
+         dog's core is the spectrum; the smear running away from the sun is
+         light from crystals wobbling off level, and it comes out white and
+         then faintly blue. */
+      {
+        const ang = Math.min(Math.abs(th), Math.abs(Math.abs(th) - Math.PI));
+        const east = Math.abs(th) < Math.PI * 0.5;
+        const dc = cloudAt(east ? 0.6 : 3.4, 1.3);
+        const core = gauss(ang, 0.145) * gauss(dr, 0.028) * 0.84 * dc;
+        if (core > 0.002) add(core, disp((dr + 0.020) / 0.075, false));
+        if (dr > 0) {
+          const tail = 0.40 * gauss(ang, 0.082) * Math.exp(-dr / 0.115) * dc;
+          if (tail > 0.002) add(tail, disp(0.72 + 0.28 * sat(dr / 0.20), true));
+        }
+      }
 
-         Alpha is a byte, so anything over 1.0 clips — and the two features
-         that matter most were both over it: the ring peaks at 1.25 and a sun
-         dog at 1.49, so both saturated and the dogs stopped being brighter
-         than the ring they sit on. That is the one relationship in this
-         picture that carries information: a dog is a concentration of the
-         same light the ring is spread out of. Dividing by the known maximum
-         keeps every feature distinct and the display as a whole is turned
-         back up by the material opacity. */
-      let a = Math.max(R, Math.max(G, B)) / 1.55;
+      /* ---- the pillar ----
+         Reflection off the flat bottom faces of plate crystals, which is a
+         mirror and not a prism: nothing splits, so it is white with only the
+         star's own warmth in it. It widens with height because the plates
+         are not perfectly level and the further up the shaft you look the
+         more of that wobble you are seeing across — a shaft of even width is
+         a drawn line, and this is the term that stops it being one. Squared,
+         so the falloff reads as light rather than as a gradient. */
+      {
+        const pw = 0.024 + 0.032 * Math.abs(dy);
+        let pil = gauss(dx, pw) * Math.max(0, 1 - Math.abs(dy) / 0.94);
+        pil = pil * pil * 0.92 * softAt(dy * 3.0, 4.1);
+        if (pil > 0.002) add(pil, [1.0, 0.93, 0.77]);
+      }
+
+      /* ---- the parhelic circle ----
+         Reflection again, off the vertical side faces this time, so it is
+         white as well — and it is the one feature here that goes all the way
+         round the sky, at exactly the sun's own height, because a vertical
+         mirror cannot change how high something is. */
+      {
+        const pc = gauss(dy, 0.012) * Math.max(0, 1 - Math.abs(dx) / 0.99)
+                 * 0.30 * softAt(dx * 2.6, 5.7);
+        if (pc > 0.002) add(pc, [0.93, 0.97, 1.0]);
+      }
+
+      /* ---- the 46 ring ----
+         The ninety degree prism, which is a rarer path than the sixty: it
+         needs the light to find a side face and an end face, and most
+         crystals are not oriented to allow it. So it is faint, and it is
+         patchier than the ring inside it. */
+      {
+        const dr46 = r - R46;
+        const ring = gauss(dr46, 0.024) * (dr46 < 0 ? 0.40 : 1.0)
+                   * 0.20 * cloudAt(th, 3.9) * gr;
+        if (ring > 0.002) add(ring, disp((dr46 + 0.022) / 0.068, false));
+      }
+
+      /* ---- the circumzenithal arc ----
+         The one that gets called an upside-down rainbow, and the name is
+         earned twice over. It is centred on the zenith rather than on the
+         sun, so it opens upward where every other arc here opens down — that
+         reversal is how it is recognised across a field. And it is made by
+         one clean prism in one orientation, so it is the only thing in an
+         ice display that keeps its violet.
+
+         Drawn from a centre placed above the top of the card, which is what
+         puts the curvature the other way; the radius is chosen so the arc's
+         lowest point lands on the forty-six degree ring, which is where it
+         sits. */
+      {
+        const cz = Math.hypot(dx, dy + R46 + 0.55) - 0.55;
+        const arc = gauss(cz, 0.016) * Math.pow(sat(up), 2.4)
+                  * gauss(dx, 0.22) * 0.66 * cloudAt(1.9, 6.3);
+        if (arc > 0.002) add(arc, disp(sat(0.5 - cz / 0.042), true));
+      }
+
+      if (R + G + B < 1e-4) continue;
+      acc[o] = R; acc[o+1] = G; acc[o+2] = B;
+      const m = Math.max(R, Math.max(G, B));
+      if (m > peak) peak = m;
+    }
+  }
+
+  /* Normalised to whatever the brightest feature actually came out as, so
+     nothing clips. That relationship is the one thing in this picture
+     carrying information: a sun dog is a concentration of exactly the light
+     the ring is spread out of, so it has to be brighter than the ring, and
+     the moment either of them saturates that stops being visible. */
+  for (let py = 0; py < S; py++) {
+    const dy = (py - half) / half;
+    for (let px = 0; px < S; px++) {
+      const dx = (px - half) / half;
+      const r = Math.sqrt(dx*dx + dy*dy);
+      const o = (py * S + px) * 3, q = (py * S + px) * 4;
+      const R = acc[o], G = acc[o+1], B = acc[o+2];
+      const m = Math.max(R, Math.max(G, B));
+      if (m < 1e-4) continue;
+      let a = m / peak;
+      /* taken to nothing at the edge of the card so the sprite has no rim —
+         and started late enough that the forty-six degree ring, which is out
+         at 0.84, is not dimmed by it */
+      const e = sat((r - 0.86) / 0.14);
+      a *= 1 - e * e * (3 - 2 * e);
       if (a < 0.0016) continue;
-      /* taken to nothing at the edge of the card, so the sprite has no rim */
-      a *= 1 - r * r * r * r;
-      /* the colour is the accumulated hue normalised out of the intensity;
-         additive blending multiplies the two back together */
-      const inv = 1 / Math.max(R, Math.max(G, B));
-      const o = (py * S + px) * 4;
-      d[o]   = Math.min(255, R * inv * 255) | 0;
-      d[o+1] = Math.min(255, G * inv * 255) | 0;
-      d[o+2] = Math.min(255, B * inv * 255) | 0;
-      d[o+3] = Math.max(0, Math.min(255, a * 255)) | 0;
+      /* hue normalised out of the intensity; additive blending multiplies
+         the two back together */
+      const inv = 1 / m;
+      d[q]   = Math.min(255, R * inv * 255) | 0;
+      d[q+1] = Math.min(255, G * inv * 255) | 0;
+      d[q+2] = Math.min(255, B * inv * 255) | 0;
+      d[q+3] = Math.max(0, Math.min(255, a * 255)) | 0;
     }
   }
   x.putImageData(im, 0, 0);
