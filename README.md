@@ -153,12 +153,24 @@ have gone to nothing against their planets. The two lit classes run to 8.00×
 where the two light sources stop at 3.00× — a planet asked for more brightness
 has much further to climb before it reads at all.
 
-**SUN HALO** is the scattering glare around the star, and it is the only
-thing here that gets *bigger* as you back away from it. A star at map range is
-four pixels of disc, and four pixels of disc is not what a sun looks like from
-a distance: it is a soft bloom with a small unbearable centre, because the
-light scatters on its way to you. It hands over to the corona and then to the
-photosphere itself as you approach.
+**SUN HALO** is what the sky does with the star, and it is the only thing
+here that gets *bigger* as you back away from it. A star at map range is four
+pixels of disc, and four pixels of disc is not what a sun looks like from a
+distance.
+
+The knob does two things over its range, and they are the same thing. Low, it
+is scattering: a soft skirt with a small unbearable centre, because light
+bends by no particular angle on its way to you. Turn it up and the air stops
+being air and starts being ice — and refraction has angles where scattering
+has none. A ring at twenty-two degrees with nothing inside it and red on its
+inner edge, a sun dog either side level with the star, a column through it, a
+white band right across, a fainter ring at forty-six, and a bright cap where
+the crystals line up. Every one of those is the real feature at its real
+radius; it is one optical event at two strengths, not two effects.
+
+All of it needs distance. It ramps off how small the star's disc has become
+in pixels, so it cannot appear on a star you are standing next to, and it
+hands back to the corona and then to the photosphere as you approach.
 
 **The control deck can be moved.** Drag its title bar to put it anywhere in
 the pane, pull any of the four corners to set its width, and the sliders

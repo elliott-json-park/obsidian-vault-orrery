@@ -1946,14 +1946,14 @@ const KNOBS = [
      Zero is OFF and says so, except on the hub: a sun turned off is a cosmos
      with no light source in it, so its floor is a dim ember rather than
      nothing. */
-  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:.65, fmt:mult },
+  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:.4, fmt:mult },
   { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:.6,
     fmt:v => offAt(v, mult(v)) },
   /* Planets and moons run to 8x where the sun and the folder stars stop at
      3x, and the asymmetry is the point: those two are light sources and the
      other two are lit, so a planet asked for more brightness has much further
      to climb before it reads at all. Eight is where the halo saturates. */
-  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:3,
+  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:1.7,
     fmt:v => offAt(v, mult(v)) },
   { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:3,
     fmt:v => offAt(v, mult(v)) },
@@ -4516,6 +4516,43 @@ void main(){
   glareObj.visible = false;
   scene.add(glareObj);
 
+  /* ---------- the ice display ----------
+     What the sky does with a star when there is something between you and it.
+
+     The glare above is scattering: light bent by no particular angle, in no
+     particular direction, which is why it is a smooth skirt. This is
+     *refraction*, and refraction has angles. Light passing through a hexagonal
+     ice prism turns by a minimum of twenty-two degrees and piles up there,
+     which is why the sky puts a ring at exactly that radius and nothing
+     inside it. Plate crystals falling flat put two more images of the sun on
+     the horizontal, one either side. Their mirror faces put a column through
+     it. And the whole population together smears a band right round the sky
+     at the sun's own altitude.
+
+     None of that is invented for this. Each feature below is the real one and
+     is drawn at its real radius relative to the twenty-two degree ring, which
+     is what makes the set of them read as a single optical event rather than
+     as five decorations that happen to share a centre:
+
+       the 22 ring     a hard inner edge with nothing inside it, red on that
+                       edge and white going out. The hard edge is the whole
+                       tell — it is a minimum deviation, so there is a sharp
+                       boundary and a soft skirt, never the reverse.
+       sun dogs        at the ring, level with the sun, brighter than the ring
+                       and with a white tail running outward.
+       the pillar      a vertical column, brightest at the sun.
+       parhelic circle a thin white band across the whole width. White, and
+                       alone in that: it is reflection rather than refraction,
+                       so nothing splits it into colours.
+       the 46 ring     the same physics through a different pair of faces,
+                       twice as far out and much fainter.
+       upper tangent   the bright cap where the ring's own crystals are lined
+                       up rather than tumbling.
+
+     Built lazily. It is three quarters of a million pixels of exp() and most
+     readers will never turn the knob far enough to see it, so the cost is
+     paid by the first frame that actually wants it rather than by every
+     vault that opens. */
   /* ---------- the crown ----------
      A smooth radial falloff is a lamp. Every photograph of a star in eclipse
      shows the other thing: streamers, of uneven length, standing out of the
@@ -4661,6 +4698,128 @@ function starMat(opt, hot) {
   };
   m.customProgramCacheKey = () => (hot ? 'starHot' : 'starAlpha');
   return m;
+}
+
+/* The ice display's own sprite. Separate from the glare for the same reason
+   the crown is separate from the corona: they are two different physical
+   things that happen to share a centre, they fade in over different ranges of
+   the same knob, and one of them costs a texture nobody may ever ask for. */
+let haloObj = null;
+function haloBuild() {
+  if (haloObj) return haloObj;
+  const S = 768, half = S / 2;
+  const R22 = 0.40, R46 = 0.80;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const x = c.getContext('2d');
+  const im = x.createImageData(S, S), d = im.data;
+  const gauss = (v, sd) => Math.exp(-(v * v) / (2 * sd * sd));
+  for (let py = 0; py < S; py++) {
+    /* canvas y runs down, so this is negated to make up mean up */
+    const dy = (py - half) / half;
+    for (let px = 0; px < S; px++) {
+      const dx = (px - half) / half;
+      const r = Math.sqrt(dx*dx + dy*dy);
+      if (r >= 1) continue;
+      let R = 0, G = 0, B = 0;
+      const add = (amt, cr, cg, cb) => { R += amt*cr; G += amt*cg; B += amt*cb; };
+
+      /* ---- the 22 ring ---- */
+      const dr = r - R22;
+      let ring = gauss(dr, 0.017);
+      /* A minimum deviation has a hard edge on the inside and a tail on the
+         outside — light cannot be bent by less than the minimum, so the space
+         inside the ring is genuinely empty. Halving the inner side is what
+         puts the "hole" in the middle that every photograph of one shows. */
+      if (dr < 0) ring *= 0.42;
+      ring *= 0.46;
+      if (ring > 0.002) {
+        /* red on the inner edge, white going out: the prism disperses, and
+           red is bent least so it lands closest to the sun */
+        const t = clamp((dr + 0.018) / 0.055, 0, 1);
+        add(ring, 1.0, 0.52 + 0.44*t, 0.26 + 0.66*t);
+      }
+
+      /* ---- the sun dogs ---- */
+      /* angular distance from the horizontal, either side */
+      const th = Math.atan2(dy, dx);
+      const ang = Math.min(Math.abs(th), Math.abs(Math.abs(th) - Math.PI));
+      let dog = gauss(ang, 0.15) * gauss(dr, 0.030);
+      /* the tail: a sun dog is a smear running away from the sun, not a spot */
+      if (dr > 0) dog += 0.40 * gauss(ang, 0.085) * Math.exp(-dr / 0.11);
+      dog *= 0.95;
+      if (dog > 0.002) {
+        const t = clamp((dr + 0.02) / 0.075, 0, 1);
+        add(dog, 1.0, 0.60 + 0.38*t, 0.30 + 0.64*t);
+      }
+
+      /* ---- the pillar ---- */
+      /* Squared, so it is a shaft rather than a stripe: a linear falloff down
+         the length reads as a drawn line and the square reads as light. */
+      let pil = gauss(dx, 0.030) * Math.max(0, 1 - Math.abs(dy) / 0.95);
+      pil = pil * pil * 0.62;
+      if (pil > 0.002) add(pil, 1.0, 0.93, 0.76);
+
+      /* ---- the parhelic circle ---- */
+      /* White, and the only white thing here: it is reflection off vertical
+         faces rather than refraction through a prism, so nothing splits it. */
+      const pc = gauss(dy, 0.013) * Math.max(0, 1 - Math.abs(dx) / 0.99) * 0.22;
+      if (pc > 0.002) add(pc, 0.94, 0.97, 1.0);
+
+      /* ---- the 46 ring ---- */
+      const dr46 = r - R46;
+      let r46 = gauss(dr46, 0.022);
+      if (dr46 < 0) r46 *= 0.45;
+      r46 *= 0.11;
+      if (r46 > 0.002) {
+        const t = clamp((dr46 + 0.02) / 0.06, 0, 1);
+        add(r46, 1.0, 0.62 + 0.34*t, 0.40 + 0.55*t);
+      }
+
+      /* ---- the upper tangent arc ---- */
+      /* Where the crystals are lined up instead of tumbling, which happens at
+         the top. The sixth power is what keeps it a cap rather than a third
+         of the ring. */
+      const up = r > 1e-4 ? clamp(-dy / r, 0, 1) : 0;
+      const uta = gauss(dr, 0.021) * Math.pow(up, 6) * 0.62;
+      if (uta > 0.002) add(uta, 1.0, 0.86, 0.62);
+
+      /* Scaled so the brightest feature lands just under one.
+
+         Alpha is a byte, so anything over 1.0 clips — and the two features
+         that matter most were both over it: the ring peaks at 1.25 and a sun
+         dog at 1.49, so both saturated and the dogs stopped being brighter
+         than the ring they sit on. That is the one relationship in this
+         picture that carries information: a dog is a concentration of the
+         same light the ring is spread out of. Dividing by the known maximum
+         keeps every feature distinct and the display as a whole is turned
+         back up by the material opacity. */
+      let a = Math.max(R, Math.max(G, B)) / 1.55;
+      if (a < 0.0016) continue;
+      /* taken to nothing at the edge of the card, so the sprite has no rim */
+      a *= 1 - r * r * r * r;
+      /* the colour is the accumulated hue normalised out of the intensity;
+         additive blending multiplies the two back together */
+      const inv = 1 / Math.max(R, Math.max(G, B));
+      const o = (py * S + px) * 4;
+      d[o]   = Math.min(255, R * inv * 255) | 0;
+      d[o+1] = Math.min(255, G * inv * 255) | 0;
+      d[o+2] = Math.min(255, B * inv * 255) | 0;
+      d[o+3] = Math.max(0, Math.min(255, a * 255)) | 0;
+    }
+  }
+  x.putImageData(im, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  haloObj = new THREE.Sprite(new THREE.SpriteMaterial({ map:tex,
+    transparent:true, depthWrite:false, depthTest:false,
+    blending:THREE.AdditiveBlending, opacity:0 }));
+  haloObj.scale.setScalar(600);
+  /* over the glare, which is the diffuse thing it is drawn against */
+  haloObj.renderOrder = 5;
+  haloObj.visible = false;
+  scene.add(haloObj);
+  return haloObj;
 }
 
 /* ================================================================== WORLD
@@ -5339,6 +5498,7 @@ if (coronaRay) {
 /* the glare is placed and sized entirely by the frame — see the block that
    reads glarePx — so all a new vault owes it is a clean slate */
 if (glareObj) { glareObj.visible = false; glareObj.material.opacity = 0; }
+if (haloObj)  { haloObj.visible  = false; haloObj.material.opacity  = 0; }
 /* the air and the far plane are sized from the cosmos, and this is a new one.
    gapStep would get to it, but only on a frame where the spring is moving —
    a vault opened at a gap it is already settled at would keep the last
@@ -11190,7 +11350,36 @@ function frameLoop(now) {
         const span = clamp(d * 0.52, base * 2.2, d * 0.88);
         glareObj.scale.setScalar(span);
         glareObj.material.opacity = Math.min(0.95, amt * 0.78);
-      }
+
+        /* ---- the ice display ----
+           The knob does two things over its range and they are the same
+           thing. Up to about half it is only the scattering skirt: more air
+           between you and the star. Past that the air stops being air and
+           starts being ice, and refraction has structure where scattering has
+           none — the ring, the dogs either side, the column, the band right
+           round.
+
+           Ramped in from 0.5 rather than switched on, and multiplied by the
+           same distance factor the glare uses, so it cannot appear on a star
+           you are standing next to. It is the same optical event at a
+           different strength, so it must not arrive as a separate one.
+
+           Built on the first frame that wants it. Three quarters of a million
+           pixels of exp() is a real cost and it is paid by the reader who
+           asked for this rather than by every vault that opens. */
+        const ice = clamp((SET.glare - 0.5) / 1.9, 0, 1) * far * ig;
+        if (ice > 0.008) {
+          const h = haloBuild();
+          h.visible = true;
+          h.position.copy(coronaObj.position);
+          /* wider than the glare it is drawn over: the twenty-two degree ring
+             sits at four tenths of this card and has to clear the skirt's own
+             bright middle, or the ring is inside the thing it is a ring
+             around */
+          h.scale.setScalar(span * 1.45);
+          h.material.opacity = Math.min(0.95, ice * 1.24);
+        } else if (haloObj) haloObj.visible = false;
+      } else if (haloObj) haloObj.visible = false;
     }
   }
   /* parallax: each shell turns at its own rate, which is most of why the
@@ -12526,6 +12715,18 @@ window.vaultOrrery = {
                      whole units. The orbital insertion radius came out seven
                      times too large and every number on the deck was
                      consistent with itself while it did. */
+                  /* The sun's two distance-driven layers. Neither is reachable from
+                     anything else on this readout — the glare is keyed to the disc's
+                     size in pixels and the ice display ramps off the knob on top of
+                     that — so "is the halo on and how much of it" is a question only
+                     this can answer. */
+                  halo: {
+                    glare: glareObj && glareObj.visible
+                         ? +glareObj.material.opacity.toFixed(3) : 0,
+                    ice: haloObj && haloObj.visible
+                       ? +haloObj.material.opacity.toFixed(3) : 0,
+                    built: !!haloObj,
+                  },
                   ship: ship.on ? {
                     lock: ship.lock, mode: ship.orbit ? 'orbit'
                         : ship.travel ? 'travel' : ship.patrol ? 'patrol' : 'manual',

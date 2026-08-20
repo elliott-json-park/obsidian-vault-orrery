@@ -4,6 +4,28 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.7.0
+
+- **SUN HALO grows an ice display.** Low on the knob it is what it was: a
+  smooth scattering skirt, light bent by no particular angle. Past halfway the
+  air stops being air and starts being ice, and refraction has angles where
+  scattering has none — a twenty-two degree ring with a hard inner edge and
+  nothing inside it, red on that edge and white going out; a sun dog either
+  side, level with the star and brighter than the ring, with a tail running
+  outward; a column through the star; a thin white band right across the sky,
+  white because it is reflection rather than refraction and so nothing splits
+  it; a fainter ring at forty-six degrees; and the bright cap where the
+  crystals stop tumbling. Each is the real feature at its real radius relative
+  to the ring, which is what makes the set of them read as one optical event
+  rather than five decorations sharing a centre.
+
+  It ramps in rather than switching on, and off the same distance factor the
+  glare uses, so it cannot appear on a star you are standing beside. The
+  texture is built on the first frame that wants it: three quarters of a
+  million pixels of exp() is a real cost and it is paid by the reader who
+  asked for it.
+- **SUN GLOW ships at 0.40x and PLANET GLOW at 1.70x.**
+
 ## 1.6.3
 
 - **SUN HALO is back**, unchanged from the version 1.6.1 left it at. Taking it
