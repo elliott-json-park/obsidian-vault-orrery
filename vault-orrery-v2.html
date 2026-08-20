@@ -4198,27 +4198,94 @@ function buildNebula(outer) {
   for (let k = 0; k < CLOUDS; k++) {
     const a = Math.random()*TAU;
     const r = R*0.20 + Math.pow(Math.random(), .75) * R;
+    /* Each cloud gets a long axis and a short one across it. Gas complexes
+       are not round: they are drawn out along whatever compressed them —
+       an arm passing through, a shell blown by the last generation of hot
+       stars — and the ones that are round are round because they are seen
+       down that axis. */
+    const ax = Math.random()*TAU;
     seeds.push({
       x: Math.cos(a)*r, y: (Math.random()-.5)*(R*0.04 + r*0.07), z: Math.sin(a)*r,
       /* a cloud is wider than it is thick, lying in the disk it condensed out of */
       w: R*(0.06 + Math.random()*0.13), h: R*(0.02 + Math.random()*0.05),
-      emission: Math.random() < .72,          // Hα is most of what is out there
+      /* the long axis, in the plane, and the one across it */
+      e1x: Math.cos(ax), e1z: Math.sin(ax),
+      e2x: -Math.sin(ax), e2z: Math.cos(ax),
+      el: 1.35 + Math.random()*1.15,        // how drawn out it is
+      ph: Math.random()*TAU,                // where its filaments bend
+      emission: Math.random() < .72,        // Hα is most of what is out there
       lit: 0.55 + Math.random()*0.75,
     });
   }
+  /* ---- filaments, and the ionisation structure ------------------------
+     Two things separate a photograph of a nebula from a smudge, and this
+     had neither.
+
+     It is filamentary. Gas is threaded by magnetic field and shaped by the
+     winds coming off the stars inside it, so what a long exposure shows is
+     strands, ridges and cavities — not a gaussian ball. A gaussian ball is
+     what you get by scattering points about a centre, which is what this
+     did, and the eye reads it as fog rather than as material. So most of
+     the points now ride three wandering strands per cloud and the rest are
+     left as the diffuse envelope the strands sit in.
+
+     It is not one colour. An HII region is a hydrogen cloud with hot stars
+     inside it, and how the gas answers depends on how far it is from them:
+     close in, oxygen is stripped twice over and emits at 500.7 nm, which is
+     teal — the Orion Nebula's core is teal for exactly this reason and so
+     is the middle of every planetary nebula ever photographed. Further out
+     the ionising light has been used up, hydrogen recombines, and what you
+     get is Hα at 656 nm, deep red. So a real emission cloud runs teal in
+     the middle to red at the edges, and the boundary between them is a
+     surface with a name — the ionisation front.
+
+     What is still avoided is a cloud that is teal *all over*, or violet at
+     all. Those are the invention. This is a core inside a red cloud, which
+     is the arrangement the sky actually has. */
   nebulaObj = pointsFrom(CLOUDS * PER, (i, pos, sz, cl, al) => {
     const c = seeds[(i / PER) | 0];
-    /* gaussian-ish, so the cloud has a dense middle and no edge */
+    const k = i % PER;
     const g = () => (Math.random()+Math.random()+Math.random()-1.5) * 0.75;
-    const dx = g(), dy = g(), dz = g();
-    const d = Math.min(1, Math.hypot(dx, dy, dz) / 1.1);
-    pos[i*3]   = c.x + dx*c.w;
-    pos[i*3+1] = c.y + dy*c.h;
-    pos[i*3+2] = c.z + dz*c.w;
+    let u, v, wv;
+    if (k < 72) {
+      /* on a strand: three per cloud, each running the length of it and
+         bending on its own phase, with the points bunched toward the middle
+         where the gas is densest */
+      const fil = (k / 24) | 0, t = ((k % 24) + 0.5) / 24;
+      const s = (t - 0.5) * 2;
+      u = s * c.el * 0.62;
+      v = Math.sin(s * 2.6 + c.ph + fil * 2.1) * 0.42 + (fil - 1) * 0.30;
+      wv = Math.cos(s * 1.9 + c.ph * 1.7 + fil) * 0.22;
+      /* the strand has width, and it is not a wire */
+      u += g() * 0.26; v += g() * 0.20; wv += g() * 0.20;
+    } else {
+      /* and the envelope the strands are lit inside */
+      u = g() * c.el * 0.66; v = g() * 0.86; wv = g() * 0.80;
+    }
+    pos[i*3]   = c.x + (u * c.e1x + v * c.e2x) * c.w;
+    pos[i*3+1] = c.y + wv * c.h;
+    pos[i*3+2] = c.z + (u * c.e1z + v * c.e2z) * c.w;
+    /* how far out of the cloud this point is, measured in the cloud's own
+       stretched frame so an elongated cloud is not brightest at its waist */
+    const d = Math.min(1, Math.hypot(u / Math.max(0.4, c.el), v, wv) / 1.05);
     sz[i] = (70 + Math.random()*150) * (1 - d*0.55) * (R/1600);
     al[i] = (.009 + Math.random()*.018) * c.lit * (1 - d*0.7);
-    hsl(c.emission ? 352 + Math.random()*14 : 212 + Math.random()*16,
-        c.emission ? .50 : .32, c.emission ? .40 : .46).toArray(cl, i*3);
+    if (c.emission) {
+      /* the ionisation front: teal inside it, red outside, and the crossing
+         is a few tenths of the cloud rather than a line, because the front
+         is a surface seen through a great deal of gas */
+      const iz = d < 0.12 ? 0 : d > 0.46 ? 1 : (d - 0.12) / 0.34;
+      const ion = 1 - iz * iz * (3 - 2 * iz);
+      /* Blended in RGB and not round the hue wheel: red to teal the long
+         way passes through violet, and a violet nebula is the one thing this
+         file has always refused. Through RGB it passes through a washed-out
+         pink instead, which is what the transition zone actually looks like
+         where the two emissions overlap. */
+      hsl(352 + Math.random()*14, .52, .40)
+        .lerp(hsl(174 + Math.random()*10, .46, .46), ion).toArray(cl, i*3);
+    } else {
+      hsl(212 + Math.random()*16, .32, .46).toArray(cl, i*3);
+    }
   }, glowMat(700, 0, 0, true));
 }
 /* ---------- the celestial veil ----------
