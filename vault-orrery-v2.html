@@ -1791,9 +1791,9 @@ const SCALES = [
 const mult = v => v.toFixed(2) + '×';
 const offAt = (v, s) => v < 0.02 ? 'OFF' : s;
 const KNOBS = [
-  { k:'spd', g:'cosmos', label:'ORBIT SPEED',   min:0,  max:400, sc:100, def:1,   pin:1, fmt:mult },
-  { k:'bri', g:'cosmos', label:'NODE GLOW',     min:10, max:260, sc:100, def:1,   pin:1, fmt:mult },
-  { k:'lnk', g:'cosmos', label:'LINK GLOW',     min:0,  max:LNK_MAX*100, sc:100, def:.7, pin:1,
+  { k:'spd', g:'cosmos', label:'ORBIT SPEED',   min:0,  max:400, sc:100, def:.18, pin:1, fmt:mult },
+  { k:'bri', g:'cosmos', label:'NODE GLOW',     min:10, max:260, sc:100, def:2.6, pin:1, fmt:mult },
+  { k:'lnk', g:'cosmos', label:'LINK GLOW',     min:0,  max:LNK_MAX*100, sc:100, def:.05, pin:1,
     fmt:v => offAt(v, mult(v)) },
   /* ORBIT GAP used to rebuild the cosmos when the handle was let go: the
      number followed the drag, the sky changed in one cut at the end, and the
@@ -1815,20 +1815,28 @@ const KNOBS = [
      grew around them: the fog, which turned the far half grey exactly when it
      became worth looking at, and the dust disk, which the cosmos walked out
      of. Both track the reach now — see applyDepth. */
-  { k:'gap', g:'cosmos', label:'ORBIT GAP',     min:50, max:600, sc:100, def:1,   pin:1, fmt:mult },
-  /* the one knob whose slider is not its value: the step past the ceiling is
+  { k:'gap', g:'cosmos', label:'ORBIT GAP',     min:50, max:600, sc:100, def:4.37,pin:1, fmt:mult },
+  /* The one knob whose slider is not its value: the step past the ceiling is
      the off position, so "no limit" is a place on the same slider rather than
-     a separate control */
+     a separate control.
+
+     It ships at NO LIMIT. The ceiling exists because a five-thousand-note
+     vault running a spring simulation and four thousand instanced bodies will
+     crawl on an integrated GPU, and that is still true — what has changed is
+     which way the default should err. A cap that quietly drops half a vault
+     answers "show me my notes" with a subset and says so in one line of a
+     panel most people never open; a slow first minute is at least a problem
+     whose cause is visible, and the slider is right there. */
   { k:'maxNodes', g:'cosmos', label:'MAX NODES', min:500, max:MAX_NODES_CEIL+500, step:500,
-    sc:1, def:3000, pin:1, i18n:'cap.label',
+    sc:1, def:0, pin:1, i18n:'cap.label',
     get: () => SET.maxNodes > 0 ? SET.maxNodes : MAX_NODES_CEIL + 500,
     set: raw => { SET.maxNodes = raw > MAX_NODES_CEIL ? 0 : raw; },
     fmt: () => SET.maxNodes > 0 ? String(SET.maxNodes) : T('cap.off') },
   /* FLAT rather than 0.00×, because zero here is a shape — the arcs lie down
      into the orbital plane and the bow carries them alone — not an absence */
-  { k:'arc', g:'cosmos', label:'ARC HEIGHT',    min:0,  max:ARC_MAX*100, sc:100, def:1,
+  { k:'arc', g:'cosmos', label:'ARC HEIGHT',    min:0,  max:ARC_MAX*100, sc:100, def:0,
     fmt:v => v < 0.02 ? 'FLAT' : mult(v) },
-  { k:'ten', g:'cosmos', label:'LINK TENSION',  min:0,  max:100, sc:100, def:.5, fmt:v => v.toFixed(2) },
+  { k:'ten', g:'cosmos', label:'LINK TENSION',  min:0,  max:100, sc:100, def:1, fmt:v => v.toFixed(2) },
   /* RECENT WORK lights a note by when it was last touched.
 
      The knob is the window rather than the intensity, because the window is
@@ -1842,11 +1850,11 @@ const KNOBS = [
   { k:'frs', g:'cosmos', label:'RECENT WORK',   min:0,  max:90,  sc:1,   def:14,
     fmt:v => !freshKnown() ? 'N/A' : v < 0.5 ? 'OFF' : Math.round(v) + 'd',
     apply: () => computeFresh() },
-  { k:'trl', g:'cosmos', label:'ORBIT TRAILS',  min:0,  max:100, sc:100, def:.7,
+  { k:'trl', g:'cosmos', label:'ORBIT TRAILS',  min:0,  max:100, sc:100, def:.13,
     fmt:v => offAt(v, v.toFixed(2)) },
-  { k:'grv', g:'cosmos', label:'NODE GRAVITY',  min:0,  max:300, sc:100, def:1,
+  { k:'grv', g:'cosmos', label:'NODE GRAVITY',  min:0,  max:300, sc:100, def:1.48,
     fmt:v => offAt(v, mult(v)) },
-  { k:'spr', g:'cosmos', label:'ORBIT SPREAD',  min:30, max:320, sc:100, def:1, fmt:mult },
+  { k:'spr', g:'cosmos', label:'ORBIT SPREAD',  min:30, max:320, sc:100, def:3.2, fmt:mult },
   /* Every orbit the layout lays down is tilted, and every one of them is
      tilted about the same world axis — there is no ascending node to turn
      them around, so the inclinations differ in amount and never in
@@ -1872,7 +1880,7 @@ const KNOBS = [
   /* DISC at zero and SPHERE at one, and neither is an amount of anything —
      they are the two shapes, and the numbers in between are the one opening
      into the other. See orbBasis. */
-  { k:'sph', g:'cosmos', label:'ORBIT SHELL',  min:0,  max:100, sc:100, def:0,
+  { k:'sph', g:'cosmos', label:'ORBIT SHELL',  min:0,  max:100, sc:100, def:1,
     fmt:v => v < 0.005 ? 'DISC' : v > 0.995 ? 'SPHERE' : v.toFixed(2) },
   /* ---- how big the bodies are drawn -------------------------------------
      A body's radius is its citation count, and that is worth reading, so
@@ -1886,7 +1894,7 @@ const KNOBS = [
      The floor is 0.30x rather than zero. A body scaled to nothing is still
      pickable, still labelled, still locked onto by the ship's reticle, and a
      cosmos of invisible targets is a bug report, not a setting. */
-  { k:'szSun', g:'bodies', label:'SUN SIZE',    min:30, max:300, sc:100, def:1,
+  { k:'szSun', g:'bodies', label:'SUN SIZE',    min:30, max:300, sc:100, def:1.98,
     fmt:mult, apply: () => applySizes() },
   /* ---- the folder stars ------------------------------------------------
      A system's star is the middle term of the whole picture: the hub is the
@@ -1902,11 +1910,11 @@ const KNOBS = [
      only one of them. The clearance the planets orbit at follows the size —
      see applySizes — so growing a star pushes its own system outward rather
      than growing over it. */
-  { k:'szSys', g:'bodies', label:'SYSTEM SIZE',  min:30, max:400, sc:100, def:1,
+  { k:'szSys', g:'bodies', label:'SYSTEM SIZE',  min:30, max:400, sc:100, def:1.1,
     fmt:mult, apply: () => applySizes() },
-  { k:'szPl',  g:'bodies', label:'PLANET SIZE', min:30, max:300, sc:100, def:1,
+  { k:'szPl',  g:'bodies', label:'PLANET SIZE', min:30, max:300, sc:100, def:.75,
     fmt:mult, apply: () => applySizes() },
-  { k:'szMn',  g:'bodies', label:'MOON SIZE',   min:30, max:300, sc:100, def:1,
+  { k:'szMn',  g:'bodies', label:'MOON SIZE',   min:30, max:300, sc:100, def:.75,
     fmt:mult, apply: () => applySizes() },
   /* ---- and how brightly each class burns -------------------------------
      NODE GLOW moves all of them at once and stays: it is the master. These
@@ -1917,24 +1925,24 @@ const KNOBS = [
      Zero is OFF and says so, except on the hub: a sun turned off is a cosmos
      with no light source in it, so its floor is a dim ember rather than
      nothing. */
-  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:1, fmt:mult },
-  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:1,
+  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:3, fmt:mult },
+  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:1.26,
     fmt:v => offAt(v, mult(v)) },
   /* Planets and moons run to 8x where the sun and the folder stars stop at
      3x, and the asymmetry is the point: those two are light sources and the
      other two are lit, so a planet asked for more brightness has much further
      to climb before it reads at all. Eight is where the halo saturates. */
-  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:1,
+  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:3,
     fmt:v => offAt(v, mult(v)) },
-  { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:1,
+  { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:3,
     fmt:v => offAt(v, mult(v)) },
-  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:1,
+  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:.66,
     fmt:v => offAt(v, mult(v)), apply: () => applyStarfield() },
-  { k:'thr', g:'cosmos', label:'SHIP THRUST',   min:20, max:400, sc:100, def:1, fmt:mult },
+  { k:'thr', g:'cosmos', label:'SHIP THRUST',   min:20, max:400, sc:100, def:.2, fmt:mult },
 
-  { k:'blm', g:'light',  label:'BLOOM',         min:0,  max:BLM_MAX*100, sc:100, def:.6,
+  { k:'blm', g:'light',  label:'BLOOM',         min:0,  max:BLM_MAX*100, sc:100, def:.7,
     fmt:v => offAt(v, mult(v)) },
-  { k:'ray', g:'light',  label:'SUN RAYS',      min:0,  max:150, sc:100, def:.5,
+  { k:'ray', g:'light',  label:'SUN RAYS',      min:0,  max:150, sc:100, def:.7,
     fmt:v => offAt(v, mult(v)) },
   /* The scattering halo, which is the whole of what a star looks like once
      its disc is too small to be one. Separate from SUN RAYS because the rays
@@ -1944,7 +1952,7 @@ const KNOBS = [
      compromise between them. */
   { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:200, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
-  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:.55,
+  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:0,
     fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
   /* One knob for two effects, because they are one effect: the cockpit
      shaking and the frame smearing radially are both "how hard is this being
@@ -1952,7 +1960,7 @@ const KNOBS = [
      wants the other off as well. It lives in LIGHT rather than COSMOS
      because half of it is a pass in the composite — and because someone
      turning the grade down is exactly the person who wants this down too. */
-  { k:'mot', g:'light',  label:'SPEED FEEL',    min:0,  max:150, sc:100, def:.7,
+  { k:'mot', g:'light',  label:'SPEED FEEL',    min:0,  max:150, sc:100, def:.14,
     fmt:v => offAt(v, mult(v)) },
 
   /* ---- sound ----------------------------------------------------------
