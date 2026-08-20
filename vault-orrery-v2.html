@@ -88,18 +88,39 @@ canvas{display:block}
 #ctl .ttl{cursor:grab;user-select:none;pointer-events:auto}
 #ctl .ttl:active{cursor:grabbing}
 #ctl{position:fixed}
-/* ---------- the resize grip ----------
-   Bottom right, and drawn as two hairlines rather than as a control. It is
-   the corner of a pane that can be pulled; anything more emphatic would be a
-   button sitting in the middle of the sliders' own row. */
-#ctlgrip{position:absolute;right:0;bottom:0;width:16px;height:16px;
-  cursor:nwse-resize;pointer-events:auto;z-index:2}
-#ctlgrip:before,#ctlgrip:after{content:"";position:absolute;right:3px;
+/* ---------- the resize grips ----------
+   All four corners, each drawn as two hairlines meeting at its own angle —
+   so the mark points outward from the pane whichever corner it is on, the
+   way the corner of a frame does. Anything more emphatic would be four
+   buttons sitting around a panel of sliders.
+
+   Sixteen pixels square is the hit area; the drawn mark is nine, inset by
+   three, which leaves the visible part comfortably inside a target big
+   enough to find without aiming. */
+.ctlgrip{position:absolute;width:16px;height:16px;pointer-events:auto;z-index:2}
+.ctlgrip:before,.ctlgrip:after{content:"";position:absolute;
   background:rgba(92,225,255,.28);transition:background .15s}
-#ctlgrip:before{bottom:3px;width:9px;height:1px}
-#ctlgrip:after{bottom:3px;width:1px;height:9px}
-#ctlgrip:hover:before,#ctlgrip:hover:after{background:var(--cy)}
-#ctl.fold #ctlgrip{display:none}
+.ctlgrip:hover:before,.ctlgrip:hover:after{background:var(--cy)}
+/* the horizontal arm and the vertical arm of each corner */
+.ctlgrip:before{width:9px;height:1px}
+.ctlgrip:after{width:1px;height:9px}
+.ctlgrip.se{right:0;bottom:0;cursor:nwse-resize}
+.ctlgrip.se:before{right:3px;bottom:3px}
+.ctlgrip.se:after{right:3px;bottom:3px}
+.ctlgrip.sw{left:0;bottom:0;cursor:nesw-resize}
+.ctlgrip.sw:before{left:3px;bottom:3px}
+.ctlgrip.sw:after{left:3px;bottom:3px}
+.ctlgrip.ne{right:0;top:0;cursor:nesw-resize}
+.ctlgrip.ne:before{right:3px;top:3px}
+.ctlgrip.ne:after{right:3px;top:3px}
+.ctlgrip.nw{left:0;top:0;cursor:nwse-resize}
+.ctlgrip.nw:before{left:3px;top:3px}
+.ctlgrip.nw:after{left:3px;top:3px}
+/* The top pair sit over the title bar, which is itself a handle. They win —
+   they are sixteen pixels in the very corner and the bar is the rest of the
+   width — but the bar has to stop claiming the pointer underneath them. */
+.ctlgrip.ne,.ctlgrip.nw{z-index:3}
+#ctl.fold .ctlgrip{display:none}
 /* While a drag is running the pointer must not be able to select the labels
    it is passing over, and the canvas underneath must not take the move as an
    orbit. Both are one class on the body. */
@@ -1950,7 +1971,7 @@ const KNOBS = [
      this is the star itself being too bright for the space between you and
      it — they peak at opposite ranges and one knob would have had to be a
      compromise between them. */
-  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:200, sc:100, def:1,
+  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
   { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:0,
     fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
@@ -1989,7 +2010,7 @@ const KNOBS = [
      Its tone is a constant now. "What note is the room humming" is one of
      those settings that is interesting exactly once and is then either right
      or forgotten, and it cost a slider in a panel that had thirteen. */
-  { k:'sDrone', g:'sound', label:'AMBIENT',     min:0, max:200, sc:100, def:1,
+  { k:'sDrone', g:'sound', label:'AMBIENT',     min:0, max:200, sc:100, def:.2,
     fmt:v => offAt(v, mult(v)), apply: () => audioApply() },
 ];
 const KNOB_OF = {};
@@ -4439,17 +4460,40 @@ void main(){
       const r = Math.sqrt(dx*dx + dy*dy);
       let a = 0;
       if (r < 1) {
-        /* the wide scattering skirt, and a small hot centre on top of it */
-        a = 0.30 / (1 + r * r * 190) + 0.85 / (1 + r * r * 4200);
+        /* Exponentials, not reciprocals.
+
+           The first cut used 1/(1 + r²k) with k at 190 and 4200, and those
+           numbers put essentially all of the brightness inside the first
+           twentieth of the radius: at r = 0.05 the falloff is already down to
+           a quarter and by r = 0.2 it is a fortieth. Scaled to a sprite a
+           third of the frame across, that is a bright dot in the middle of a
+           large empty card — which is exactly what it looked like, and why
+           there appeared to be no halo at all.
+
+           A scattering halo does not fall off like that. It has a bright core
+           and then a genuinely wide skirt that is still visible several
+           radii out, which is a sum of exponentials — one narrow, one broad,
+           one very broad. These three put a third of the light outside half
+           the radius, which is where a halo actually lives. */
+        a = 0.42 * Math.exp(-r * 2.4)
+          + 0.34 * Math.exp(-r * 6.5)
+          + 0.30 * Math.exp(-r * 17.0);
+        /* A whisper of a ring, well out. Nothing in a real sky puts a hard
+           edge here, but a completely featureless skirt reads as a lens
+           artefact rather than as air — the eye wants one thing to catch on.
+           At three per cent it is under the threshold of being seen and over
+           the threshold of being felt. */
+        a += 0.030 * Math.exp(-Math.pow((r - 0.46) * 7.0, 2.0));
         /* taken to nothing exactly at the edge, so the sprite has no rim */
         a *= 1 - r * r;
       }
       const o = (py * G + px) * 4;
-      /* warm at the centre, cooling outward — scattered light is redder the
-         further it has been scattered, which is why a low sun is orange */
+      /* Warm at the centre, cooling outward — scattered light is redder the
+         further it has been scattered, which is why a low sun is orange. The
+         cooling runs further out now that there is a further out to run to. */
       gd[o]   = 255;
-      gd[o+1] = 236 - Math.min(70, r * 90);
-      gd[o+2] = 205 - Math.min(130, r * 175);
+      gd[o+1] = 240 - Math.min(88, r * 92);
+      gd[o+2] = 214 - Math.min(150, r * 168);
       gd[o+3] = Math.max(0, Math.min(255, a * 255)) | 0;
     }
   }
@@ -4559,19 +4603,56 @@ function ringTexture() {
    so without a key of its own a patched material and an unpatched one with
    the same settings can be handed the same program — and which one gets the
    alpha then depends on which was drawn first. */
-function starMat(opt) {
+/* `hot` turns the plain instanced body into an emitter: white through the
+   middle, the system's colour surviving only at the limb, and driven past 1.0
+   at the centre so the bloom pass has something to find.
+
+   A folder star is a *star*. It lights its own planets — starLightAt has
+   pointed at it for as long as there have been folder stars — and it was
+   drawn as a pastel ball with the system colour mixed 55% toward white, which
+   is what a lit rock looks like, not what a source looks like. Nothing about
+   a source is its own colour in the middle: a flame, a filament and a sun are
+   all white at the centre and take their colour at the edge, where there is
+   less of them in the way.
+
+   The fresnel is computed in the vertex shader because MeshBasicMaterial has
+   no normal varying — it has no lighting to need one. The instance rotation
+   has to go on before the normal matrix does, and for the core it is the
+   identity anyway; putting it in costs nothing and means the shell and the
+   rings could use this too. */
+function starMat(opt, hot) {
   const m = new THREE.MeshBasicMaterial(Object.assign({
     color: 0xffffff, transparent: true, opacity: 1 }, opt));
   m.onBeforeCompile = sh => {
     sh.vertexShader = 'attribute float aAlpha;\nvarying float vStarA;\n' +
+      (hot ? 'varying float vFres;\n' : '') +
       sh.vertexShader.replace('void main() {', 'void main() {\n\tvStarA = aAlpha;');
+    if (hot) sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>',
+      '#include <project_vertex>\n' +
+      '\tvec3 sNrm = normal;\n' +
+      '#ifdef USE_INSTANCING\n\tsNrm = mat3( instanceMatrix ) * sNrm;\n#endif\n' +
+      '\tvFres = 1.0 - abs( dot( normalize( normalMatrix * sNrm ),\n' +
+      '\t                       normalize( -mvPosition.xyz ) ) );');
     sh.fragmentShader = 'varying float vStarA;\n' +
+      (hot ? 'varying float vFres;\n' : '') +
       sh.fragmentShader.replace(
         'vec4 diffuseColor = vec4( diffuse, opacity );',
         'vec4 diffuseColor = vec4( diffuse, opacity * vStarA );\n' +
-        '\tif ( diffuseColor.a < 0.002 ) discard;');
+        '\tif ( diffuseColor.a < 0.002 ) discard;' +
+        (hot
+          /* 0.55 rather than 1.0: a linear ramp puts the white in a small cap
+             facing the camera and leaves most of the disc coloured, which is
+             a coloured ball with a highlight on it. The root spreads the
+             white over nearly the whole face and lets the colour have the
+             last tenth, which is where a source keeps its colour. */
+          ? '\n\tfloat sHot = pow( 1.0 - vFres, 0.55 );\n' +
+            '\tdiffuseColor.rgb = mix( diffuseColor.rgb, vec3( 1.0 ), sHot );\n' +
+            /* past 1.0 on purpose. The bloom's bright pass is a threshold, and
+               a star that never crosses it is a star that does not glow. */
+            '\tdiffuseColor.rgb *= 1.0 + sHot * sHot * 1.9;'
+          : ''));
   };
-  m.customProgramCacheKey = () => 'starAlpha';
+  m.customProgramCacheKey = () => (hot ? 'starHot' : 'starAlpha');
   return m;
 }
 
@@ -4645,7 +4726,7 @@ if (cats.length) {
 
   /* transparent even at rest: switching a system off in the legend has to be
      able to take its light with it, and an opaque material cannot be dimmed */
-  starCore  = new THREE.InstancedMesh(coreGeo,  starMat({}), NS);
+  starCore  = new THREE.InstancedMesh(coreGeo,  starMat({}, true), NS);
   starShell = new THREE.InstancedMesh(shellGeo, starMat({ wireframe:true,
     blending:THREE.AdditiveBlending, depthWrite:false }), NS);
   starRing  = new THREE.InstancedMesh(ringGeo,  starMat({ side:THREE.DoubleSide,
@@ -4673,9 +4754,11 @@ if (cats.length) {
     c.sx = 0; c.sy = 0;
     c.rz = Math.random()*TAU;
     c.rx = Math.PI/2 - (c.tier?0.1:0.36);
-    /* the core reads as the hot centre of the star, so it is the system's
-       colour pulled most of the way to white */
-    const cc = c.color.clone().lerp(new THREE.Color(0xffffff), .55);
+    /* Nearly white before the shader has even started. Between this and the
+       fresnel above it, what is left of the folder's hue is a rim — which is
+       the right amount: the legend's promise is kept by the ring, the glow
+       and the label, and a star is not the place to keep it. */
+    const cc = c.color.clone().lerp(new THREE.Color(0xffffff), .86);
     starCore .setColorAt(i, cc);
     starShell.setColorAt(i, c.color);
     starRing .setColorAt(i, c.color);
@@ -4821,7 +4904,7 @@ gridPlane = (function mountGrid(){
     c.gz0 = c.R * (c.tier===0 ? 17 : 10);
     sz[i] = c.gz0;
     al[i] = c.tier===0 ? .85 : .5;
-    c.color.clone().lerp(new THREE.Color(0xffffff), .3).toArray(cl, i*3);
+    c.color.clone().lerp(new THREE.Color(0xffffff), .62).toArray(cl, i*3);
   });
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos,3));
@@ -7424,6 +7507,104 @@ function mindStep(dt) {
    shrink toward zero goes through here. */
 const rad0 = v => v > 0 ? v : 0;
 
+/* ---- the case the instrument sits in ----------------------------------
+   The plate was stripped back to the graph and nothing else, which fixed the
+   problem it had — four layers of scenery in front of an answer about six
+   links — and left it plain. Plain is not the same as fine. What follows is
+   ornament, and every piece of it obeys one rule: it is *structure* that has
+   been made beautiful, never decoration added beside the structure. The rings
+   were already there and are now engraved; the star was already there and now
+   sits in a setting; the light was already coming from the middle and now
+   passes through something on its way out.
+
+   The accent is warm. Everything on this plate is cyan, because everything in
+   the cosmos is cyan, and a single warm note against a cold field is the
+   oldest trick there is for making a cold field look expensive rather than
+   merely cold. It is used at alphas between two and eight per cent — this is
+   gilding, and gilding that announces itself is brass. */
+const MM_GOLD = '198,163,92';
+const MM_GOLD_HI = '241,214,150';
+
+/* ---- guilloche ----
+   The engine-turned pattern on the face of a good watch: fine concentric
+   lines, close enough together that the eye reads a surface rather than the
+   lines themselves. Here it is drawn on the orbit rings the map already has,
+   as a doublet — a broad, almost invisible band with a hairline running
+   along its centre — plus a tick at each of twelve divisions.
+
+   Twelve, and not the twenty-four the old version had, and only on the ring
+   itself rather than standing off it. A tick is a graduation and a graduation
+   is a claim that the position between two of them means something; on a
+   plate where the angle round the ring is arbitrary, few and small is the
+   honest amount. */
+function mmGuilloche(R, AX, a, iz, gr) {
+  const rx = rad0(R * AX), ry = rad0(R);
+  /* the broad band under the hairline: this is the part that reads as a
+     machined surface rather than as a drawn circle */
+  mctx.strokeStyle = 'rgba(' + MM_GOLD + ',' + (a * 0.22 * gr).toFixed(4) + ')';
+  mctx.lineWidth = 5 * iz;
+  mctx.beginPath(); mctx.ellipse(0, 0, rx, ry, 0, 0, TAU); mctx.stroke();
+  /* the hairline itself, cool — the ring belongs to the cosmos and the gold
+     is only the light falling on it */
+  mctx.strokeStyle = 'rgba(150,220,255,' + (a * gr).toFixed(4) + ')';
+  mctx.lineWidth = iz;
+  mctx.beginPath(); mctx.ellipse(0, 0, rx, ry, 0, 0, TAU); mctx.stroke();
+  /* and a companion hairline just inside it. Two lines a hair apart is the
+     single most reliable signal of a drawn instrument as against a drawn
+     diagram, and it costs one more ellipse. */
+  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',' + (a * 0.5 * gr).toFixed(4) + ')';
+  mctx.beginPath();
+  mctx.ellipse(0, 0, rad0(rx - 3 * iz), rad0(ry - 3 * iz), 0, 0, TAU);
+  mctx.stroke();
+  /* the divisions */
+  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',' + (a * 1.5 * gr).toFixed(4) + ')';
+  mctx.lineWidth = 1.1 * iz;
+  for (let k = 0; k < 12; k++) {
+    const th = k / 12 * TAU;
+    const c = Math.cos(th), si = Math.sin(th);
+    const len = (k % 3 === 0 ? 6 : 3) * iz;
+    mctx.beginPath();
+    mctx.moveTo(c * (rx - len), si * (ry - len));
+    mctx.lineTo(c * rx, si * ry);
+    mctx.stroke();
+  }
+}
+
+/* ---- the setting ----
+   A gem is not simply a bright thing; it is a bright thing that something is
+   holding. The claws are what make a stone read as *set* rather than as
+   printed on, and four of them at the diagonals stay clear of the ring's own
+   twelve divisions, which sit on the axes.
+
+   Drawn under the star rather than over it, so the star's corona washes over
+   the mount the way light does over metal it is sitting in. */
+function mmSetting(x, y, pr, iz, now) {
+  const spin = now * 0.00007;
+  mctx.save();
+  mctx.translate(x, y);
+  mctx.rotate(spin);
+  /* the bezel: two fine rings with a gap, the outer one heavier */
+  mctx.strokeStyle = 'rgba(' + MM_GOLD + ',.30)';
+  mctx.lineWidth = 1.6 * iz;
+  mctx.beginPath(); mctx.arc(0, 0, rad0(pr * 1.62), 0, TAU); mctx.stroke();
+  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',.20)';
+  mctx.lineWidth = iz;
+  mctx.beginPath(); mctx.arc(0, 0, rad0(pr * 1.44), 0, TAU); mctx.stroke();
+  /* the claws */
+  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',.34)';
+  mctx.lineWidth = 2.2 * iz;
+  mctx.lineCap = 'round';
+  for (let k = 0; k < 4; k++) {
+    const th = Math.PI / 4 + k * Math.PI / 2;
+    const c = Math.cos(th), si = Math.sin(th);
+    mctx.beginPath();
+    mctx.moveTo(c * pr * 1.10, si * pr * 1.10);
+    mctx.lineTo(c * pr * 1.72, si * pr * 1.72);
+    mctx.stroke();
+  }
+  mctx.restore();
+}
+
 function mmDrawSky(now) {
   if (!MM.sky) return;
   /* the field lags the pan by a twentieth, which is enough to say "far away"
@@ -7459,6 +7640,30 @@ function mindDraw(now) {
 
   mmDrawSky(now);
 
+  /* A breath of warmth out of the middle of the plate, over the starfield and
+     under everything else.
+
+     The star at the centre is the only light source in this picture, and
+     until now it lit the nodes and nothing else — the space between them was
+     the same flat black at the centre as at the corners, which is what makes
+     a rendering look like a rendering. This is that light arriving on the air
+     between the reader and the plate. Warm, because the star is; enormous and
+     very faint, because air is; and painted in screen space rather than plate
+     space, so panning does not drag the light source around with the graph. */
+  {
+    const cx = w/2 + MM.px * 0.35, cy = h/2 + MM.py * 0.35;
+    const rr = Math.max(w, h) * 0.62;
+    const wg = mctx.createRadialGradient(cx, cy, 0, cx, cy, rr);
+    wg.addColorStop(0.00, 'rgba(255,226,168,.050)');
+    wg.addColorStop(0.30, 'rgba(210,180,140,.022)');
+    wg.addColorStop(0.70, 'rgba(120,150,190,.008)');
+    wg.addColorStop(1.00, 'rgba(0,0,0,0)');
+    mctx.globalCompositeOperation = 'lighter';
+    mctx.fillStyle = wg;
+    mctx.fillRect(0, 0, w, h);
+    mctx.globalCompositeOperation = 'source-over';
+  }
+
   mctx.save();
   mctx.translate(w/2 + MM.px, h/2 + MM.py);
   mctx.scale(MM.zoom, MM.zoom);
@@ -7481,11 +7686,11 @@ function mindDraw(now) {
   const gr = clamp((age - 0.75) / 1.1, 0, 1);
   if (gr > 0.004) {
     const AX = MM.ax;
+    /* the inner ring carries the most weight and the outer ones step down,
+       which is what gives the three of them a reading order */
+    MM.rings.forEach((R, ri) => mmGuilloche(R, AX, [0.15, 0.11, 0.08][ri] || 0.07,
+                                            iz, gr));
     mctx.lineWidth = iz;
-    MM.rings.forEach(R => {
-      mctx.strokeStyle = 'rgba(150,220,255,' + (0.11 * gr).toFixed(4) + ')';
-      mctx.beginPath(); mctx.ellipse(0, 0, rad0(R*AX), rad0(R), 0, 0, TAU); mctx.stroke();
-    });
   }
 
   /* The ring of light that used to leave the star on open is gone with the
@@ -7721,7 +7926,11 @@ function mindDraw(now) {
     const [R, G, B] = mmRGB(n.i);
     mctx.globalAlpha = (n.root ? 1 : ease) * dim;
 
-    if (n.root) mmDrawStar(n, pr, R, G, B, now);
+    if (n.root) {
+      /* the mount goes under the stone */
+      mmSetting(n.x, n.y, pr, iz, now);
+      mmDrawStar(n, pr, R, G, B, now);
+    }
     else {
       /* halo first, then the lit sphere turned so its bright limb faces the
          star — the light in this view comes from the middle of the plate */
@@ -7736,6 +7945,23 @@ function mindDraw(now) {
       mctx.drawImage(mmBody(R, G, B), -s, -s, s * 2, s * 2);
       mctx.restore();
       mmDrawMoons(n, pr, born, iz);
+    }
+
+    /* A collet on the node under the pointer — the same idea as the star's
+       setting, one size down and without the claws. It is drawn for hover as
+       well as for selection, because on this plate hovering *is* reading, and
+       a mark that appears only after a click tells you what you already knew.
+
+       Under the selection arcs rather than over them: the arcs are the state
+       and this is the mount, and a mount drawn over its own stone is a bad
+       piece of jewellery. */
+    if ((isHov || isSel) && !n.root) {
+      mctx.strokeStyle = 'rgba(' + MM_GOLD + ',' + (isSel ? .34 : .22) + ')';
+      mctx.lineWidth = 1.2 * iz;
+      mctx.beginPath(); mctx.arc(n.x, n.y, rad0(pr * 1.95), 0, TAU); mctx.stroke();
+      mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',' + (isSel ? .22 : .13) + ')';
+      mctx.lineWidth = iz;
+      mctx.beginPath(); mctx.arc(n.x, n.y, rad0(pr * 2.20), 0, TAU); mctx.stroke();
     }
 
     if (isSel && !n.root) {
@@ -8015,6 +8241,28 @@ function mmDrawLabels(q, iz) {
                    : n.hop === 2 ? 'rgba(200,226,244,.6)'
                    : 'rgba(228,248,255,.86)';
     mctx.fillText(nm, ax, ay);
+    /* The subject of the map gets a rule under it, in the same gold as the
+       rings, tapered to nothing at both ends.
+
+       A title with a line under it is the oldest typographic way of saying
+       "this one is the thing" — and every alternative here is worse: making
+       it larger fights the star it sits beneath, making it brighter puts it
+       in the same register as the selection, and a box around it would be a
+       label on a plate that has no other boxes. The taper is what keeps it
+       from reading as a table cell: a rule with hard ends is a border, and a
+       rule that fades is an underline. */
+    if (n.root) {
+      const uy = ay + hh * 1.02, uw = Math.max(w, 26 * iz) * 0.62;
+      const ug = mctx.createLinearGradient(ax - uw, 0, ax + uw, 0);
+      ug.addColorStop(0.00, 'rgba(' + MM_GOLD + ',0)');
+      ug.addColorStop(0.50, 'rgba(' + MM_GOLD_HI + ',.62)');
+      ug.addColorStop(1.00, 'rgba(' + MM_GOLD + ',0)');
+      mctx.strokeStyle = ug;
+      mctx.lineWidth = 1.1 * iz;
+      mctx.beginPath();
+      mctx.moveTo(ax - uw, uy); mctx.lineTo(ax + uw, uy);
+      mctx.stroke();
+    }
   });
   mctx.globalAlpha = 1;
 }
@@ -10911,17 +11159,30 @@ function frameLoop(now) {
          px is the disc's radius in pixels. Below about forty it starts to
          matter; by two it is the whole of what you can see. */
       const px = (RAD[coreIdx] || 17) * glarePx / Math.max(1, d);
-      const far = clamp((40 - px) / 38, 0, 1);
-      const amt = SET.glare * far * far * ig;
+      /* From ninety pixels rather than forty, and linear rather than squared.
+
+         Squaring a ramp that only opened at forty pixels meant the halo was
+         still at a tenth of its strength when the disc was fifteen pixels
+         across — which is most of the range anybody looks at this from. The
+         effect existed and was never seen. It comes up gently from the point
+         where the disc stops being a disc you can read a face on, and it is
+         at full strength by the time the star is a few pixels. */
+      const far = clamp((90 - px) / 80, 0, 1);
+      const amt = SET.glare * far * ig;
       glareObj.visible = amt > 0.004;
       if (glareObj.visible) {
         glareObj.position.copy(coronaObj.position);
         /* Grows with distance rather than with the star. Held to a share of
            the frame at the top end — a scattering halo that fills the view
-           is a white screen, and a white screen is not a picture of a sun. */
-        const span = clamp(d * 0.30, base * 1.6, d * 0.55);
+           is a white screen, and a white screen is not a picture of a sun.
+
+           Wider than it was, because the skirt is now doing the work: with
+           the old falloff the sprite could be enormous and still read as a
+           dot, so its size was set by what looked safe rather than by what
+           the halo needed. */
+        const span = clamp(d * 0.52, base * 2.2, d * 0.88);
         glareObj.scale.setScalar(span);
-        glareObj.material.opacity = Math.min(0.92, amt * 0.80);
+        glareObj.material.opacity = Math.min(0.95, amt * 0.78);
       }
     }
   }
@@ -11295,18 +11556,59 @@ function deckPlace(x, y, w) {
   };
   layoutHUD();
 }
+/* Which way each corner pulls.
+
+   `sx` is which edge of the deck the pointer is holding: -1 for the left,
+   +1 for the right. A right-hand corner adds the pointer's travel to the
+   width and leaves x alone; a left-hand one subtracts it from the width and
+   moves x by the same amount, which is what makes the far edge stay put
+   while the near one follows the hand. That is the whole of a left-edge
+   resize, and it is the half that a single bottom-right grip could not do.
+
+   `sy` is the same question about the vertical, and it is *not* used to set
+   a height — the deck's height is its contents, as it has always been. What
+   a top-corner drag does with dy is move the deck: pulling the top-left
+   corner up and out widens the deck and lifts it, which is what every window
+   in every desktop does and what makes the corner feel like a corner rather
+   than like a width slider that happens to be in the wrong place.
+
+   Four corners rather than four edges, deliberately. An edge handle on the
+   top would be the title bar, which already moves the deck, and one on the
+   bottom would be a height that does not exist. */
+const DECK_CORNERS = [
+  ['nw', -1, -1], ['ne',  1, -1],
+  ['sw', -1,  1], ['se',  1,  1],
+];
 {
   const ctl = $('ctl'), tl = $('ctltl');
   /* Where the deck is right now, in the numbers deckPlace wants — read off
      the element rather than off SET, so the first drag starts from wherever
-     the automatic layout had left it instead of jumping to a default. */
-  const here = () => ({ x: ctl.offsetLeft, y: ctl.offsetTop, w: ctl.offsetWidth });
-  let mode = 0, ox = 0, oy = 0, base = null, moved = 0;
+     the automatic layout had left it instead of jumping to a default.
 
-  const grip = document.createElement('div');
-  grip.id = 'ctlgrip';
-  grip.title = 'DRAG TO RESIZE';
-  ctl.appendChild(grip);
+     The correction is the whole reason this is a function. While the deck is
+     still placed automatically its CSS left is the *centre* — that rule
+     carries translateX(-50%) — and offsetLeft reports the layout position
+     without the transform applied. So the first drag off the automatic layout
+     read a left edge half a deck's width to the right of the real one, and
+     the deck jumped four hundred pixels the instant it was touched. Once it
+     has been placed by hand the transform is none and offsetLeft *is* the
+     left edge, which is why this cannot simply subtract half the width every
+     time. */
+  const here = () => ({
+    x: ctl.offsetLeft - (SET.deckAt ? 0 : ctl.offsetWidth / 2),
+    y: ctl.offsetTop, w: ctl.offsetWidth });
+  let mode = 0, ox = 0, oy = 0, base = null, moved = 0, sx = 1, sy = 1;
+
+  DECK_CORNERS.forEach(([name, gx, gy]) => {
+    const grip = document.createElement('div');
+    grip.className = 'ctlgrip ' + name;
+    grip.title = 'DRAG TO RESIZE';
+    grip.addEventListener('pointerdown', e => {
+      sx = gx; sy = gy;
+      start(e, 2);
+    });
+    ctl.appendChild(grip);
+  });
 
   deckDragMove = e => {
     if (!mode) return;
@@ -11318,7 +11620,20 @@ function deckPlace(x, y, w) {
     if (mode === 1) {
       moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
       deckPlace(base.x + dx, base.y + dy, base.w);
-    } else deckPlace(base.x, base.y, base.w + dx);
+      return;
+    }
+    /* Clamp the width first and derive x from the width that was actually
+       taken, not from the width that was asked for. Doing it the other way
+       round lets a left-edge drag past the minimum keep walking x leftward
+       while the width sits at the floor — the deck slides out from under the
+       pointer and never comes back. */
+    const wWant = base.w + dx * sx;
+    const w = clamp(wWant, DECK_MIN_W, Math.max(DECK_MIN_W, innerWidth - 24));
+    const x = sx < 0 ? base.x + (base.w - w) : base.x;
+    /* the top corners carry the deck with them; the bottom ones do not,
+       because there is no bottom edge to hold still */
+    const y = sy < 0 ? base.y + dy : base.y;
+    deckPlace(x, y, w);
   };
   deckDragUp = () => {
     if (!mode) return;
@@ -11342,7 +11657,6 @@ function deckPlace(x, y, w) {
     if (e.target === $('ctlfold')) return;      // that one still folds
     start(e, 1);
   });
-  grip.addEventListener('pointerdown', e => start(e, 2));
   /* A title bar that both moves the deck and folds it has to tell the two
      apart, and the only thing that separates them is whether the pointer
      travelled. Four pixels is under the accidental movement in a click and
