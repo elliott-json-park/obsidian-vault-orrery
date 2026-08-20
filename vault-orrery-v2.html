@@ -4397,11 +4397,35 @@ float fbm(vec3 p){
   return s;
 }
 /* the star turns, and the things that belong to the star turn with it: the
-   spots, the streamers, the loops. Granulation does not — it boils in place. */
+   spots, the streamers, the loops. Granulation does not — it boils in place.
+
+   And it does not turn as one piece. A star is a gas, so there is nothing to
+   make one latitude keep step with another, and the Sun's equator goes round
+   in 24.5 days while its poles take 34. The law is measured and fitted:
+
+     Omega(phi) = A + B sin²phi + C sin⁴phi
+
+   with A = 14.713, B = -2.396, C = -1.787 degrees a day (Snodgrass and
+   Ulrich, 1990). Divided through by A that is the factor below, one at the
+   equator and 0.716 at the pole.
+
+   This is not a detail. Differential rotation is *why* a star has spots at
+   all: it drags the frozen-in magnetic field round faster at the equator
+   than at the poles, winding a poloidal field into a toroidal one turn by
+   turn until the tubes are strong enough to become buoyant and break the
+   surface, which is what a sunspot is. Drawing spots on a rigidly rotating
+   ball is drawing the effect without the cause — and it also looks wrong,
+   because the one thing a long timelapse of the Sun shows is the high
+   latitudes falling behind. */
+float omega(float y){
+  float s2 = y * y;
+  return 1.0 - 0.1629 * s2 - 0.1215 * s2 * s2;
+}
 vec3 spin(vec3 q, float a){
   float c = cos(a), s = sin(a);
   return vec3(q.x * c - q.z * s, q.y, q.x * s + q.z * c);
-}`;
+}
+vec3 spinDiff(vec3 q, float a){ return spin(q, a * omega(q.y)); }`;
 const SUN_F = `
 uniform float uTime; uniform vec3 uCore; uniform vec3 uEdge;
 varying vec3 vN; varying vec3 vE; varying vec3 vP;
@@ -4502,9 +4526,29 @@ void main(){
      hole in a boiling surface rather than as a smudge on a ball, so it gets
      its own high-frequency break-up. A slow rotation carries them, which is
      also the only cue on screen that the star is turning at all. */
-  vec3 qr = spin(q, uTime * 0.021);
+  vec3 qr = spinDiff(q, uTime * 0.021);
   float lat  = abs(qr.y);
-  float band = smoothstep(0.05, 0.15, lat) * (1.0 - smoothstep(0.40, 0.62, lat));
+  /* ---- the butterfly ----
+     The two bands are not fixed. A cycle opens with spots appearing around
+     thirty degrees either side of the equator and closes with the last of
+     them at eight, and there are most of them halfway through — plot
+     latitude against time for a century and the result is a row of wings,
+     which is what the diagram has been called since Maunder drew it in
+     1904. Both halves of that are here: the band walks down toward the
+     equator over the cycle, and the number of spots rises and falls with
+     it, to almost nothing at minimum.
+
+     The clock is compressed, and it has to be said plainly. This star
+     already turns in about half an hour rather than in twenty-seven days,
+     so every period on it is a compression; the cycle is compressed harder
+     still, to some fourteen rotations rather than a hundred and forty
+     eight, because a butterfly that took three days of real time to open
+     would be a constant nobody could ever catch moving. */
+  float cyc  = fract(uTime * 0.00024);
+  float c0   = mix(0.52, 0.14, cyc);
+  float amp  = 0.06 + 0.94 * pow(sin(cyc * 3.14159265), 1.4);
+  float bl   = (lat - c0) / 0.155;
+  float band = exp(-bl * bl) * amp;
   float grp  = fbm(qr * 2.7 + vec3(0.0, uTime * 0.004, 0.0));
   float pen  = smoothstep(0.545, 0.640, grp) * band;
   float umb  = smoothstep(0.605, 0.665, grp) * band;
@@ -4597,7 +4641,10 @@ void main(){
   float f = 1.0 - abs(dot(normalize(vN), normalize(vE)));
   float ring = smoothstep(0.66, 0.99, f);
   if (ring < 0.003) discard;
-  vec3 qr = spin(normalize(vP), uTime * 0.021);
+  /* the same shear the spots ride, because a prominence is held out along
+     the same field the shear is winding up — the two would drift apart
+     within one rotation if only one of them knew about it */
+  vec3 qr = spinDiff(normalize(vP), uTime * 0.021);
   float m = fbm(qr * 3.3 + vec3(0.0, uTime * 0.010, 0.0));
   float loop = smoothstep(0.600, 0.760, m);
   /* fibrous along its length, the way a loop is a bundle of threads */
