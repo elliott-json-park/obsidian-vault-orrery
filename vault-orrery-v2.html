@@ -9397,11 +9397,30 @@ function shipOrbitEnter(i, arriveVel) {
     if (_o3.lengthSq() < 1e-6) _o3.set(1, 0, 0).addScaledVector(_o2, -_o2.x);
   }
   _o3.normalize();
-  /* A circuit takes about twenty seconds whatever the body is. Keeping the
-     *period* fixed rather than the speed is what makes a moon and a hub feel
-     like different sizes of thing: the same twenty seconds carries you a
-     short way round a small one and a very long way round the star. */
-  const per = 21;
+  /* ---- how long a circuit takes -------------------------------------
+     The rule used to be a flat twenty-one seconds whatever the body and
+     whatever the altitude, and the reasoning for the first half of that is
+     better than it looks. A body of radius R at constant density has GM
+     going as R³, and a parking orbit taken at a fixed number of body radii
+     has r going as R, so Kepler's third law gives
+
+         T = 2π sqrt(r³/GM)  ∝  sqrt(R³/R³)  =  constant
+
+     — the period really is the same round a moon and round a star, as long
+     as you park at the same number of radii. The intuition was right and
+     the arithmetic agrees with it.
+
+     What was missing is the other half: altitude. You do not always arrive
+     at the same number of radii, and within one body the law is not
+     constant at all — r^3/2, which is the one piece of orbital mechanics a
+     pilot can actually feel. A low pass should whip round and a high one
+     should be stately, and both used to take twenty-one seconds.
+
+     The ceiling is a comfort limit and is named as one: past about two and
+     a half times the reference radius the honest period runs into minutes,
+     and a camera that takes four of them to come back round is not a thing
+     anybody will wait for. Everything below that is exact. */
+  const per = clamp(21 * Math.pow(r / Math.max(1e-3, rMin), 1.5), 12, 78);
   ship.orbit = { i, r, ph: 0, per,
                  e1: _o2.clone(), e2: _o3.clone(),
                  vel: new THREE.Vector3(), dwell: 0 };
