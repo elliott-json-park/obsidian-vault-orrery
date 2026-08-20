@@ -10762,7 +10762,11 @@ const incOf = o => (o.kind === 'shell' ? o.inc : o.inc * SET.tlt);
    orbit at different inclinations, and watching a system open out of its
    plane is most of what says the thing is three-dimensional at all.
 
-     u, v   the two unit vectors the circle is drawn in: p = cen + r(cos a·u + sin a·v)
+     u, v   the two unit vectors the ellipse is drawn in. u points at
+             periapsis and v is a quarter turn ahead of it, so the point is
+             p = cen + a(x·u + y·v) with (x, y) whatever keplerXY returned
+             for the current mean anomaly — and a circle, when there is no
+             eccentricity, is that with (cos a, sin a).
    Both are written into scratch arrays rather than returned, because this is
    called once per body per frame and three call sites deep. */
 const _ou = new Float32Array(3), _ov = new Float32Array(3);
