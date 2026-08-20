@@ -2107,6 +2107,7 @@ let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, co
     bornAt, freshMark, touchAt, fresh, freshUpto = 0, freshHas = false, tagIdx,
     genT, genE, genOrder, genScale, ripN,
     DSP, DVL, PULL, linkProg, ringRadii = [],
+    MA, AREF, arefDone = false,
     starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, gridPlane, sunObj,
     starCore, starShell, starRing, starRing2, starAlC, starAlS, starAlR, starAlR2,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
@@ -2753,6 +2754,24 @@ cats.forEach(c => {
 /* --- per-node orbital params ---------------------------------------- */
 P = new Float32Array(N*3);
 RAD = new Float32Array(N);
+/* Mean anomaly, integrated rather than evaluated.
+
+   The angle used to be ph + t·sp, which is exact and also assumes the mean
+   motion never changes. It does: ORBIT SPREAD and ORBIT GAP both move a
+   body's semi-major axis while the view is open, and Kepler's third law says
+   the period has to move with it — n goes as a^-3/2, so widening an orbit
+   must slow the body on it. Recomputing the closed form under a changed n
+   would rewrite the body's entire past and it would jump; integrating means
+   the rate can change from one frame to the next and the position cannot.
+
+   Doubles, because this accumulates for as long as the view is open and a
+   float32 mean anomaly starts visibly stepping after a few million radians. */
+MA = new Float64Array(N);
+/* the semi-major axis each body had on the first frame after the layout, so
+   that a^-3/2 is measured against the geometry the periods were derived at
+   and the sky runs at exactly its old tempo until a knob is touched */
+AREF = new Float32Array(N);
+arefDone = false;
 COL = new Float32Array(N*3);
 orb = new Array(N);
 catOf = new Array(N);
@@ -2787,11 +2806,39 @@ for (let i = 0; i < N; i++) {
        direction as well, and no system does that — everything condensed
        from the same disc turns the same way. */
     const rr0 = inner + 0.5 * step, rr = inner + (ring + 0.5) * step;
+    /* ---- the ellipse this lane is -------------------------------------
+       Kepler's first law: an orbit is an ellipse with the star at one
+       focus, not a circle with the star at its centre. Every orbit in this
+       file was a circle until now, and a set of concentric circles is the
+       one thing an orrery plate never shows — a good part of why those
+       plates are beautiful is that the rings sit off-centre, each by its
+       own amount and in its own direction.
+
+       The eccentricity and the direction of periapsis belong to the *ring*
+       rather than to the note, and that is deliberate. Six notes share a
+       ring, and six bodies at one semi-major axis on six different ellipses
+       would cross each other's paths continually — which is the one thing a
+       system condensed out of a single disc has already settled, over its
+       first hundred million years, by the bodies on crossing orbits
+       removing each other. Notes sharing a lane differ in mean anomaly
+       alone, so they never meet however long you watch.
+
+       The ceiling is the clearance to the next lane: e is capped so that
+       apoapsis stays inside the gap to the ring outside. Kepler's law is
+       worth having; orbits that visibly saw through each other are not.
+       Under that cap the numbers are the Solar System's own — Venus 0.007,
+       Earth 0.017, Jupiter 0.048, Mars 0.093, Mercury 0.206 — and the range
+       here sits inside that with its middle near Jupiter's. */
+    const eh = hashStr(c.key + '#ecc' + ring);
+    const aSemi = inner + (ring + 0.5) * step + (slot%2) * step * 0.16;
     o = {
       kind:'wiki', anchor:c,
-      r: inner + (ring + 0.5) * step + (slot%2) * step * 0.16,
+      r: aSemi,
       ph: slot/6*TAU + ring*0.62,
       sp: 0.00022 * Math.pow(rr0 / rr, 1.5),
+      ecc: Math.min(0.03 + ((eh & 1023) / 1024) * 0.13,
+                    0.38 * step / Math.max(1, aSemi)),
+      aop: (((eh >>> 10) & 1023) / 1024) * TAU,
       inc: 0.13 + ring*0.10, y: (slot%3-1)*4,
       /* what the live gap spring stretches: the clearance around the star
          stays, the room between the rings is what moves */
@@ -2811,8 +2858,18 @@ for (let i = 0; i < N; i++) {
     rad = 1.05 + Math.log(1 + nd.w/90) * .42;
     const pr = 2.6 + Math.log(1 + nodes[pIdx].inb) * 1.55
                    + Math.log(1 + nodes[pIdx].w/120) * .7;
+    /* A moon's own ellipse. Distinct slots mean distinct semi-major axes,
+       so unlike the planets sharing a lane these can each carry one —
+       capped again by the room to the next slot out. Our own Moon is at
+       0.055 and Titan at 0.029, and this range is a fair reading of the
+       regular satellites, the ones that formed in place. */
+    const mh = hashStr(nd.p + '#ecc');
+    const mA = pr * 3.4 + (k%4) * pr * 1.15;
     o = {
       kind:'moon', anchorNode:pIdx,
+      ecc: Math.min(0.02 + ((mh & 1023) / 1024) * 0.12,
+                    0.38 * pr * 1.15 / Math.max(1, mA)),
+      aop: (((mh >>> 10) & 1023) / 1024) * TAU,
       /* the parent's radius and this moon's slot are kept, because MOON SIZE
          and PLANET SIZE both have to be able to re-derive this orbit: a
          planet doubled with its moons left where they were swallows them */
@@ -2832,6 +2889,9 @@ for (let i = 0; i < N; i++) {
   /* the ORBIT SPREAD knob scales orbits live, so the radius computed here is
      the reference one and updatePositions multiplies it each frame */
   o.r0 = o.r;
+  /* the clock this body's angle is integrated on starts at the phase the
+     layout gave it, so a vault opens looking exactly as it always did */
+  MA[i] = o.ph || 0;
   orb[i] = o;
 }
 /* --- one orbit plane each, for the spherical mode --------------------
@@ -10037,13 +10097,55 @@ function sphereBasis(o, k) {
   o.su = [ux, uy, uz];
   o.sv = [ny*uz - nz*uy, nz*ux - nx*uz, nx*uy - ny*ux];
 }
+/* ---- Kepler's first and second laws -----------------------------------
+   Given the mean anomaly M — the angle a body would be at if it went round
+   at a constant rate, which is what the integrated clock above counts — the
+   place it is actually at follows from the eccentric anomaly E through
+   Kepler's equation:
+
+       M = E - e·sin E
+
+   which has no closed-form inverse and never will. Two Newton steps from a
+   good first guess are enough for every eccentricity this file produces:
+   the residual after two is well under a float's last bit for e below 0.2,
+   and the guess used here — the first two terms of the series expansion in
+   e — starts within a couple of degrees. So this costs three sines, three
+   cosines and a square root, per body per frame, and buys both of the laws
+   that make an orbit an orbit rather than a turntable.
+
+   The pair written out is (cos E - e, √(1-e²)·sin E), which is the point on
+   the ellipse measured *from the focus* — from where the star actually is,
+   not from the centre of the figure. Multiply it by the semi-major axis and
+   that is the position. At e = 0 it collapses to (cos M, sin M) exactly,
+   which is the circle this file drew before, so an orbit given no
+   eccentricity is not merely close to its old self, it is its old self.
+
+   Second law comes out of this for free and is the part you can see: the
+   body sweeps equal areas in equal times, so it hurries through periapsis
+   and loiters at apoapsis, and the ratio between the two angular rates is
+   ((1+e)/(1-e))². At the eccentricities used here that is between 1.1 and
+   2.1 — small enough to be plausible, large enough that a planet visibly
+   speeds up as it comes round the near side of its star. */
+const _ok = new Float32Array(2);
+function keplerXY(e, M) {
+  if (!(e > 1e-4)) { _ok[0] = Math.cos(M); _ok[1] = Math.sin(M); return; }
+  const sm = Math.sin(M);
+  let E = M + e * sm * (1.0 + e * Math.cos(M));
+  for (let it = 0; it < 2; it++) {
+    const c = Math.cos(E);
+    E -= (E - e * Math.sin(E) - M) / (1 - e * c || 1e-6);
+  }
+  _ok[0] = Math.cos(E) - e;
+  _ok[1] = Math.sqrt(1 - e * e) * Math.sin(E);
+}
+
 function orbBasis(o) {
   const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
   const k = SET.sph;
   if (k < 0.001 || !o.su) {
     _ou[0] = 1; _ou[1] = 0; _ou[2] = 0;
     _ov[0] = 0; _ov[1] = si; _ov[2] = ci;
-    return;
+    return aopSpin(o);
   }
   const su = o.su, sv = o.sv;
   /* Take the short way round. Half the spherical bases point the opposite way
@@ -10057,21 +10159,79 @@ function orbBasis(o) {
   const ul = Math.hypot(ux, uy, uz) || 1, vl = Math.hypot(vx, vy, vz) || 1;
   _ou[0] = ux/ul; _ou[1] = uy/ul; _ou[2] = uz/ul;
   _ov[0] = vx/vl; _ov[1] = vy/vl; _ov[2] = vz/vl;
+  aopSpin(o);
+}
+/* ---- where periapsis points ----
+   u is the direction of periapsis and v is a quarter turn ahead of it, so
+   turning the pair inside its own plane is exactly what the argument of
+   periapsis means. Doing it here rather than at layout is what lets the
+   ORBIT SHELL blend keep working: the spherical basis is rebuilt every
+   frame from the blend, and an orientation baked into the plane at layout
+   would be lost the moment the plane moved.
+
+   Without this every ellipse in a system would have its long axis pointing
+   the same way — which is not a system, it is a logo. Solar System
+   longitudes of perihelion are scattered right round the circle, and the
+   apsidal lines precess besides, on timescales of tens of thousands of
+   years that this has no business trying to show. */
+function aopSpin(o) {
+  const w = o.aop;
+  if (!w) return;
+  const cw = Math.cos(w), sw = Math.sin(w);
+  for (let j = 0; j < 3; j++) {
+    const a = _ou[j], b = _ov[j];
+    _ou[j] = a * cw + b * sw;
+    _ov[j] = b * cw - a * sw;
+  }
+}
+
+/* ---- Kepler's third law, applied to the geometry as it currently is ----
+   P² ∝ a³, so n ∝ a^-3/2. The mean motions were derived once, at layout,
+   from the radii the layout produced — and then ORBIT SPREAD and ORBIT GAP
+   were left free to move those radii while the view is open without the
+   periods following. Which is the law holding in the still frame and
+   breaking the moment anyone touches a knob: widen a system and its outer
+   rings kept the rate that belonged to the orbits they used to be on.
+
+   AREF is the semi-major axis on the first frame after a layout, so the
+   ratio is 1 for every body until something moves and the sky opens at
+   exactly the tempo it always did. The clamp is not physics, it is a floor
+   under a divide: ORBIT SPREAD reaches 0.30× and a body dragged by the
+   reader can be anywhere at all. */
+function advance(i, o, orad, dOrb) {
+  if (!arefDone) AREF[i] = orad;
+  let m = MA[i];
+  if (dOrb) {
+    const r = AREF[i] / (orad > 1e-4 ? orad : 1e-4);
+    const k = r < 0.04 ? 0.04 : r > 25 ? 25 : r;
+    m += dOrb * o.sp * k * Math.sqrt(k);
+    MA[i] = m;
+  }
+  return m;
 }
 
 function updatePositions(dtms) {
   /* orbital time is its own clock: SET.spd 0 freezes the sky without freezing
      the camera, the HUD, the ship or the gesture engine */
-  t += dtms * SET.spd;
+  const dOrb = dtms * SET.spd;
+  t += dOrb;
   /* Every star system is itself in orbit about the hub. c.pos is rewritten in
      place because the planets anchored to it read that vector each frame, so
      moving the star moves its whole system with it. */
   let starMoved = false;
   /* the live ORBIT GAP: the whole ring structure breathes by this factor */
   const gs = gapSys;
+  /* the systems ride circles rather than ellipses — where a folder's star
+     sits is a layout decision and not a fall from anywhere — but the third
+     law still applies to them, and ORBIT GAP scales every one of those
+     circles by the same factor, so the correction is one number for the
+     whole sky rather than one per star */
+  const gsK = gs > 1e-3 ? Math.pow(gs, -1.5) : 1;
   cats.forEach((c, ci) => {
     if (c.oR === undefined) return;
-    const a = c.oA0 + t * c.oSp;
+    if (c.oMA === undefined) c.oMA = c.oA0;
+    c.oMA += dOrb * c.oSp * gsK;
+    const a = c.oMA;
     const oR = c.oR * gs;
     c.pos.set(Math.cos(a) * oR, c.oY * gs, Math.sin(a) * oR);
     if (starGlow) {
@@ -10153,8 +10313,6 @@ function updatePositions(dtms) {
     if (o.kind === 'core') {
       P[i*3]=DSP[i*3]; P[i*3+1]=DSP[i*3+1]; P[i*3+2]=DSP[i*3+2]; continue;
     }
-    const a = o.ph + t * o.sp;
-    const ca = Math.cos(a), sa = Math.sin(a);
     orbBasis(o);
     /* A planet's orbit widens from the clearance around its own star; the
        archive out on the spiral rides the ring structure instead, so it
@@ -10169,6 +10327,10 @@ function updatePositions(dtms) {
     /* the little vertical offset each orbit carries is a property of the disc,
        so it goes out with the disc */
     oy *= 1 - SET.sph;
+    /* the radius has to be known before the rate can be, so the semi-major
+       axis is settled first and the anomaly advanced against it */
+    keplerXY(o.ecc, advance(i, o, orad, dOrb));
+    const ca = _ok[0], sa = _ok[1];
     P[i*3]   = o.anchor.pos.x + (ca*_ou[0] + sa*_ov[0]) * orad      + DSP[i*3];
     P[i*3+1] = o.anchor.pos.y + (ca*_ou[1] + sa*_ov[1]) * orad + oy + DSP[i*3+1];
     P[i*3+2] = o.anchor.pos.z + (ca*_ou[2] + sa*_ov[2]) * orad      + DSP[i*3+2];
@@ -10179,14 +10341,17 @@ function updatePositions(dtms) {
     const o = orb[i];
     if (o.kind !== 'moon') continue;
     const p = o.anchorNode;
-    const a = o.ph + t * o.sp;
-    const ca = Math.cos(a), sa = Math.sin(a);
     orbBasis(o);
     const mr = o.r0 * spr;
+    keplerXY(o.ecc, advance(i, o, mr, dOrb));
+    const ca = _ok[0], sa = _ok[1];
     P[i*3]   = P[p*3]   + (ca*_ou[0] + sa*_ov[0]) * mr + DSP[i*3];
     P[i*3+1] = P[p*3+1] + (ca*_ou[1] + sa*_ov[1]) * mr + DSP[i*3+1];
     P[i*3+2] = P[p*3+2] + (ca*_ou[2] + sa*_ov[2]) * mr + DSP[i*3+2];
   }
+  /* both passes have now written a reference axis for every body, so the
+     next frame measures a^-3/2 against it instead of overwriting it */
+  arefDone = true;
 }
 
 function updateVisibility(dt) {
@@ -10891,17 +11056,28 @@ function writeTrails() {
     }
     if (!cen || !(orad > 0.01)) continue;
 
-    const ang = o.ph + t * o.sp;
-    /* the same two vectors updatePositions drew this body's circle in — the
-       trail is that circle, walked backwards, so it has to be the same one */
+    const ang = MA[i];
+    /* the same two vectors updatePositions drew this body's ellipse in — the
+       trail is that ellipse, walked backwards, so it has to be the same one */
     orbBasis(o);
     const ux = _ou[0], uy = _ou[1], uz = _ou[2];
     const vx = _ov[0], vy = _ov[1], vz = _ov[2];
     oy *= 1 - SET.sph;
-    /* backwards along the direction of travel, whichever way that is */
+    /* Backwards along the direction of travel, whichever way that is — and
+       backwards in *mean* anomaly, not in the angle actually subtended,
+       because what a wake shows is where the body was a fixed time ago and
+       mean anomaly is the one thing that advances at a fixed rate.
+
+       This used to step by rotating the (cos, sin) pair, two multiplies and
+       two adds and no trigonometry, which was worth having while the orbit
+       was a circle and is not available on an ellipse: the point is no
+       longer a rotation of the point before it. Kepler's equation is solved
+       per sample instead. Nine samples on three hundred bodies is under
+       three thousand solves a frame, and each is three sines and a root. */
     const step = -TRAIL_SWEEP / (TRAIL_SEG-1) * (o.sp < 0 ? -1 : 1);
-    const cs = Math.cos(step), sn = Math.sin(step);
-    let ca = Math.cos(ang), sa = Math.sin(ang);
+    const ecc = o.ecc || 0;
+    keplerXY(ecc, ang);
+    let ca = _ok[0], sa = _ok[1];
 
     const cr = COL[i*3], cg = COL[i*3+1], cb = COL[i*3+2];
     /* the trail is the body's own light, spent: bright where it just was and
@@ -10914,8 +11090,8 @@ function writeTrails() {
     let pz0 = cen.z + (ca*uz + sa*vz)*orad      + DSP[i*3+2];
 
     for (let s=1;s<TRAIL_SEG;s++){
-      const nc = ca*cs - sa*sn, ns = sa*cs + ca*sn;
-      ca = nc; sa = ns;
+      keplerXY(ecc, ang + s * step);
+      ca = _ok[0]; sa = _ok[1];
       const qx = cen.x + (ca*ux + sa*vx)*orad      + DSP[i*3];
       const qy = cen.y + (ca*uy + sa*vy)*orad + oy + DSP[i*3+1];
       const qz = cen.z + (ca*uz + sa*vz)*orad      + DSP[i*3+2];
