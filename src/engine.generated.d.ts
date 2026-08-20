@@ -57,7 +57,7 @@ export interface OrreryFileMeta {
     this is only the list, so a host can offer them in its own palette. */
 export type OrreryCommand =
   | 'search' | 'mindmap' | 'ship' | 'genesis' | 'twins'
-  | 'ripple' | 'poster' | 'layer' | 'sound' | 'reset' | 'hud' | 'open' | 'help';
+  | 'ripple' | 'poster' | 'layer' | 'grid' | 'sound' | 'reset' | 'hud' | 'open' | 'help';
 
 /** What the host can do that a web page cannot. Every hook is optional, and an
     affordance whose hook is missing is not drawn at all rather than drawn and

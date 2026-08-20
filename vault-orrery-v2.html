@@ -857,6 +857,7 @@ body.ship #heat.on{display:block}
       <div class="row"><span>RIPPLE · POSTER</span><span>SPACE · P</span></div>
       <div class="row"><span>RECORD CLIP</span><span>C</span></div>
       <div class="row"><span>LINK LAYER</span><span>L</span></div>
+      <div class="row"><span>REFERENCE PLANE</span><span>X</span></div>
       <div class="row"><span>RESET · HIDE HUD</span><span>R · H</span></div>
       <div class="row"><span>FIRST FLIGHT</span><span>?</span></div>
       <div class="row"><span>DRAG / WHEEL</span><span>ORBIT · ZOOM</span></div>
@@ -1378,6 +1379,8 @@ const STR = {
 'pin.on':      ['{n} · 기본 바에 고정','{n} · pinned to the bar','{n} · バーに固定','{n} · 已固定到基本栏'],
 'pin.off':     ['{n} · 서랍으로 내림','{n} · moved to the drawer','{n} · 引き出しへ','{n} · 已移入抽屉'],
 'grp.cosmos':  ['운동과 구조','MOTION & STRUCTURE','運動と構造','运动与结构'],
+'grid.on':     ['기준 평면 켜짐','REFERENCE PLANE ON','基準平面 オン','基准平面 开'],
+'grid.off':    ['기준 평면 꺼짐','REFERENCE PLANE OFF','基準平面 オフ','基准平面 关'],
 'grp.bodies':  ['천체','BODIES','天体','天体'],
 'grp.light':   ['빛','LIGHT','光','光'],
 'grp.sound':   ['소리','SOUND','サウンド','声音'],
@@ -1801,6 +1804,11 @@ const KNOBS = [
      who wants the depth back. */
   { k:'tlt', g:'cosmos', label:'ORBIT TILT',   min:0,  max:200, sc:100, def:0,
     fmt:v => v < 0.02 ? 'FLAT' : mult(v) },
+  /* DISC at zero and SPHERE at one, and neither is an amount of anything —
+     they are the two shapes, and the numbers in between are the one opening
+     into the other. See orbBasis. */
+  { k:'sph', g:'cosmos', label:'ORBIT SHELL',  min:0,  max:100, sc:100, def:0,
+    fmt:v => v < 0.005 ? 'DISC' : v > 0.995 ? 'SPHERE' : v.toFixed(2) },
   /* ---- how big the bodies are drawn -------------------------------------
      A body's radius is its citation count, and that is worth reading, so
      these do not touch the *ratios* between notes — they scale a whole class
@@ -1915,7 +1923,7 @@ const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
 /* coreNote is a path, not an index: indices are rebuilt on every load and a
    saved one would name a different note by the next morning. Empty means
    "work it out", which is what every vault gets before anybody chooses. */
-const SET_DEF = { mmHop:false, mmOrb:true, snd:false, coreNote:'',
+const SET_DEF = { mmHop:false, mmOrb:true, snd:false, coreNote:'', grid:false,
                   adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
 const SET = Object.assign({}, SET_DEF, { pin: PIN_DEF.slice() });
@@ -1977,14 +1985,14 @@ let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, co
     bornAt, freshMark, touchAt, fresh, freshUpto = 0, freshHas = false, tagIdx,
     genT, genE, genOrder, genScale, ripN,
     DSP, DVL, PULL, linkProg, ringRadii = [],
-    starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, sunObj,
+    starGroup, starMeshes, spiralTrack, starGlow, boundary, ringGuides, gridPlane, sunObj,
     starCore, starShell, starRing, starAlC, starAlS, starAlR,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
     bStar, bStarCol,
     EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
     trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
-    selRig, selRing, selRing2, selCage, hovRig, actRig, actRing, actRing2, actPip,
+    selRig, selRing, hovRig, actRig, actRing, actRing2, actPip,
     ringMesh, ringIdx = [], ringQ = [], ringK = null, labels;
 let world = null;
 
@@ -2704,6 +2712,38 @@ for (let i = 0; i < N; i++) {
   o.r0 = o.r;
   orb[i] = o;
 }
+/* --- one orbit plane each, for the spherical mode --------------------
+   Numbered per system rather than per vault: the golden spiral spreads k
+   evenly over a sphere, and what has to be spread evenly is the orbits
+   inside one system. Numbering across the whole vault would hand a folder of
+   six notes six directions from six different parts of the sequence, which
+   is scatter rather than a shell. The moons are numbered under their own
+   planet for the same reason. */
+{
+  const seq = new Map();
+  for (let i=0;i<N;i++){
+    const o = orb[i];
+    if (!o || o.kind === 'core') continue;
+    const key = o.kind === 'moon' ? 'm' + o.anchorNode
+              : o.kind === 'wiki' ? 'w' + (o.anchor && o.anchor.key)
+              : 'a';
+    const k = seq.get(key) || 0;
+    seq.set(key, k + 1);
+    o.sK = k;
+  }
+  const tot = new Map();
+  seq.forEach((v, k) => tot.set(k, v));
+  for (let i=0;i<N;i++){
+    const o = orb[i];
+    if (!o || o.kind === 'core') continue;
+    const key = o.kind === 'moon' ? 'm' + o.anchorNode
+              : o.kind === 'wiki' ? 'w' + (o.anchor && o.anchor.key)
+              : 'a';
+    o.sN = tot.get(key) || 1;
+    sphereBasis(o, o.sK);
+  }
+}
+
 /* What the vault says each body's radius is, before anybody turns a knob.
    RAD is what the whole engine reads and it is allowed to move; this is the
    answer the layout arrived at, so the three size knobs stay absolute rather
@@ -4386,39 +4426,19 @@ if (cats.length) {
    already guards on it, so the layer is simply never built. ringRadii is
    still what the systems are placed on; only the drawing is dropped. */
 
-/* the time spiral itself, a luminous track the archive rides on. Colour
-   walks the year palette, so the sweep 2022 → 2026 is readable. */
-spiralTrack = (function(){
-  const M = datedOrder.length;
-  if (M < 2) return null;
-  const S = 620, pos = new Float32Array((S-1)*2*3), col = new Float32Array((S-1)*2*3);
-  const at = (u) => {
-    const j = u * (M-1);
-    const r = SPIRAL.r0 - u*SPIRAL.dr, a = SPIRAL.a0 + j*SPIRAL.da;
-    return [Math.cos(a)*r, 0, Math.sin(a)*r];
-  };
-  let prev = at(0), w = 0;
-  for (let s=1;s<S;s++){
-    const u = s/(S-1), cur = at(u);
-    const c = (catOf[datedOrder[Math.min(M-1, Math.round(u*(M-1)))]] || {}).color
-              || new THREE.Color(0xff9d3c);
-    const f = 0.34;
-    [prev, cur].forEach(p => {
-      pos[w*3]=p[0]; pos[w*3+1]=p[1]; pos[w*3+2]=p[2];
-      col[w*3]=c.r*f; col[w*3+1]=c.g*f; col[w*3+2]=c.b*f; w++;
-    });
-    prev = cur;
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
-  g.setAttribute('color', new THREE.BufferAttribute(col,3));
-  const line = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-    vertexColors:true, transparent:true, opacity:.55,
-    blending:THREE.AdditiveBlending, depthWrite:false }));
-  line.frustumCulled = false;
-  world.add(line);
-  return line;
-})();
+/* ---------- the time spiral's own track ----------
+   Gone, for the same reason the concentric ring guides went before it: it
+   was a rail drawn under the thing that rides it. An orange line winding
+   through the archive said "these notes are ordered by date", which the
+   notes themselves already say by being strung out along it — and it said so
+   in the one colour in the scene not taken from the folder palette, so it
+   read as annotation laid over the cosmos rather than as part of it.
+
+   spiralTrack stays declared and stays null. Everything that touched it —
+   the genesis fade, the gap scale, the teardown — already guards on it, so
+   the layer is simply never built. SPIRAL still places the archive; only the
+   drawing is dropped. */
+spiralTrack = null;
 
 /* vault boundary — the shell that holds the undated archive */
 boundary = new THREE.Mesh(
@@ -4434,6 +4454,72 @@ boundary = new THREE.Mesh(
 boundary.scale.y = .68;
 boundary.visible = N > 0;
 world.add(boundary);
+
+/* ---------- the reference plane ----------
+   Space has no floor, and for most of what this view is for that is the
+   point. But the layout has one — every system sits on a ring about the hub,
+   in a plane — and with nothing to read it against, "that folder is further
+   out" and "that folder is further away" look the same. Which is the one
+   thing a picture of a graph must not be ambiguous about.
+
+   So: a polar grid on the layout's own plane, off by default and one toggle
+   away. Rings at the radii the systems are actually placed on rather than at
+   round numbers, because the useful question is "which ring is this system
+   on", not "how many thousand units out is it". Spokes every thirty degrees
+   for bearing, and a scale bar's worth of graduation on the outermost ring.
+
+   Drawn as one LineSegments in additive blue at an opacity that puts it under
+   everything: it is a rule laid on the table, not a thing on the table. The
+   fade with distance is in the vertex colours rather than the material, so
+   the far side of the grid thins out the way the far side of anything does
+   and the plane reads as receding rather than as a printed sheet. */
+gridPlane = (function mountGrid(){
+  if (!N || !ringRadii.length) return null;
+  const outer = ringRadii[ringRadii.length - 1] * 1.35;
+  const SEG = 128, SPOKES = 12;
+  const pos = [], col = [];
+  const CY = [0.30, 0.62, 0.85];
+  const push = (x0,z0,x1,z1,a0,a1) => {
+    pos.push(x0,0,z0, x1,0,z1);
+    col.push(CY[0]*a0, CY[1]*a0, CY[2]*a0, CY[0]*a1, CY[1]*a1, CY[2]*a1);
+  };
+  /* one ring per ring of systems, plus the outer edge */
+  const rings = ringRadii.slice();
+  rings.push(outer);
+  rings.forEach((R, k) => {
+    /* the ring the systems actually sit on is the one worth reading, so the
+       outer edge — which is only there to close the figure — is fainter */
+    const a = k === rings.length - 1 ? 0.11 : 0.20;
+    for (let i=0;i<SEG;i++){
+      const t0 = i/SEG*TAU, t1 = (i+1)/SEG*TAU;
+      push(Math.cos(t0)*R, Math.sin(t0)*R, Math.cos(t1)*R, Math.sin(t1)*R, a, a);
+    }
+  });
+  /* the spokes, fading out as they go: a bearing line is wanted near the hub
+     where the systems are dense and is clutter out at the edge */
+  for (let i=0;i<SPOKES;i++){
+    const th = i/SPOKES*TAU, cx = Math.cos(th), cz = Math.sin(th);
+    const r0 = ringRadii[0] * 0.28;
+    push(cx*r0, cz*r0, cx*outer, cz*outer, 0.20, 0.02);
+  }
+  /* graduation on the outer ring, so it carries a scale rather than only an
+     edge — every ten degrees, longer every ninety */
+  for (let i=0;i<36;i++){
+    const th = i/36*TAU, cx = Math.cos(th), cz = Math.sin(th);
+    const len = (i % 9 === 0) ? outer * 0.045 : outer * 0.018;
+    push(cx*outer, cz*outer, cx*(outer+len), cz*(outer+len), 0.24, 0.05);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+  const line = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
+    vertexColors:true, transparent:true, opacity:.85,
+    blending:THREE.AdditiveBlending, depthWrite:false }));
+  line.frustumCulled = false;
+  line.visible = !!SET.grid;
+  world.add(line);
+  return line;
+})();
 
 /* star glow points */
 (function mountStarGlow(){
@@ -4779,18 +4865,22 @@ world.add(pulses);
 
 /* ---------- selection rig ---------- */
 selRig = new THREE.Group(); selRig.visible = false; world.add(selRig);
-selRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.06, 72),
-  new THREE.MeshBasicMaterial({ color:0xffb648, transparent:true, opacity:.9,
+/* One hairline, and that is the whole marker.
+
+   It used to be three: a ring, a second ring forty per cent wider, and a
+   wireframe cage over the body itself, all amber, all turning at different
+   rates. Three overlapping circles round a small sphere is not emphasis, it
+   is a target reticle drawn over the thing you were trying to look at — and
+   the cage in particular put a lattice on a body whose whole surface had
+   just been given a design.
+
+   The ring is thinner as well: 1 to 1.02 rather than 1 to 1.06, which at the
+   size it is drawn is a line rather than a band. What marks the selection is
+   that a circle is there at all. */
+selRing = new THREE.Mesh(new THREE.RingGeometry(1, 1.02, 96),
+  new THREE.MeshBasicMaterial({ color:0xffb648, transparent:true, opacity:.85,
     side:THREE.DoubleSide, blending:THREE.AdditiveBlending, depthWrite:false }));
 selRig.add(selRing);
-selRing2 = selRing.clone();
-selRing2.material = selRing.material.clone();
-selRing2.material.opacity = .45;
-selRig.add(selRing2);
-selCage = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1),
-  new THREE.MeshBasicMaterial({ color:0xffb648, wireframe:true, transparent:true,
-    opacity:.4, blending:THREE.AdditiveBlending, depthWrite:false }));
-selRig.add(selCage);
 
 hovRig = new THREE.Mesh(new THREE.RingGeometry(1, 1.05, 48),
   new THREE.MeshBasicMaterial({ color:0x5ce1ff, transparent:true, opacity:.75,
@@ -4905,6 +4995,7 @@ function disposeWorld() {
   scene.remove(world);
   world = null;
   spiralTrack = starGlow = boundary = bodies = nodeGlow = linkMesh = pulses = null;
+  gridPlane = null;
   trailMesh = trailGeo = trailPos = trailCol = null;
   selRig = hovRig = actRig = ringGuides = sunObj = null;
   starCore = starShell = starRing = starAlC = starAlS = starAlR = null;
@@ -5388,6 +5479,14 @@ function genSet(on) {
   }
   syncGen(true);
   layoutHUD();
+}
+/* The reference plane. A toggle rather than a knob: it is either being read
+   against or it is in the way, and there is no useful amount of it. */
+function toggleGrid() {
+  SET.grid = !SET.grid;
+  saveSet();
+  if (gridPlane) gridPlane.visible = SET.grid;
+  toast(T(SET.grid ? 'grid.on' : 'grid.off'));
 }
 function toggleGenesis() {
   if (!N) { toast(T('need.vault')); return; }
@@ -9169,6 +9268,7 @@ addEventListener('keydown', e => {
   else if (k === 'm') { e.preventDefault(); toggleMind(); }
   else if (k === 'r') resetView();
   else if (k === 'l') cycleLayer();
+  else if (k === 'x') toggleGrid();
   else if (k === 'g') { e.preventDefault(); toggleGenesis(); }
   else if (k === 'n') { e.preventDefault(); twinsShow(selected); }
   else if (k === ' ') { e.preventDefault(); if (!e.repeat) rippleHere(); }
@@ -9328,6 +9428,66 @@ addEventListener('resize', resize);
    a couple of degrees of flat and scales harmlessly. */
 const incOf = o => (o.kind === 'shell' ? o.inc : o.inc * SET.tlt);
 
+/* ---- which plane a body orbits in -------------------------------------
+   Every orbit in the layout is tilted about the same world axis. There is no
+   ascending node to turn one around, so the inclinations differ in amount and
+   never in direction, and a system seen from anywhere reads as a disc that
+   has been leaned over — which is what a disc is.
+
+   ORBIT SPHERE turns the discs into shells. Each body gets a fixed orbit
+   normal spread over the sphere by the golden angle, so no two neighbours
+   share a plane and the set of them covers every direction evenly rather
+   than clustering at a pole. At 1.00 a system is a ball of orbits; at 0.00 it
+   is exactly the disc it has always been, to the float.
+
+   The knob is a blend rather than a switch because the two are the same
+   orbit at different inclinations, and watching a system open out of its
+   plane is most of what says the thing is three-dimensional at all.
+
+     u, v   the two unit vectors the circle is drawn in: p = cen + r(cos a·u + sin a·v)
+   Both are written into scratch arrays rather than returned, because this is
+   called once per body per frame and three call sites deep. */
+const _ou = new Float32Array(3), _ov = new Float32Array(3);
+/* the spherical basis, decided when the orbit is and never after: a plane
+   that drifted would be a body wandering off its own track */
+function sphereBasis(o, k) {
+  /* the normal, from the golden spiral over this body's own sequence number */
+  const y = 1 - 2 * (k + 0.5) / Math.max(1, o.sN || 1);
+  const r = Math.sqrt(Math.max(0, 1 - y*y));
+  const a = k * GOLD;
+  const nx = Math.cos(a) * r, ny = y, nz = Math.sin(a) * r;
+  /* any unit vector perpendicular to the normal will do for u; the one that
+     is furthest from it is the one that survives the cross product with the
+     most precision */
+  const ax = Math.abs(nx) < 0.9 ? 1 : 0, ay = Math.abs(nx) < 0.9 ? 0 : 1;
+  let ux = ay*nz - 0*ny, uy = 0*nx - ax*nz, uz = ax*ny - ay*nx;
+  const ul = Math.hypot(ux, uy, uz) || 1;
+  ux /= ul; uy /= ul; uz /= ul;
+  o.su = [ux, uy, uz];
+  o.sv = [ny*uz - nz*uy, nz*ux - nx*uz, nx*uy - ny*ux];
+}
+function orbBasis(o) {
+  const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
+  const k = SET.sph;
+  if (k < 0.001 || !o.su) {
+    _ou[0] = 1; _ou[1] = 0; _ou[2] = 0;
+    _ov[0] = 0; _ov[1] = si; _ov[2] = ci;
+    return;
+  }
+  const su = o.su, sv = o.sv;
+  /* Take the short way round. Half the spherical bases point the opposite way
+     to the planar one, and lerping between opposites passes through zero —
+     which is a body collapsing onto its own anchor for one frame in the
+     middle of the drag. Flipping both vectors is a half turn about the orbit
+     normal: the same circle, travelled from the other side. */
+  const f = su[0] < 0 ? -1 : 1;
+  let ux = 1 + (su[0]*f - 1) * k, uy = (su[1]*f) * k, uz = (su[2]*f) * k;
+  let vx = (sv[0]*f) * k, vy = si + (sv[1]*f - si) * k, vz = ci + (sv[2]*f - ci) * k;
+  const ul = Math.hypot(ux, uy, uz) || 1, vl = Math.hypot(vx, vy, vz) || 1;
+  _ou[0] = ux/ul; _ou[1] = uy/ul; _ou[2] = uz/ul;
+  _ov[0] = vx/vl; _ov[1] = vy/vl; _ov[2] = vz/vl;
+}
+
 function updatePositions(dtms) {
   /* orbital time is its own clock: SET.spd 0 freezes the sky without freezing
      the camera, the HUD, the ship or the gesture engine */
@@ -9365,6 +9525,9 @@ function updatePositions(dtms) {
   if (spiralTrack) { spiralTrack.rotation.y = -t * 0.000055;
                      spiralTrack.scale.setScalar(gs); }
   if (ringGuides) ringGuides.scale.setScalar(gs);
+  /* the grid measures the layout, so it breathes with it — a rule that stayed
+     put while the thing it measures widened would be worse than none */
+  if (gridPlane && gridPlane.visible) gridPlane.scale.setScalar(gs);
   if (sunObj) {
     const u = sunObj.userData;
     sunObj.position.set(P[coreIdx*3], P[coreIdx*3+1], P[coreIdx*3+2]);
@@ -9421,7 +9584,7 @@ function updatePositions(dtms) {
     }
     const a = o.ph + t * o.sp;
     const ca = Math.cos(a), sa = Math.sin(a);
-    const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
+    orbBasis(o);
     /* A planet's orbit widens from the clearance around its own star; the
        archive out on the spiral rides the ring structure instead, so it
        moves with the systems rather than with them. */
@@ -9432,10 +9595,12 @@ function updatePositions(dtms) {
     } else {
       orad = o.r0 * gs; oy *= gs;
     }
-    const x = ca*orad, z = sa*orad;
-    P[i*3]   = o.anchor.pos.x + x            + DSP[i*3];
-    P[i*3+1] = o.anchor.pos.y + oy + z*si    + DSP[i*3+1];
-    P[i*3+2] = o.anchor.pos.z + z*ci         + DSP[i*3+2];
+    /* the little vertical offset each orbit carries is a property of the disc,
+       so it goes out with the disc */
+    oy *= 1 - SET.sph;
+    P[i*3]   = o.anchor.pos.x + (ca*_ou[0] + sa*_ov[0]) * orad      + DSP[i*3];
+    P[i*3+1] = o.anchor.pos.y + (ca*_ou[1] + sa*_ov[1]) * orad + oy + DSP[i*3+1];
+    P[i*3+2] = o.anchor.pos.z + (ca*_ou[2] + sa*_ov[2]) * orad      + DSP[i*3+2];
   }
   /* pass 2 : moons around their planet, reading the parent's already
      displaced position, so dragging a planet takes its moons with it */
@@ -9444,11 +9609,12 @@ function updatePositions(dtms) {
     if (o.kind !== 'moon') continue;
     const p = o.anchorNode;
     const a = o.ph + t * o.sp;
-    const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
+    const ca = Math.cos(a), sa = Math.sin(a);
+    orbBasis(o);
     const mr = o.r0 * spr;
-    P[i*3]   = P[p*3]   + Math.cos(a)*mr        + DSP[i*3];
-    P[i*3+1] = P[p*3+1] + Math.sin(a)*mr*si     + DSP[i*3+1];
-    P[i*3+2] = P[p*3+2] + Math.sin(a)*mr*ci     + DSP[i*3+2];
+    P[i*3]   = P[p*3]   + (ca*_ou[0] + sa*_ov[0]) * mr + DSP[i*3];
+    P[i*3+1] = P[p*3+1] + (ca*_ou[1] + sa*_ov[1]) * mr + DSP[i*3+1];
+    P[i*3+2] = P[p*3+2] + (ca*_ou[2] + sa*_ov[2]) * mr + DSP[i*3+2];
   }
 }
 
@@ -10094,7 +10260,12 @@ function writeTrails() {
     if (!cen || !(orad > 0.01)) continue;
 
     const ang = o.ph + t * o.sp;
-    const oi = incOf(o), ci = Math.cos(oi), si = Math.sin(oi);
+    /* the same two vectors updatePositions drew this body's circle in — the
+       trail is that circle, walked backwards, so it has to be the same one */
+    orbBasis(o);
+    const ux = _ou[0], uy = _ou[1], uz = _ou[2];
+    const vx = _ov[0], vy = _ov[1], vz = _ov[2];
+    oy *= 1 - SET.sph;
     /* backwards along the direction of travel, whichever way that is */
     const step = -TRAIL_SWEEP / (TRAIL_SEG-1) * (o.sp < 0 ? -1 : 1);
     const cs = Math.cos(step), sn = Math.sin(step);
@@ -10106,16 +10277,16 @@ function writeTrails() {
        as a wire hoop */
     const base = amt * grow * clamp(a0, 0, 1) * (i === selected ? 1.7 : 1)
                  * fogAt(dist) * 0.55;
-    let px0 = cen.x + ca*orad + DSP[i*3];
-    let py0 = cen.y + oy + sa*orad*si + DSP[i*3+1];
-    let pz0 = cen.z + sa*orad*ci + DSP[i*3+2];
+    let px0 = cen.x + (ca*ux + sa*vx)*orad      + DSP[i*3];
+    let py0 = cen.y + (ca*uy + sa*vy)*orad + oy + DSP[i*3+1];
+    let pz0 = cen.z + (ca*uz + sa*vz)*orad      + DSP[i*3+2];
 
     for (let s=1;s<TRAIL_SEG;s++){
       const nc = ca*cs - sa*sn, ns = sa*cs + ca*sn;
       ca = nc; sa = ns;
-      const qx = cen.x + ca*orad + DSP[i*3];
-      const qy = cen.y + oy + sa*orad*si + DSP[i*3+1];
-      const qz = cen.z + sa*orad*ci + DSP[i*3+2];
+      const qx = cen.x + (ca*ux + sa*vx)*orad      + DSP[i*3];
+      const qy = cen.y + (ca*uy + sa*vy)*orad + oy + DSP[i*3+1];
+      const qz = cen.z + (ca*uz + sa*vz)*orad      + DSP[i*3+2];
       /* squared, so the fade is fastest right behind the body and the tail
          thins to nothing instead of stopping */
       const f0 = 1 - (s-1)/(TRAIL_SEG-1), f1 = 1 - s/(TRAIL_SEG-1);
@@ -10432,13 +10603,8 @@ function frameLoop(now) {
   if (selected >= 0 && selected < N && selRig) {
     selRig.visible = true;
     selRig.position.set(P[selected*3],P[selected*3+1],P[selected*3+2]);
-    const r = RAD[selected]*2.9;
-    selRing.scale.setScalar(r); selRing.rotation.z += 0.011;
-    selRing.quaternion.copy(camera.quaternion); selRing.rotateZ(t*0.0007);
-    selRing2.scale.setScalar(r*1.42);
-    selRing2.quaternion.copy(camera.quaternion); selRing2.rotateZ(-t*0.0004);
-    selCage.scale.setScalar(RAD[selected]*1.7);
-    selCage.rotation.y += 0.006; selCage.rotation.x += 0.003;
+    selRing.scale.setScalar(RAD[selected] * 2.9);
+    selRing.quaternion.copy(camera.quaternion);
   } else if (selRig) selRig.visible = false;
 
   /* the note being edited, breathing on a two-second cycle */
@@ -11570,6 +11736,7 @@ const CMD = {
   ripple:  rippleHere,
   poster:  savePoster,
   layer:   cycleLayer,
+  grid:    toggleGrid,
   sound:   () => audioSet(!AUD.on),
   reset:   resetView,
   hud:     () => { const h = $('hud'); h.style.display = h.style.display === 'none' ? '' : 'none'; },

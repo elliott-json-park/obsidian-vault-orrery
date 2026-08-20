@@ -25,6 +25,7 @@ const MODE_COMMANDS: ReadonlyArray<[OrreryCommand, string]> = [
   ['ripple',  'Ripple from the selected note'],
   ['poster',  'Save a poster'],
   ['layer',   'Cycle the link layer'],
+  ['grid',    'Show or hide the reference plane'],
   ['sound',   'Ambient sound'],
   ['reset',   'Reset the view'],
   ['hud',     'Show or hide the HUD'],
