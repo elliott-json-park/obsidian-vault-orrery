@@ -4148,21 +4148,80 @@ function machineBody(sh, instanced) {
    because a small body that turned as slowly as a large one would look
    becalmed and a large one turning as fast as a small one looks like a prop.
    On the orbital clock, so freezing the sky freezes the spin with it. */
-let bodySpin = null;
+let bodySpin = null, bodyLock = null;
 function buildBodySpin() {
   bodySpin = new Float32Array(Math.max(1, N) * 4);
+  /* ---- which bodies are tidally locked ----
+     Every large moon in the Solar System is. A satellite raises a bulge on
+     the body it goes round and the body raises one back, and the torque on
+     that bulge bleeds the moon's spin away until the rotation period equals
+     the orbital one — after which there is no torque left, because the
+     bulge no longer has to move. It is not an exotic outcome, it is the
+     only stable one, and it happens fast: the Moon was locked within a few
+     tens of millions of years of forming. Our own Moon, all four Galileans,
+     Titan, Triton, Charon and Pluto with it — every one, same face for ever.
+
+     So a moon spinning on its own clock, which is what these did, is the
+     wrong picture in the most checkable possible way. */
+  bodyLock = new Uint8Array(Math.max(1, N));
   for (let i = 0; i < N; i++) {
     const h = hashStr((nodes[i] ? nodes[i].p : '') + '#r');
-    bodySpin[i*4]     = ((h & 255) / 255 - 0.5) * 0.62;          // tilt x
-    bodySpin[i*4 + 1] = (((h >>> 8) & 255) / 255 - 0.5) * 0.42;  // tilt z
+    const lock = orb && orb[i] && orb[i].kind === 'moon' ? 1 : 0;
+    bodyLock[i] = lock;
+    /* Obliquity. A free body's is arbitrary — Uranus is on its side at 98°
+       and nothing about it is unusual except the collision that put it
+       there — but a locked one's is not free at all. Tidal evolution drives
+       a synchronous satellite into a Cassini state, where the spin axis,
+       the orbit normal and the precession pole stay coplanar and the tilt
+       settles small: the Moon's is 6.7°, Io's is a tenth of a degree, and
+       most of the rest are nearer Io. So a locked body gets a fifth of the
+       tilt a free one does, which tops out just past the Moon's. */
+    const k = lock ? 0.20 : 1;
+    bodySpin[i*4]     = ((h & 255) / 255 - 0.5) * 0.62 * k;      // tilt x
+    bodySpin[i*4 + 1] = (((h >>> 8) & 255) / 255 - 0.5) * 0.42 * k; // tilt z
     bodySpin[i*4 + 2] = (((h >>> 16) & 1023) / 1024) * 6.2831853; // phase
-    bodySpin[i*4 + 3] = 0.000075 / (1 + (RAD[i] || 3) * 0.055);   // rate
+    /* How fast a free body turns, and it used to fall with the radius: the
+       bigger the world the slower it went round. The Solar System says the
+       opposite, and says it without a single exception among the planets
+       that were left alone. Jupiter is eleven times Earth's radius and its
+       day is under ten hours; Saturn is nine and a half and turns in ten
+       and three quarters. They kept the angular momentum they accreted,
+       because nothing since has been able to take it off them — while the
+       small inner worlds have been braked by the Sun for four billion
+       years, Mercury into a 3:2 resonance and Venus past a standstill and
+       into turning backwards.
+
+       The exponent is gentle, a little over a third, which is close to what
+       the giants-against-Earth ratio actually gives and keeps the spread
+       across a vault's range of radii under a factor of two. Fast enough to
+       tell a big world from a small one; nowhere near fast enough to read
+       as a prop being turned. */
+    bodySpin[i*4 + 3] = 0.000048 * Math.pow(Math.max(0.5, RAD[i] || 3) / 4, 0.38);
   }
 }
 const _bEul = new THREE.Euler();
 function bodyRot(i, outQ) {
   if (!bodySpin || i < 0 || i >= N) { outQ.set(0,0,0,1); return outQ; }
-  _bEul.set(bodySpin[i*4], bodySpin[i*4+2] + t * bodySpin[i*4+3], bodySpin[i*4+1]);
+  /* A locked moon turns on the orbital clock rather than on its own: one
+     rotation per revolution, which is what synchronous means. Reading the
+     mean anomaly straight off the integrator is what makes it exact — the
+     same number that placed the body places its face, so the lock cannot
+     drift however long the view is left open, and it survives the third-law
+     correction changing the mean motion mid-flight.
+
+     What comes out of that for nothing is libration. The moon turns at a
+     constant rate, because rotation has no reason not to; it *travels* at a
+     rate that varies, because the second law says so. The two disagree by
+     the equation of the centre, 2e·sin M to first order, so the face rocks
+     east and west by a couple of degrees over each orbit and you see a
+     little way round each limb in turn. That is a real and named thing —
+     optical libration in longitude, 7.9° for our own Moon, the reason 59%
+     of it has been seen from Earth rather than 50% — and it is not
+     simulated here so much as unavoidable once the ellipse is real. */
+  const y = bodyLock && bodyLock[i]
+          ? bodySpin[i*4+2] + (MA ? MA[i] : 0)
+          : bodySpin[i*4+2] + t * bodySpin[i*4+3];
+  _bEul.set(bodySpin[i*4], y, bodySpin[i*4+1]);
   return outQ.setFromEuler(_bEul);
 }
 function machineSeed(i, out, o) {
