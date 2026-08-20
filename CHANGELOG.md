@@ -12,6 +12,56 @@ was checked to see whether the code behind it does what the word means, and
 where it did not, it does now. Nothing here is a new feature. It is the same
 cosmos, telling the truth about more of itself.
 
+The second half of it is the same audit turned on the picture rather than
+the mechanics: the halo, the spikes, the bloom and the gas were all shaped
+by eye, and all four have a measured shape available that is more
+interesting than the one anybody would draw.
+
+### What is drawn
+
+- **The ice display is uneven, and it has its upside-down rainbow.** Every
+  ring was a perfect annulus of constant brightness and width, and no
+  photograph of a halo shows one — it shows two thirds of a ring, brighter on
+  one side, with a gap, because a halo is made by whatever crystals happen to
+  lie along that line of sight. One cloud field now feeds every refraction
+  feature, so where the ring is thin the sun dog on that side is thin with
+  it, and the two dogs are drawn separately because in a real display one is
+  plainly brighter. Added: the circumzenithal arc, which is centred on the
+  zenith rather than the sun so it opens upward where everything else opens
+  down, and which keeps its violet because it is made by one clean prism in
+  one orientation with nothing overlapping to wash the short end out. Also
+  the lower tangent arc, the correct 46/22 ratio between the rings, sun dog
+  tails that go white and then blue because they are different light from
+  their cores, and a pillar that widens with height.
+
+- **Diffraction spikes have fringes.** A spike is the Fraunhofer pattern of a
+  straight edge — sinc squared, a bright centre and then secondary maxima
+  falling off as the inverse square of their order — which is why a real
+  spike is beaded rather than ruled. Drawn as fringes on a taper, because
+  that is what a photograph is: the arm is grossly overexposed for most of
+  its length, so the 1/u² decay reads as the taper and the interference is
+  what is left to see. And the fringes are chromatic, so the arm breaks into
+  colour toward its tip, exactly as in every telescope image.
+
+- **The bloom keeps all three of its widths.** The chain computed three
+  progressively wider gaussians and threw two away, and a chain of gaussians
+  is a gaussian: a soft mound with nothing outside it. Real veiling glare is
+  a power law, with a bright centre *and* a long tail, which no single
+  gaussian has at once. Summing the three costs two render targets and no
+  extra passes, and the weights sum to one so the light added is what it was
+  and only its distribution moved.
+
+- **The nebulae are filamentary and have an ionisation front.** Gas is
+  threaded by field and shaped by stellar winds, so a long exposure shows
+  strands and cavities rather than a gaussian ball. And an HII region is not
+  one colour: close to the hot stars, oxygen stripped twice over emits at
+  500.7 nm and the gas is teal — the Orion Nebula's core, and the middle of
+  every planetary nebula — while further out hydrogen recombines and gives
+  Hα at 656 nm. Teal core, red skirt, blended through pink rather than round
+  the hue wheel through violet.
+
+### What is claimed
+
 - **All three of Kepler's laws hold.** Every orbit was a circle turned at a
   constant rate, with the star at the centre of it, which is a turntable
   rather than an orbit.

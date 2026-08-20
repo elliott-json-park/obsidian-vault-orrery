@@ -229,6 +229,13 @@ the opposite one: if the code uses a word, the word has to be doing work in it.
   its poles on the measured law, and its spot bands walk toward the equator
   over a cycle. Colours come out of Planck's law and the CIE colour matching
   functions rather than off a palette.
+- **An ice halo is uneven the way a real one is**, made by whatever crystals
+  lie along that line of sight — with the twenty-two and forty-six degree
+  rings, sun dogs, tangent arcs above and below, a pillar, the parhelic
+  circle, and the circumzenithal arc that opens upward and keeps its violet.
+- **Diffraction spikes are beaded and chromatic**, because a spike is the
+  Fraunhofer pattern of a straight edge and its fringe spacing goes as the
+  wavelength.
 - **The corona follows Baumbach's measured brightness law** and is pearl-white
   rather than amber, because that is what Thomson-scattered photospheric
   light is. The glare around a star is the published CIE glare equation, not
