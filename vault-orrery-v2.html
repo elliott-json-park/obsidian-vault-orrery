@@ -4732,20 +4732,95 @@ void main(){
 }`;
 
 /* ---------- the sun's corona ----------
-   A camera-facing sprite with a hand-drawn radial falloff. The core node is
-   a lit sphere and reads as a rock without this; the corona is what makes it
-   read as the thing everything else is orbiting. */
+   A camera-facing sprite. The core node is a lit sphere and reads as a rock
+   without this; the corona is what makes it read as the thing everything
+   else is orbiting.
+
+   It used to be five hand-picked gradient stops running from cream through
+   amber into brown, and both halves of that were wrong.
+
+   The falloff. A corona's radial brightness is measured, and has been since
+   Baumbach fitted eclipse photometry to a sum of three power laws in 1937:
+
+       B(r) = 0.0532 r^-2.5 + 1.425 r^-7 + 2.565 r^-17
+
+   with r in stellar radii and B in millionths of the disc's own surface
+   brightness. Each term is a different thing — the r^-17 is the inner
+   corona falling away almost vertically, the r^-7 is the middle, and the
+   r^-2.5 is the F corona, which is not corona at all but sunlight scattered
+   off interplanetary dust and which is why the glow goes on and on instead
+   of stopping. Nothing shaped like a gradient reproduces that: over the
+   span this sprite covers, the law falls by a factor of two thousand.
+
+   Which is also why it is drawn through a power of 0.32 rather than
+   linearly, and that compression is not a cheat — it is what every eclipse
+   photograph ever published has had applied to it, usually as a radial
+   gradient filter over the print, for exactly this reason. The eye can hold
+   the whole corona at once and a linear exposure of it cannot.
+
+   The colour. A corona is white. What you are looking at is photospheric
+   light Thomson-scattered off free electrons moving fast enough to smear
+   the Fraunhofer lines out of it, which leaves it very slightly *bluer*
+   than the disc rather than redder — pearl, in every photograph. The amber
+   belonged to the chromosphere, which is a different layer, is drawn
+   separately a hundred lines above, and is a hundredth of the thickness.
+
+   And it is not smooth. The corona is threaded with streamers standing out
+   along the magnetic field, which is what makes an eclipse photograph look
+   like a photograph of something rather than of a lamp. They are drawn as a
+   sum of narrow angular lobes that grow in strength outward, because the
+   inner corona is nearly featureless and the structure develops with
+   height. */
 (function corona(){
   const S = 256, c = document.createElement('canvas');
   c.width = c.height = S;
   const x = c.getContext('2d');
-  const g = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
-  g.addColorStop(0.00, 'rgba(255,248,225,0.95)');
-  g.addColorStop(0.10, 'rgba(255,222,160,0.55)');
-  g.addColorStop(0.28, 'rgba(255,180,90,0.20)');
-  g.addColorStop(0.60, 'rgba(150,110,60,0.05)');
-  g.addColorStop(1.00, 'rgba(0,0,0,0)');
-  x.fillStyle = g; x.fillRect(0,0,S,S);
+  /* where the photosphere's own edge falls on this sprite, so that the
+     radius the law wants can be measured in stellar radii */
+  const R0 = 0.255;
+  const bau = r => 0.0532 * Math.pow(r, -2.5)
+                 + 1.425  * Math.pow(r, -7)
+                 + 2.565  * Math.pow(r, -17);
+  const GAM = 0.32;
+  const v1 = Math.pow(bau(1), GAM), vE = Math.pow(bau(1 / R0), GAM);
+  /* the streamers: four harmonics, offset so no two agree, each a set of
+     narrow lobes rather than a wave */
+  const RAY = [[9, 0.7, 0.42], [13, 2.3, 0.30], [17, 4.1, 0.20], [23, 1.2, 0.13]];
+  const img = x.createImageData(S, S), D = img.data;
+  for (let py = 0; py < S; py++) {
+    const dy = (py + 0.5) / S * 2 - 1;
+    for (let px = 0; px < S; px++) {
+      const dx = (px + 0.5) / S * 2 - 1;
+      const rr = Math.sqrt(dx*dx + dy*dy), o = (py*S + px) * 4;
+      if (rr >= 1) { D[o+3] = 0; continue; }
+      const r = Math.max(1, rr / R0);
+      let v = (Math.pow(bau(r), GAM) - vE) / (v1 - vE);
+      if (!(v > 0)) { D[o+3] = 0; continue; }
+      const th = Math.atan2(dy, dx);
+      let ray = 0;
+      for (let k = 0; k < RAY.length; k++) {
+        const a = Math.cos(th * RAY[k][0] + RAY[k][1]);
+        ray += RAY[k][2] * (a > 0 ? a*a*a*a*a*a : 0);
+      }
+      /* smooth at the base, rayed further out */
+      const amt = Math.min(1, Math.max(0, (r - 1.04) / 0.85));
+      v *= 1 + amt * (ray * 1.9 - 0.42);
+      /* the sprite has to reach zero before its own edge or it shows as a
+         disc with a rim */
+      const t = Math.min(1, Math.max(0, (rr - 0.84) / 0.16));
+      v *= 1 - t*t*(3 - 2*t);
+      const a8 = Math.round(Math.min(1, Math.max(0, v)) * 242);
+      if (!a8) { D[o+3] = 0; continue; }
+      /* pearl: barely warm where the chromosphere is still contributing,
+         and going very slightly blue outward the way the K corona does */
+      const w = Math.min(1, (r - 1) / 1.6);
+      D[o]   = 255;
+      D[o+1] = Math.round(246 + w * 6);
+      D[o+2] = Math.round(228 + w * 26);
+      D[o+3] = a8;
+    }
+  }
+  x.putImageData(img, 0, 0);
   const tex = new THREE.CanvasTexture(c);
   tex.minFilter = THREE.LinearFilter;
   /* Depth-tested, which it was not.
