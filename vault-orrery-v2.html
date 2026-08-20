@@ -11358,7 +11358,13 @@ function writeInstances() {
          and scaling from zero is a ring opening out, which is a better
          arrival than a ring fading up. */
       const app = s / Math.max(1, camera.position.distanceTo(_pos));
-      s *= sstep(clamp((app - 0.011) / 0.026, 0, 1));
+      /* Halved with the annulus. The ring is a little over half the radius
+         it used to be, now that it sits inside the Roche limit where a ring
+         belongs, and a threshold left where it was would have moved the
+         moment of arrival twice as close in. What decides when a ring is
+         worth drawing is how far away the reader is, not how the arithmetic
+         behind the radius changed. */
+      s *= sstep(clamp((app - 0.0052) / 0.0123, 0, 1));
       if (gsc) s *= genScale[i];
       _m.compose(_pos, ringQ[k], _s.set(s, s, s));
       ringMesh.setMatrixAt(k, _m);
