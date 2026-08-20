@@ -153,6 +153,13 @@ have gone to nothing against their planets. The two lit classes run to 8.00×
 where the two light sources stop at 3.00× — a planet asked for more brightness
 has much further to climb before it reads at all.
 
+**SUN HALO** is the scattering glare around the star, and it is the only
+thing here that gets *bigger* as you back away from it. A star at map range is
+four pixels of disc, and four pixels of disc is not what a sun looks like from
+a distance: it is a soft bloom with a small unbearable centre, because the
+light scatters on its way to you. It hands over to the corona and then to the
+photosphere itself as you approach.
+
 **The control deck can be moved.** Drag its title bar to put it anywhere in
 the pane, pull any of the four corners to set its width, and the sliders
 reflow into whatever width you leave them. Each corner holds the edge

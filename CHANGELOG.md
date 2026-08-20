@@ -4,6 +4,18 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.6.3
+
+- **SUN HALO is back**, unchanged from the version 1.6.1 left it at. Taking it
+  out was reasoned from the corona and the bloom having grown into the job,
+  and they have not: both belong to the star and are drawn at the star’s own
+  scale, so both shrink away at exactly the range where the star stops being a
+  disc. The halo is the only thing here that grows as you back away from it,
+  which is why nothing else can stand in for it.
+
+  The two glow defaults 1.6.2 brought with it stay — SUN GLOW at 0.65x and
+  SYSTEM GLOW at 0.60x.
+
 ## 1.6.2
 
 - **SUN HALO is gone.** It was added in 1.6.0 and fixed in 1.6.1 — the fix
