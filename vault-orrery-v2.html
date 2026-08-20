@@ -10865,15 +10865,23 @@ function aopSpin(o) {
 
    AREF is the semi-major axis on the first frame after a layout, so the
    ratio is 1 for every body until something moves and the sky opens at
-   exactly the tempo it always did. The clamp is not physics, it is a floor
-   under a divide: ORBIT SPREAD reaches 0.30× and a body dragged by the
-   reader can be anywhere at all. */
+   exactly the tempo it always did.
+
+   The clamp is not physics, and is worth being honest about. Its floor is a
+   guard under a divide, since a body dragged by the reader can be anywhere
+   at all. Its ceiling is comfort: ORBIT SPREAD runs down to 0.30× from a
+   default of 3.20×, and taken literally that is a tenth of the radius and
+   so thirty-five times the rate — a moon going round in half a second,
+   which is not an orbit any more, it is a strobe. Six is where it stops,
+   which is a fifteen-fold speed-up and about a second a circuit, and it
+   does not begin to bind until the last fifth of the slider. Everything a
+   reader is likely to set is exact. */
 function advance(i, o, orad, dOrb) {
   if (!arefDone) AREF[i] = orad;
   let m = MA[i];
   if (dOrb) {
     const r = AREF[i] / (orad > 1e-4 ? orad : 1e-4);
-    const k = r < 0.04 ? 0.04 : r > 25 ? 25 : r;
+    const k = r < 0.06 ? 0.06 : r > 6 ? 6 : r;
     m += dOrb * o.sp * k * Math.sqrt(k);
     MA[i] = m;
   }
