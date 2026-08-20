@@ -3236,10 +3236,11 @@ renderer.info.autoReset = false;
 
    The passes:
      scene  -> RT0        the frame, in linear light, at half a pixel each way
-     RT0    -> BLUR_A     bright pass and downsample in one go
-     BLUR_A -> BLUR_B     horizontal gaussian
-     BLUR_B -> BLUR_A     vertical gaussian
-     RT0+A  -> canvas     add, then encode to sRGB
+     RT0    -> A1         bright pass and downsample in one go
+     A1     -> A1         a narrow gaussian, through B
+     A1     -> A2         a wider one on top of it
+     A2     -> A3         wider again
+     RT0+A1+A2+A3 -> canvas   add the three, then encode to sRGB
 
    The encoding is the part that quietly ruins this, and it took two wrong
    answers to get right. r128 picks a shader's output encoding from
@@ -3264,7 +3265,7 @@ renderer.info.autoReset = false;
    where the two spaces are closest, and this is a look rather than a
    simulation. Predictable beats principled here. */
 const BLOOM = {
-  ok: false, rt: null, a: null, b: null, c: null,
+  ok: false, rt: null, a: null, a2: null, a3: null, b: null, c: null,
   bright: null, blur: null, comp: null, ray: null,
   quad: null, cam: null, scene: null, w: 0, h: 0
 };
@@ -3350,7 +3351,8 @@ void main(){
    the bloom path and the plain path at zero bloom was a property worth
    having, and it now extends to the grade. */
 const COMP_F = `
-uniform sampler2D tScene; uniform sampler2D tBloom; uniform sampler2D tRay;
+uniform sampler2D tScene; uniform sampler2D tRay;
+uniform sampler2D tB1; uniform sampler2D tB2; uniform sampler2D tB3;
 uniform float uAmt, uRay, uBlur, uHeat;
 varying vec2 vUv;
 void main(){
@@ -3384,7 +3386,25 @@ void main(){
     }
     c = acc / wsum;
   }
-  c += texture2D(tBloom, vUv).rgb * uAmt;
+  /* ---- three widths, added ----
+     The chain used to keep only its last and widest stage, and a chain of
+     gaussians is a gaussian: a soft round mound with nothing outside it.
+     That is not what a lens does. Veiling glare is a power law — the same
+     one the star's own glare sprite is drawn from, because it is the same
+     physics — and a power law has a bright centre *and* a tail that carries
+     a long way, which is exactly what a single gaussian of any width cannot
+     have at once. Widen it and the core goes soft; tighten it and the light
+     stops at the object.
+
+     A sum of gaussians of increasing width is the standard way to build one,
+     and the chain was already computing them: it just threw the first two
+     away. Keeping all three costs two render targets and nothing in passes.
+     The weights sum to one, so the total light added is what it always was
+     and only its distribution has moved — a hot centre, a soft middle, and a
+     spill that reaches across the frame. */
+  c += (texture2D(tB1, vUv).rgb * 0.34
+      + texture2D(tB2, vUv).rgb * 0.30
+      + texture2D(tB3, vUv).rgb * 0.36) * uAmt;
   c += texture2D(tRay,   vUv).rgb * uRay;
   /* ---- the star is too close ----
      Not a red filter over the picture: an exposure the frame has lost
@@ -3417,7 +3437,8 @@ function bloomInit() {
   BLOOM.ray.uniforms = { tSrc:{value:null}, uSun:{value:new THREE.Vector2(.5,.5)},
                          uDecay:{value:0.945}, uWeight:{value:0.052} };
   BLOOM.comp = mk(COMP_F);
-  BLOOM.comp.uniforms = { tScene:{value:null}, tBloom:{value:null}, tRay:{value:null},
+  BLOOM.comp.uniforms = { tScene:{value:null}, tRay:{value:null},
+                          tB1:{value:null}, tB2:{value:null}, tB3:{value:null},
                           uAmt:{value:0.6}, uRay:{value:0},
                           uBlur:{value:0}, uHeat:{value:0} };
   BLOOM.quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), BLOOM.bright);
@@ -3429,7 +3450,7 @@ function bloomInit() {
 function bloomSize(w, h) {
   bloomInit();
   if (BLOOM.w === w && BLOOM.h === h && BLOOM.rt) return;
-  [BLOOM.rt, BLOOM.a, BLOOM.b, BLOOM.c].forEach(r => { if (r) r.dispose(); });
+  [BLOOM.rt, BLOOM.a, BLOOM.a2, BLOOM.a3, BLOOM.b, BLOOM.c].forEach(r => { if (r) r.dispose(); });
   const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
                 format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false };
   /* Eight bits, and sRGB — the canvas's own format, which is the point: the
@@ -3439,8 +3460,13 @@ function bloomSize(w, h) {
   BLOOM.rt = new THREE.WebGLRenderTarget(w, h, opt);
   BLOOM.rt.texture.encoding = THREE.sRGBEncoding;
   const hw = Math.max(1, w >> 1), hh = Math.max(1, h >> 1);
-  BLOOM.a = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
-  BLOOM.b = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  /* one per stage of the chain, because the composite reads all three. B is
+     still the scratch every horizontal pass writes into and is never read by
+     anything but the vertical pass that follows it. */
+  BLOOM.a  = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.a2 = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.a3 = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.b  = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
   /* the rays get a target of their own rather than borrowing the blur's spare
      one: the march reads A and the composite reads both, so writing the rays
      into B would be correct only until the day a fourth blur pass is added */
@@ -3452,7 +3478,7 @@ function bloomSize(w, h) {
      zero times undefined memory is still zero — but a target that has never
      been drawn to is also a target three.js has never attached, and clearing
      them here means the first composited frame cannot sample one. */
-  [BLOOM.a, BLOOM.b, BLOOM.c].forEach(r => {
+  [BLOOM.a, BLOOM.a2, BLOOM.a3, BLOOM.b, BLOOM.c].forEach(r => {
     renderer.setRenderTarget(r); renderer.clear();
   });
   renderer.setRenderTarget(null);
@@ -3528,35 +3554,48 @@ function renderFrame() {
   if (glow) {
     BLOOM.bright.uniforms.tSrc.value = BLOOM.rt.texture;
     bloomPass(BLOOM.bright, BLOOM.a);
-    /* Three widening passes rather than one.
+    /* Three widening passes rather than one, and all three kept.
        A single nine-tap blur reaches about five pixels, and five pixels of
        spread is a soft edge, not a glow — the light has to travel far enough
        to land on things that are not the source before anyone reads it as
        light. Chaining blurs multiplies their kernels, so stepping the offset
-       out 1, 3, 7 builds a wide falloff with a bright centre for six
-       half-resolution passes, which is nothing on any GPU that got this far. */
+       out 1, 3, 7 builds a wide falloff for six half-resolution passes,
+       which is nothing on any GPU that got this far.
+
+       Each stage now lands in its own target instead of being overwritten by
+       the next, because the composite wants all three: see the note there
+       for why one width, however well chosen, cannot be a lens. The passes
+       are the same six they always were. */
     const hw = BLOOM.a.width, hh = BLOOM.a.height;
     const steps = [1, 3, 7];
+    const dst = [BLOOM.a, BLOOM.a2, BLOOM.a3];
+    let src = BLOOM.a;
     for (let k = 0; k < steps.length; k++) {
       const r = steps[k];
-      BLOOM.blur.uniforms.tSrc.value = BLOOM.a.texture;
+      BLOOM.blur.uniforms.tSrc.value = src.texture;
       BLOOM.blur.uniforms.uDir.value.set(r/hw, 0);
       bloomPass(BLOOM.blur, BLOOM.b);
       BLOOM.blur.uniforms.tSrc.value = BLOOM.b.texture;
       BLOOM.blur.uniforms.uDir.value.set(0, r/hh);
-      bloomPass(BLOOM.blur, BLOOM.a);
+      bloomPass(BLOOM.blur, dst[k]);
+      src = dst[k];
     }
   }
   /* the shafts, marched over what the blur has already made */
   if (rayAmt > 0.02) {
-    BLOOM.ray.uniforms.tSrc.value = BLOOM.a.texture;
+    /* the widest of the three: the shafts are made of the light that has
+       already spread, and marching the tight stage would give them the
+       source's own edges */
+    BLOOM.ray.uniforms.tSrc.value = BLOOM.a3.texture;
     BLOOM.ray.uniforms.uSun.value.set(sun.x * 0.5 + 0.5, sun.y * 0.5 + 0.5);
     bloomPass(BLOOM.ray, BLOOM.c);
   }
 
   const U = BLOOM.comp.uniforms;
   U.tScene.value = BLOOM.rt.texture;
-  U.tBloom.value = BLOOM.a.texture;
+  U.tB1.value    = BLOOM.a.texture;
+  U.tB2.value    = BLOOM.a2.texture;
+  U.tB3.value    = BLOOM.a3.texture;
   U.tRay.value   = BLOOM.c.texture;
   U.uAmt.value   = glow ? amt : 0;
   U.uRay.value   = rayAmt > 0.02 ? rayAmt : 0;
