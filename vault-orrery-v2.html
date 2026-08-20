@@ -582,7 +582,6 @@ body.ship #shud{display:block}
 /* the closing-rate cell says which way it is going in colour as well as in
    sign — an amber number that has quietly gone negative is a number nobody
    reads twice */
-#shud .cell.away u{color:#7fb4c8;text-shadow:0 0 12px rgba(92,225,255,.35)}
 #sh-sys{color:var(--cy);opacity:.8}
 #shud .bd{display:flex;gap:0;padding:0}
 #shud .cell{flex:1;padding:8px 10px 9px;border-right:1px solid rgba(92,225,255,.12)}
@@ -897,7 +896,6 @@ body.ship #heat.on{display:block}
     <div class="bd">
       <div class="cell"><u id="sh-spd">0</u><s data-i18n="deck.spd">속도 U/S</s>
         <div id="thr"><i></i></div></div>
-      <div class="cell" id="c-cls"><u id="sh-cls">—</u><s data-i18n="deck.cls">접근률 U/S</s></div>
       <div class="cell"><u id="sh-eta">—</u><s data-i18n="deck.eta">도착까지</s></div>
       <div class="cell"><u id="sh-tgt">—</u><s data-i18n="deck.tgt">조준 대상</s></div>
       <div class="cell"><u id="sh-lnk">—</u><s data-i18n="deck.lnk">연결 · SPACE 스캔</s></div>
@@ -1243,7 +1241,6 @@ const STR = {
 
 /* ---- flight deck · ship · surface -------------------------------------- */
 'deck.spd':    ['속도 U/S','SPEED U/S','速度 U/S','速度 U/S'],
-'deck.cls':    ['접근률 U/S','CLOSING U/S','接近率 U/S','接近率 U/S'],
 'deck.eta':    ['도착까지','ETA','到着まで','抵达时间'],
 'deck.tgt':    ['조준 대상','TARGET','照準対象','瞄准目标'],
 'deck.lnk':    ['연결 · SPACE 스캔','LINKS · SPACE TO SCAN','接続 · SPACE でスキャン','连接 · SPACE 扫描'],
@@ -7996,7 +7993,7 @@ addEventListener('resize', () => { if (mindOpen) { mmResize(); buildMind(MM.root
 const ship = {
   on:false, pos:new THREE.Vector3(0,0,0), vel:new THREE.Vector3(),
   yaw:0, pitch:0, boost:false, speed:0, sf:0,
-  lock:-1, scan:false, travel:null, radar:210, look:false,
+  lock:-1, scan:false, surveyed:-1, travel:null, radar:210, look:false,
   /* ---- added with the cockpit pass ----
      orbit    a parked orbit about a body, or null. See shipOrbitEnter.
      cands    everything the aiming cone found this frame, not only the
@@ -8118,7 +8115,20 @@ const LOCK_CONE = 0.075;                    // radians off the crosshair
    whole cosmos feel like a tabletop. Slower means the planets are far away,
    and far away means big.                                                */
 const ORRERY_FOV = 52, SHIP_FOV = 40;
-function lockRange() { return clamp((SHELL_R || 1200) * 0.16, 130, 1200); }
+/* How far the reticle can call a target.
+
+   0.16 of the shell was tuned for "what am I about to fly into", and it
+   answered that well. But the readout it feeds is a range and a time to
+   arrival, and the question people actually ask of it is the opposite one —
+   "how far is that, and how long would it take me" — which they ask about
+   things they can see and have not reached yet. At 0.16 the answer was
+   nothing at all until they were most of the way there, which is precisely
+   when it stops being useful.
+
+   Two thirds of the shell, so anything visibly in front of the ship can be
+   named. The cone is what keeps it from being a list: it is still whatever
+   you are pointed at, just from where you are actually standing. */
+function lockRange() { return clamp((SHELL_R || 1200) * 0.66, 400, 9000); }
 function baseThrust() { return clamp((SHELL_R || 1200) * 0.20, 90, 1500) * SET.thr; }
 
 function shipDirs() {
@@ -8176,6 +8186,7 @@ function exitShip() {
      flashing over an orrery that is not near anything. */
   ship.travel = null; ship.orbit = null; ship.patrol = false;
   ship.heat = 0; ship.shake = 0; ship.cands.length = 0; ship.pin = -1;
+  ship.surveyed = -1;
   $('heat').classList.remove('on');
   sysAnnounce(null, true);
   ship.sys = null;
@@ -8358,15 +8369,29 @@ addEventListener('mousemove', e => {
    threw away the whole reason for having a ship. Now it is a survey
    instrument: the links burn, the connected bodies glow, you fly there
    yourself. */
-function setScan(on) {
-  ship.scan = !!on && ship.lock >= 0;
-  scanLit = ship.scan ? adj[ship.lock] : null;
+/* The scan holds the body it was taken of, not whatever the nose happens to
+   be pointed at.
+
+   It used to be re-taken every time the reticle changed its mind, which meant
+   the survey came apart the instant you looked away from its subject — and
+   looking away is the whole reason to have taken it: you press space to find
+   out where this note's links go, and then you turn to look at where they
+   went. The one gesture that makes the marks useful was the one that erased
+   them.
+
+   ship.surveyed is what the scan is of. Nothing but pressing space again, or
+   leaving the cockpit, changes it. */
+function setScan(on, of) {
+  const i = of === undefined ? ship.lock : of;
+  ship.scan = !!on && i >= 0;
+  ship.surveyed = ship.scan ? i : -1;
+  scanLit = ship.scan ? adj[i] : null;
   $('sh-mode').textContent = ship.travel ? 'AUTOPILOT' : (ship.scan ? 'SCAN' : 'MANUAL');
 }
 function toggleScan() {
   if (ship.scan) { setScan(false); toast('SCAN OFF'); return; }
   if (ship.lock < 0) { toast(T('ship.nolock')); return; }
-  setScan(true);
+  setScan(true, ship.lock);
   const total = adj[ship.lock] ? adj[ship.lock].size : 0;
   toast(T('ship.scan', { name: nodes[ship.lock].n, n: total }));
 }
@@ -8378,14 +8403,15 @@ const SCAN_TAGS = 10;
 const _proj = new THREE.Vector3();
 function drawScanMarkers() {
   const box = $('shiplinks');
-  if (!ship.scan || ship.lock < 0) { if (box.childElementCount) box.innerHTML = ''; return; }
-  const all = Array.from(adj[ship.lock] || []);
+  const of = ship.surveyed;
+  if (!ship.scan || of < 0) { if (box.childElementCount) box.innerHTML = ''; return; }
+  const all = Array.from(adj[of] || []);
   const list = all
     .map(j => [j, Math.hypot(P[j*3]-ship.pos.x, P[j*3+1]-ship.pos.y, P[j*3+2]-ship.pos.z)])
     .sort((a,b) => a[1] - b[1])
     .slice(0, SCAN_TAGS);
-  if (box.childElementCount !== list.length || box.dataset.of !== String(ship.lock)) {
-    box.dataset.of = String(ship.lock);
+  if (box.childElementCount !== list.length || box.dataset.of !== String(of)) {
+    box.dataset.of = String(of);
     box.innerHTML = '';
     list.forEach(() => {
       const d = document.createElement('div');
@@ -8597,7 +8623,8 @@ function shipStep(dt) {
   if (best !== ship.lock) {
     ship.lock = best;
     ship.clsD = -1;                             // the rate is about one body
-    if (ship.scan) setScan(best >= 0);          // target changed: re-survey
+    /* and the scan is deliberately not touched: it belongs to the body it was
+       taken of, and the reticle moving on is not that body going away */
   }
   hovered = best;
 
@@ -8628,8 +8655,10 @@ function shipStep(dt) {
     const rest = Math.max(0, d - Math.max(14, RAD[ship.lock] * 3.4));
     ship.eta = ship.cls > 0.5 ? rest / ship.cls : 0;
     $('xname').textContent = nodes[ship.lock].n;
+    /* the ceiling went up with the range: a target four thousand units out is
+       a long trip, and "no estimate" is a worse answer than "eleven minutes" */
     $('xdist').textContent = d.toFixed(0) + ' U  ·  ' +
-      (ship.eta > 0 && ship.eta < 720 ? etaText(ship.eta) + '  ·  ' : '') + 'SPACE';
+      (ship.eta > 0 && ship.eta < 2400 ? etaText(ship.eta) + '  ·  ' : '') + 'SPACE';
   } else {
     ship.cls = 0; ship.eta = 0; ship.clsD = -1;
     $('xname').textContent = ''; $('xdist').textContent = '';
@@ -9844,6 +9873,7 @@ function writeInstances() {
     if (rip && ripN[i] > 0.004) a += ripN[i] * 2.2;
     if (ship.on) {
       if (i === ship.lock) a = Math.min(2.2, a*2.4);
+      else if (i === ship.surveyed) a = Math.min(2.2, a*2.4);
       else if (scanLit && scanLit.has(i)) a = Math.min(2.0, a*1.9);
       /* the atmosphere a body gained as you came alongside used to be this
          sprite swelling; it is the limb in the body shader now — see
@@ -9960,8 +9990,11 @@ function writeLinks() {
      the one setting where bow is all there is. */
   const lift = (0.20 + 0.34 * (1 - SET.ten)) * SET.arc;
   const bow  = 0.05 + 0.09 * (1 - SET.ten);
-  const scanSet = (ship.on && ship.scan && ship.lock >= 0) ? scanLit : null;
-  const lnk = SET.lnk, sel = selected, lock = ship.lock;
+  const scanSet = (ship.on && ship.scan && ship.surveyed >= 0) ? scanLit : null;
+  const lnk = SET.lnk, sel = selected;
+  /* the scan burns the links of the body it was taken of, not of whatever the
+     nose has drifted onto since — see setScan */
+  const lock = ship.surveyed;
   const rip = ripples.length > 0 ? ripN : null;
   const VP = P, LP = linkPos, LC = linkCol, AL = alpha;
   const STRIP = (SEG-1)*2;
@@ -10419,19 +10452,16 @@ function writeHUD(now) {
     $('sh-spd').textContent = ship.speed.toFixed(0);
     $('thr').firstElementChild.style.width =
       Math.min(100, ship.speed / Math.max(1, baseThrust()*1.5) * 100) + '%';
-    /* Closing rate, with its sign carried in colour as well as in the glyph.
-       A rate is only meaningful about something, so with nothing locked this
-       is a dash rather than a zero — zero would say "holding station", which
-       is a different fact. */
+    /* The closing rate had a cell of its own and it was arithmetic nobody
+       flies on: it is the derivative of the range, which is already on the
+       deck, and it says the same thing the time-to-arrival says with a sign
+       instead of a number. It is still computed — the ETA is made out of it —
+       and it is no longer a fifth number competing for the same glance. */
     if (ship.lock >= 0) {
-      const c = ship.cls;
-      $('sh-cls').textContent = (c >= 0 ? '+' : '−') + Math.abs(c).toFixed(0);
-      $('c-cls').classList.toggle('away', c < -0.5);
-      $('sh-eta').textContent = ship.eta > 0 && ship.eta < 3600 ? etaText(ship.eta)
-                             : (ship.orbit ? 'ORBIT' : '—');
+      $('sh-eta').textContent = ship.eta > 0 && ship.eta < 5400 ? etaText(ship.eta)
+                             : (ship.orbit ? 'ORBIT' : (ship.cls < -0.5 ? 'AWAY' : '—'));
     } else {
-      $('sh-cls').textContent = '—'; $('sh-eta').textContent = '—';
-      $('c-cls').classList.remove('away');
+      $('sh-eta').textContent = '—';
     }
     $('sh-tgt').textContent = ship.lock >= 0
       ? (nodes[ship.lock].n.length > 8 ? nodes[ship.lock].n.slice(0,8)+'…'
@@ -11769,6 +11799,9 @@ window.vaultOrrery = {
                   ship: ship.on ? {
                     lock: ship.lock, mode: ship.orbit ? 'orbit'
                         : ship.travel ? 'travel' : ship.patrol ? 'patrol' : 'manual',
+                    /* the survey is its own state and outlives the reticle, so
+                       it cannot be read off `mode` — see setScan */
+                    scan: !!ship.scan, surveyed: ship.surveyed,
                     orbitOf: ship.orbit ? ship.orbit.i : -1,
                     orbitR: ship.orbit ? +ship.orbit.r.toFixed(2) : 0,
                     lockR: ship.lock >= 0 ? +RAD[ship.lock].toFixed(2) : 0,
