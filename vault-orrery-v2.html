@@ -4783,11 +4783,36 @@ function ringTexture() {
   c.width = c.height = S;
   const x = c.getContext('2d');
   const g = x.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
-  /* the geometry's inner edge sits at 0.49 of the disc; everything inside it
-     is never sampled, and is left empty so a seam cannot show through */
-  const stops = [[0.00,0],[0.487,0],[0.50,0.55],[0.58,0.95],[0.63,0.30],
-                 [0.66,0.88],[0.78,0.72],[0.80,0.12],[0.83,0.70],
-                 [0.95,0.34],[1.00,0]];
+  /* ---- Saturn's own profile, at Saturn's own radii ------------------
+     The stops used to be a pleasant set of bands chosen by eye. They can
+     be the real thing instead, because the real thing is tabulated and is
+     more interesting than anything anybody would invent: a ring system is
+     not a gradient, it is four named regions with two named gaps in it,
+     and the widths and the opacities are all measured.
+
+     The gradient runs 0 to 1 in fractions of the outer edge, and the outer
+     edge is the outside of the A ring at 2.267 planetary radii. So every
+     boundary below is a real distance divided by that one number.
+
+       C ring     1.239 – 1.527 R   optical depth ~0.1, and it looks it
+       B ring     1.527 – 1.951 R   τ between 1 and 3: the bright one, and
+                                    banded within itself rather than flat
+       Cassini    1.951 – 2.025 R   not empty — τ near 0.1 — which is why
+                                    it reads as a dark lane and not a cut
+       A ring     2.025 – 2.267 R   τ ~0.5, so about two thirds of B
+       Encke gap  2.214 R           a narrow true clearing, held open by
+                                    Pan, which orbits inside it
+
+     The geometry's inner edge sits at 0.546 of the disc, which is the C
+     ring's own start; everything inside that is never sampled and is left
+     empty so no seam can show through. */
+  const stops = [[0.000,0],[0.543,0],
+                 [0.547,0.16],[0.600,0.20],[0.670,0.24],
+                 [0.676,0.72],[0.720,0.95],[0.775,0.86],[0.820,0.97],[0.856,0.88],
+                 [0.862,0.10],[0.886,0.08],
+                 [0.894,0.66],[0.940,0.61],[0.973,0.56],
+                 [0.9765,0.06],[0.980,0.58],
+                 [0.997,0.44],[1.000,0]];
   stops.forEach(([p, a]) => g.addColorStop(p, `rgba(255,255,255,${a})`));
   x.fillStyle = g;
   x.fillRect(0, 0, S, S);
@@ -5460,7 +5485,24 @@ ringIdx = [];
 }
 if (ringIdx.length) {
   const maxIn = Math.max.apply(null, ringIdx.map(i => nodes[i].inb | 0));
-  const ringGeo = new THREE.RingGeometry(1, 2.05, 96, 1);
+  /* ---- inside the Roche limit, which is what a ring is ---------------
+     The rings ran from 2.4 to 7.2 planetary radii, and nothing can be a
+     ring out there. Past about 2.44 radii — the Roche limit for a fluid
+     body of the planet's own density — the tide pulling a lump apart is
+     weaker than the lump's own gravity holding it together, and rubble at
+     that distance does not stay rubble: it accretes, in a matter of
+     orbits, into a moon. That is the whole reason the Solar System's four
+     ring systems all sit inside their planet's Roche limit and every moon
+     sits outside it, and it is why Saturn's A ring stops where it stops.
+
+     So the annulus is 1.239 to 2.267 radii now, which is Saturn's. It is
+     two and a half times tighter than it was and it reads far better for
+     it — a bright collar hugging the planet rather than a hoop hung round
+     it — and it lands in the right place relative to everything else this
+     file draws: the innermost moon orbits at 3.4 radii, so the ring ends
+     and the moons begin either side of the limit that decides which is
+     which, without anything having to be arranged for it. */
+  const ringGeo = new THREE.RingGeometry(1, 1.8297, 128, 1);
   const ringMat = new THREE.MeshBasicMaterial({
     map: ringTexture(), transparent: true, opacity: 0.72, side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending, depthWrite: false });
@@ -5471,16 +5513,30 @@ if (ringIdx.length) {
   ringQ = [];
   ringK = new Float32Array(ringIdx.length);
   ringIdx.forEach((i, k) => {
-    /* Tilted from the seed the note's own surface is generated from, so a
-       planet's rings sit at the same angle every time you come back to it —
-       and no two neighbours share one, which is what keeps a cluster of
-       ringed bodies from reading as a printed pattern. */
-    const h = mkHash3(surfSeed(i));
+    /* ---- the equatorial plane, and no other ----------------------------
+       The tilt used to come from its own corner of the surface seed, which
+       meant a planet's rings had no relationship at all to the axis the
+       planet was turning on. That is not a stylistic liberty, it is the one
+       thing about a ring that is not free: ring particles orbiting off the
+       equator are dragged into it by the planet's own oblateness within a
+       few precession periods, so what survives is a sheet in the equatorial
+       plane and nothing else. Saturn's rings are at Saturn's 26.7°
+       obliquity because Saturn is tilted 26.7°, and the two numbers are the
+       same number.
+
+       bodySpin's x term is the obliquity — the spin axis works out as
+       (0, cos tx, sin tx), fixed, with the z term only a phase in the body
+       frame — so a quarter turn on top of it takes the ring geometry's own
+       +Z normal onto that axis exactly. Same seed as before, so a planet's
+       rings still sit where they always did each time you come back; they
+       now sit where the planet's equator is as well. */
     ringQ.push(new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(Math.PI * 0.5 + (h(1) - 0.5) * 0.85, (h(2) - 0.5) * 0.7, h(3) * TAU)));
-    /* between 2.4x and 3.5x the body: enough to read, never enough to touch
-       the neighbour it orbits beside */
-    ringK[k] = 2.4 + ((nodes[i].inb | 0) / maxIn) * 1.1;
+      new THREE.Euler(bodySpin[i*4] + Math.PI * 0.5, 0, 0)));
+    /* the inner edge, in planetary radii. Saturn's C ring starts at 1.239
+       and this leans on that; the citation count moves it a little, which
+       moves the whole annulus with it, and the outer edge stays under the
+       2.44 the Roche limit allows however heavily a note is cited. */
+    ringK[k] = 1.185 + ((nodes[i].inb | 0) / maxIn) * 0.135;
     ringMesh.setColorAt(k, new THREE.Color(
       lerp(COL[i*3],   1, .30), lerp(COL[i*3+1], 1, .30), lerp(COL[i*3+2], 1, .30)));
   });
