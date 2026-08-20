@@ -575,7 +575,11 @@ canvas{display:block}
 #gen.on{display:block}
 #gen .bd{padding:9px 12px 11px}
 #gen .ttl b{letter-spacing:.24em}
-#gen-date{color:var(--am)!important;font-variant-numeric:tabular-nums}
+#gen-date{color:var(--am)!important;font-variant-numeric:tabular-nums;margin-left:auto}
+/* Genesis was the one pane with no way out of it on the pane itself: G again
+   or Escape closed it, and both are things you have to already know. */
+#gen-x{cursor:pointer;pointer-events:auto;margin-left:10px}
+#gen-x:hover{color:var(--cy)}
 /* the stage line: what the cosmos is doing right now */
 #genstage{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;min-height:17px}
 #genstage u{text-decoration:none;font-size:12.5px;letter-spacing:.22em;color:var(--am);
@@ -872,7 +876,6 @@ body.ship #heat.on{display:block}
         <div class="mini am" id="b-clear" style="display:none" data-i18n="btn.clear">✕ 볼트 비우기</div>
         <div class="mini" id="b-gen" data-i18n="btn.gen" data-i18n-title="btn.gen.t">◌ 항성계 생성</div>
         <div class="mini" id="b-post" data-i18n="btn.post" data-i18n-title="btn.post.t">⤓ 포스터</div>
-        <div class="mini" id="b-vid" data-i18n="btn.vid" data-i18n-title="btn.vid.t">⏺ 영상</div>
         <div class="mini" id="b-snd" data-i18n="btn.snd" data-i18n-title="btn.snd.t">♪ 사운드</div>
         <div class="mini" id="b-rst" data-i18n="btn.rst">↺ 설정 초기화</div>
       </div>
@@ -890,7 +893,6 @@ body.ship #heat.on{display:block}
       <div class="row"><span>SPACESHIP</span><span>F</span></div>
       <div class="row"><span>GENESIS · TWINS</span><span>G · N</span></div>
       <div class="row"><span>RIPPLE · POSTER</span><span>SPACE · P</span></div>
-      <div class="row"><span>RECORD CLIP</span><span>C</span></div>
       <div class="row"><span>LINK LAYER</span><span>L</span></div>
       <div class="row"><span>REFERENCE PLANE</span><span>X</span></div>
       <div class="row"><span>RESET · HIDE HUD</span><span>R · H</span></div>
@@ -945,7 +947,7 @@ body.ship #heat.on{display:block}
   </div>
 
   <div class="pane glass" id="gen">
-    <div class="ttl"><b data-i18n="gen.ttl">GENESIS · 항성계 생성</b><span id="gen-date">—</span></div>
+    <div class="ttl"><b data-i18n="gen.ttl">GENESIS · 항성계 생성</b><span id="gen-date">—</span><span class="fx" id="gen-x" data-i18n-title="gen.close.t">[ ✕ ]</span></div>
     <div class="bd">
       <div id="genstage"><u id="gen-ph">VOID</u><s id="gen-desc" data-i18n="gen.p0">아직 아무것도 없습니다</s></div>
       <div id="genrow">
@@ -1181,16 +1183,6 @@ const STR = {
 'btn.post':    ['⤓ 포스터','⤓ POSTER','⤓ ポスター','⤓ 海报'],
 'btn.post.t':  ['HUD 없이 고해상도 PNG 저장 [P]','Save a high-resolution PNG with no HUD [P]',
                 'HUDなしで高解像度PNGを保存 [P]','保存无HUD的高分辨率PNG [P]'],
-'btn.vid':     ['⏺ 영상','⏺ CAPTURE','⏺ 動画','⏺ 录制'],
-'btn.vid.t':   ['HUD 없이 12초 영상 녹화 [C]','Record a 12-second clip with no HUD [C]',
-                'HUDなしで12秒の動画を録画 [C]','录制12秒无HUD视频 [C]'],
-'btn.vid.stop':['■ 정지','■ STOP','■ 停止','■ 停止'],
-'vid.rec':     ['녹화 중 · {s}초 남음','RECORDING · {s}s LEFT','録画中 · 残り{s}秒','录制中 · 剩余{s}秒'],
-'vid.ok':      ['영상 저장됨 · {s}','Clip saved · {s}','動画を保存 · {s}','视频已保存 · {s}'],
-'vid.fail':    ['이 브라우저는 영상 녹화를 지원하지 않습니다',
-                'This browser cannot record video',
-                'このブラウザは動画録画に対応していません',
-                '此浏览器不支持视频录制'],
 'btn.snd':     ['♪ 사운드','♪ SOUND','♪ サウンド','♪ 声音'],
 'btn.snd.t':   ['앰비언트 사운드 켜기 / 끄기 [U]','Ambient sound on / off [U]',
                 'アンビエントサウンド オン / オフ [U]','环境音效 开 / 关 [U]'],
@@ -1310,6 +1302,7 @@ const STR = {
 'ship.scan':   ['{name} · 연결 {n} 표시','{name} · {n} links shown','{name} · 接続 {n} 件 表示','{name} · 显示 {n} 条连接'],
 
 /* ---- genesis ----------------------------------------------------------- */
+'gen.close.t': ['생성 종료 [G]','Leave Genesis [G]','生成を終了 [G]','结束生成 [G]'],
 'gen.ttl':     ['GENESIS · 항성계 생성','GENESIS · STAR SYSTEM','GENESIS · 星系生成','GENESIS · 星系生成'],
 'gen.play.t':  ['재생 / 정지','Play / pause','再生 / 停止','播放 / 暂停'],
 'gen.rst.t':   ['처음(무)으로','Back to the void','最初（無）へ','回到起点（虚无）'],
@@ -1721,6 +1714,19 @@ const BLM_MAX = 1.50;
    choice about mood, and it is the cheapest one in the whole instrument:
    pentatonic cannot sound wrong, minor makes the same walk elegiac, whole
    tone removes the ground from under it, and open fifths is a bell tower. */
+/* The four numbers that used to be sliders. Every one of them is the value
+   the knob shipped at, so switching sound on sounds the way it did — what has
+   gone is the ability to move them, which nobody was doing twice.
+
+     WET / DAMP   how much of the room is heard, and how dark it is. Both are
+                  properties of the room, and ROOM SIZE is the one question
+                  about a room anyone actually asks.
+     PING / DECAY the level and length of the note a selection sounds. MASTER
+                  already scales it and the decay was tuned against ROOM SIZE.
+     ENGINE       the cockpit's own noise, which belongs to the cockpit. */
+const S_WET = 0.95, S_DAMP = 1700, S_DRONE_HZ = 320;
+const S_PING = 1, S_PING_DECAY = 2.4, S_ENGINE = 1;
+
 const SCALES = [
   { n:'PENTATONIC',  s:[0, 2, 4, 7, 9, 12, 14, 16, 19, 21] },
   { n:'MINOR',       s:[0, 2, 3, 5, 7, 8, 10, 12, 14, 15] },
@@ -1891,9 +1897,13 @@ const KNOBS = [
   { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:1, fmt:mult },
   { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
-  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:300, sc:100, def:1,
+  /* Planets and moons run to 8x where the sun and the folder stars stop at
+     3x, and the asymmetry is the point: those two are light sources and the
+     other two are lit, so a planet asked for more brightness has much further
+     to climb before it reads at all. Eight is where the halo saturates. */
+  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
-  { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:300, sc:100, def:1,
+  { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
   { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:1,
     fmt:v => offAt(v, mult(v)), apply: () => applyStarfield() },
@@ -1928,24 +1938,20 @@ const KNOBS = [
     fmt:v => SCALES[clamp(v|0, 0, SCALES.length-1)].n },
   { k:'sRoom',  g:'sound', label:'ROOM SIZE',   min:5, max:140, sc:10, def:7.5,
     fmt:v => v.toFixed(1) + ' s', apply: () => audioApply() },
-  { k:'sWet',   g:'sound', label:'ROOM MIX',    min:0, max:170, sc:100, def:.95,
-    fmt:v => v < 0.02 ? 'DRY' : v.toFixed(2), apply: () => audioApply() },
-  { k:'sDamp',  g:'sound', label:'ROOM DAMP',   min:300, max:6000, step:50, sc:1, def:1700,
-    fmt:v => Math.round(v) + ' Hz', apply: () => audioApply() },
   { k:'sEcho',  g:'sound', label:'ECHO TAIL',   min:0, max:85, sc:100, def:.36,
     fmt:v => offAt(v, v.toFixed(2)), apply: () => audioApply() },
   { k:'sEchoT', g:'sound', label:'ECHO TIME',   min:12, max:170, sc:100, def:.62,
     fmt:v => v.toFixed(2) + ' s', apply: () => audioApply() },
-  { k:'sDrone', g:'sound', label:'DRONE',       min:0, max:170, sc:100, def:1,
+  /* What DRONE was, under the name it always described. Three near-unison
+     voices under a low filter is the bed the whole vault sits on — it is the
+     ambience, and calling it by the synthesis technique that makes it was
+     naming the wiring rather than the sound.
+
+     Its tone is a constant now. "What note is the room humming" is one of
+     those settings that is interesting exactly once and is then either right
+     or forgotten, and it cost a slider in a panel that had thirteen. */
+  { k:'sDrone', g:'sound', label:'AMBIENT',     min:0, max:200, sc:100, def:1,
     fmt:v => offAt(v, mult(v)), apply: () => audioApply() },
-  { k:'sDroneT',g:'sound', label:'DRONE TONE',  min:90, max:1200, step:10, sc:1, def:320,
-    fmt:v => Math.round(v) + ' Hz', apply: () => audioApply() },
-  { k:'sPing',  g:'sound', label:'NOTE LEVEL',  min:0, max:200, sc:100, def:1,
-    fmt:v => offAt(v, mult(v)) },
-  { k:'sPingD', g:'sound', label:'NOTE DECAY',  min:40, max:800, step:10, sc:100, def:2.4,
-    fmt:v => v.toFixed(2) + ' s' },
-  { k:'sEngine',g:'sound', label:'ENGINE',      min:0, max:200, sc:100, def:1,
-    fmt:v => offAt(v, mult(v)) },
 ];
 const KNOB_OF = {};
 KNOBS.forEach(kn => { KNOB_OF[kn.k] = kn; });
@@ -3837,11 +3843,27 @@ function surfSeed(i) { return hashStr((nodes[i] ? nodes[i].p : '') + '|' + i); }
 const catLabel = c => (c && c.lkey) ? T(c.lkey, c.larg) : (c ? c.label : '—');
 
 
-/* ---- the machined shell ------------------------------------------------
-   Latitude and longitude off the unit sphere, cut into plates. The seam is a
-   distance to the nearest plate edge rather than a drawn line, so it stays a
-   crisp hairline at every zoom instead of aliasing into a moire the moment
-   the body is small on screen.
+/* ---- the dark shell ----------------------------------------------------
+   A near-black sphere that the star finds.
+
+   The first cut of this plated the hull and lit each plate a different
+   brightness — 0.78 to 1.18 of the folder colour, plate by plate. It read as a
+   mirror ball, and for exactly the reason a mirror ball does: a surface made
+   of independently bright facets says "this is covered in small reflectors"
+   however the light falls on it, and the shape underneath disappears.
+
+   So the albedo is dark and nearly uniform — the plates vary by a few per
+   cent, not by half — and everything that makes the body legible comes from
+   the light instead. The terminator is widened deliberately: a Lambert
+   falloff on a dark body goes from lit to invisible over a few degrees, and
+   what is wanted is a long slow gradient from the noon point round to the
+   night side, so the sphere reads as a sphere at every range. A thin rim
+   picks out the limb on the lit side, which is what stops a dark ball from
+   becoming a hole in the starfield.
+
+   The folder colour survives as a tint rather than as the paint: it is what
+   the legend promises, and a black planet still has to say which system it
+   belongs to. It does that in the lit gradient and in the strips.
 
    uSurf / aSurf carries the per-body seed: x is the hash, y picks the lit
    band, z is how many plate rows this body has. A moon and a hub-sized planet
@@ -3852,6 +3874,7 @@ float mHash(vec2 c){ return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453);
 float mPlate;      // how bright this plate is
 float mSeam;       // 0 on a seam, 1 in the middle of a plate
 float mStrip;      // the lit strips
+vec3  mTint;       // the folder colour, kept for the light to find
 `;
 /* Written into diffuseColor, so the folder colour the instance carries is
    still what decides the hue — the shell shades it, it does not repaint it. */
@@ -3873,7 +3896,10 @@ function machineBody(sh, instanced) {
     vec2 cell = floor(uv);
     vec2 f = fract(uv);
     float h = mHash(cell + vSurf.x * 71.0);
-    mPlate = 0.78 + h * 0.40;
+    /* Six per cent, where it used to be fifty. Enough that the plating is
+       there when you are close enough to look for it, nowhere near enough to
+       break the sphere into facets from across the vault. */
+    mPlate = 0.97 + h * 0.06;
     /* the seam, in cell units, so it is the same hairline on every plate */
     vec2 e = min(f, 1.0 - f);
     mSeam = smoothstep(0.0, 0.055, min(e.x, e.y));
@@ -3886,14 +3912,43 @@ function machineBody(sh, instanced) {
     /* and a handful of plates that are simply lit, like a window on a hull */
     mStrip += step(0.945, h) * mSeam * 0.75;
     mStrip = clamp(mStrip, 0.0, 1.4);
-    float shade = mPlate * mix(0.42, 1.0, mSeam) * mix(1.0, 0.66, band);
-    diffuseColor.rgb *= shade;
+    /* the colour the instance carries, kept whole for the light to work on —
+       what goes into diffuseColor is almost none of it */
+    mTint = diffuseColor.rgb;
+    float shade = mPlate * mix(0.72, 1.0, mSeam) * mix(1.0, 0.86, band);
+    /* Charcoal with the system's hue in it, not the system's colour dimmed:
+       a flat multiply takes a saturated cyan to a dark saturated cyan, which
+       is still a coloured ball. Mixing toward a neutral first is what makes
+       it read as a dark object that happens to be lit by something. */
+    diffuseColor.rgb = mix(vec3(0.055, 0.062, 0.075), mTint * 0.16, 0.55) * shade;
   }`);
-  /* the strips are emission, not albedo: they have to read on the night side,
-     which is exactly where a lit thing says "this is running" */
+  /* ---- what the star finds ----
+     Three additions, all of them light rather than paint, and all keyed off
+     the same dot product so they arrive together as the terminator comes
+     round.
+
+       the day gradient   smoothstep from well behind the terminator to well
+                          past noon, so the transition is a long sweep rather
+                          than the few degrees a Lambert term gives on a body
+                          this dark. This is the thing that makes the sphere
+                          legible, and it carries the folder's hue.
+       the limb           a narrow band where the surface turns away from the
+                          eye, on the lit side only. Without it a dark planet
+                          in front of the starfield has no edge at all.
+       the strips         emission, so they read on the night side — which is
+                          exactly where a lit thing says "this is running".  */
   sh.fragmentShader = sh.fragmentShader.replace('#include <output_fragment>',
-    '  outgoingLight += mix(diffuseColor.rgb, vec3(0.62, 0.86, 1.0), 0.45)\n' +
-    '                   * mStrip * 1.15;\n' +
+    '  {\n' +
+    '    vec3 nn2 = normalize(normal);\n' +
+    '    float dp = dot(nn2, sDir);\n' +
+    '    float day = smoothstep(-0.45, 0.85, dp);\n' +
+    '    float lit = day * day * sInt * vStarCol.a;\n' +
+    '    outgoingLight += mix(mTint, vStarCol.rgb, 0.34) * lit * 0.62;\n' +
+    '    float edge = pow(1.0 - max(dot(nn2, normalize(vViewPosition)), 0.0), 4.0);\n' +
+    '    outgoingLight += mix(mTint, vec3(1.0), 0.45) * edge * smoothstep(-0.15, 0.6, dp)\n' +
+    '                     * sInt * vStarCol.a * 0.85;\n' +
+    '  }\n' +
+    '  outgoingLight += mix(mTint, vec3(0.62, 0.86, 1.0), 0.45) * mStrip * 1.15;\n' +
     '#include <output_fragment>');
 }
 /* The seed, per body. Path-derived, so it survives a reload; the plate count
@@ -4659,8 +4714,12 @@ bodyGeo = new THREE.IcosahedronGeometry(1, N > 900 ? 2 : 3);
    from the sphere's own direction in machineBody(), which is what lets the
    instanced bodies and the high-detail mesh be the same object at every
    range. The folder colour rides in on instanceColor as it always did. */
-bodyMat = new THREE.MeshPhongMaterial({ emissive:0x05101a, emissiveIntensity:1,
-  shininess:64, specular:0x4a6f8c, flatShading:false });
+/* Nearly no specular and nearly no ambient emission. A broad highlight on a
+   dark sphere is the other half of what made this read as a mirror ball, and
+   the emissive was a floor under the night side that stopped it from ever
+   going properly dark. The light does the work now — see machineBody. */
+bodyMat = new THREE.MeshPhongMaterial({ emissive:0x02060c, emissiveIntensity:1,
+  shininess:130, specular:0x1a2a38, flatShading:false });
 bodyMat.onBeforeCompile = sh => {
   machineBody(sh, true);
   starLit(sh, true);
@@ -6216,86 +6275,6 @@ function savePoster() {
 }
 $('b-post').onclick = savePoster;
 
-/* ---- clip capture ----
-   The poster answers "what does my vault look like", and it answers it well.
-   It cannot answer the other one: this thing *moves* — orbits turn, pulses run
-   the links, a meteor crosses — and a still is the one format that throws all
-   of that away. So the canvas records itself.
-
-   Straight off the WebGL canvas via captureStream, which has a property worth
-   having on purpose: the stream carries the drawing buffer and nothing else,
-   so the HUD, which is DOM sitting on top, is simply not in it. No hiding
-   panels and putting them back the way the poster has to. What comes out is
-   the cosmos, clean, at whatever the window is showing.
-
-   No audio. The ambient bed is generated by WebAudio and could be piped in,
-   but a clip that starts playing a drone when it is dropped into a chat is a
-   worse guest than a silent one, and anything this is posted to will lay its
-   own sound over the top regardless. */
-const VID = { rec: null, chunks: [], timer: 0, left: 0 };
-const VID_SECS = 12;
-function vidMime() {
-  if (typeof MediaRecorder === 'undefined') return null;
-  /* vp9 where it exists, vp8 where it does not, and whatever the browser will
-     admit to as a last resort */
-  const want = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
-  for (const m of want) if (MediaRecorder.isTypeSupported(m)) return m;
-  return null;
-}
-function vidStop() {
-  if (VID.rec && VID.rec.state !== 'inactive') VID.rec.stop();
-}
-function vidSync() {
-  const b = $('b-vid');
-  b.textContent = VID.rec ? T('btn.vid.stop') : T('btn.vid');
-  b.classList.toggle('am', !!VID.rec);
-}
-function recordClip() {
-  if (VID.rec) { vidStop(); return; }
-  if (!N) { toast(T('need.vault')); return; }
-  const mime = vidMime();
-  if (!mime) { toast(T('vid.fail')); return; }
-  let stream;
-  try { stream = renderer.domElement.captureStream(60); }
-  catch (e) { toast(T('vid.fail')); return; }
-  try { VID.rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 }); }
-  catch (e) { toast(T('vid.fail')); return; }
-
-  VID.chunks = [];
-  VID.rec.ondataavailable = e => { if (e.data && e.data.size) VID.chunks.push(e.data); };
-  VID.rec.onstop = () => {
-    clearInterval(VID.timer); VID.timer = 0;
-    VID.rec = null; vidSync();
-    stream.getTracks().forEach(tr => tr.stop());
-    if (!VID.chunks.length) { toast(T('vid.fail')); return; }
-    const blob = new Blob(VID.chunks, { type: 'video/webm' });
-    VID.chunks = [];
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    /* the same filename rule the poster uses, so a vault named 지식정원 does
-       not export as ____ */
-    a.download = (DATA.meta.vault || 'vault')
-                   .replace(/[^\w가-힣ぁ-んァ-ヶー一-龥.-]+/g, '_') +
-                 '-orrery.webm';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    toast(T('vid.ok', { s: (blob.size/1048576).toFixed(1) + ' MB' }));
-  };
-  VID.rec.start(250);
-  VID.left = VID_SECS;
-  vidSync();
-  toast(T('vid.rec', { s: VID.left }));
-  /* a running count, because a recording with no visible end is one people
-     interrupt — and it doubles as the way to stop early */
-  VID.timer = setInterval(() => {
-    VID.left--;
-    if (VID.left <= 0) { vidStop(); return; }
-    toast(T('vid.rec', { s: VID.left }), 1200);
-  }, 1000);
-}
-$('b-vid').onclick = recordClip;
-
 /* ================================================================= SOUND
    Off by default, and deliberately so: v1 chose "소리 없는 정적" as one of
    the five axes that make this read as space. This does not undo that
@@ -6387,8 +6366,8 @@ function audioInit() {
     /* the tail comes back darker than it went in, and stays under the
        direct sound instead of in front of it */
     const wetLP = ctx.createBiquadFilter();
-    wetLP.type = 'lowpass'; wetLP.frequency.value = SET.sDamp; wetLP.Q.value = 0.4;
-    const wet = ctx.createGain(); wet.gain.value = SET.sWet;
+    wetLP.type = 'lowpass'; wetLP.frequency.value = S_DAMP; wetLP.Q.value = 0.4;
+    const wet = ctx.createGain(); wet.gain.value = S_WET;
     bus.connect(pre); pre.connect(conv); conv.connect(wetLP);
     wetLP.connect(wet); wet.connect(master);
 
@@ -6409,7 +6388,7 @@ function audioInit() {
     /* a drone, not a chord: three near-unison voices under a low filter is
        roughly what a very large room sounds like */
     const filt = ctx.createBiquadFilter();
-    filt.type = 'lowpass'; filt.frequency.value = SET.sDroneT; filt.Q.value = 0.7;
+    filt.type = 'lowpass'; filt.frequency.value = S_DRONE_HZ; filt.Q.value = 0.7;
     filt.connect(bus);
     AUD.drone.length = 0;
     DRONE_HZ.forEach((f, k) => {
@@ -6520,11 +6499,11 @@ function audioApply() {
      give, and the only way to get it was the system volume. */
   to(A.master.gain, A.on ? 0.28 * SET.sVol : 0, 0.35);
 
-  to(A.wet.gain, SET.sWet, 0.12);
-  A.wetLP.frequency.setTargetAtTime(SET.sDamp, t, 0.10);
+  to(A.wet.gain, S_WET, 0.12);
+  A.wetLP.frequency.setTargetAtTime(S_DAMP, t, 0.10);
   /* the delay's own filter sits below the room's, so a repeat is always
      darker than the tail it is heard through */
-  A.dlLP.frequency.setTargetAtTime(clamp(SET.sDamp * 0.68, 200, 6000), t, 0.10);
+  A.dlLP.frequency.setTargetAtTime(clamp(S_DAMP * 0.68, 200, 6000), t, 0.10);
   to(A.fb.gain, SET.sEcho, 0.10);
   /* Slower than the rest, and deliberately: a delay line whose length is
      being changed resamples what is already in it, so the tail bends in
@@ -6532,7 +6511,7 @@ function audioApply() {
      stretching, which is a good sound; taken instantly it is a tape wobble. */
   A.dl.delayTime.setTargetAtTime(SET.sEchoT, t, 0.20);
 
-  A.droneFilt.frequency.setTargetAtTime(SET.sDroneT, t, 0.12);
+  A.droneFilt.frequency.setTargetAtTime(S_DRONE_HZ, t, 0.12);
   const tune = Math.pow(2, SET.sTune / 12);
   A.drone.forEach(v => {
     v.o.frequency.setTargetAtTime(v.base * tune, t, 0.30);
@@ -6577,7 +6556,7 @@ function audioSet(on) {
    Which note that lands on is the vault's; which ten notes it can land on,
    and what key they are in, is now the listener's. See SCALES. */
 function audioPing(i) {
-  if (!AUD.on || !AUD.ctx || i < 0 || i >= N || SET.sPing < 0.02) return;
+  if (!AUD.on || !AUD.ctx || i < 0 || i >= N || S_PING < 0.02) return;
   const ctx = AUD.ctx, t = ctx.currentTime;
   const sc = SCALES[clamp(SET.sScale | 0, 0, SCALES.length - 1)].s;
   const step = sc[Math.abs(i * 7 + nodes[i].n.length) % sc.length];
@@ -6594,14 +6573,14 @@ function audioPing(i) {
   if (ship.on && i === ship.lock && Math.abs(ship.cls) > 1) {
     f *= clamp(1 + ship.cls / 2600, 0.84, 1.19);
   }
-  const dec = SET.sPingD;
+  const dec = S_PING_DECAY;
   const g = ctx.createGain();
   /* A slower attack than a ping needs — 40 ms rather than 14 — because a
      hard transient in a long room is a click followed by a room, and a soft
      one is just the room. The body of the note is shorter than it was and
      what you actually hear is mostly tail. */
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.15 * SET.sPing, t + 0.040);
+  g.gain.exponentialRampToValueAtTime(0.15 * S_PING, t + 0.040);
   g.gain.exponentialRampToValueAtTime(0.0004, t + dec);
   g.connect(AUD.bus || AUD.master);
   if (AUD.echo) g.connect(AUD.echo);
@@ -6623,13 +6602,13 @@ function audioStep() {
   if (!AUD.on || !AUD.ctx || !AUD.ngain) return;
   const t = AUD.ctx.currentTime;
   const v = ship.on ? clamp(ship.speed / 300, 0, 1) : 0;
-  AUD.ngain.gain.setTargetAtTime(v * 0.20 * SET.sEngine, t, 0.15);
+  AUD.ngain.gain.setTargetAtTime(v * 0.20 * S_ENGINE, t, 0.15);
   AUD.noise.frequency.setTargetAtTime(120 + v * 520, t, 0.25);
   /* the shelf opens with the boost and with speed, so leaning on SHIFT is
      something you hear before you see the frame widen */
   if (AUD.nlow) {
     const heavy = ship.on ? (ship.boost ? 1 : 0) * 0.6 + ship.sf * 0.7 : 0;
-    AUD.nlow.gain.setTargetAtTime(clamp(heavy, 0, 1) * 15 * SET.sEngine, t, 0.20);
+    AUD.nlow.gain.setTargetAtTime(clamp(heavy, 0, 1) * 15 * S_ENGINE, t, 0.20);
   }
   /* Panned by the thruster that is firing, not by the velocity: the ear is
      being told what the ship is *doing*, and a ship coasting sideways is not
@@ -9244,7 +9223,6 @@ addEventListener('keydown', e => {
   else if (k === 'n') { e.preventDefault(); twinsShow(selected); }
   else if (k === ' ') { e.preventDefault(); if (!e.repeat) rippleHere(); }
   else if (k === 'p') { e.preventDefault(); savePoster(); }
-  else if (k === 'c') { e.preventDefault(); recordClip(); }
   else if (k === 'u') { e.preventDefault(); audioSet(!AUD.on); }
   else if (k === 'h') {
     /* the canopy goes with the HUD. It is cockpit furniture, not scenery —
@@ -9297,8 +9275,8 @@ const _hs = new Float32Array(4), _hseed = new Float32Array(3);
 function heroBuild() {
   if (heroMesh) return;
   /* the same numbers bodyMat carries, because it is the same shell */
-  const hm = new THREE.MeshPhongMaterial({ shininess:64, specular:0x4a6f8c,
-      emissive:0x05101a });
+  const hm = new THREE.MeshPhongMaterial({ shininess:130, specular:0x1a2a38,
+      emissive:0x02060c });
   hm.onBeforeCompile = sh => {
     sh.uniforms.uStar = heroStar.uStar;
     sh.uniforms.uStarCol = heroStar.uStarCol;
@@ -11709,6 +11687,7 @@ function maybeIntro() {
   setTimeout(showIntro, 900);
 }
 $('introgo').onclick = hideIntro;
+$('gen-x').onclick = () => genSet(false);
 $('introx').onclick = hideIntro;
 /* the backdrop, but not the card itself */
 $('intro').onclick = e => { if (e.target === $('intro')) hideIntro(); };
@@ -11854,10 +11833,6 @@ window.vaultOrrery = {
   clear() { swapVault(EMPTY); },
   destroy() {
     RUN.host = false; runPause();
-    /* a recording outlives the view otherwise: the interval keeps firing and
-       the recorder keeps holding a stream off a canvas nobody is drawing to */
-    if (VID.timer) { clearInterval(VID.timer); VID.timer = 0; }
-    try { vidStop(); } catch(e){}
     [BLOOM.rt, BLOOM.a, BLOOM.b].forEach(r => { if (r) { try { r.dispose(); } catch(e){} } });
     BLOOM.rt = BLOOM.a = BLOOM.b = null; BLOOM.ok = false;
     if (AUD.ctx) { try { AUD.ctx.close(); } catch(e){} AUD.ctx = null; }
