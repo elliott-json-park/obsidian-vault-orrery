@@ -1265,10 +1265,6 @@ const STR = {
 'ship.nolock': ['먼저 대상에 충분히 가까이 접근하세요','Get close enough to a target first',
                 'まず対象に十分近づいてください','请先靠近目标'],
 'ship.scan':   ['{name} · 연결 {n} 표시','{name} · {n} links shown','{name} · 接続 {n} 件 表示','{name} · 显示 {n} 条连接'],
-'fam.gas':     ['가스 거인','GAS GIANT','ガス惑星','气态巨行星'],
-'fam.terra':   ['지구형 행성','TERRESTRIAL','地球型惑星','类地行星'],
-'fam.rock':    ['암석 행성','ROCKY','岩石惑星','岩石行星'],
-'fam.ice':     ['얼음 행성','ICE WORLD','氷惑星','冰质行星'],
 
 /* ---- genesis ----------------------------------------------------------- */
 'gen.ttl':     ['GENESIS · 항성계 생성','GENESIS · STAR SYSTEM','GENESIS · 星系生成','GENESIS · 星系生成'],
@@ -3609,25 +3605,26 @@ buildDust(1600);
 buildNebula(1600);
 buildVeil();
 
-/* ======================================================== PLANET SURFACES
-   Every body was the same faceted ball in a different colour, which is fine
-   at map range and falls apart the moment you approach one. These are real
-   surfaces, generated from the note itself: the same note always produces
-   the same world, and *what kind* of world it is comes out of what the note
-   is in the vault.
+/* ========================================================= BODY SURFACES
+   Every body in the cosmos wears the same machined shell.
 
-     gas    a banded giant with a storm — a concept many notes cite. The
-            loudest thing in its folder is the largest thing in its sky.
-     terra  oceans, continents, ice caps, cloud — a concept with real text
-            behind it. Something lives there.
-     rock   cratered and airless — raw material. Everything that ever hit it
-            is still written on it, which is what an archive is.
-     ice    bright, cracked, blue-shadowed — a short or dormant note.
+   It used to wear a generated world — banded gas giants, terrestrials with
+   oceans and ice caps, cratered rock — and only the one body you had come
+   close to actually got it: everything else sampled a patch of one shared
+   texture, so a planet changed its whole character as you approached it. Two
+   designs, one object, and the swap between them was the most visible thing
+   in the frame.
 
-   Two generators share the palettes. The globe one samples 3-D noise along
-   the sphere's own direction, so there is no seam at the date line and no
-   pinch at the poles. The ground one samples *periodic* 2-D noise, so the
-   tile it produces repeats seamlessly across a horizon.                  */
+   There is one design now, and it is a made thing rather than a found one:
+   plated hull, seams between the plates, a heavier band round the equator and
+   a lit strip or two. All of it comes out of the sphere's own direction in the
+   fragment shader, so it costs no texture, no generation pass and no cache —
+   and it is identical at every range, on the instanced bodies and on the
+   high-detail mesh alike, because both compile the same function.
+
+   What still differs per body is the seed: how many plates it carries and
+   which of them are bright. That comes from the note's own path, so a body
+   looks the same every time the vault is opened. */
 
 /* deterministic per note: same vault, same worlds, every time */
 function hashStr(s) {
@@ -3650,398 +3647,107 @@ function mkHash3(seed) {
 }
 const sstep = t => t*t*(3-2*t);
 
-/* 3-D value noise — for globes */
-function vn3(h, x, y, z) {
-  const X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z);
-  const u = sstep(x-X), v = sstep(y-Y), w = sstep(z-Z);
-  const c000=h(X,Y,Z),     c100=h(X+1,Y,Z),   c010=h(X,Y+1,Z),   c110=h(X+1,Y+1,Z);
-  const c001=h(X,Y,Z+1),   c101=h(X+1,Y,Z+1), c011=h(X,Y+1,Z+1), c111=h(X+1,Y+1,Z+1);
-  const a0=c000+(c100-c000)*u, a1=c010+(c110-c010)*u;
-  const b0=c001+(c101-c001)*u, b1=c011+(c111-c011)*u;
-  const p=a0+(a1-a0)*v, q=b0+(b1-b0)*v;
-  return p+(q-p)*w;
-}
-function fbm3(h, x, y, z, oct, gain) {
-  let v=0, a=1, tot=0, f=1;
-  for (let o=0;o<oct;o++){ v += a*vn3(h, x*f, y*f, z*f); tot += a; a *= (gain||0.5); f *= 2; }
-  return v/tot;
-}
-/* 2-D value noise that wraps at `per` — for a ground tile that has to repeat */
-function vn2(h, x, y, per) {
-  const X = Math.floor(x), Y = Math.floor(y);
-  const u = sstep(x-X), v = sstep(y-Y);
-  const m = (a) => ((a % per) + per) % per;
-  const x0=m(X), x1=m(X+1), y0=m(Y), y1=m(Y+1);
-  const a=h(x0,y0,0), b=h(x1,y0,0), c=h(x0,y1,0), d=h(x1,y1,0);
-  const p=a+(b-a)*u, q=c+(d-c)*u;
-  return p+(q-p)*v;
-}
-function fbm2(h, x, y, per, oct) {
-  let v=0, a=1, tot=0, f=1;
-  for (let o=0;o<oct;o++){ v += a*vn2(h, x*f, y*f, per*f); tot += a; a *= .5; f *= 2; }
-  return v/tot;
-}
+function surfSeed(i) { return hashStr((nodes[i] ? nodes[i].p : '') + '|' + i); }
 
-/* which world a note is. Deliberately readable off the HUD numbers you can
-   already see — backlinks, words, whether it is raw material. */
-function familyOf(i) {
-  const nd = nodes[i];
-  if (!nd) return 'rock';
-  if (nd.k === 'raw') return (nd.w|0) < 120 ? 'ice' : 'rock';
-  if ((nd.inb|0) >= 7) return 'gas';
-  if ((nd.w|0) >= 320) return 'terra';
-  return (nd.w|0) < 90 ? 'ice' : 'rock';
-}
-const familyName = fam => T('fam.' + fam);
 /* A category either has a name the vault gave it, or one this app made up
    and can therefore re-say in another language. */
 const catLabel = c => (c && c.lkey) ? T(c.lkey, c.larg) : (c ? c.label : '—');
 
-/* Palettes are deliberately desaturated. The category colour is what says
-   which folder a note belongs to, and it is multiplied in on top of these —
-   a fully saturated surface underneath would drown that signal out. */
-const PAL = {
-  gas:   { a:[ 96, 82, 68], b:[214,196,166], c:[248,232,200], storm:[206,116, 74] },
-  terra: { sea:[ 22, 58, 92], shelf:[ 40,102,132], land:[ 84,108, 74],
-           high:[142,132,102], peak:[228,232,236], ice:[236,244,250] },
-  rock:  { a:[ 62, 60, 62], b:[142,136,128], rim:[196,190,178] },
-  ice:   { a:[178,204,224], b:[240,248,255], crack:[ 78,116,150] }
-};
 
-/* ---- the globe: an equirectangular map wrapped on a sphere ----
-   Handed out as a job rather than as a finished canvas. A 512x256 world is
-   fifteen million noise lookups, which is a fifth of a second of frozen
-   frame — once per planet you approach, which is exactly often enough to
-   ruin the thing. The job fills a band of rows per frame instead, and the
-   high-detail sphere only appears when its world is finished. */
-function globeJob(seed, family, W, H, tint) {
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const ctx = cv.getContext('2d');
-  const img = ctx.createImageData(W, H);
-  const d = img.data;
-  const bump = document.createElement('canvas');
-  bump.width = W; bump.height = H;
-  const bctx = bump.getContext('2d');
-  const bimg = bctx.createImageData(W, H);
-  const bd = bimg.data;
+/* ---- the machined shell ------------------------------------------------
+   Latitude and longitude off the unit sphere, cut into plates. The seam is a
+   distance to the nearest plate edge rather than a drawn line, so it stays a
+   crisp hairline at every zoom instead of aliasing into a moire the moment
+   the body is small on screen.
 
-  const h1 = mkHash3(seed), h2 = mkHash3(seed ^ 0x9e3779b9), h3 = mkHash3(seed + 77771);
-  const P = PAL[family];
-  /* longitude only depends on the column, so its two trig calls are done once
-     per column instead of once per pixel — a hundred and thirty thousand
-     sines saved on a single world */
-  const COSL = new Float64Array(W), SINL = new Float64Array(W);
-  for (let x=0;x<W;x++){ const lon = ((x + .5) / W) * TAU; COSL[x] = Math.cos(lon); SINL[x] = Math.sin(lon); }
-  /* craters are placed once, in 3-D, so they never distort near the poles.
-     Stored as the cosine of their angular radius: testing a dot product
-     against that is the same test as an angle against a radius, without an
-     arc cosine per crater per pixel. */
-  let cx0 = null, cy0 = null, cz0 = null, cCos = null, cN = 0;
-  if (family === 'rock' || family === 'ice') {
-    const rr = mkHash3(seed + 31337);
-    cN = family === 'rock' ? 22 : 8;
-    cx0 = new Float64Array(cN); cy0 = new Float64Array(cN);
-    cz0 = new Float64Array(cN); cCos = new Float64Array(cN);
-    for (let k=0;k<cN;k++){
-      const a = rr(k,0,0)*TAU, b = Math.acos(2*rr(0,k,0)-1), sb = Math.sin(b);
-      cx0[k] = sb*Math.cos(a); cy0[k] = Math.cos(b); cz0[k] = sb*Math.sin(a);
-      cCos[k] = Math.cos((0.045 + Math.pow(rr(k,k,1), 3) * 0.20) * Math.PI);
-    }
+   uSurf / aSurf carries the per-body seed: x is the hash, y picks the lit
+   band, z is how many plate rows this body has. A moon and a hub-sized planet
+   want different plate counts for the same reason a dinghy and a tanker do —
+   plates are a physical size, not a fraction of the hull. */
+const MACHINE_PARS = `
+float mHash(vec2 c){ return fract(sin(dot(c, vec2(127.1, 311.7))) * 43758.5453); }
+float mPlate;      // how bright this plate is
+float mSeam;       // 0 on a seam, 1 in the middle of a plate
+float mStrip;      // the lit strips
+`;
+/* Written into diffuseColor, so the folder colour the instance carries is
+   still what decides the hue — the shell shades it, it does not repaint it. */
+function machineBody(sh, instanced) {
+  const decl = instanced ? 'attribute vec3 aSurf;' : 'uniform vec3 aSurf;';
+  sh.vertexShader = decl + '\nvarying vec3 vSurf;\nvarying vec3 vObj;\n' + sh.vertexShader;
+  sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>',
+    '#include <begin_vertex>\n  vSurf = aSurf;\n  vObj = normalize(position);');
+  sh.fragmentShader = 'varying vec3 vSurf;\nvarying vec3 vObj;\n' + MACHINE_PARS
+    + sh.fragmentShader;
+  sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `
+  {
+    vec3 nd = normalize(vObj);
+    float lat = asin(clamp(nd.y, -1.0, 1.0));
+    float lon = atan(nd.z, nd.x);
+    float rows = vSurf.z;
+    vec2 uv = vec2((lon / 6.2831853 + 0.5) * rows * 2.0,
+                   (lat / 3.1415927 + 0.5) * rows);
+    vec2 cell = floor(uv);
+    vec2 f = fract(uv);
+    float h = mHash(cell + vSurf.x * 71.0);
+    mPlate = 0.78 + h * 0.40;
+    /* the seam, in cell units, so it is the same hairline on every plate */
+    vec2 e = min(f, 1.0 - f);
+    mSeam = smoothstep(0.0, 0.055, min(e.x, e.y));
+    /* a heavier machined band round the equator — the one place every one of
+       these has in common, which is what makes them read as a series */
+    float band = 1.0 - smoothstep(0.030, 0.115, abs(lat));
+    /* two lit rings, and a third on the bodies whose seed asks for it */
+    mStrip = 1.0 - smoothstep(0.008, 0.026, abs(abs(lat) - 0.58));
+    mStrip += (1.0 - smoothstep(0.006, 0.020, abs(lat))) * step(0.62, vSurf.y);
+    /* and a handful of plates that are simply lit, like a window on a hull */
+    mStrip += step(0.945, h) * mSeam * 0.75;
+    mStrip = clamp(mStrip, 0.0, 1.4);
+    float shade = mPlate * mix(0.42, 1.0, mSeam) * mix(1.0, 0.66, band);
+    diffuseColor.rgb *= shade;
+  }`);
+  /* the strips are emission, not albedo: they have to read on the night side,
+     which is exactly where a lit thing says "this is running" */
+  sh.fragmentShader = sh.fragmentShader.replace('#include <output_fragment>',
+    '  outgoingLight += mix(diffuseColor.rgb, vec3(0.62, 0.86, 1.0), 0.45)\n' +
+    '                   * mStrip * 1.15;\n' +
+    '#include <output_fragment>');
+}
+/* The seed, per body. Path-derived, so it survives a reload; the plate count
+   follows the radius, so a moon is not wearing a planet's plating. */
+/* ---- how each body turns -----------------------------------------------
+   One table, read by both things that draw a body: the instanced mesh and the
+   high-detail stand-in. That is the whole point of it being a table — the two
+   used to spin at different rates, which made the moment one replaced the
+   other visible as the planet lurching.
+
+   Axis tilt and phase come from the seed; the rate falls with the radius,
+   because a small body that turned as slowly as a large one would look
+   becalmed and a large one turning as fast as a small one looks like a prop.
+   On the orbital clock, so freezing the sky freezes the spin with it. */
+let bodySpin = null;
+function buildBodySpin() {
+  bodySpin = new Float32Array(Math.max(1, N) * 4);
+  for (let i = 0; i < N; i++) {
+    const h = hashStr((nodes[i] ? nodes[i].p : '') + '#r');
+    bodySpin[i*4]     = ((h & 255) / 255 - 0.5) * 0.62;          // tilt x
+    bodySpin[i*4 + 1] = (((h >>> 8) & 255) / 255 - 0.5) * 0.42;  // tilt z
+    bodySpin[i*4 + 2] = (((h >>> 16) & 1023) / 1024) * 6.2831853; // phase
+    bodySpin[i*4 + 3] = 0.000075 / (1 + (RAD[i] || 3) * 0.055);   // rate
   }
-  const stormLat = (h2(9,9,9) - .5) * 0.7, stormLon = h2(3,3,3) * TAU,
-        stormR = 0.16 + h2(5,5,5) * 0.13;
-  const stX = Math.cos(stormLat)*Math.cos(stormLon), stY = Math.sin(stormLat),
-        stZ = Math.cos(stormLat)*Math.sin(stormLon);
-
-  let row = 0;
-  const doRows = (n) => {
-  const yEnd = Math.min(H, row + n);
-  for (let y=row; y<yEnd; y++){
-    const lat = (0.5 - (y + .5) / H) * Math.PI;          // +pi/2 .. -pi/2
-    const cl = Math.cos(lat), sl = Math.sin(lat);
-    for (let x=0; x<W; x++){
-      const px = cl*COSL[x], py = sl, pz = cl*SINL[x];
-      let r, g, b, hgt;
-
-      if (family === 'gas') {
-        /* bands are latitude with the latitude itself pushed around by
-           noise — straight stripes read as a beach ball, warped ones read
-           as weather */
-        const warp = fbm3(h1, px*2.2, py*2.2, pz*2.2, 3) - .5;
-        const band = 0.5 + 0.5*Math.sin((sl*9.5 + warp*2.6) * 2.1);
-        const fine = fbm3(h2, px*7, py*13, pz*7, 3);
-        const k = clamp(band*0.72 + fine*0.28, 0, 1);
-        const lo = P.a, mid = P.b, hi = P.c;
-        const t2 = k < .5 ? k*2 : (k-.5)*2;
-        const A = k < .5 ? lo : mid, B = k < .5 ? mid : hi;
-        r = A[0]+(B[0]-A[0])*t2; g = A[1]+(B[1]-A[1])*t2; b = A[2]+(B[2]-A[2])*t2;
-        /* one great storm, because every gas giant anyone can picture has one */
-        const dx = px - stX, dy = py - stY, dz = pz - stZ;
-        const sd = Math.sqrt(dx*dx + dy*dy + dz*dz) / stormR;
-        if (sd < 1) {
-          const s = (1 - sd) * (1 - sd) * (0.6 + fine*0.5);
-          r += (P.storm[0]-r)*s; g += (P.storm[1]-g)*s; b += (P.storm[2]-b)*s;
-        }
-        hgt = 110 + k*70;
-
-      } else if (family === 'terra') {
-        const e = fbm3(h1, px*2.6, py*2.6, pz*2.6, 5, .52);
-        const capAt = 0.80 - e*0.14;
-        if (Math.abs(sl) > capAt) {
-          const t2 = clamp((Math.abs(sl)-capAt)/(1-capAt)*2.2, 0, 1);
-          const A = e > .52 ? P.high : P.shelf;
-          r = A[0]+(P.ice[0]-A[0])*t2; g = A[1]+(P.ice[1]-A[1])*t2; b = A[2]+(P.ice[2]-A[2])*t2;
-          hgt = 150 + t2*60;
-        } else if (e < 0.50) {
-          const t2 = clamp((e-0.30)/0.20, 0, 1);            // deep -> shelf
-          r = P.sea[0]+(P.shelf[0]-P.sea[0])*t2;
-          g = P.sea[1]+(P.shelf[1]-P.sea[1])*t2;
-          b = P.sea[2]+(P.shelf[2]-P.sea[2])*t2;
-          hgt = 40 + t2*30;
-        } else {
-          const t2 = clamp((e-0.50)/0.28, 0, 1);
-          const veg = fbm3(h2, px*9, py*9, pz*9, 2);
-          const A = [P.land[0]*(0.75+veg*0.5), P.land[1]*(0.75+veg*0.5), P.land[2]*(0.75+veg*0.5)];
-          const B = t2 > .62 ? P.peak : P.high;
-          const u2 = t2 > .62 ? (t2-.62)/.38 : t2/.62;
-          const C = t2 > .62 ? P.high : A;
-          r = C[0]+(B[0]-C[0])*u2; g = C[1]+(B[1]-C[1])*u2; b = C[2]+(B[2]-C[2])*u2;
-          hgt = 100 + t2*140;
-        }
-        /* weather on top of all of it */
-        const cloud = fbm3(h3, px*3.4 + 11, py*3.4, pz*3.4, 4, .55);
-        const cf = clamp((cloud - 0.55) * 3.4, 0, 1) * 0.82;
-        r += (246-r)*cf; g += (250-g)*cf; b += (255-b)*cf;
-        hgt += cf*20;
-
-      } else if (family === 'rock') {
-        const m = fbm3(h1, px*4.5, py*4.5, pz*4.5, 4);
-        const fine = fbm3(h2, px*17, py*17, pz*17, 2);
-        let k = clamp(m*0.78 + fine*0.22, 0, 1);
-        let shade = 0;
-        for (let c=0;c<cN;c++){
-          const dot = px*cx0[c] + py*cy0[c] + pz*cz0[c];
-          if (dot < cCos[c]) continue;                 // outside this crater
-          /* how far in, 0 at the rim and 1 at the centre. Not linear in angle,
-             but a crater profile is not either, and the difference is a
-             fraction of a pixel of rim placement. */
-          const inw = (dot - cCos[c]) / (1 - cCos[c]);
-          const u2 = 1 - inw;
-          /* dark floor, bright raised rim, exactly where a rim would be */
-          shade += (u2 > 0.80 ? (1-Math.abs(u2-0.90)/0.10) * 0.55 : -(1-u2/0.80)*0.42);
-        }
-        k = clamp(k + shade, 0, 1);
-        const A = P.a, B = shade > 0.18 ? P.rim : P.b;
-        r = A[0]+(B[0]-A[0])*k; g = A[1]+(B[1]-A[1])*k; b = A[2]+(B[2]-A[2])*k;
-        hgt = 40 + k*180;
-
-      } else {
-        const m = fbm3(h1, px*3.2, py*3.2, pz*3.2, 4);
-        /* ridged noise: the ridges are the cracks */
-        const rid = 1 - Math.abs(2*fbm3(h2, px*5.5, py*5.5, pz*5.5, 3) - 1);
-        const crack = Math.pow(clamp(rid, 0, 1), 9);
-        const A = P.a, B = P.b;
-        r = A[0]+(B[0]-A[0])*m; g = A[1]+(B[1]-A[1])*m; b = A[2]+(B[2]-A[2])*m;
-        r += (P.crack[0]-r)*crack; g += (P.crack[1]-g)*crack; b += (P.crack[2]-b)*crack;
-        for (let c=0;c<cN;c++){
-          const dot = px*cx0[c] + py*cy0[c] + pz*cz0[c];
-          if (dot < cCos[c]) continue;
-          const u2 = (dot - cCos[c]) / (1 - cCos[c]);
-          r -= u2*34; g -= u2*24; b -= u2*10;
-        }
-        hgt = 150 + m*70 - crack*90;
-      }
-
-      /* the category colour, kept: a note's folder still has to be legible
-         from its planet, so the generated surface is tinted toward it */
-      if (tint) {
-        r += (r*tint[0]*1.55 - r) * 0.26;
-        g += (g*tint[1]*1.55 - g) * 0.26;
-        b += (b*tint[2]*1.55 - b) * 0.26;
-      }
-      const o = (y*W + x) * 4;
-      d[o] = clamp(r,0,255); d[o+1] = clamp(g,0,255); d[o+2] = clamp(b,0,255); d[o+3] = 255;
-      const hv = clamp(hgt,0,255);
-      bd[o] = bd[o+1] = bd[o+2] = hv; bd[o+3] = 255;
-    }
-  }
-  row = yEnd;
-  return row >= H;
-  };
-  return {
-    step: doRows,
-    finish() {
-      ctx.putImageData(img, 0, 0);
-      bctx.putImageData(bimg, 0, 0);
-      return { color: cv, bump };
-    }
-  };
 }
-
-/* ---- a seamless ground tile, for the surface you actually stand on ---- */
-function groundCanvas(seed, family, S, tint) {
-  const cv = document.createElement('canvas'); cv.width = cv.height = S;
-  const ctx = cv.getContext('2d');
-  const img = ctx.createImageData(S, S), d = img.data;
-  const bump = document.createElement('canvas'); bump.width = bump.height = S;
-  const bctx = bump.getContext('2d');
-  const bimg = bctx.createImageData(S, S), bd = bimg.data;
-  const h1 = mkHash3(seed + 5), h2 = mkHash3(seed ^ 0x51ed270b);
-  const P = PAL[family];
-  const PER = 8;
-  for (let y=0;y<S;y++) for (let x=0;x<S;x++){
-    const u = x/S*PER, v = y/S*PER;
-    const m = fbm2(h1, u, v, PER, 4);
-    const fine = fbm2(h2, u*3.1, v*3.1, PER*3, 3);
-    let r,g,b,hgt;
-    if (family === 'gas') {
-      /* nobody stands on a gas giant, but you can stand on the cloud deck */
-      const k = clamp(0.5 + 0.5*Math.sin((v*2.2 + (m-.5)*4.4)) * 0.9, 0, 1);
-      const A = P.a, B = P.c;
-      r = A[0]+(B[0]-A[0])*k; g = A[1]+(B[1]-A[1])*k; b = A[2]+(B[2]-A[2])*k;
-      hgt = 90 + k*90;
-    } else if (family === 'terra') {
-      const k = clamp(m*0.8 + fine*0.35, 0, 1);
-      const A = P.land, B = k > .66 ? P.high : P.shelf;
-      r = A[0]+(B[0]-A[0])*k; g = A[1]+(B[1]-A[1])*k; b = A[2]+(B[2]-A[2])*k;
-      hgt = 60 + k*170;
-    } else if (family === 'ice') {
-      const rid = 1 - Math.abs(2*fbm2(h2, u*1.7, v*1.7, PER*2, 3) - 1);
-      const crack = Math.pow(clamp(rid,0,1), 8);
-      const A = P.a, B = P.b;
-      r = A[0]+(B[0]-A[0])*m; g = A[1]+(B[1]-A[1])*m; b = A[2]+(B[2]-A[2])*m;
-      r += (P.crack[0]-r)*crack; g += (P.crack[1]-g)*crack; b += (P.crack[2]-b)*crack;
-      hgt = 170 + m*50 - crack*110;
-    } else {
-      const k = clamp(m*0.72 + fine*0.4, 0, 1);
-      const A = P.a, B = P.b;
-      r = A[0]+(B[0]-A[0])*k; g = A[1]+(B[1]-A[1])*k; b = A[2]+(B[2]-A[2])*k;
-      /* pebbles: a hard threshold on the fine octave, so the ground has grain */
-      if (fine > 0.70) { const s = (fine-0.70)*3; r += 40*s; g += 38*s; b += 34*s; }
-      hgt = 40 + k*190;
-    }
-    if (tint) {
-      r += (r*tint[0]*1.55 - r) * 0.24;
-      g += (g*tint[1]*1.55 - g) * 0.24;
-      b += (b*tint[2]*1.55 - b) * 0.24;
-    }
-    const o = (y*S + x)*4;
-    d[o]=clamp(r,0,255); d[o+1]=clamp(g,0,255); d[o+2]=clamp(b,0,255); d[o+3]=255;
-    const hv = clamp(hgt,0,255);
-    bd[o]=bd[o+1]=bd[o+2]=hv; bd[o+3]=255;
-  }
-  ctx.putImageData(img,0,0); bctx.putImageData(bimg,0,0);
-  return { color: cv, bump };
+const _bEul = new THREE.Euler();
+function bodyRot(i, outQ) {
+  if (!bodySpin || i < 0 || i >= N) { outQ.set(0,0,0,1); return outQ; }
+  _bEul.set(bodySpin[i*4], bodySpin[i*4+2] + t * bodySpin[i*4+3], bodySpin[i*4+1]);
+  return outQ.setFromEuler(_bEul);
 }
-
-function texFrom(canvas, repeat) {
-  const t = new THREE.CanvasTexture(canvas);
-  t.minFilter = THREE.LinearMipmapLinearFilter;
-  t.magFilter = THREE.LinearFilter;
-  t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-  if (repeat) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(repeat, repeat); }
-  else { t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping; }
-  return t;
-}
-
-/* One shared surface for the instanced bodies. Every planet samples a
-   different patch of it — see the aSurf attribute in buildObjects — which is
-   what stops four thousand spheres from being visibly the same sphere, at a
-   cost of exactly one texture. The unique, per-note worlds above are only
-   built for the body you are actually looking at. */
-let SHARED_SURF = null;
-function sharedSurface() {
-  if (SHARED_SURF) return SHARED_SURF;
-  const g = groundCanvas(0x5eeded, 'rock', 512, null);
-  /* lifted and flattened: this is multiplied by the per-instance colour, and
-     a dark base would just make the whole cosmos dimmer than it was */
-  const ctx = g.color.getContext('2d');
-  const im = ctx.getImageData(0,0,512,512), d = im.data;
-  for (let k=0;k<d.length;k+=4){
-    for (let c=0;c<3;c++) d[k+c] = clamp(150 + (d[k+c]-110) * 0.85, 96, 255);
-  }
-  ctx.putImageData(im,0,0);
-  const t = texFrom(g.color, 1);
-  t.encoding = THREE.sRGBEncoding;
-  const b = texFrom(g.bump, 1);
-  SHARED_SURF = { map:t, bump:b };
-  return SHARED_SURF;
-}
-
-/* Worlds already built. Small, because you only ever look closely at a few
-   notes in a row, and a 512x256 globe plus its height map is 1.5 MB of GPU
-   memory each. Power-of-two throughout: these wrap, and a non-power-of-two
-   texture cannot on WebGL 1. */
-const surfCache = new Map();
-const SURF_KEEP = 5;
-const GLOBE_W = 512, GLOBE_H = 256, GROUND_S = 256;
-
-function surfTouch(key) {
-  const s = surfCache.get(key);
-  if (s) { surfCache.delete(key); surfCache.set(key, s); }
-  return s;
-}
-function surfStore(key, s) {
-  surfCache.set(key, s);
-  while (surfCache.size > SURF_KEEP) {
-    const k = surfCache.keys().next().value;
-    const old = surfCache.get(k);
-    surfCache.delete(k);
-    old.map.dispose(); old.bump.dispose();
-  }
-  return s;
-}
-function surfSeed(i) { return hashStr((nodes[i] ? nodes[i].p : '') + '|' + i); }
-function surfTint(i) { return [COL[i*3], COL[i*3+1], COL[i*3+2]]; }
-
-/* the ground is built in one go: landing on a note is a deliberate scene
-   change and a beat of pause reads as arrival, not as a stall */
-function surfaceGround(i) {
-  const key = i + ':g';
-  const hit = surfTouch(key);
-  if (hit) return hit;
-  const fam = familyOf(i);
-  const g = groundCanvas(surfSeed(i), fam, GROUND_S, surfTint(i));
-  const map = texFrom(g.color, 26); map.encoding = THREE.sRGBEncoding;
-  return surfStore(key, { fam, map, bump: texFrom(g.bump, 26) });
-}
-
-/* the globe is built a band of rows at a time, off the frame loop */
-let globeTask = null;
-function surfaceGlobeStart(i) {
-  const key = String(i);
-  const hit = surfTouch(key);
-  if (hit) return hit;
-  if (globeTask && globeTask.i === i) return null;      // already under way
-  globeTask = { i, key, fam: familyOf(i),
-                job: globeJob(surfSeed(i), familyOf(i), GLOBE_W, GLOBE_H, surfTint(i)) };
-  return null;
-}
-/* A time budget rather than a row count. How many rows fit in three
-   milliseconds is not something this file can know — it depends on the
-   machine, the family being drawn and whether the tab is in the background —
-   and guessing wrong means either a stutter or a world that takes ten
-   seconds. Four rows at a time, until the budget is spent. */
-const SURF_MS = 4.5;
-function surfaceStep() {
-  if (!globeTask) return null;
-  const t0 = performance.now();
-  let done = false;
-  do { done = globeTask.job.step(4); }
-  while (!done && performance.now() - t0 < SURF_MS);
-  if (!done) return null;
-  const g = globeTask.job.finish();
-  const map = texFrom(g.color); map.encoding = THREE.sRGBEncoding;
-  const s = surfStore(globeTask.key, { fam: globeTask.fam, map, bump: texFrom(g.bump) });
-  const which = globeTask.i;
-  globeTask = null;
-  return { i: which, surf: s };
-}
-function surfCacheClear() {
-  surfCache.forEach(s => { s.map.dispose(); s.bump.dispose(); });
-  surfCache.clear();
-  globeTask = null;
+function machineSeed(i, out, o) {
+  const h = hashStr((nodes[i] ? nodes[i].p : '') + '#m');
+  out[o]     = (h & 4095) / 4096;
+  out[o + 1] = ((h >>> 12) & 1023) / 1024;
+  out[o + 2] = 5.0 + Math.min(9, Math.round(Math.log(1 + (RAD[i] || 3)) * 3.4))
+               + ((h >>> 22) & 3);
 }
 
 /* ================================================= THE STAR AT THE CENTRE
@@ -4718,34 +4424,15 @@ if (N && coreIdx >= 0) {
    and medium vaults can afford the extra subdivision; a huge one cannot, so
    the sphere quality follows the node count. */
 bodyGeo = new THREE.IcosahedronGeometry(1, N > 900 ? 2 : 3);
-/* One surface texture for every body in the vault, sampled at a different
-   offset and scale per instance. Without this a thousand planets are a
-   thousand copies of one sphere; with it no two are alike, and it still
-   costs one draw call and one texture. The category colour is multiplied on
-   top by instanceColor, so the folder palette survives intact. */
-const SS = sharedSurface();
-bodyMat = new THREE.MeshPhongMaterial({ emissive:0x061018, emissiveIntensity:1,
-  shininess:22, specular:0x35536b, flatShading:false,
-  map: SS.map, bumpMap: SS.bump, bumpScale: 0.030 });
+/* Metal rather than rock: the shell is a made thing, so it takes a tight
+   specular and a cool one. No map and no bump map — the plating is computed
+   from the sphere's own direction in machineBody(), which is what lets the
+   instanced bodies and the high-detail mesh be the same object at every
+   range. The folder colour rides in on instanceColor as it always did. */
+bodyMat = new THREE.MeshPhongMaterial({ emissive:0x05101a, emissiveIntensity:1,
+  shininess:64, specular:0x4a6f8c, flatShading:false });
 bodyMat.onBeforeCompile = sh => {
-  sh.vertexShader = 'attribute vec3 aSurf;\nvarying vec3 vSurf;\n' + sh.vertexShader;
-  sh.vertexShader = sh.vertexShader.replace('#include <uv_vertex>',
-    '#include <uv_vertex>\n  vSurf = aSurf;');
-  sh.fragmentShader = 'varying vec3 vSurf;\n' + sh.fragmentShader;
-  const lookup = 'vec2 sUv = vUv * vSurf.z + vSurf.xy;\n';
-  sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>',
-    lookup +
-    '  vec4 texelColor = texture2D( map, sUv );\n' +
-    '  texelColor = mapTexelToLinear( texelColor );\n' +
-    '  diffuseColor *= texelColor;');
-  /* the bump lookup has vUv baked into three's own helper, so the patch
-     offset has to be pushed through the same coordinate it uses */
-  sh.fragmentShader = sh.fragmentShader.replace(/texture2D\( bumpMap, vUv \)/g,
-    'texture2D( bumpMap, vUv * vSurf.z + vSurf.xy )');
-  sh.fragmentShader = sh.fragmentShader.replace(
-    /vUv \+ dSTdx/g, 'vUv * vSurf.z + vSurf.xy + dSTdx');
-  sh.fragmentShader = sh.fragmentShader.replace(
-    /vUv \+ dSTdy/g, 'vUv * vSurf.z + vSurf.xy + dSTdy');
+  machineBody(sh, true);
   starLit(sh, true);
 };
 bodies = new THREE.InstancedMesh(bodyGeo, bodyMat, Math.max(1, N));
@@ -4759,19 +4446,12 @@ if (bodies.instanceColor) {
   bodies.instanceColor.setUsage(THREE.DynamicDrawUsage);
   bodies.instanceColor.needsUpdate = true;
 }
-/* which patch of the shared surface this body wears. Derived from the note's
-   own path, so a planet's face is stable across reloads — and the zoom is
-   tied to the body's radius, so a big planet does not end up wearing the
-   same size of grain as a moon a twentieth of its width. */
+/* the plating each body wears — see machineSeed — and how it turns */
 {
   const surf = new Float32Array(Math.max(1, N) * 3);
-  for (let i=0;i<N;i++){
-    const h = hashStr((nodes[i].p || '') + '#s');
-    surf[i*3]   = (h & 1023) / 1024;
-    surf[i*3+1] = ((h >>> 10) & 1023) / 1024;
-    surf[i*3+2] = 1.0 + Math.min(2.6, RAD[i] * 0.10) + ((h >>> 20) & 7) * 0.12;
-  }
+  for (let i=0;i<N;i++) machineSeed(i, surf, i*3);
   bodyGeo.setAttribute('aSurf', new THREE.InstancedBufferAttribute(surf, 3));
+  buildBodySpin();
 }
 /* whose light each body sits in — see starLit(). The position half is
    rewritten every frame; the colour and the reach are the layout's. */
@@ -9389,24 +9069,37 @@ addEventListener('keyup', e => {
 addEventListener('blur', () => { keysDown.clear(); ship.boost = false; });
 
 /* ============================================================ HERO PLANET
-   The instanced body is a shared sphere wearing a patch of a shared texture,
-   which is right for four thousand of them at map range and wrong for the
-   one you are looking at. Whatever the view is actually about — the selected
-   note, the ship's target — is swapped for a high-detail sphere carrying
-   that note's own generated world. One mesh, reused; the instanced copy is
-   collapsed to nothing while it stands in. */
-let heroMesh = null, heroIdx = -1, heroSpin = 0, heroReady = false;
+   Not a different planet — a rounder one.
+
+   The instanced bodies are icosahedra of two or three subdivisions, which is
+   right for four thousand of them and visibly faceted for the one you have
+   flown up to. So whatever the view is about — the selected note, the ship's
+   target — is drawn instead by a single high-segment sphere, and the
+   instanced copy is collapsed to nothing while it stands in.
+
+   It compiles the same machineBody() the instances do, carries the same seed
+   for that note, and turns on the same clock at the same rate, so the swap
+   changes the silhouette's smoothness and nothing else. This used to be where
+   a wholly different, generated world appeared, and the moment it appeared
+   was the most conspicuous event in the frame. */
+let heroMesh = null, heroIdx = -1, heroReady = false;
 /* the hero's star, as uniforms — one mesh, so no attribute to carry it */
 const heroStar = { uStar: { value: new THREE.Vector4(0,0,0,100) },
-                   uStarCol: { value: new THREE.Vector4(1,1,1,1) } };
-const _hs = new Float32Array(4);
+                   uStarCol: { value: new THREE.Vector4(1,1,1,1) },
+                   aSurf: { value: new THREE.Vector3(0,0,8) } };
+const _hs = new Float32Array(4), _hseed = new Float32Array(3);
 function heroBuild() {
   if (heroMesh) return;
-  const hm = new THREE.MeshPhongMaterial({ shininess:16, specular:0x2c465c,
-      emissive:0x050c14, bumpScale:0.020 });
+  /* the same numbers bodyMat carries, because it is the same shell */
+  const hm = new THREE.MeshPhongMaterial({ shininess:64, specular:0x4a6f8c,
+      emissive:0x05101a });
   hm.onBeforeCompile = sh => {
     sh.uniforms.uStar = heroStar.uStar;
     sh.uniforms.uStarCol = heroStar.uStarCol;
+    /* the seed is a uniform here rather than an instanced attribute — one
+       mesh has no instances to carry one */
+    sh.uniforms.aSurf = heroStar.aSurf;
+    machineBody(sh, false);
     starLit(sh, false);
   };
   heroMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 64), hm);
@@ -9430,25 +9123,19 @@ function heroWant() {
   if (ship.on && near(hovered)) return hovered;
   return -1;
 }
+/* the note's own plating, handed to the mesh as a uniform. Nothing is
+   generated and nothing is cached: the seed is three numbers. */
 function heroSkin(i) {
   heroBuild();
-  const s = surfaceGlobeStart(i);
-  if (!s) return false;                     // still being generated
-  heroMesh.material.map = s.map;
-  heroMesh.material.bumpMap = s.bump;
-  heroMesh.material.needsUpdate = true;
+  machineSeed(i, _hseed, 0);
+  heroStar.aSurf.value.set(_hseed[0], _hseed[1], _hseed[2]);
   return true;
 }
 function heroStep(dt) {
-  /* one band of the world under construction, per frame */
-  const fin = surfaceStep();
   const want = heroWant();
   if (want !== heroIdx) { heroIdx = want; heroReady = false; }
-  if (heroIdx >= 0 && (!heroReady || (fin && fin.i === heroIdx)))
-    heroReady = heroSkin(heroIdx);
+  if (heroIdx >= 0 && !heroReady) heroReady = heroSkin(heroIdx);
   if (!heroMesh) return;
-  /* until its world is finished the instanced body stands in, unchanged —
-     nothing pops, there is just more detail a moment later */
   if (heroIdx < 0 || !heroReady) { heroMesh.visible = false; return; }
   heroMesh.visible = true;
   heroMesh.position.set(P[heroIdx*3], P[heroIdx*3+1], P[heroIdx*3+2]);
@@ -9461,9 +9148,10 @@ function heroStep(dt) {
     heroStar.uStarCol.value.set(bStarCol[heroIdx*4], bStarCol[heroIdx*4+1],
                                 bStarCol[heroIdx*4+2], bStarCol[heroIdx*4+3]);
   }
-  /* a world that does not turn is a billboard */
-  heroSpin += dt * 0.055 * Math.max(0.15, SET.spd);
-  heroMesh.rotation.set(0.24, heroSpin, 0.06);
+  /* the same rotation writeInstances gives the instance it replaced, from
+     the same table — a body that changed its spin as you arrived would be
+     the swap announcing itself */
+  bodyRot(heroIdx, heroMesh.quaternion);
 }
 function heroDrop() {
   if (!heroMesh) return;
@@ -9776,7 +9464,7 @@ function writeInstances() {
        whatever the wave is passing over a momentary swell */
     if (gsc) s *= genScale[i];
     if (rip && ripN[i] > 0.004) s *= 1 + ripN[i] * 0.16;
-    _q.set(0,0,0,1); _s.set(s,s,s);
+    bodyRot(i, _q); _s.set(s,s,s);
     _m.compose(_pos, _q, _s);
     bodies.setMatrixAt(i, _m);
 
@@ -11422,7 +11110,7 @@ function swapVault(data, keep) {
   closeMind();
   /* everything that holds a node index from the old vault has to let go
      before the indices mean something else */
-  heroDrop(); surfCacheClear();
+  heroDrop();
   rippleClear(); twinsClear(); visited.clear(); cometEnd(); genSet(false);
   selected = -1; hovered = -1; filterTxt = ''; neighbours.clear();
   if (ship.on) exitShip();
