@@ -2116,7 +2116,7 @@ let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, co
     trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
     selRig, selRing, hovRig, actRig, actRing, actRing2, actPip,
-    ringMesh, ringIdx = [], ringQ = [], ringK = null, labels;
+    ringMesh, ringIdx = [], ringQ = [], ringK = null, ringStar = null, labels;
 let world = null;
 
 const ORIGIN = { pos: new THREE.Vector3(0,0,0) };
@@ -5503,15 +5503,83 @@ if (ringIdx.length) {
      and the moons begin either side of the limit that decides which is
      which, without anything having to be arranged for it. */
   const ringGeo = new THREE.RingGeometry(1, 1.8297, 128, 1);
+  /* ---- what the star does to a ring ----------------------------------
+     A ring lit by a point source a long way off does two things that a
+     flat additive texture cannot, and both of them are the picture people
+     have of Saturn rather than a refinement of it.
+
+     The shadow. The planet casts one, and it falls across its own rings —
+     a dark wedge sweeping round with the seasons, and the single most
+     recognisable thing in any photograph of a ringed world. Geometrically
+     it is nothing: a ring particle is in shadow when it is on the far side
+     of the planet from the star and within a planetary radius of the line
+     between them. The edge is softened because a star is not a point, so
+     what is drawn is the penumbra as well, and the floor is not zero
+     because a shadowed particle still sees light scattered off the rest of
+     the ring and off the planet's own day side.
+
+     The brightness. Ring particles are centimetres to metres across, which
+     is enormous against a wavelength, and objects that size scatter light
+     overwhelmingly forwards. So a ring seen from the far side, with the
+     star behind it, is several times brighter than the same ring seen
+     lit — the reverse of the intuition, and the reason Cassini's images
+     taken from Saturn's night side look nothing like the ones taken from
+     the day side. Henyey-Greenstein at g = 0.62, which is a reasonable
+     mean for a size distribution that broad.
+
+     The cache key is not optional. three.js keys compiled programs on a
+     material's parameters and never on what onBeforeCompile did to the
+     source, so without one of its own this material and any other basic
+     material with the same settings can be handed the same program. */
   const ringMat = new THREE.MeshBasicMaterial({
     map: ringTexture(), transparent: true, opacity: 0.72, side: THREE.DoubleSide,
     blending: THREE.AdditiveBlending, depthWrite: false });
+  ringMat.customProgramCacheKey = () => 'vo-ring-shadow';
+  ringMat.onBeforeCompile = sh => {
+    sh.vertexShader = 'attribute vec4 aRing;\n' +
+      'varying vec3 vRP; varying vec3 vRC; varying vec3 vRS; varying float vRR;\n' +
+      sh.vertexShader;
+    sh.vertexShader = sh.vertexShader.replace('#include <project_vertex>',
+      '#include <project_vertex>\n' +
+      '  vRP = mvPosition.xyz;\n' +
+      '  vRC = (modelViewMatrix * instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;\n' +
+      '  vRS = (viewMatrix * modelMatrix * vec4(aRing.xyz, 1.0)).xyz;\n' +
+      '  vRR = aRing.w;');
+    sh.fragmentShader = 'varying vec3 vRP; varying vec3 vRC; varying vec3 vRS; varying float vRR;\n' +
+      sh.fragmentShader;
+    sh.fragmentShader = sh.fragmentShader.replace('#include <output_fragment>',
+      '  {\n' +
+      '    vec3 L = normalize(vRS - vRC);\n' +
+      '    vec3 rel = vRP - vRC;\n' +
+      '    float tt = dot(rel, L);\n' +
+      '    float sh = 1.0;\n' +
+      '    if (tt < 0.0 && vRR > 0.0) {\n' +
+      '      float d = length(rel - L * tt);\n' +
+      '      sh = 0.07 + 0.93 * smoothstep(vRR * 0.80, vRR * 1.30, d);\n' +
+      '    }\n' +
+      '    vec3 vw = normalize(-vRP);\n' +
+      '    float cth = clamp(dot(-L, vw), -1.0, 1.0);\n' +
+      '    float den = 1.3844 - 1.24 * cth;\n' +
+      '    float fw = min(0.6156 / max(den * sqrt(max(den, 1e-4)), 0.02), 4.0);\n' +
+      '    outgoingLight *= sh * (0.70 + 0.32 * fw);\n' +
+      '    diffuseColor.a *= sh;\n' +
+      '  }\n' +
+      '#include <output_fragment>');
+  };
   ringMesh = new THREE.InstancedMesh(ringGeo, ringMat, ringIdx.length);
   ringMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   ringMesh.frustumCulled = false;
   world.add(ringMesh);
   ringQ = [];
   ringK = new Float32Array(ringIdx.length);
+  /* where this ring's star is, and how big the body casting the shadow is.
+     Rewritten every frame, because the star does not hold still. */
+  ringStar = new Float32Array(ringIdx.length * 4);
+  {
+    const aRing = new THREE.InstancedBufferAttribute(ringStar, 4);
+    aRing.setUsage(THREE.DynamicDrawUsage);
+    ringGeo.setAttribute('aRing', aRing);
+  }
   ringIdx.forEach((i, k) => {
     /* ---- the equatorial plane, and no other ----------------------------
        The tilt used to come from its own corner of the surface seed, which
@@ -5771,7 +5839,7 @@ function disposeWorld() {
   selRig = hovRig = actRig = ringGuides = sunObj = null;
   starCore = starShell = starRing = starRing2 = null;
   starAlC = starAlS = starAlR = starAlR2 = null;
-  ringMesh = null; ringIdx = []; ringQ = []; ringK = null;
+  ringMesh = null; ringIdx = []; ringQ = []; ringK = null; ringStar = null;
   /* the shared ring canvas was one of the maps just disposed above, so the
      cache has to let go of it or the next vault draws from a dead texture */
   RING_TEX = null;
@@ -7485,7 +7553,7 @@ function mmBody(R, G, B) {
     const g = x.createRadialGradient(c - r * 0.44, c - r * 0.10, r * 0.05, c, c, r * 1.02);
     g.addColorStop(0.00, 'rgb(' + up(R,120) + ',' + up(G,120) + ',' + up(B,120) + ')');
     g.addColorStop(0.30, 'rgb(' + up(R,46)  + ',' + up(G,46)  + ',' + up(B,46)  + ')');
-    g.addColorStop(0.66, 'rgb(' + R + ',' + G + ',' + B + ')');
+    g.addColorStop(0.66, 'rgb(' + R + ',' + G + ',\n' + ')');
     g.addColorStop(1.00, 'rgb(' + dn(R,.20) + ',' + dn(G,.20) + ',' + dn(B,.24) + ')');
     x.fillStyle = g;
     x.beginPath(); x.arc(c, c, r, 0, TAU); x.fill();
@@ -7512,9 +7580,9 @@ function mmHalo(R, G, B) {
   return mmPlate('h' + R + ',' + G + ',' + B, 128, (x, S) => {
     const c = S / 2;
     const g = x.createRadialGradient(c, c, 0, c, c, c);
-    g.addColorStop(0.00, 'rgba(' + R + ',' + G + ',' + B + ',.30)');
-    g.addColorStop(0.35, 'rgba(' + R + ',' + G + ',' + B + ',.10)');
-    g.addColorStop(1.00, 'rgba(' + R + ',' + G + ',' + B + ',0)');
+    g.addColorStop(0.00, 'rgba(' + R + ',' + G + ',\n' + ',.30)');
+    g.addColorStop(0.35, 'rgba(' + R + ',' + G + ',\n' + ',.10)');
+    g.addColorStop(1.00, 'rgba(' + R + ',' + G + ',\n' + ',0)');
     x.fillStyle = g; x.fillRect(0, 0, S, S);
   });
 }
@@ -8246,7 +8314,7 @@ function mindDraw(now) {
         /* squared falloff, so it is brightest just behind the node and thins
            to nothing rather than stopping */
         const f = 1 - s / M;
-        mctx.strokeStyle = 'rgba(' + R + ',' + G + ',' + B + ',' +
+        mctx.strokeStyle = 'rgba(' + R + ',' + G + ',\n' + ',' +
                            (f * f * 0.52 * amt * born).toFixed(3) + ')';
         mctx.lineWidth = (n.r * 0.5 * f + 0.3) * iz;
         mctx.beginPath(); mctx.moveTo(px2, py2); mctx.lineTo(qx, qy); mctx.stroke();
@@ -8466,7 +8534,7 @@ function mmDrawStar(n, pr, R, G, B, now) {
   g.addColorStop(0.00, 'rgba(255,250,232,.50)');
   g.addColorStop(0.09, 'rgba(' + wR + ',' + wG + ',' + wB + ',.30)');
   g.addColorStop(0.30, 'rgba(' + wR + ',' + wG + ',' + wB + ',.10)');
-  g.addColorStop(0.62, 'rgba(' + R + ',' + G + ',' + B + ',.035)');
+  g.addColorStop(0.62, 'rgba(' + R + ',' + G + ',\n' + ',.035)');
   g.addColorStop(1.00, 'rgba(0,0,0,0)');
   mctx.fillStyle = g;
   mctx.beginPath(); mctx.arc(n.x, n.y, cr, 0, TAU); mctx.fill();
@@ -10844,8 +10912,16 @@ function writeInstances() {
       if (gsc) s *= genScale[i];
       _m.compose(_pos, ringQ[k], _s.set(s, s, s));
       ringMesh.setMatrixAt(k, _m);
+      /* The shadow is cast by the planet, so the radius handed over is the
+         planet's — and it has to shrink with the ring rather than with the
+         body, because the ring is scaled down at range and a shadow at the
+         body's full radius would then cover the whole of it. s / ringK is
+         exactly that: the drawn radius of the world the ring belongs to. */
+      starLightAt(i, spr, gs, ringStar.subarray(k*4, k*4+4));
+      ringStar[k*4+3] = s / (ringK[k] || 1);
     }
     ringMesh.instanceMatrix.needsUpdate = true;
+    ringMesh.geometry.attributes.aRing.needsUpdate = true;
   }
   if (gsc || genSz) { nodeGlowGeo.attributes.aSize.needsUpdate = true; genSz = gsc; }
   bodies.instanceMatrix.needsUpdate = true;
