@@ -3547,12 +3547,56 @@ function starLit(sh, instanced) {
     '    sl.visible = true;\n' +
     '    RE_Direct(sl, geometry, material, reflectedLight);\n' +
     '  }');
+  /* ---- the air on the limb -----------------------------------------
+     This was one blue constant. A world wore the same pale blue fringe
+     everywhere along its lit edge, at every angle to its star and whether
+     you were looking at its day side or past it into the dark — which is
+     the one thing an atmosphere does not do, and the failure is easy to
+     name because everybody has seen the photograph it should look like.
+
+     Three pieces of real optics, and the fringe stops being a decal.
+
+       Rayleigh    Molecular scattering goes as λ⁻⁴, which at 680, 550 and
+                   440 nm is 0.176 : 0.410 : 1.000 — the same three numbers
+                   atmospheric models carry as 5.8, 13.5 and 33.1 per
+                   megametre, because it is the same fact. This is why the
+                   sky is blue and there is nothing else to say about it.
+                   Its phase function, (3/16π)(1 + cos²θ), is symmetric: a
+                   molecule scatters forwards and backwards alike and least
+                   of all sideways.
+       air mass    How far the starlight travelled through air to reach this
+                   fragment. One at the point directly under the star, ten
+                   and more where the light comes in flat at the terminator
+                   — and since the short end of the spectrum is removed
+                   first, what arrives after a long path is red. That is a
+                   sunset, and from outside a world it is the copper ring
+                   round the night side that every orbital photograph has.
+                   The fringe goes blue at noon and copper at the
+                   terminator now, on one exponential.
+       Mie         Scattering by aerosol, nearly colourless and
+                   overwhelmingly forward — Henyey–Greenstein at g = 0.76,
+                   the value fitted to real haze. It is what puts a white
+                   halo round a world with its star behind it and puts
+                   nothing at all round one lit from the side. Backlighting
+                   was the case the old constant could not tell apart from
+                   any other, and it is the one that looks like a
+                   photograph when you get it right. */
   sh.fragmentShader = sh.fragmentShader.replace('#include <output_fragment>',
     '  {\n' +
     '    vec3 nn = normalize(normal);\n' +
-    '    float fr = pow(1.0 - max(dot(nn, normalize(vViewPosition)), 0.0), 3.5);\n' +
-    '    float day = smoothstep(-0.30, 0.45, dot(nn, sDir));\n' +
-    '    vec3 air = mix(diffuseColor.rgb, vec3(0.42, 0.62, 1.0), 0.55);\n' +
+    '    vec3 vv = normalize(vViewPosition);\n' +
+    '    float fr = pow(1.0 - max(dot(nn, vv), 0.0), 3.5);\n' +
+    '    float mul = dot(nn, sDir);\n' +
+    '    float day = smoothstep(-0.30, 0.45, mul);\n' +
+    '    const vec3 BR = vec3(0.176, 0.410, 1.000);\n' +
+    '    float mass = max(1.0, min(1.0 / max(mul + 0.14, 0.05), 10.0));\n' +
+    '    vec3 tr = exp(-BR * (mass - 1.0) * 0.42);\n' +
+    '    float cth = clamp(dot(-sDir, vv), -1.0, 1.0);\n' +
+    '    float phR = 0.75 * (1.0 + cth * cth);\n' +
+    '    float den = 1.5776 - 1.52 * cth;\n' +
+    '    float phM = min(0.06 * 0.4224 / max(den * sqrt(max(den, 1e-4)), 0.01), 2.2);\n' +
+    '    vec3 air = BR * phR * 0.62 + vec3(0.86, 0.90, 1.0) * phM;\n' +
+    '    air = air * tr + diffuseColor.rgb * 0.22;\n' +
     '    outgoingLight += air * fr * day * sInt * vStarCol.a * 0.9;\n' +
     '  }\n' +
     '#include <output_fragment>');
@@ -11047,11 +11091,19 @@ function writeLinks() {
 
 /* One trail, written backwards from where the body is now.
 
-   The orbit is a circle of radius `orad` in a plane tilted by `inc`, centred
-   on the body's anchor, and updatePositions builds a point on it from cos and
-   sin of the current angle. Stepping back in time is therefore a rotation of
-   that (cos, sin) pair by a fixed negative angle, which is two multiplies and
-   two adds per sample and no trigonometry at all past the first pair.
+   The orbit is an ellipse of semi-major axis `orad` in a plane tilted by
+   `inc`, with the body's anchor at one focus, and updatePositions builds a
+   point on it by solving Kepler's equation for the current mean anomaly.
+   Stepping back in time is therefore a step back in *mean* anomaly — the one
+   quantity that advances at a fixed rate — and a fresh solve per sample.
+
+   While the orbit was a circle this was a rotation of the (cos, sin) pair
+   instead: two multiplies and two adds and no trigonometry past the first.
+   That is not available on an ellipse, because the point is no longer a
+   rotation of the point before it, and the solve costs three sines and a
+   root. Nine samples on three hundred bodies is under three thousand of
+   them a frame, which is a price worth paying for a wake that lies on the
+   path the body is actually on.
 
    The anchor is taken as it is now rather than rewound with the body. A star
    creeps round the hub some hundreds of times slower than its planets go
