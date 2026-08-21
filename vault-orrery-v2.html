@@ -12698,10 +12698,43 @@ function frameLoop(now) {
      knob moves that ring and they stayed where they were. Widen far enough
      and the cosmos walks out of its own galaxy, which is a thing you notice
      immediately and cannot name. They ride the same factor the rings do. */
+  /* ---- and the light has to come down as they close in ----
+     Scaling a point cloud toward its own centre while the camera stays where
+     it is does not only make it smaller. It packs the same fourteen thousand
+     sprites into a smaller patch of sky, and surface brightness is total
+     light over solid angle: the count is fixed and the solid angle goes as
+     the scale squared, so the galaxy gets brighter by the same square.
+
+     Which is what anyone turning ORBIT GAP down could see and could not
+     name — the vault drew in, and the arms and the gas behind it closed up
+     into a bright smear, as though the knob were a second brightness
+     control. It was, and this is the correction: the per-point alpha rides
+     the scale, so the galaxy changes size when the knob moves, which is the
+     point, and does not change brightness, which never was.
+
+     The square is the far-field answer and it is the one applied, because it
+     is the one that can be derived. It is not the whole answer and the
+     shortfall is worth naming: this cloud is not far away. The camera sits
+     *inside* the disc at a wide gap and outside it at a narrow one, and a
+     disc seen from within is a band across the frame while the same disc
+     seen from outside is a face — so the screen area falls somewhat faster
+     than the square as the thing closes up, and some over-brightness
+     survives in the middle of the knob's travel. Fitting an exponent to that
+     was tried and abandoned: the number it wants depends on how many systems
+     the vault has, because ringGapFor's own response to the knob does, and a
+     constant fitted against one vault is a constant that is wrong for every
+     other. The derived law is the one that is right everywhere it applies.
+
+     The floor and ceiling are guards and not physics. Past about a fifth of
+     scale the sprites are landing on top of each other whatever their alpha
+     is, and no exponent fixes an overlap. */
+  const skyGap = clamp(gapSys * gapSys, 0.02, 3.0);
   if (dustObj)      { dustObj.rotation.y        = t * 0.0000075;
-                      dustObj.scale.setScalar(gapSys); }
+                      dustObj.scale.setScalar(gapSys);
+                      dustObj.material.uniforms.uBright.value = SET.str * skyGap; }
   if (nebulaObj)    { nebulaObj.rotation.y      = -t * 0.0000042;
-                      nebulaObj.scale.setScalar(gapSys); }
+                      nebulaObj.scale.setScalar(gapSys);
+                      nebulaObj.material.uniforms.uBright.value = SET.str * skyGap; }
   if (starFieldObj)   starFieldObj.rotation.y   = t * 0.0000011;
   if (brightStarObj)  brightStarObj.rotation.y  = t * 0.0000011;
   if (milkyObj)       milkyObj.rotation.y       = t * 0.0000008;
@@ -12749,6 +12782,9 @@ function frameLoop(now) {
 function applyStarfield() {
   const b = SET.str;
   skyMats.forEach(m => {
+    /* the two that ride the ORBIT GAP scale have their brightness written
+       every frame instead — see skyGap in the parallax block — because it
+       depends on something this function cannot see */
     m.uniforms.uBright.value = b;
     /* the knob turns the shimmer down with the brightness — v1 ran the whole
        field at full twinkle and it read as visual noise */
@@ -14015,6 +14051,10 @@ window.vaultOrrery = {
      same from outside whatever the reason, and the reason is in here. */
   debug: () => ({ running: RUN.running, host: RUN.host, raf: RUN.raf,
                   hidden: document.hidden, frames: frame, nodes: N,
+                  /* the gap spring, which nothing else reports and which
+                     three separate things scale off — the ring structure,
+                     the fog, and the galaxy's own brightness */
+                  gap: { knob: SET.gap, now: gapNow, sys: gapSys },
                   /* which body the two marks are on, by index — the pair that
                      says whether a reveal actually landed */
                   selected, active: activeIdx,
