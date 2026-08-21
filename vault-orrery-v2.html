@@ -127,7 +127,26 @@ canvas{display:block}
 body.dragdeck{user-select:none}
 body.dragdeck #hud{cursor:grabbing}
 #ctl .ttl span{color:rgba(223,246,255,.45)}
-#ctl .bd{display:flex;gap:12px;align-items:stretch;padding:10px 12px 12px}
+/* ---------- the deck scrolls rather than folding itself away ----------
+   A deck two hundred and forty wide is three or four times taller than the
+   same controls laid across eight hundred, and opening the drawer on one is
+   twenty rows. The old answer to a deck taller than the leaf was to fold it,
+   which at this width meant clicking ADVANCED and watching the whole panel
+   collapse — the control asking to be shown more taking away what was
+   already there.
+
+   So the body has a ceiling and a scrollbar instead. The ceiling is written
+   by layoutHUD, because it is a share of the leaf and the leaf is the one
+   thing a stylesheet cannot see. Folding is still there and still one click
+   on the title bar; it is simply no longer something the deck does to
+   itself while somebody is using it. */
+#ctl .bd{display:flex;gap:12px;align-items:stretch;padding:10px 12px 12px;
+  overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;
+  scrollbar-color:rgba(92,225,255,.28) transparent}
+#ctl .bd::-webkit-scrollbar{width:7px}
+#ctl .bd::-webkit-scrollbar-track{background:transparent}
+#ctl .bd::-webkit-scrollbar-thumb{background:rgba(92,225,255,.22);border-radius:4px}
+#ctl .bd::-webkit-scrollbar-thumb:hover{background:rgba(92,225,255,.42)}
 #ctl.fold .bd{display:none}
 /* auto-fit rather than a fixed four: on a narrow deck the sliders reflow to
    two or three columns instead of being crushed to a few pixels each */
@@ -199,6 +218,35 @@ body.dragdeck #hud{cursor:grabbing}
 /* the label and its pin travel together on the left; the value stays right */
 .sl>b .nm{display:flex;align-items:baseline;gap:5px;min-width:0;overflow:hidden;
   white-space:nowrap;text-overflow:ellipsis}
+/* ---------- labels too long for the column they are in ----------
+   At the deck's floor width a column is ninety-odd pixels, and at that width
+   half of these labels do not fit. Clipping is the honest answer and it is
+   also a useless one: ORBIT SPE and ORBIT SPR are the same word, and in
+   Korean or Japanese the part that gets cut is more often than not the part
+   that says which control it is.
+
+   So a label that overflows walks to its own end and back. Once every
+   thirteen seconds, held at rest for most of that, and staggered across the
+   rows so the deck is never a column of things all moving together — the
+   scan is for the one moment you need the end of the word, not a permanent
+   animation on a panel somebody is trying to read.
+
+   The distance is measured rather than assumed, because whether a label fits
+   depends on the language, the width the reader dragged the deck to, and
+   whatever font the host is using. */
+.sl>b .nm.scan>span:last-child,.mini.scan>span{display:inline-block;
+  animation:nmScan 13s cubic-bezier(.55,0,.45,1) infinite;
+  animation-delay:var(--nmd,0s)}
+@keyframes nmScan{
+  0%,56%   {transform:translateX(0)}
+  74%,86%  {transform:translateX(var(--nmx,0px))}
+  100%     {transform:translateX(0)}
+}
+/* a reader who has asked not to be moved at is not moved at; the clip stays,
+   which is what they would have had anyway */
+@media (prefers-reduced-motion:reduce){
+  .sl>b .nm.scan>span:last-child,.mini.scan>span{animation:none}
+}
 /* The pin is deliberately quiet until it is wanted. It sits on a control the
    pointer is already on top of, so it does not need to advertise: dim at rest,
    lit when the knob is on the bar, and a hit area big enough to be a target
@@ -13029,6 +13077,60 @@ function togglePin(k) {
   toast(T(i >= 0 ? 'pin.off' : 'pin.on', { n: (KNOB_OF[k] || {}).label || k }));
 }
 
+/* ---- the labels that do not fit, walked to their own ends -------------
+   See the CSS note beside .nm.scan for why. This is the half that has to be
+   measured: whether a label overflows depends on the language, the width the
+   deck has been dragged to, and the font the host loaded, and none of those
+   are knowable when the rule is written.
+
+   Debounced onto one animation frame, because both of the things that can
+   change the answer — a relayout and a language switch — arrive in bursts,
+   and this reads geometry, which is the one kind of work that must not be
+   done twice for the same question. */
+let deckScanRaf = 0;
+function deckScan() {
+  if (deckScanRaf) return;
+  deckScanRaf = requestAnimationFrame(() => {
+    deckScanRaf = 0;
+    let n = 0;
+    const mark = (box, has) => {
+      /* The class comes off before the width is read. A label that has been
+         made to fit again — a shorter word, a wider deck — would otherwise be
+         measured while it was still marked and would stay marked for ever. */
+      box.classList.remove('scan');
+      const over = box.scrollWidth - box.clientWidth;
+      if (has && over > 2) {
+        box.style.setProperty('--nmx', (-over - 3) + 'px');
+        /* Seven offsets rather than one per row: enough that no two
+           neighbours ever move together, few enough that what the deck does
+           is a rhythm rather than a shimmer. */
+        box.style.setProperty('--nmd', ((n % 7) * 1.8).toFixed(1) + 's');
+        box.classList.add('scan');
+      } else {
+        box.style.removeProperty('--nmx');
+      }
+      n++;
+    };
+    KNOB_EL.forEach(e => {
+      if (e.lab && e.lab.parentNode) mark(e.lab.parentNode, true);
+    });
+    const deck = $('ctl');
+    if (deck) deck.querySelectorAll('.mini').forEach(el => {
+      /* A button's caption is a bare text node until it needs to move, and
+         syncControls writes over it whenever the language changes — so the
+         wrap is checked rather than done once. Buttons that hold elements
+         rather than text are left alone; there is nothing there to scroll. */
+      if (!el.firstElementChild && el.firstChild) {
+        const sp = document.createElement('span');
+        while (el.firstChild) sp.appendChild(el.firstChild);
+        el.appendChild(sp);
+      }
+      const sp = el.firstElementChild;
+      mark(el, !!sp && sp.tagName === 'SPAN' && el.children.length === 1);
+    });
+  });
+}
+
 function syncControls() {
   syncAdv();
   syncFolds();
@@ -13104,6 +13206,9 @@ $('ctltl').onclick = () => {
   deckTouched = true;
   const folded = $('ctl').classList.toggle('fold');
   $('ctlfold').textContent = folded ? '[ + ]' : '[ − ]';
+  /* the words themselves have just changed, which is the other thing that
+     can turn a label that fitted into one that does not */
+  deckScan();
 };
 
 /* ---------------------------------------------- moving the deck about
@@ -13326,11 +13431,28 @@ function layoutHUD() {
     ctl.style.top   = Math.round(clamp(SET.deckAt.y, 8, Math.max(8, H - 46))) + 'px';
     ctl.style.transform = 'none';
   } else {
-    w = Math.min(880, free);
+    /* ---- where the deck opens ----
+       Centred at the top and eight hundred and eighty wide, which put a
+       thirty-control instrument across the whole head of the frame before
+       anybody had asked for one. A deck is a tool and a cosmos is the work;
+       the tool should start out of the way and be pulled out when it is
+       wanted.
+
+       So: the top right corner, at the floor width, which is the smallest
+       the auto-fit grid still lays out as a grid. Nothing else is up there —
+       the identity pane and the shortcuts hold the left column and the
+       inspector is anchored bottom right — so it costs the view a strip two
+       hundred and forty wide and nothing in the middle.
+
+       It is still only a default. The title bar picks the deck up and the
+       corners pull it out, and the moment either is used SET.deckAt takes
+       over and this stops deciding — which is the same bargain the fold
+       already makes with deckTouched. */
+    w = clamp(DECK_MIN_W, 180, Math.max(180, W - 32));
     ctl.style.width = w + 'px';
-    ctl.style.left  = Math.round(left + free / 2) + 'px';
-    ctl.style.top   = '';
-    ctl.style.transform = '';
+    ctl.style.left  = Math.round(Math.max(8, W - w - 16)) + 'px';
+    ctl.style.top   = '16px';
+    ctl.style.transform = 'none';
   }
   /* past this the sliders and the buttons cannot sit side by side */
   ctl.classList.toggle('tight', w < 430);
@@ -13339,24 +13461,36 @@ function layoutHUD() {
      the sliders and makes the deck half again as tall, which is precisely the
      case where its height matters. Measuring first read the old layout and
      the correction was always one resize behind. */
-  if (!deckTouched) {
-    /* A deck taller than most of the leaf leaves nowhere for anything else.
-       Folded it is still a title bar — the way back is visible and one click
-       away — which is a better answer than a pane lying over the inspector.
-       Only ever folded automatically; unfolding stays the user's, and once
-       they have touched it this stops second-guessing them.
+  /* The ceiling on the body, which is what stops the deck needing to fold
+     itself. Just under two thirds of the leaf, measured from where the deck
+     actually is rather than from the top, so a deck dragged halfway down does
+     not run off the bottom. Below the floor there is no useful deck at any
+     height and the fold takes over instead. */
+  const bd = ctl.querySelector('.bd');
+  if (bd) {
+    const top = SET.deckAt ? clamp(SET.deckAt.y, 8, Math.max(8, H - 46)) : 16;
+    bd.style.maxHeight = Math.max(90, Math.min(H * 0.62, H - top - 46)) + 'px';
+  }
 
-       The height being judged is the *unfolded* one, measured by unfolding for
-       the read. Asking the current height instead makes the decision depend on
-       its own outcome: fold, and the next pass sees a short deck and unfolds,
-       and the one after that folds it again. */
-    const folded = ctl.classList.contains('fold');
-    if (folded) ctl.classList.remove('fold');
-    const fullH = ctl.offsetHeight;
-    if (folded) ctl.classList.add('fold');
-    ctl.classList.toggle('fold', 16 + fullH > H * 0.62);
+  if (!deckTouched) {
+    /* Folding is the last resort now rather than the usual one. It used to
+       fire whenever the unfolded deck was taller than two thirds of the leaf,
+       which was right while the deck was eight hundred wide and short — and
+       wrong the moment it opened narrow, because then almost any drawer is
+       taller than that and opening ADVANCED collapsed the panel it had just
+       been asked to add to.
+
+       The body scrolls, so height is no longer a reason to hide anything.
+       What is left is a leaf too short to show a deck at all: below about
+       two hundred and forty there is no room for a title bar, a tab strip
+       and a row, and a title bar alone is the honest thing to offer. */
+    ctl.classList.toggle('fold', H < 240);
     $('ctlfold').textContent = ctl.classList.contains('fold') ? '[ + ]' : '[ − ]';
   }
+
+  /* the deck's width has just been settled, and whether a label fits is a
+     question about that width */
+  deckScan();
 
   /* Below this the identity pane and the inspector cannot sit side by side at
      any width they are willing to take, and the inspector is the one that can
