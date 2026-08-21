@@ -72,6 +72,25 @@ interesting than the one anybody would draw.
   leave a persistent train that outlives them by seconds, spreading as it
   cools and drifting sideways in a wind.
 
+- **The band has its star clouds, its waist and its rift.** The Milky Way was
+  a strip of constant width with one gaussian bulge on it and a dust lane
+  running the whole way round, and all three are things anybody who has stood
+  under the band would correct first. It is lumpy: the lumps are the places
+  where a sight line happens to run down the length of an arm rather than
+  across it, and they have names and measured longitudes — the Great
+  Sagittarius cloud, Scutum, Norma, Cygnus, Carina, here at their real
+  longitudes off the core, with a fine mottle between them so the gaps are
+  grainy rather than swept. It is not the same width all the way round:
+  toward the core you look the long way down the disc, through the bulge, and
+  it is twenty-odd degrees across, while toward the anticentre you look
+  outward through the thin end of a disc and it is a narrow line. And the
+  Great Rift is not a belt — it is one nearby complex of molecular cloud in
+  the Orion arm, running from Cygnus down to Sagittarius and stopping, so
+  drawing it right round the sky made the band symmetrical, which is the one
+  thing the band is not. The population is reddened toward the core as well,
+  because that sight line carries the most dust, which is why the bulge is
+  orange in a photograph.
+
 ### What it is like to use
 
 - **ORBIT GAP is no longer a second brightness control.** Turning it down drew
@@ -236,6 +255,20 @@ interesting than the one anybody would draw.
   were Archimedean, so the winding stayed constant instead of tightening
   inward and the arms straightened into spokes past halfway out. And the
   Milky Way's four are two heavy and two thin rather than three even ones.
+
+- **An arm has a dust lane, with a line of blue fire outside it.** A spiral
+  arm is a standing wave and not a stream of material. Gas going round the
+  disc overtakes the pattern, piles up as it enters and is shocked — and that
+  shock is the dust lane, on the arm's concave side, the darkest thing in any
+  photograph of a spiral galaxy. What the shock makes is stars, and the
+  massive ones burn out so fast they never get far from where they formed, so
+  the blue associations stand in a line just outside the lane. Warm dust
+  inside, blue fire outside, a dark rule between them: that is the structure
+  the eye recognises a spiral by, and one uniformly warm population has none
+  of it. Which side is which is not chosen — azimuth is the arm's own normal
+  here, since the ridge at azimuth a sits at r0·exp((a−arm)·tan p), so the
+  lane falls on the positive offsets and the young stars on the negative ones
+  for that reason and no other.
 
 - **The comet has both its tails.** The dust tail is grains pushed out by
   radiation pressure while keeping the comet's own orbital velocity, so it

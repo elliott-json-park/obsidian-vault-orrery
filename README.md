@@ -243,6 +243,13 @@ the opposite one: if the code uses a word, the word has to be doing work in it.
 - **A meteor's light climbs and then stops**, flares where the grain breaks
   up, wears the metal's colour at its head and oxygen's green in its wake,
   and leaves a train that spreads and drifts after it has gone.
+- **The Milky Way is lumpy, narrows toward the anticentre, and its rift only
+  runs down one side**, because the star clouds are sight lines down an arm,
+  the band is a disc seen from inside it rather than a ribbon laid over the
+  sky, and the Great Rift is one nearby molecular complex rather than a belt.
+- **A spiral arm carries a dust lane on its concave side** with the young blue
+  associations standing in a line just outside it, which is what the shock at
+  the leading edge of a standing wave leaves behind.
 - **The comet has two tails**, because comets do: a curved dust tail the
   colour of reflected sunlight, and a straight blue ion tail along the
   anti-solar line where the solar wind has taken the gas.
