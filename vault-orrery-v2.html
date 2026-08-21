@@ -7745,16 +7745,37 @@ const _ionA = [0,0,0], _ionB = [0,0,0];
    streak is the same length at thirty frames a second as at a hundred and
    forty.
 
-   The colours are the real ones, which is free: magnesium burns blue-white,
-   sodium a warm yellow, iron gold, and the green nobody believes is oxygen
-   in the trail behind it.                                                */
+   Everything else about it is observed. The light curve climbs and then
+   stops rather than fading, because the thing burning is the air and there
+   is exponentially more of it further down. It flares where the grain comes
+   apart, and a bright one ends in a burst. Its head is the metal and its
+   wake is the air, which are two different colours. And the bright ones
+   leave a train that outlives them by seconds, spreading and drifting in a
+   wind. Every one of those is in a photograph somebody has taken.        */
 /* Forty-eight samples for a streak is a lot, and it is what the streak
    costs: the points have to overlap into a line. At half this they resolve
    into a dotted trail, which is the one thing that reads worse than no
-   meteor at all. Three of them at once is a hundred and forty points. */
-const MET_MAX = 3, MET_TAIL = 48;
-const MET_COL = [ [0.74, 0.86, 1.00], [1.00, 0.92, 0.70],
-                  [1.00, 0.80, 0.52], [0.72, 1.00, 0.82] ];
+   meteor at all. Four of them at once is under two hundred points. */
+const MET_MAX = 4, MET_TAIL = 48;
+/* ---- what is burning, and it is two different things ------------------
+   The head shows the metals the grain is made of, and every one of them is
+   a line somebody has measured: magnesium at 518 nm blue-white, sodium at
+   589 the warm yellow of a street lamp, iron a crowd of lines that add to
+   gold. Which of them dominates is a question about speed — see the note in
+   meteorSpawn.
+
+   The wake is not the grain at all. It is atomic oxygen in the air the
+   grain is going through, at 557.7 nanometres, which is the same forbidden
+   green line the aurora is made of and the reason a green meteor in a
+   photograph is real and nobody believes it. So the head and the trail are
+   different colours, and the change happens within the first fifth of the
+   streak. Drawing the whole thing one colour was the last thing here that
+   was a decision rather than an observation. */
+const MET_HEAD = [ [0.72, 0.85, 1.00],    // magnesium, and the fast ones
+                   [1.00, 0.93, 0.72],    // sodium
+                   [1.00, 0.82, 0.54],    // iron
+                   [1.00, 0.68, 0.42] ];  // slow, and never getting past it
+const MET_WAKE = [0.44, 1.00, 0.64];
 let metObj = null, metPos = null, metSz = null, metCol = null, metAl = null,
     metLive = 0;
 const meteors = [];
@@ -7803,19 +7824,61 @@ function meteorSpawn() {
   const span = p0.distanceTo(p1);
   const spd  = span / dur;
   const vdir = p1.sub(p0).normalize();
-  /* a fireball, one in six or so: brighter, slower, longer, and it is the
-     one you point at */
-  const fire = Math.random() < 0.17;
+  /* a fireball, one in eight: brighter, longer, and it is the one you point
+     at. Rarer than it was — the real ratio is far steeper still, but a sky
+     that offers a meteor every twenty seconds cannot also make you wait an
+     hour for the good one. */
+  const fire = Math.random() < 0.12;
+
+  /* ---- speed decides the colour, and for a reason ----
+     A fast grain arrives with an order of magnitude more energy per atom,
+     which is enough to excite magnesium and ionised calcium and comes out
+     blue-white; a slow one never gets past sodium and iron and comes out
+     yellow. The Leonids hit at seventy-one kilometres a second and are
+     famously blue-green; the Taurids come in at twenty-eight and are
+     famously orange. Here the only thing standing for speed is how long the
+     streak takes to cross the frame, so that is what is asked. */
+  const fastness = clamp((2.2 - dur) / 1.2, 0, 1);
+  const col = MET_HEAD[fastness > 0.66 ? 0 : fastness > 0.42 ? 1
+                     : fastness > 0.20 ? 2 : 3];
+
+  /* ---- flares ----
+     A meteoroid is a poorly consolidated lump of dust and ice, not a pebble,
+     and what it does under the load is come apart. Every fragment presents
+     new surface to the air at once, which is a spike in the light curve —
+     photometric records of bright meteors are full of them, and a fireball
+     that ends without a terminal burst is the exception rather than the
+     rule. This is the detail that separates a meteor from a streak. */
+  const nf = fire ? 1 + ((Math.random() * 3) | 0) : (Math.random() < 0.3 ? 1 : 0);
+  const flares = [];
+  for (let i = 0; i < nf; i++)
+    flares.push([0.34 + Math.random() * 0.48,
+                 (fire ? 0.85 : 0.40) * (0.5 + Math.random())]);
+  if (fire && Math.random() < 0.7)
+    flares.push([0.90 + Math.random() * 0.05, 1.6 + Math.random() * 1.1]);
+
   meteors.push({
-    p0, dur, t: 0,
+    p0, dur, t: 0, flares, col,
     v: vdir.clone().multiplyScalar(spd),
     /* a shallow curve across the flight, so the path is not a ruled line */
     bend: new THREE.Vector3().crossVectors(vdir, dir)
             .normalize().multiplyScalar(spd * (Math.random() - 0.5) * 0.22 / dur),
-    tail: R * (fire ? 0.22 : 0.14) / spd,
-    br: fire ? 2.3 : 1,
+    tail: R * (fire ? 0.24 : 0.15) / spd,
+    br: fire ? 2.1 : 0.55 + Math.random() * 0.7,
     sz: (fire ? 1.7 : 1) * (R / 4200),
-    col: MET_COL[fire ? (1 + ((Math.random() * 3) | 0)) : (Math.random() < 0.72 ? 0 : 1)]
+    /* ---- the persistent train ----
+       What is left in the air after the grain has gone. Bright meteors leave
+       one and faint ones essentially do not: it is ionised gas recombining,
+       so it needs enough of the meteor to have happened, and it lasts
+       seconds to minutes rather than the fraction of one the streak did.
+       It also drifts, because it is sitting in a wind that at ninety
+       kilometres up is moving at a hundred metres a second and shearing —
+       which is why a photographed train ends up bent into a corkscrew and
+       why this one is given a direction of its own to wander in. */
+    train: fire ? 0.55 + Math.random() * 0.45 : Math.random() * 0.22,
+    trainTau: (fire ? 1.4 + Math.random() * 1.8 : 0.35) ,
+    drift: new THREE.Vector3().crossVectors(vdir, dir).normalize()
+             .multiplyScalar(spd * 0.012 * (Math.random() - 0.5))
   });
 }
 
@@ -7830,8 +7893,10 @@ function meteorStep(dt) {
   }
   if (!metObj) return;
   for (let k = meteors.length - 1; k >= 0; k--) {
-    meteors[k].t += dt;
-    if (meteors[k].t > meteors[k].dur) meteors.splice(k, 1);
+    const M = meteors[k];
+    M.t += dt;
+    /* it outlives its own flight by whatever its train is worth */
+    if (M.t > M.dur + M.trainTau * 3.4) meteors.splice(k, 1);
   }
   if (!meteors.length && !metLive) return;         // nothing to clear again
 
@@ -7842,23 +7907,65 @@ function meteorStep(dt) {
       continue;
     }
     const u = M.t / M.dur;
-    /* struck alight in a moment and out over most of the flight: the shape
-       of the brightness is most of what makes it read as burning up */
-    const env = Math.min(1, u / 0.07) * Math.pow(1 - u, 1.15) * M.br;
+    const live = u <= 1;
+    /* ---- the light curve, which is a climb and not a fade ---------------
+       A meteor does not brighten and then fade away. The thing setting the
+       air alight is the air, and there is exponentially more of it the
+       further down the grain gets, so the light *climbs* through most of
+       the flight and then stops — abruptly, because what stops it is the
+       grain running out. Peak somewhere past three quarters of the path and
+       an end rather than a tail is the shape every photometric record of a
+       meteor has, and the old curve here was the exact opposite of it: lit
+       in a twentieth of the flight and dying over the rest, which is what a
+       spark thrown off a grinder does.
+
+       On top of that the flares, which are the grain coming apart. Each one
+       is a moment where new surface meets the air all at once, and on a
+       bright meteor there are several with a larger one at the end. */
+    let env = 0;
+    if (live) {
+      env = Math.min(1, u / 0.05) * Math.exp(3.1 * (u - 1))
+          * (1 - sstep(clamp((u - 0.88) / 0.12, 0, 1)));
+      for (let q = 0; q < M.flares.length; q++) {
+        const d = (u - M.flares[q][0]) / 0.038;
+        if (d > -4 && d < 4) env += M.flares[q][1] * Math.exp(-d * d);
+      }
+      env *= M.br;
+    }
+    /* and what is left in the air once the grain has gone */
+    const age = M.t - M.dur;
+    const tr  = live ? 0 : Math.exp(-age / M.trainTau) * M.train;
+    const spread = live ? 0 : Math.min(1.6, age / M.trainTau);
     const ds = M.tail / MET_TAIL;
     for (let k = 0; k < MET_TAIL; k++) {
       const i = base + k, o = i * 3;
-      const s = Math.max(0, M.t - k * ds);
-      metPos[o]   = M.p0.x + M.v.x * s + M.bend.x * s * s;
-      metPos[o+1] = M.p0.y + M.v.y * s + M.bend.y * s * s;
-      metPos[o+2] = M.p0.z + M.v.z * s + M.bend.z * s * s;
-      /* the head is a burning point, the trail is what it left behind */
+      /* Clamped at the end of the flight, so when the grain is gone the
+         streak stops travelling and the tail closes up behind it instead of
+         the whole thing sailing on with nothing at its head. */
+      const s = Math.min(M.dur, Math.max(0, M.t - k * ds));
+      metPos[o]   = M.p0.x + M.v.x * s + M.bend.x * s * s + M.drift.x * age * spread;
+      metPos[o+1] = M.p0.y + M.v.y * s + M.bend.y * s * s + M.drift.y * age * spread;
+      metPos[o+2] = M.p0.z + M.v.z * s + M.bend.z * s * s + M.drift.z * age * spread;
       const f = k / MET_TAIL, taper = (1 - f) * (1 - f * 0.55);
-      metSz[i] = (k === 0 ? 96 : 34 + 62 * taper) * M.sz;
-      metAl[i] = env * (k === 0 ? 1 : taper * 0.88) *
-                 /* the trail cannot start before the meteor did */
-                 (M.t - k * ds > 0 ? 1 : 0);
-      metCol[o] = M.col[0]; metCol[o+1] = M.col[1]; metCol[o+2] = M.col[2];
+      if (live) {
+        /* The head is a burning point and the trail is air that was set
+           alight a moment ago and is spreading while it cools — so it does
+           not only fade back, it widens. A trail that tapers to a needle is
+           a brush stroke; one that opens out is a column of gas. */
+        metSz[i] = (k === 0 ? 96 : 26 + 46 * taper + 52 * f * M.train) * M.sz;
+        metAl[i] = env * (k === 0 ? 1 : taper * 0.88) *
+                   /* the trail cannot start before the meteor did */
+                   (M.t - k * ds > 0 ? 1 : 0);
+      } else {
+        metSz[i] = (34 + 58 * f + 120 * spread) * M.sz;
+        metAl[i] = tr * (1 - f * 0.7) * 0.42;
+      }
+      /* the metals at the head, the air behind it — and once the head has
+         gone there is nothing left but the air */
+      const g = live ? Math.min(1, f * 2.6) : 1;
+      metCol[o]   = M.col[0] + (MET_WAKE[0] - M.col[0]) * g;
+      metCol[o+1] = M.col[1] + (MET_WAKE[1] - M.col[1]) * g;
+      metCol[o+2] = M.col[2] + (MET_WAKE[2] - M.col[2]) * g;
     }
   }
   metLive = meteors.length;
