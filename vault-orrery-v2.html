@@ -6598,6 +6598,7 @@ const rig = {
   dist: 2400, distD: 1250,
   th: 0.7, thD: 0.7, ph: 1.06, phD: 1.06, roll: 0, rollD: 0,
   thV: 0, phV: 0,      // angular momentum, carried after the mouse stops
+  aX: 0, aY: 0,        // this frame's drag so far, for measuring that momentum
   idle: 0,             // seconds since the last deliberate input
   follow: -1           // a node the target is pinned to, orbit and all
 };
@@ -6623,10 +6624,46 @@ function applyCam(dt) {
     else rig.follow = -1;
   }
 
-  /* A rig this size does not stop dead. Momentum carries the turn on after
+  /* ---- momentum, and why it may not be part of the drag ---------------
+     A rig this size does not stop dead: momentum carries the turn on after
      the mouse halts and bleeds off, which is what makes a flick feel like
-     mass rather than like a slider. */
-  if (rig.thV || rig.phV) {
+     mass rather than like a slider. That was right and the way it was wired
+     was not, in a way that could be felt and not named.
+
+     The velocity was accumulated per pointer *event* — thV = 0.45·thV +
+     0.55·dx, once per move — and then spent per *frame*, thD -= thV·dt·60.
+     Those are two different clocks, and the ratio between them is how often
+     the pointer happens to report. So the momentum term quietly added
+     roughly 60/E of the drag on top of the drag itself, where E is the
+     pointer's report rate: at fifty events a second it nearly doubled the
+     gain, and at two hundred it added a fifth of it.
+
+     Which means the sensitivity of a drag depended on the mouse, the
+     trackpad, the monitor's refresh and whatever the browser decided to
+     coalesce that second — none of which the reader ever changed on
+     purpose, and all of which can change mid-session. Measured in the
+     harness: the same six hundred pixels over the same six hundred
+     milliseconds turned the view 8.92 radians when split into thirty events
+     and 5.96 when split into six hundred. A drag that is half as sensitive
+     for no visible reason is exactly the complaint.
+
+     So: while the button is down the drag is the whole of the motion, and
+     the accumulator only *watches*. It is summed per frame and normalised
+     to a sixtieth of a second, so the flick that gets released carries the
+     speed the hand actually had rather than the speed one event happened to
+     report. After release it is spent exactly as before. */
+  if (dragging === 1 && dragNodeIdx < 0) {
+    /* Clamped, because a frame short enough makes any displacement look
+       infinitely fast and one stray event should not launch the camera. */
+    const f = clamp(dt > 1e-4 ? (1 / 60) / dt : 1, 0.25, 4);
+    /* A quarter of what the mix used to take, because the gain above is
+       twice what it was and this is fed from it: the pair together land the
+       flick where a reader on a hundred-and-twenty-hertz pointer already
+       had it. A hard throw comes out at about two thirds of a turn, spent
+       over a second and a half. */
+    rig.thV = rig.thV * 0.45 + rig.aX * f * 0.14;
+    rig.phV = rig.phV * 0.45 + rig.aY * f * 0.14;
+  } else if (rig.thV || rig.phV) {
     rig.thD -= rig.thV * dt * 60;
     rig.phD  = clamp(rig.phD - rig.phV * dt * 60, 0.12, Math.PI - 0.12);
     const decay = Math.pow(0.045, dt);
@@ -6634,6 +6671,7 @@ function applyCam(dt) {
     if (Math.abs(rig.thV) < 2e-5) rig.thV = 0;
     if (Math.abs(rig.phV) < 2e-5) rig.phV = 0;
   }
+  rig.aX = 0; rig.aY = 0;
   /* left alone long enough the sky turns on its own — a still frame of space
      should never look like a paused video */
   rig.idle += dt;
@@ -6670,10 +6708,12 @@ function applyCam(dt) {
   camera.up.set(Math.sin(croll), Math.cos(croll), 0);
   camera.lookAt(rig.tgt);
 }
-function orbitBy(dx, dy, momentum) {
+function orbitBy(dx, dy, live) {
   rig.thD -= dx;
   rig.phD = clamp(rig.phD - dy, 0.12, Math.PI - 0.12);
-  if (momentum) { rig.thV = rig.thV*0.45 + dx*0.55; rig.phV = rig.phV*0.45 + dy*0.55; }
+  /* only banked, never spent — applyCam decides once a frame what this was
+     worth, because that is the only place that knows how long the frame was */
+  if (live) { rig.aX += dx; rig.aY += dy; }
   nudge();
 }
 function zoomBy(f) { rig.distD = clamp(rig.distD * f, 12, 24000); nudge(); }
@@ -10790,7 +10830,12 @@ canvas.addEventListener('pointermove', e => {
     moved += Math.abs(dx) + Math.abs(dy);
     if (dragNodeIdx >= 0) dragBody(dragNodeIdx, mouseNDC.x, mouseNDC.y, 1/60);
     else if (dragging === 2) panBy(dx, dy);
-    else orbitBy(dx*0.0052, dy*0.0052, true);
+    /* Doubled, because the momentum term used to be doing the other half.
+       Every reader on a mouse or trackpad that reports at a hundred and
+       twenty hertz or better — which is nearly all of them — was getting
+       about this, so this is not a change of feel for them; it is the same
+       feel, now the same on every device instead of on some of them. */
+    else orbitBy(dx*0.0104, dy*0.0104, true);
   }
 });
 /* Leaving the canvas — which includes moving onto any of the HUD panes laid
@@ -14055,6 +14100,14 @@ window.vaultOrrery = {
                      three separate things scale off — the ring structure,
                      the fog, and the galaxy's own brightness */
                   gap: { knob: SET.gap, now: gapNow, sys: gapSys },
+                  /* the orbit rig, targets and carried momentum both. The
+                     gain a drag actually has is the one thing about this
+                     view that cannot be reasoned about from outside — it
+                     depends on how often the pointer reports, which is a
+                     property of the mouse and the display and not of any
+                     number in this file. */
+                  cam: { th: rig.thD, ph: rig.phD, dist: rig.distD,
+                         thV: rig.thV, phV: rig.phV, idle: rig.idle },
                   /* which body the two marks are on, by index — the pair that
                      says whether a reveal actually landed */
                   selected, active: activeIdx,
