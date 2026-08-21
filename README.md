@@ -240,6 +240,9 @@ the opposite one: if the code uses a word, the word has to be doing work in it.
   rather than amber, because that is what Thomson-scattered photospheric
   light is. The glare around a star is the published CIE glare equation, not
   a curve picked to look right.
+- **A meteor's light climbs and then stops**, flares where the grain breaks
+  up, wears the metal's colour at its head and oxygen's green in its wake,
+  and leaves a train that spreads and drifts after it has gone.
 - **The comet has two tails**, because comets do: a curved dust tail the
   colour of reflected sunlight, and a straight blue ion tail along the
   anti-solar line where the solar wind has taken the gas.

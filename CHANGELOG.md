@@ -60,6 +60,41 @@ interesting than the one anybody would draw.
   Hα at 656 nm. Teal core, red skirt, blended through pink rather than round
   the hue wheel through violet.
 
+- **The meteors burn instead of sparking.** A meteor's light climbs and then
+  stops — the thing setting the air alight is the air, and there is
+  exponentially more of it further down — so it peaks past three quarters of
+  the flight and ends abruptly rather than fading, which is the opposite of
+  what it did. It flares where the grain comes apart and a bright one ends in
+  a burst. Its head is the metal (magnesium blue-white, sodium yellow, iron
+  gold, chosen by speed the way the Leonids and the Taurids differ) and its
+  wake is atomic oxygen at 557.7 nm, the same forbidden green as the aurora —
+  two different colours, where before there was one. And the bright ones now
+  leave a persistent train that outlives them by seconds, spreading as it
+  cools and drifting sideways in a wind.
+
+### What it is like to use
+
+- **ORBIT GAP is no longer a second brightness control.** Turning it down drew
+  the vault in and made the galaxy behind it brighter, because the dust and
+  the nebulae ride that scale and packing the same fourteen thousand sprites
+  into a smaller patch of sky raises the surface brightness by the square of
+  the scale. The per-point alpha now rides that square back.
+
+- **A drag turns the view the same amount on every mouse.** Sensitivity
+  depended on how often the pointer reported — a property of the mouse, the
+  trackpad, the monitor's refresh and whatever the browser coalesced — because
+  momentum was accumulated per event and spent per frame. The same six hundred
+  pixels turned the view 8.92 radians as thirty events and 5.96 as six
+  hundred. Momentum is now measured per frame and spent only after release,
+  so the drag is the pixel count times one gain and nothing else.
+
+- **The deck opens small, in the top right corner**, rather than centred and
+  eight hundred and eighty wide across the head of the frame. Labels too long
+  for the narrow column walk to their own ends and back every thirteen
+  seconds instead of being clipped, staggered so the deck reads as a rhythm
+  rather than a shimmer. And the deck scrolls instead of folding itself away —
+  the old rule collapsed the panel when you opened ADVANCED on it.
+
 ### What is claimed
 
 - **All three of Kepler's laws hold.** Every orbit was a circle turned at a
