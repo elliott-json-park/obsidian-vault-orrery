@@ -4137,10 +4137,49 @@ brightStarObj = pointsFrom(150, (i, pos, sz, cl, al) => {
    colour of an old population, closer to cream than to white. */
 const MW_TILT = 0.42, MW_ROLL = 1.1;
 const MW_CORE = 2.10;                      // the direction the bulge lies in
+/* ---- the star clouds, which are the reason the band is not a smear ----
+   Nobody who has seen the band describes it as an even strip of light. It
+   is lumpy, and the lumps have names, because they are the places where a
+   line of sight happens to run down the length of a spiral arm instead of
+   across it and so gathers a hundred times as many stars into one patch.
+   The Great Sagittarius cloud is the brightest of them and is the nearest
+   thing the sky has to a second Milky Way inside the first; Scutum sits a
+   little north of it and was Herschel's; Cygnus is most of what anyone in
+   the northern hemisphere ever actually sees of the band.
+
+   Their longitudes here are the real ones, measured from the core: Sgr at
+   about six degrees, Scutum at twenty-seven, Norma trailing at minus
+   thirty, Cygnus at eighty, Carina at minus seventy-five and low, being on
+   the far side. A band with one Gaussian bulge and nothing else is a
+   painted ribbon with a hot spot; this is what turns it back into a thing
+   that is unevenly far away.                             */
+const MW_CLOUDS = [
+  [ 0.10, -0.02, 0.15, 2.10],   // the Great Sagittarius cloud
+  [ 0.47,  0.04, 0.11, 1.30],   // Scutum, and Herschel called it that
+  [-0.52, -0.03, 0.12, 0.85],   // Norma
+  [ 1.40,  0.02, 0.21, 1.05],   // Cygnus
+  [-1.31, -0.05, 0.16, 0.70],   // Carina
+];
 milkyObj = pointsFrom(9000, (i, pos, sz, cl, al) => {
   const a = Math.random()*TAU;
+  /* Signed longitude from the core, because almost everything about the
+     band is asymmetric about it — which side of the core a thing is on is
+     the whole question for the rift and for two of the clouds. */
+  let dsg = a - MW_CORE;
+  if (dsg >  Math.PI) dsg -= TAU;
+  if (dsg < -Math.PI) dsg += TAU;
+  const da = Math.abs(dsg);
+  /* ---- and the band is not the same width all the way round ----
+     Looking at the core is looking the long way down the disc, through the
+     bulge, and the band there is twenty-odd degrees across. Looking at the
+     anticentre is looking outward through the thin part of a disc that
+     ends, and the band there is a narrow line — five or six degrees, and
+     faint enough that most people never notice it is still there. A strip
+     of constant width is a ribbon laid over the sky rather than a disc
+     seen from inside it. */
+  const wid = 0.30 * (0.44 + 0.90 * Math.exp(-(da*da) / (2*1.05*1.05)));
   /* concentrate toward the galactic equator, with a fat tail */
-  const b = (Math.random()+Math.random()+Math.random()-1.5) * 0.30;
+  const b = (Math.random()+Math.random()+Math.random()-1.5) * wid;
   const r = SKY_R * (0.72 + Math.random()*0.26);
   let x = Math.cos(a)*Math.cos(b)*r, y = Math.sin(b)*r, z = Math.sin(a)*Math.cos(b)*r;
   /* tilt the band, then roll it */
@@ -4153,16 +4192,37 @@ milkyObj = pointsFrom(9000, (i, pos, sz, cl, al) => {
 
   /* the bulge: an angular distance from one direction, falling off smoothly,
      so the band has a somewhere it comes from */
-  let da = Math.abs(a - MW_CORE) % TAU; if (da > Math.PI) da = TAU - da;
   const bulge = 1 + 2.2 * Math.exp(-(da*da) / (2 * 0.85 * 0.85));
-  /* the rift: a lane of dust lying along the band, wandering a little rather
-     than ruled straight, blocking most of the light behind it */
+  /* the clouds on top of it, each one a patch of sky that happens to look
+     down an arm, plus a fine mottle so the space between them is grainy
+     rather than swept */
+  let cloud = 1;
+  for (let q = 0; q < MW_CLOUDS.length; q++) {
+    const C = MW_CLOUDS[q], dl = dsg - C[0], db = b - C[1];
+    cloud += C[3] * Math.exp(-(dl*dl)/(2*C[2]*C[2]) - (db*db)/(2*0.11*0.11));
+  }
+  cloud *= 0.88 + 0.24 * Math.sin(a*23.7 + 2.3) * Math.cos(a*13.3 - 0.9);
+  /* ---- the rift, and it is only on one side ----
+     A lane of dust lying along the band, wandering a little rather than
+     ruled straight, blocking most of the light behind it. But the Great
+     Rift is not a belt round the whole sky: it runs from Cygnus down
+     through Aquila and Ophiuchus to Sagittarius and stops, because it is
+     one nearby complex of molecular clouds in the Orion arm and not a
+     property of the galaxy. Out toward the anticentre there is nothing
+     like it. Drawing it all the way round made the band symmetrical, and
+     the one thing the band is not is symmetrical. */
   const lane = Math.sin(a*1.7 + 0.6) * 0.048 + Math.sin(a*3.9) * 0.018;
-  const dust = Math.exp(-Math.pow((b - lane) / 0.062, 2)) * (0.62 + 0.30*Math.sin(a*2.6 + 1.1));
-  al[i] = (.022 + Math.random()*.052) * bulge * Math.max(0.12, 1 - dust);
+  const arm  = Math.exp(-Math.pow(Math.max(0, Math.abs(dsg - 0.70) - 0.70) / 0.42, 2));
+  const dust = Math.exp(-Math.pow((b - lane) / (0.062 * (0.7 + 1.3*wid/0.30)), 2))
+             * (0.62 + 0.30*Math.sin(a*2.6 + 1.1)) * arm;
+  al[i] = (.022 + Math.random()*.052) * bulge * cloud * Math.max(0.12, 1 - dust);
 
-  /* an old, unresolved population: cream, and never blue */
-  starColor(0.30 + Math.random()*0.45).toArray(cl, i*3);
+  /* An old, unresolved population: cream, and never blue. Redder toward
+     the core, because that line of sight carries the most dust and dust
+     reddens — the bulge is genuinely orange in a colour photograph, and
+     for the same reason a low sun is. */
+  starColor(0.30 + Math.random()*0.45
+            + 0.22 * Math.exp(-(da*da) / (2*0.9*0.9))).toArray(cl, i*3);
 }, glowMat(700, 0, 0, true));
 
 /* ---------- galactic dust disk ----------
