@@ -355,6 +355,15 @@ body.dragdeck #hud{cursor:grabbing}
   text-transform:uppercase;display:block;margin:7px 0 3px;opacity:.7}
 #i-links a,#i-twins a{color:rgba(223,246,255,.78);cursor:pointer;display:block;padding:1px 0}
 #i-links a:hover,#i-twins a:hover{color:var(--am)}
+/* The rest of a long list, and the row that asks for it. Quiet, because it
+   is a count rather than an action — the eye should find it only after it
+   has run out of names. */
+#i-links .rest,#mm-links .rest{display:none}
+#i-links .rest.on,#mm-links .rest.on{display:block}
+#i-links u.more,#mm-links u.more{display:block;cursor:pointer;font-style:normal;
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;
+  color:rgba(92,225,255,.55);padding:3px 0 1px;user-select:none}
+#i-links u.more:hover,#mm-links u.more:hover{color:var(--am)}
 /* the resonance list is a suggestion, not a fact — violet, like the latent
    links it is proposing */
 #i-twins b{color:var(--vi)}
@@ -1472,6 +1481,7 @@ const STR = {
                 '放下文件夹或 Markdown 文件，就用那个仓库造一个宇宙'],
 'search.ph':   ['노트 · 설정 · 기능 검색 …','Search notes, settings, actions …',
                 'ノート・設定・機能を検索 …','搜索笔记 · 设置 · 功能 …'],
+'insp.more':   ['+ {n}개 더 보기','+ {n} more','+ 他 {n} 件','+ 还有 {n} 项'],
 'find.knob':   ['설정','SETTING','設定','设置'],
 'find.act':    ['기능','ACTION','機能','功能'],
 'load.notes':  ['{n}개 노트','{n} notes','ノート {n} 件','{n} 篇笔记'],
@@ -7537,7 +7547,27 @@ function refreshHUD() {
 }
 
 
-/* ---- the link groups the inspector and the mind map both print ---- */
+/* ---- the link groups the inspector and the mind map both print ----
+
+   Fourteen at a time, and the rest a click away rather than gone. The cap
+   is worth keeping: a hub with two hundred backlinks would otherwise push
+   every button under the list off the bottom of the pane, and the first
+   fourteen are the ones anybody scans. What was wrong was that the count in
+   the heading said two hundred and three and the list stopped at fourteen
+   with nothing to say so — the panel told the reader exactly how much of the
+   answer it was withholding and gave them no way to ask for it.
+
+   The overflow is rendered rather than kept aside and built on demand. It is
+   already in the document, hidden, so its rows get wired with all the others
+   in one pass and the click that opens it has nothing to do but stop hiding
+   them. A note with two hundred backlinks is two hundred spans, which is
+   nothing next to the cost of having built the string at all.
+
+   The heading counts the notes it is about to list, not the edges. Two notes
+   can be joined twice — a written link and a tag resonance are different
+   facts about the same pair — and the list has always shown that pair once,
+   so counting the edges was quietly promising rows that were never coming. */
+const LINK_CAP = 14;
 function linkGroupsHTML(i) {
   const outs = [], ins = [], srcs = [];
   edges.forEach(([a,b,t]) => {
@@ -7547,12 +7577,36 @@ function linkGroupsHTML(i) {
   const grp = (title, arr) => {
     if (!arr.length) return '';
     const seen = new Set();
-    const items = arr.filter(([x]) => !seen.has(x) && seen.add(x)).slice(0,14)
-      .map(([x,t]) => '<a data-i="'+x+'">' + (t===2?'≈ ':t===1?'⤴ ':'→ ') +
-                      esc(nodes[x].n) + '</a>').join('');
-    return '<b>' + title + ' (' + arr.length + ')</b>' + items;
+    const uniq = arr.filter(([x]) => !seen.has(x) && seen.add(x));
+    const row = ([x,t]) => '<a data-i="'+x+'">' + (t===2?'≈ ':t===1?'⤴ ':'→ ') +
+                           esc(nodes[x].n) + '</a>';
+    const rest = uniq.slice(LINK_CAP);
+    return '<b>' + title + ' (' + uniq.length + ')</b>' +
+           uniq.slice(0, LINK_CAP).map(row).join('') +
+           (rest.length ? '<span class="rest">' + rest.map(row).join('') + '</span>' +
+                          '<u class="more">' + T('insp.more', { n: rest.length }) + '</u>'
+                        : '');
   };
   return grp('OUTBOUND', outs) + grp('BACKLINKS', ins) + grp('SOURCE MATERIAL', srcs);
+}
+/* Both panels print the same list and differ only in what a row means — the
+   inspector selects, the mind map walks — so the wiring is shared and the
+   difference is the argument. The overflow rows are wired here with the rest
+   of them precisely because they are already in the document.
+
+   Opening is one way. A reader who asked for the other hundred and eighty
+   did not ask for a control to put them back, and choosing a note rebuilds
+   the panel collapsed anyway, which is right: the question is being asked
+   about a different note now. */
+function wireLinkGroups(box, pick) {
+  box.querySelectorAll('a').forEach(a => { a.onclick = () => pick(+a.dataset.i); });
+  box.querySelectorAll('u.more').forEach(u => {
+    u.onclick = () => {
+      const rest = u.previousElementSibling;
+      if (rest && rest.classList.contains('rest')) rest.classList.add('on');
+      u.remove();
+    };
+  });
 }
 
 function renderInspector() {
@@ -7584,9 +7638,7 @@ function renderInspector() {
 
   const box = $('i-links');
   box.innerHTML = linkGroupsHTML(selected);
-  box.querySelectorAll('a').forEach(a => {
-    a.onclick = () => select(+a.dataset.i);
-  });
+  wireLinkGroups(box, j => select(j));
 
   const go = $('i-go');
   const short = nd.n.length > 12 ? nd.n.slice(0,12) + '…' : nd.n;
@@ -9584,9 +9636,7 @@ function mmSide(i) {
   x.classList.toggle('none', !nd.x);
   const box = $('mm-links');
   box.innerHTML = linkGroupsHTML(i);
-  box.querySelectorAll('a').forEach(a => {
-    a.onclick = () => buildMind(+a.dataset.i);
-  });
+  wireLinkGroups(box, j => buildMind(j));
   const short = nd.n.length > 10 ? nd.n.slice(0,10) + '…' : nd.n;
   $('mm-go').textContent = goLabel(short, ship.on);
   $('mm-center').style.display = (i === MM.root) ? 'none' : '';
