@@ -2042,7 +2042,7 @@ const KNOBS = [
      stand in for it. */
   { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
-  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:0,
+  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:120, sc:100, def:0,
     fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
   /* ---- the grade ----
      Four knobs for the four things in the composite's note, and they are
@@ -4500,6 +4500,13 @@ brightStarObj = pointsFrom(150, (i, pos, sz, cl, al) => {
    is billions of unresolved stars averaged together, and that average is the
    colour of an old population, closer to cream than to white. */
 const MW_TILT = 0.42, MW_ROLL = 1.1;
+/* Which way is up out of the galactic plane, in world space: the band's own
+   (0,1,0) carried through the same tilt and roll the band is. Anything else
+   that wants to lean the way the galaxy leans asks this rather than repeating
+   the two rotations and drifting out of step with them later. */
+const MW_N = new THREE.Vector3(-Math.cos(MW_TILT) * Math.sin(MW_ROLL),
+                                Math.cos(MW_TILT) * Math.cos(MW_ROLL),
+                                Math.sin(MW_TILT));
 const MW_CORE = 2.10;                      // the direction the bulge lies in
 /* ---- the star clouds, which are the reason the band is not a smear ----
    Nobody who has seen the band describes it as an even strip of light. It
@@ -4814,15 +4821,52 @@ function buildNebula(outer) {
    Along its length the hue walks — teal into violet into rose — because a
    single-coloured sheet reads as a gel over the lens and a walking one reads
    as different gases at different distances. */
+/* The two lines the colour comes from.
+
+   Nebulosity is not an arbitrary hue and a sky full of arbitrary hues is the
+   thing that reads as decoration. Almost all of it is two emission lines —
+   hydrogen alpha in the deep red and doubly ionised oxygen in the teal — and
+   every colour a real one shows is those two in some proportion, which is why
+   the in-between is violet and magenta rather than green. Interpolating the
+   long way round, through blue and violet, is therefore not a stylistic
+   choice; it is the only path between them that exists. */
+const VEIL_OIII = 186, VEIL_HA = 352;
 function buildVeil() {
   dropGlow(veilObj);
   const CURT = 9, PER = 300;
   const arcs = [];
+  /* One sky, one palette. Nine curtains each picking their own hue out of a
+     hundred and fifty degrees was the whole of what made this gaudy: a sky
+     cannot be teal *and* magenta *and* violet at once and still be a place —
+     it is a set of gels. So the vault gets a single anchor somewhere between
+     the two lines and every curtain sits near it, which leaves the variation
+     that says "different gas at different distances" and takes away the
+     variation that says "nine unrelated things". */
+  const anchor = 0.30 + Math.random() * 0.45;
   for (let k = 0; k < CURT; k++) {
-    /* a random great circle: one axis to spin about, and two perpendiculars
-       in the plane it defines */
-    const ax = new THREE.Vector3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1)
-                 .normalize();
+    /* ---- where the curtain hangs ----
+       Most of them lean the way the galaxy does. A sky organised around one
+       plane with a couple of things crossing it is a sky; nine great circles
+       at nine unrelated angles is a wireframe, and the eye reads the crossings
+       as structure that means something when it does not.
+
+       The pole of the great circle is the galactic normal pushed over by up
+       to about thirty degrees — near the plane, never exactly in it, because
+       a curtain lying exactly along the band is the band drawn twice. Two of
+       the nine are left to go anywhere at all, which is what keeps the plane
+       reading as a tendency rather than as a rule. */
+    let ax;
+    if (k < CURT - 2) {
+      const tilt = 0.10 + Math.random() * 0.45;
+      /* any direction perpendicular to the normal, to push it over in */
+      const r = new THREE.Vector3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1);
+      r.addScaledVector(MW_N, -r.dot(MW_N)).normalize();
+      ax = MW_N.clone().multiplyScalar(Math.cos(tilt))
+               .addScaledVector(r, Math.sin(tilt)).normalize();
+    } else {
+      ax = new THREE.Vector3(Math.random()*2-1, Math.random()*2-1, Math.random()*2-1)
+             .normalize();
+    }
     const u = new THREE.Vector3(0,1,0);
     if (Math.abs(ax.y) > 0.9) u.set(1,0,0);
     const e1 = new THREE.Vector3().crossVectors(ax, u).normalize();
@@ -4845,8 +4889,17 @@ function buildVeil() {
       /* never a whole circle: a curtain has ends, and a ring around the sky
          reads as a piece of hardware */
       span: 1.1 + Math.random()*1.9,
-      hue: 168 + Math.random()*150,          // teal → violet → rose
-      dh:  (Math.random()-.5)*120,
+      /* near the sky's own anchor, not anywhere on the line between the two */
+      hue: VEIL_OIII + (VEIL_HA - VEIL_OIII) *
+           clamp(anchor + (Math.random()-0.5)*0.30, 0, 1),
+      dh:  (Math.random()-.5)*26,
+      /* Where along its length the curtain is brightest. A sine envelope puts
+         it exactly in the middle of every one of them, so nine curtains have
+         one silhouette between them; bending u first moves the bright part
+         off centre and leaves a long trail off the other end, which is what a
+         streamer actually looks like. */
+      skew: 0.55 + Math.random()*1.30,
+      lanes,
       lit: 0.55 + Math.random()*0.9,
       thick: 0.055 + Math.random()*0.10 });
   }
@@ -4864,10 +4917,17 @@ function buildVeil() {
       .addScaledVector(c.e3, g * c.thick)
       .normalize().multiplyScalar(r);
     pos[i*3] = _v.x; pos[i*3+1] = _v.y; pos[i*3+2] = _v.z;
-    /* faded to nothing at both ends, so a curtain begins and ends in the sky
-       rather than being cut off by its own last point */
-    const ends = Math.sin(u * Math.PI);
+    /* Faded to nothing at both ends, so a curtain begins and ends in the sky
+       rather than being cut off by its own last point — and bent first, so
+       the fade is not the same fade at both of them. See skew. */
+    const ends = Math.sin(Math.pow(u, c.skew) * Math.PI);
     const core = Math.exp(-g*g*0.9);
+    /* what the dust in front has taken out — see lanes */
+    let lane = 1;
+    for (let j = 0; j < c.lanes.length; j++) {
+      const L = c.lanes[j], z = (u - L.at) / L.w;
+      lane *= 1 - L.d * Math.exp(-z*z);
+    }
     /* Sized in world units against a point shader that divides by depth, so
        the number is large: at fourteen thousand out, two thousand units is a
        blob a couple of hundred pixels across, which is what it takes for
