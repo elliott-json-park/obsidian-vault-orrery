@@ -10,7 +10,7 @@
     "engine": "node scripts/build-engine.mjs",
     "dev": "npm run engine && node esbuild.config.mjs",
     "build": "npm run engine && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "test": "npm run build && node scripts/check-no-remote.mjs && node scripts/smoke.cjs",
+    "test": "npm run build && node scripts/check-no-remote.mjs && node scripts/check-ribbons.mjs && node scripts/smoke.cjs",
     "check": "node scripts/check-no-remote.mjs"
   },
   "keywords": [

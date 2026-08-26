@@ -929,7 +929,7 @@ body.ship #heat.on{display:block}
         <div class="row"><span>SUBMIT</span><span id="p-draw">—</span></div>
         <div class="row"><span>CPU TOTAL</span><span id="p-tot">—</span></div>
         <div class="hd" style="margin-top:5px">GEOMETRY</div>
-        <div class="row"><span>LINK SEGS</span><span id="p-lv">—</span></div>
+        <div class="row"><span>LINK PTS</span><span id="p-lv">—</span></div>
         <div class="row"><span>OFF SCREEN</span><span id="p-cull">—</span></div>
         <div class="row"><span>TRAILS</span><span id="p-trl">—</span></div>
         <div class="row"><span>DRAW CALLS</span><span id="p-dc">—</span></div>
@@ -1906,6 +1906,20 @@ const KNOBS = [
   { k:'arc', g:'cosmos', label:'ARC HEIGHT',    min:0,  max:ARC_MAX*100, sc:100, def:0,
     fmt:v => v < 0.02 ? 'FLAT' : mult(v) },
   { k:'ten', g:'cosmos', label:'LINK TENSION',  min:0,  max:100, sc:100, def:1, fmt:v => v.toFixed(2) },
+  /* ---- how thick the structure is drawn --------------------------------
+     In pixels, because that is the unit the answer is actually in: a line's
+     width is a fact about the screen, not about the vault, and the whole
+     reason this knob exists is that the old GL line had exactly one width and
+     it was whatever the display happened to call a pixel.
+
+     It scales the wakes and the comet's tails with the links, because all
+     three are the same material seen doing different jobs and a reader who
+     wants a heavier picture wants a heavier picture. What it does not touch
+     is brightness — LINK GLOW owns that, and the two were deliberately not
+     merged: "I cannot see the links" and "the links are drowning the notes"
+     are opposite complaints and one slider answers only one of them. */
+  { k:'lwd', g:'cosmos', label:'LINE WIDTH',    min:60, max:400, sc:100, def:1.7,
+    fmt:v => v.toFixed(1) + ' px' },
   /* RECENT WORK lights a note by when it was last touched.
 
      The knob is the window rather than the intensity, because the window is
@@ -2160,8 +2174,9 @@ let nodes, edges, N, cats, catIndex, wikiCats, rawCats, parentOf, childrenOf, co
     starCore, starShell, starRing, starRing2, starAlC, starAlS, starAlR, starAlR2,
     bodyGeo, bodyMat, bodies, nodeGlowGeo, gPos, gSz, gSz0, gCl, gAl, nodeGlow,
     bStar, bStarCol, bOcc, bOccS, bRing,
-    EN, linkPos, linkCol, linkGeo, linkMat, linkMesh,
+    EN, linkPos, linkCol, linkGeo, linkMat, linkMesh, linkStride = 0,
     trailPos, trailCol, trailGeo, trailMesh, trailPick, trailOrder,
+    trailStride = 0, trailIdxPer = 0,
     pulseIdx, pulseT, pulseSp, pPos, pSz, pCl, pAl, pulseGeo, pulses,
     selRig, selRing, hovRig, actRig, actRing, actRing2, actPip,
     ringMesh, ringIdx = [], ringQ = [], ringK = null, ringStar = null, labels;
@@ -2306,7 +2321,6 @@ function applySizes() {
     gSz0[i] = RAD[i] * (k === 'core' ? 16 : k === 'wiki' ? 9 : 7.5);
     gSz[i] = gSz0[i];
   }
-  if (labels) labels.forEach(l => { if (l.node && l.idx != null) l.off = RAD[l.idx] * 2.6; });
 }
 
 /* Samples per link — now a *ceiling*, not a count. Nine draws a visibly
@@ -2337,6 +2351,11 @@ const PULSE = 260;                               // travelling data pulses
 /* Orbit trails. Module scope rather than beside the buffers they size, because
    the frame loop and the budget readout both ask about them and buildObjects
    is not somewhere either of those can see. */
+/* One curve's samples, held between being solved and being turned into a
+   ribbon — see the note in writeLinks on why the two cannot be the same pass.
+   Sixteen is the largest SEG the link writer ever asks for and nine is the
+   trail's, so this is the ceiling for both with room over. */
+const _rq = new Float32Array(24 * 3);
 const TRAIL_CAP = 300;      // bodies that may carry one
 const TRAIL_SEG = 9;        // samples per trail, so eight drawn segments
 const TRAIL_SWEEP = 0.16;   // how far back it reaches, in orbital radians
@@ -3498,7 +3517,8 @@ function bloomInit() {
 function bloomSize(w, h) {
   bloomInit();
   if (BLOOM.w === w && BLOOM.h === h && BLOOM.rt) return;
-  [BLOOM.rt, BLOOM.a, BLOOM.a2, BLOOM.a3, BLOOM.b, BLOOM.c].forEach(r => { if (r) r.dispose(); });
+  [BLOOM.rt, BLOOM.a, BLOOM.a2, BLOOM.a3, BLOOM.b,
+   BLOOM.c].forEach(r => { if (r) r.dispose(); });
   const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
                 format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false };
   /* Eight bits, and sRGB — the canvas's own format, which is the point: the
@@ -3585,8 +3605,8 @@ function renderFrame() {
   /* The plain path stays exactly what it was, and is still taken whenever
      nothing has been asked for — the identity between it and the composite at
      zero was worth measuring once and is worth keeping. */
-  if ((amt <= 0.02 && rayAmt <= 0.02 &&
-       blur <= 0.02 && heat <= 0.02) || !BLOOM.ok) {
+  if ((amt <= 0.02 && rayAmt <= 0.02 && blur <= 0.02 && heat <= 0.02 &&
+       grade <= 0.02) || !BLOOM.ok) {
     renderer.setRenderTarget(null);
     renderer.render(scene, camera);
     return false;
@@ -3660,6 +3680,220 @@ const scene = new THREE.Scene();
    half of the vault into grey soup long before you can steer toward it */
 scene.fog = new THREE.FogExp2(0x02040a, 0.00026);
 const camera = new THREE.PerspectiveCamera(52, 1, 0.6, 40000);
+
+/* ================================================================ RIBBONS
+   Every structural line in here — the links, the orbit wakes, the comet's two
+   tails — was a GL line, and a GL line is exactly one device pixel wide. That
+   is not a width anybody chose. It is what the hardware does, and it has
+   three consequences the picture cannot argue with:
+
+     it thins as the screen sharpens   a hairline on a 2x display is half the
+                                       physical width it had on a 1x one, so
+                                       the better the monitor the fainter the
+                                       structure
+     it cannot say how much            width is the one channel a line has for
+                                       importance, and it was spent before
+                                       anything got to use it
+     it crawls                         a one-pixel diagonal is a staircase
+                                       that resamples itself every frame, and
+                                       a whole vault of them shimmers
+
+   So a line is a ribbon instead: two vertices per sample, offset either side
+   of the curve along the one direction that is perpendicular to both the
+   curve and the eye, with a falloff across the width that gives it a soft
+   edge and a hot core. That is what light looks like — a filament with glare
+   around it, not a rectangle — and the edge, being a gradient rather than a
+   step, has nothing left to alias.
+
+   The cost is close to nothing, and that is the whole reason this shape was
+   chosen over the usual one. Expanding a line into a quad in the vertex
+   shader wants the neighbouring vertex as an attribute, which doubles what
+   the CPU writes every frame; a triangle strip along the polyline wants two
+   vertices per *sample* where the old LineSegments wanted two per *segment*,
+   and a polyline of n samples has n-1 segments. So the writers below push the
+   same twelve floats per sample they always did. What is new is one cross
+   product and one square root each — the perpendicular — and an index buffer,
+   which is built once and never touched again.
+
+   Width is asked for in CSS pixels and converted per sample, so a ribbon is
+   the same thickness on screen wherever the thing it is drawn on happens to
+   be. Zero width is a legal thing to ask for, and the writers use it: a dash
+   is a sample pinched to nothing, which tapers into the gap instead of
+   chopping into it. */
+const RIB_V = `
+attribute float aSide;
+attribute vec3 aColor;
+varying vec3 vCol;
+varying float vS;
+varying float vZ;
+void main(){
+  vCol = aColor; vS = aSide;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vZ = -mv.z;
+  gl_Position = projectionMatrix * mv;
+}`;
+/* ---- how wide a ribbon actually looks ----
+   The width a writer asks for is a width in pixels, and until this was fixed
+   it was not the width anybody got. The old profile — a quadratic shoulder
+   plus an eighth power — fell to half its peak at thirteen per cent of the
+   geometric half-width, so LINE WIDTH at its 1.7 px default was drawing a
+   visible core of about a quarter of a pixel with a very faint wash either
+   side of it. That is a hairline again, which is the one thing the ribbons
+   were built to stop being, and it is why the links read as broken: a core
+   thinner than a pixel lands on some pixel centres and misses others.
+
+   So the profile is defined against the width that was asked for rather
+   than against whatever the geometry happens to be. The strip is built
+   RIB_PAD times wider than the request, s is the distance across it in units
+   of the *requested* half-width, and the two terms are shaped so the half
+   power point lands at s = 1. The pad is what gives the glare somewhere to
+   fall off inside; without it the tail would be cut square at the edge of
+   the strip, which is an edge to find.
+
+   RIB_CORE and RIB_GLARE are not free numbers. They are the shape's own
+   weights scaled by one factor, chosen so the profile integrates to exactly
+   what the old one did — the same light, spread over the width the knob
+   claims. Width and brightness are separate controls here and have been
+   argued about twice already (see LINE WIDTH, and ORBIT GAP before it), so a
+   change to what width *means* is not allowed to move the exposure. LINK
+   GLOW is still the only thing that does that. */
+const RIB_PAD = 2.2;
+const RIB_CORE = 0.4181, RIB_GLARE = 0.2832;
+/* The profile across the ribbon. Two terms, because one cannot be both:
+   a flat-topped core is the filament and a wide gaussian is the glare around
+   it. A single gaussian of any width is either a soft smear with no line in
+   it or a line with nothing around it — the same argument the bloom chain
+   makes about its three widths, at a scale of two pixels.
+
+   Additive, and premultiplied by hand: three's additive blending is
+   src*srcAlpha + dst, so the colour carries the coverage and the alpha stays
+   at one. That keeps a half-covered edge pixel contributing half the light
+   rather than being composited as a translucent object, which is what light
+   does and what the old lines did.
+
+   The fog is done here rather than through three's own chunks. It is three
+   lines, and it does not depend on when the renderer decides a material's
+   uniforms are stale — which for a pass list that swaps cameras nine times a
+   frame is not a thing worth depending on.
+
+   It attenuates rather than mixing toward the fog colour, which is what
+   LineBasicMaterial did and was very slightly wrong at. Mixing an *additive*
+   fragment toward a colour means a fragment carrying no light at all still
+   ends up adding the fog's own — so every collapsed segment and every faded
+   tail end was contributing a faint blue wash at long range. The fog colour
+   here is two per cent grey, so attenuating is the same picture minus that
+   artefact. */
+const RIB_F = `
+uniform float uOpacity, uFogD;
+varying vec3 vCol;
+varying float vS;
+varying float vZ;
+void main(){
+  /* distance across the ribbon in units of the half-width that was asked
+     for, so s = 1.0 is the edge of the line the knob describes and the strip
+     itself runs out at s = RIB_PAD */
+  float s = abs(vS) * ${RIB_PAD.toFixed(3)};
+  /* flat-topped, and through half at s = 1: a sixth power is square enough
+     to read as a line with an edge rather than as a smear with a middle */
+  float core  = 1.0 / (1.0 + pow(s, 6.0));
+  float glare = exp(-s * s * 0.55);
+  float a = (core * ${RIB_CORE.toFixed(4)} + glare * ${RIB_GLARE.toFixed(4)}) * uOpacity;
+  /* the pad is there for the glare to fall off inside, not to be shaded to
+     the last thousandth: past this the fragment costs more than it shows */
+  if (a < 0.0015) discard;
+  float f = clamp(1.0 - exp(-uFogD * uFogD * vZ * vZ), 0.0, 1.0);
+  gl_FragColor = vec4(vCol * a * (1.0 - f), 1.0);
+}`;
+const RIBS = [];
+function ribMat(opacity) {
+  const m = new THREE.ShaderMaterial({
+    uniforms: { uOpacity:{ value: opacity }, uFogD:{ value: 0 } },
+    vertexShader: RIB_V, fragmentShader: RIB_F,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    side: THREE.DoubleSide
+  });
+  RIBS.push(m);
+  return m;
+}
+/* One write a frame, for every ribbon at once. scene.fog.density moves with
+   ORBIT GAP — see applyDepth — so it cannot be baked in at build time. */
+function ribFog() {
+  const d = scene.fog ? scene.fog.density : 0;
+  for (let i = 0; i < RIBS.length; i++) RIBS[i].uniforms.uFogD.value = d;
+}
+/* The index buffer and the side attribute, both of which are the same for
+   every strip and are therefore built once.
+
+   `strips` fixed-size runs of `samples` samples, two vertices each. Vertex
+   2j sits on the minus side of sample j and 2j+1 on the plus side, so the
+   quad between samples j and j+1 is (2j, 2j+1, 2j+2) and (2j+1, 2j+3, 2j+2).
+   A strip nobody writes into is a run of zeroes at the origin with zero
+   colour, which draws nothing — the same way the old line writers parked
+   their unused slots. */
+function ribGeo(strips, samples) {
+  const V = strips * samples * 2;
+  const pos = new Float32Array(V * 3), col = new Float32Array(V * 3);
+  const side = new Float32Array(V);
+  for (let i = 0; i < V; i++) side[i] = (i & 1) ? 1 : -1;
+  const Idx = V > 65535 ? Uint32Array : Uint16Array;
+  const idx = new Idx(strips * (samples - 1) * 6);
+  let w = 0;
+  for (let s = 0; s < strips; s++) {
+    const b = s * samples * 2;
+    for (let j = 0; j < samples - 1; j++) {
+      const a0 = b + j*2;
+      idx[w++] = a0;   idx[w++] = a0+1; idx[w++] = a0+2;
+      idx[w++] = a0+1; idx[w++] = a0+3; idx[w++] = a0+2;
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aColor',   new THREE.BufferAttribute(col, 3));
+  g.setAttribute('aSide',    new THREE.BufferAttribute(side, 1));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  return { geo: g, pos, col, verts: V, perStrip: samples * 2,
+           idxPerStrip: (samples - 1) * 6 };
+}
+/* The two vertices of one sample.
+
+   `nl` is the length of the cross product, which already carries both the
+   tangent's length and the eye vector's, so dividing by it normalises the
+   perpendicular without either of them having been normalised first. When the
+   curve runs straight at the eye there is no perpendicular to find — the
+   cross product collapses — and any direction will do, because a ribbon seen
+   exactly end-on is a point whatever way it is turned. */
+function ribVert(P, C, w, qx, qy, qz, tx, ty, tz, ex, ey, ez, hw, r, g, b) {
+  let nx = ty*ez - tz*ey, ny = tz*ex - tx*ez, nz = tx*ey - ty*ex;
+  const nl = Math.sqrt(nx*nx + ny*ny + nz*nz);
+  /* the strip is built wider than the line it draws — see RIB_PAD. A caller
+     asking for zero still gets zero, which is what keeps a dash a dash. */
+  const hp = hw * RIB_PAD;
+  if (nl > 1e-9) { const k = hp / nl; nx *= k; ny *= k; nz *= k; }
+  else { nx = hp; ny = 0; nz = 0; }
+  const o = w*3;
+  P[o]   = qx - nx; P[o+1] = qy - ny; P[o+2] = qz - nz;
+  C[o]   = r;       C[o+1] = g;       C[o+2] = b;
+  P[o+3] = qx + nx; P[o+4] = qy + ny; P[o+5] = qz + nz;
+  C[o+3] = r;       C[o+4] = g;       C[o+5] = b;
+}
+/* LINE WIDTH as a factor rather than as a width.
+
+   The links ask the knob for a number of pixels outright, because a link is
+   the thing the knob was written for and a link's width *is* what the knob
+   says. Everything else drawn out of this material — the orbit wakes, the
+   twins, the comet's two tails — had its width picked by eye, in pixels,
+   against a picture that already existed, and those proportions are not
+   incidental: the dust tail is broad because dust fans and the ion tail is
+   thin because gas does not, and that difference has to survive the slider.
+
+   So they scale by how far the knob has moved from its own default. Reading
+   SET.lwd raw would have been the shorter line and would have widened every
+   one of them by seventy per cent the moment the knob shipped, which is a
+   knob changing the picture at the setting that is supposed to be the
+   picture. Dividing by SET_DEF.lwd rather than by a literal keeps the two
+   ends of that statement in one place: change the default in KNOBS and this
+   still means "where the knob started". */
+const lwdK = () => SET.lwd / SET_DEF.lwd;
 
 /* Every body is lit by its own star — see starLit() below — so the scene
    lights are what is left over once that is true: the hub, which is the
@@ -4463,6 +4697,19 @@ function buildVeil() {
     if (Math.abs(ax.y) > 0.9) u.set(1,0,0);
     const e1 = new THREE.Vector3().crossVectors(ax, u).normalize();
     const e2 = new THREE.Vector3().crossVectors(ax, e1).normalize();
+    /* ---- the rifts ----
+       An additive sheet cannot draw a dark lane. Nothing here subtracts, so a
+       band of dust in front of a curtain is not something that can be laid
+       over it — what can be done is to take the curtain away where the dust
+       is, which lands the same picture: a rift with two bright edges. It is
+       the reason a real nebula does not read as a flat sheet, and it was the
+       one kind of structure this had none of. */
+    const lanes = [];
+    const nl = Math.random() < 0.55 ? (Math.random() < 0.35 ? 2 : 1) : 0;
+    for (let j = 0; j < nl; j++)
+      lanes.push({ at: 0.18 + Math.random()*0.64,
+                   w:  0.045 + Math.random()*0.075,
+                   d:  0.45 + Math.random()*0.42 });
     arcs.push({ e1, e2, e3: new THREE.Vector3().crossVectors(e1, e2),
       a0: Math.random()*TAU,
       /* never a whole circle: a curtain has ends, and a ring around the sky
@@ -4501,9 +4748,22 @@ function buildVeil() {
        is meant to read as — not the sheet's own value, which was the first
        guess and produced a curtain that could not be seen at any setting of
        its own knob. */
-    al[i] = (.070 + Math.random()*.115) * c.lit * ends * (0.25 + core);
+    al[i] = (.070 + Math.random()*.115) * c.lit * ends * lane * (0.25 + core);
+    /* ---- how much colour, and why so little of it ----
+       Saturation was the other half of the gaudiness, and the bigger half.
+       A sheet this large at half saturation is not read as gas at all — it is
+       read as a filter in front of the lens, because nothing that far away
+       keeps its colour and the eye knows it. Distance takes saturation first;
+       a very large, very desaturated field is the whole of what makes a sky
+       feel deep, and the hue is there to be noticed only once somebody looks
+       for it.
+
+       The rim of a rift keeps a little more of it than the sheet does, which
+       is the one thing dust reliably does to the light coming past it. */
+    const rim = 1 + (1 - lane) * 0.55;
     hsl((c.hue + c.dh*(u-0.5) + 360) % 360,
-        .42 + Math.random()*.26, .40 + Math.random()*.16).toArray(cl, i*3);
+        (.15 + Math.random()*.13) * rim,
+        .38 + Math.random()*.14).toArray(cl, i*3);
   }, glowMat(700, 0, 0, false));
   veilObj.name = 'veil';
   /* behind everything, and never writing depth: it is the far wall */
@@ -6479,18 +6739,24 @@ EN = edges.length;
 SEG = EN > 4000 ? 8 : EN > 1500 ? 12 : 16;
 edgeCache = new Array(EN);
 linkProg = new Float32Array(Math.max(1,EN)).fill(1);
-const linkVerts = Math.max(1, EN) * (SEG-1) * 2 * 3;
-linkPos = new Float32Array(linkVerts);
-linkCol = new Float32Array(linkVerts);
-linkGeo = new THREE.BufferGeometry();
-linkGeo.setAttribute('position', new THREE.BufferAttribute(linkPos,3));
-linkGeo.setAttribute('color', new THREE.BufferAttribute(linkCol,3));
-linkGeo.setDrawRange(0, EN * (SEG-1) * 2);
-linkMat = new THREE.LineBasicMaterial({ vertexColors:true, transparent:true,
-  opacity:.62, blending:THREE.AdditiveBlending, depthWrite:false });
-linkMesh = new THREE.LineSegments(linkGeo, linkMat);
-linkMesh.frustumCulled = false;
-world.add(linkMesh);
+/* A strip of SEG samples per edge rather than SEG-1 segments — one sample
+   more, and the vertex count is what it was plus two. See RIBBONS for why
+   that is the whole price of giving every link a width. */
+{
+  const R = ribGeo(Math.max(1, EN), SEG);
+  linkGeo = R.geo; linkPos = R.pos; linkCol = R.col;
+  linkStride = R.perStrip;
+  linkGeo.setDrawRange(0, EN * R.idxPerStrip);
+  /* One rather than the old 0.62. A ribbon spreads the same light over its
+     width instead of concentrating it in one pixel, and the profile in RIB_F
+     integrates to about 0.35 across a unit of width — so a 1.7px ribbon at
+     full opacity carries very nearly what a 1px line at 0.62 did. The knob
+     moves the width, and the light follows it, which is the point. */
+  linkMat = ribMat(1.0);
+  linkMesh = new THREE.Mesh(linkGeo, linkMat);
+  linkMesh.frustumCulled = false;
+  world.add(linkMesh);
+}
 
 /* ---------- orbit trails ----------
    A body sliding along an invisible orbit reads as a dot that happens to be
@@ -6518,16 +6784,16 @@ trailOrder = new Int32Array(N);
 for (let i=0;i<N;i++) trailOrder[i] = i;
 trailOrder.sort((a,b) => RAD[b] - RAD[a]);
 {
-  const tv = TRAIL_CAP * (TRAIL_SEG-1) * 2 * 3;
-  trailPos = new Float32Array(tv);
-  trailCol = new Float32Array(tv);
-  trailGeo = new THREE.BufferGeometry();
-  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos,3));
-  trailGeo.setAttribute('color', new THREE.BufferAttribute(trailCol,3));
+  /* A wake now tapers. It was a line of constant width whose *colour* faded
+     to nothing, which reads as a wire hoop going dim; a real long exposure
+     narrows as well as dims, because the far end is a body that was smaller
+     on the sensor for less of the frame. The width carries the same falloff
+     the colour does, so the tail comes to a point behind the planet. */
+  const R = ribGeo(TRAIL_CAP, TRAIL_SEG);
+  trailGeo = R.geo; trailPos = R.pos; trailCol = R.col;
+  trailStride = R.perStrip; trailIdxPer = R.idxPerStrip;
   trailGeo.setDrawRange(0, 0);
-  trailMesh = new THREE.LineSegments(trailGeo, new THREE.LineBasicMaterial({
-    vertexColors:true, transparent:true, opacity:.85,
-    blending:THREE.AdditiveBlending, depthWrite:false }));
+  trailMesh = new THREE.Mesh(trailGeo, ribMat(1.45));
   trailMesh.frustumCulled = false;
   world.add(trailMesh);
 }
@@ -6607,7 +6873,7 @@ labels = [];
 cats.forEach(c => {
   const s = makeLabel(c.code, '#5ce1ff', c.tier===0 ? 22 : 17);
   world.add(s);
-  labels.push({ sprite:s, get:()=>c.pos, off:c.R*3.1,
+  labels.push({ sprite:s, get:()=>c.pos,
                 far: (c.tier===0?1.6:2.8) * Math.max(600, (SHELL_R||1200)*0.8), cat:c });
 });
 /* one canvas texture per label, so a huge vault only labels its loudest notes */
@@ -6619,7 +6885,7 @@ named.slice(0, LABEL_CAP).forEach(i => {
   const s = makeLabel(nodes[i].n, '#9beaff', 12 + Math.min(7, nodes[i].inb*.12));
   s.material.opacity = 0;
   world.add(s);
-  labels.push({ sprite:s, idx:i, off:RAD[i]*2.6,
+  labels.push({ sprite:s, idx:i,
                 far: Math.max(420, (SHELL_R||1200)*0.42), node:true });
 });
 
@@ -6651,21 +6917,79 @@ applyDepth();
 applySizes();
 }   /* ---- end buildObjects ---- */
 
+/* ---------------------------------------------------------------- LABELS
+   A name over a body was the least finished thing on screen, and it was
+   failing in four separate ways at once.
+
+     it was additive        so it added its light to whatever was behind it,
+                            which is fine over empty space and means a name
+                            disappears into the corona, the band or a nebula —
+                            precisely the places worth naming something in
+     it had no depth test   so a note on the far side of the vault wrote its
+                            name across the planet in front of it, and the one
+                            cue that says which of two things is nearer was
+                            being contradicted by the text
+     it minified badly      one bilinear tap off a texture drawn at one size,
+                            so a label seen small crawled and sparkled
+     nothing arbitrated     two hundred and twenty of them, each deciding on
+                            its own whether it was visible, and in a crowded
+                            system they simply overlapped into porridge
+
+   The first two are answered here, the last two in writeLabels.
+
+   Normal blending, not additive, and a dark rim under the glyphs. That is the
+   whole readability fix: the rim gives the text its own ground so it survives
+   a bright background, and normal blending lets it *cover* what it is over
+   instead of adding to it. On empty space — which is most of the frame — the
+   baked glow makes it look very nearly the way additive did, which is the
+   look this was reaching for and getting only where the background was
+   already black.
+
+   Three passes over the same glyphs, and the order is the point: a coloured
+   stroke carrying a shadow lays the glow down first, a wider dark stroke over
+   it becomes the rim and hides the coloured stroke itself, and the fill goes
+   on last. */
+const LBL_FACE = '"Malgun Gothic","Apple SD Gothic Neo","Yu Gothic UI",' +
+                 '"Microsoft YaHei UI","Segoe UI",sans-serif';
+/* Long names cost width in the atlas, in the frame and in the reader's
+   attention, and a name past the mid twenties is not being read at label size
+   anyway — it is being recognised by its first few words, which is exactly
+   what survives the cut. */
+const LBL_MAX_CH = 26;
 function makeLabel(text, color, size) {
-  const pad = 12, fs = 44;
+  const s0 = String(text);
+  const txt = s0.length > LBL_MAX_CH ? s0.slice(0, LBL_MAX_CH - 1) + '…' : s0;
+  const fs = 46, pad = 15, ring = Math.round(fs * 0.15);
   const c = document.createElement('canvas'), x = c.getContext('2d');
-  x.font = '600 ' + fs + 'px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
-  const w = Math.ceil(x.measureText(text).width) + pad*2;
-  c.width = w; c.height = fs + pad*2;
-  x.font = '600 ' + fs + 'px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+  const font = '600 ' + fs + 'px ' + LBL_FACE;
+  x.font = font;
+  c.width = Math.ceil(x.measureText(txt).width) + pad*2;
+  c.height = fs + pad*2;
+  x.font = font;                          // resizing the canvas clears the state
   x.textBaseline = 'middle';
-  x.shadowColor = color; x.shadowBlur = 22;
+  x.lineJoin = 'round'; x.miterLimit = 2;
+  const y = c.height/2;
+  x.shadowColor = color; x.shadowBlur = 24;
+  x.strokeStyle = color; x.lineWidth = ring * 0.55;
+  x.strokeText(txt, pad, y);
+  x.shadowBlur = 0;
+  x.strokeStyle = 'rgba(2,7,14,.93)'; x.lineWidth = ring;
+  x.strokeText(txt, pad, y);
   x.fillStyle = '#eaf9ff';
-  x.fillText(text, pad, c.height/2);
+  x.fillText(txt, pad, y);
   const t = new THREE.CanvasTexture(c);
-  t.minFilter = THREE.LinearFilter;
+  /* Mipmaps and anisotropy, which is what turns a shrinking label from a
+     sparkling mess into text that simply gets smaller. WebGL1 will only build
+     a mip chain for a power-of-two texture and a name is never one, so on that
+     path this stays the single bilinear tap it always was rather than falling
+     back to something broken. */
+  const mip = renderer.capabilities.isWebGL2;
+  t.generateMipmaps = mip;
+  t.minFilter = mip ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter;
+  t.magFilter = THREE.LinearFilter;
+  t.anisotropy = Math.max(1, Math.min(8, renderer.capabilities.getMaxAnisotropy()));
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:t, transparent:true,
-    depthWrite:false, depthTest:false, blending:THREE.AdditiveBlending, opacity:.9 }));
+    depthWrite:false, depthTest:true, opacity:.9 }));
   s.scale.set(size * c.width/c.height, size, 1);
   s.renderOrder = 5;
   return s;
@@ -6682,6 +7006,10 @@ function disposeWorld() {
       if (m.map) m.map.dispose();
       let k = glowMats.indexOf(m); if (k >= 0) glowMats.splice(k, 1);
       k = skyMats.indexOf(m);      if (k >= 0) skyMats.splice(k, 1);
+      /* the ribbons keep a list of their own, for the one uniform the frame
+         writes into them — a dead material left in it is a write into the
+         GPU's rubbish on every tick after the vault has been swapped */
+      k = RIBS.indexOf(m);         if (k >= 0) RIBS.splice(k, 1);
       m.dispose();
     });
   });
@@ -7105,10 +7433,34 @@ $('i-name').addEventListener('mouseover', e => {
   catch (err) { console.error('vault-orrery: host preview', err); }
 });
 
-/* =============================================================== SEARCH */
+/* ============================================================== COMMAND
+   One box, because "find" is one instinct.
+
+   There were two. Slash opened a note finder in the middle of the screen and
+   the control deck had a filter of its own in its tab strip, and between
+   them they answered "where is that note" and "where is that knob" — which
+   is one question with two nouns in it. A reader who wanted GRAIN and typed
+   slash got a list of notes with grain in the title; a reader who wanted a
+   note called Lens and had the deck open got a slider. Neither of them was
+   wrong about how to ask.
+
+   So the box takes all three kinds of thing the vault has names for — its
+   notes, the controls, and the actions that are otherwise only a keystroke —
+   and the kind is a label on the row rather than a mode you have to be in
+   first. The deck's own filter stays where it is: that one is not a way of
+   finding a knob, it is a way of narrowing the shelf and leaving it narrowed,
+   which is a different job that happens to start the same way.
+
+   Ranked by kind, and notes first. In a vault of four thousand notes and
+   forty knobs, the thing being looked for is almost always a note, and the
+   two dozen rows below them cost nothing to skip past. Within the notes it
+   is inbound links, which is the same order the old finder used and is the
+   closest thing here to "how important is this". */
 let searchOpen = false, searchSel = 0, searchHits = [];
 function openSearch() {
-  if (!N) { toast(T('need.vault')); return; }
+  /* The notes need a vault; the knobs and the actions do not, and refusing
+     the whole box because the cosmos is empty would be turning off the one
+     control that can still do something. */
   searchOpen = true; $('srch').style.display = 'block';
   $('sin').value = ''; $('sin').focus(); runSearch('');
 }
@@ -7116,9 +7468,13 @@ function closeSearch() {
   searchOpen = false; $('srch').style.display = 'none';
 }
 function runSearch(q) {
-  filterTxt = q.trim().toLowerCase();
+  const raw = q.trim();
+  filterTxt = raw.toLowerCase();
+  const f = filterTxt;
   searchHits = [];
-  if (filterTxt) {
+  if (f) {
+    /* ---- notes ---- */
+    const hits = [];
     for (let i=0;i<N;i++){
       const nd = nodes[i];
       const hay = (nd.n + ' ' + nd.p + ' ' + (nd.t||[]).join(' ')).toLowerCase();
@@ -7158,6 +7514,8 @@ $('sin').addEventListener('keydown', e => {
     searchSel = clamp(searchSel + (e.key==='ArrowDown'?1:-1), 0,
                       Math.min(39, searchHits.length-1));
     $('sres').querySelectorAll('div').forEach((d,k)=>d.classList.toggle('sel', k===searchSel));
+    const on = $('sres').querySelector('div.sel');
+    if (on) try { on.scrollIntoView({ block:'nearest' }); } catch (err) {}
   }
 });
 
@@ -7507,14 +7865,14 @@ const TWIN_MAX = 6;
 let twinObj = null, twinPos = null, twinCol = null;
 function twinBuild() {
   if (twinObj) return;
-  twinPos = new Float32Array(TWIN_MAX * 2 * 3);
-  twinCol = new Float32Array(TWIN_MAX * 2 * 3);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(twinPos, 3));
-  g.setAttribute('color', new THREE.BufferAttribute(twinCol, 3));
-  twinObj = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-    vertexColors:true, transparent:true, opacity:.85,
-    blending:THREE.AdditiveBlending, depthWrite:false }));
+  /* Two samples each — these are straight, being a proposal about two notes
+     rather than a path between them — and a ribbon so that the one overlay
+     whose whole job is to be noticed is not the thinnest thing on screen. */
+  {
+    const R = ribGeo(TWIN_MAX, 2);
+    twinPos = R.pos; twinCol = R.col;
+    twinObj = new THREE.Mesh(R.geo, ribMat(1.1));
+  }
   twinObj.frustumCulled = false;
   twinObj.visible = false;
   /* on the scene, not the world: the world is torn down on every vault load
@@ -7550,23 +7908,33 @@ function twinWrite() {
   const a = twinState.i;
   if (a >= N) { twinsClear(); return; }
   const n = twinState.list.length;
+  const cam = camera.position, cx = cam.x, cy = cam.y, cz = cam.z;
+  const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  const LWD = lwdK();
   for (let k=0;k<TWIN_MAX;k++){
-    const o = k*6;
-    if (k >= n) {                       // collapse the unused segments
-      for (let s=0;s<6;s++) twinPos[o+s] = 0;
-      for (let s=0;s<6;s++) twinCol[o+s] = 0;
+    let w = k*4;                        // two samples, two vertices each
+    if (k >= n) {                       // collapse the unused strips
+      for (let s=0;s<12;s++) { twinPos[w*3+s] = 0; twinCol[w*3+s] = 0; }
       continue;
     }
     const j = twinState.list[k][0];
     const str = clamp(twinState.list[k][1], 0.15, 1.2);
-    twinPos[o]   = P[a*3];   twinPos[o+1] = P[a*3+1]; twinPos[o+2] = P[a*3+2];
-    twinPos[o+3] = P[j*3];   twinPos[o+4] = P[j*3+1]; twinPos[o+5] = P[j*3+2];
+    const ax = P[a*3], ay = P[a*3+1], az = P[a*3+2];
+    const bx = P[j*3], by = P[j*3+1], bz = P[j*3+2];
+    const tx = bx-ax, ty = by-ay, tz = bz-az;
+    /* One width for the whole line, taken at its midpoint. It tapers in
+       brightness from the note you asked about toward the one being proposed,
+       which is the direction the claim runs. */
+    const mx = (ax+bx)*.5 - cx, my = (ay+by)*.5 - cy, mz = (az+bz)*.5 - cz;
+    const hw = (1.1 + 1.9*str) * LWD * 0.5 * Math.sqrt(mx*mx + my*my + mz*mz) / fpx;
     /* violet, the palette's colour for "connection that does not exist yet" */
-    twinCol[o]   = 0.55*str; twinCol[o+1] = 0.36*str; twinCol[o+2] = 1.0*str;
-    twinCol[o+3] = 0.30*str; twinCol[o+4] = 0.20*str; twinCol[o+5] = 0.75*str;
+    ribVert(twinPos, twinCol, w, ax, ay, az, tx, ty, tz, ax-cx, ay-cy, az-cz,
+            hw, 0.55*str, 0.36*str, 1.0*str); w += 2;
+    ribVert(twinPos, twinCol, w, bx, by, bz, tx, ty, tz, bx-cx, by-cy, bz-cz,
+            hw*0.75, 0.30*str, 0.20*str, 0.75*str);
   }
   twinObj.geometry.attributes.position.needsUpdate = true;
-  twinObj.geometry.attributes.color.needsUpdate = true;
+  twinObj.geometry.attributes.aColor.needsUpdate = true;
 }
 $('i-twin').onclick = () => twinsShow(selected);
 
@@ -7605,6 +7973,11 @@ $('i-twin').onclick = () => twinsShow(selected);
    half the comets at random. Both are drawn now, out of one buffer. */
 const COMET_TAIL = 52;
 const COMET_ION = 26;
+/* samples, not segments — one more than the longer of the two tails — and the
+   vertices one strip of them costs */
+const COMET_SAMP = COMET_TAIL + 1;
+const COMET_STRIDE = COMET_SAMP * 2;
+const _cq = new Float32Array(COMET_SAMP * 3);
 let comet = null, cometHead = null, cometTailObj = null,
     cometTailPos = null, cometTailCol = null, cometNext = 14;
 
@@ -7618,17 +7991,18 @@ function cometBuild() {
   cometHead.visible = false;
   cometHead.renderOrder = 3;
 
-  cometTailPos = new Float32Array((COMET_TAIL + COMET_ION) * 2 * 3);
-  cometTailCol = new Float32Array((COMET_TAIL + COMET_ION) * 2 * 3);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(cometTailPos, 3));
-  g.setAttribute('color', new THREE.BufferAttribute(cometTailCol, 3));
-  cometTailObj = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
-    vertexColors:true, transparent:true, opacity:.9,
-    blending:THREE.AdditiveBlending, depthWrite:false }));
-  cometTailObj.frustumCulled = false;
-  cometTailObj.visible = false;
-  scene.add(cometTailObj);
+  /* Two strips of the same length, because a ribbon buffer is a rectangle:
+     the dust tail fills its own and the ion tail parks whatever it does not
+     need on its last point. Fifty-odd unused vertices is not a saving worth
+     a second geometry. */
+  {
+    const R = ribGeo(2, COMET_SAMP);
+    cometTailPos = R.pos; cometTailCol = R.col;
+    cometTailObj = new THREE.Mesh(R.geo, ribMat(1.0));
+    cometTailObj.frustumCulled = false;
+    cometTailObj.visible = false;
+    scene.add(cometTailObj);
+  }
 }
 
 function cometSpawn() {
@@ -7693,38 +8067,60 @@ function cometStep(dt) {
 
   const tr = comet.trail, n = tr.length;
   const dusty = comet.dusty;
-  for (let k=0;k<COMET_TAIL;k++){
-    const o = k*6;
-    if (k+1 >= n) {
-      for (let s=0;s<6;s++){ cometTailPos[o+s] = comet.pos.getComponent(s%3); cometTailCol[o+s] = 0; }
-      continue;
-    }
-    /* Each point of the trail is pushed away from the core as it ages, which
-       is what bends the streak into a tail pointing anti-sunward. */
-    const f0 = k / COMET_TAIL, f1 = (k+1) / COMET_TAIL;
-    const A = tr[k], B = tr[k+1];
-    const da = A.length() || 1, db = B.length() || 1;
+  /* the eye, for the ribbons below, and the pixels-per-unit that turns a
+     width asked for in pixels into one in the world */
+  const cam = camera.position, cx = cam.x, cy = cam.y, cz = cam.z;
+  const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  const cdist = Math.max(1, cam.distanceTo(comet.pos));
+  const upx = cdist / fpx;                    // world units per screen pixel
+  const LWD = lwdK();                         // see lwdK: both tails move with the links
+
+  /* ---- the dust tail ----
+     A fan, not a wire. Dust leaves the nucleus at walking pace and is then
+     pushed out by sunlight, so grains released at different times end up on
+     different orbits and the tail spreads as it goes — which is why a comet
+     photograph shows a broad plume and not a line. The ribbon widens with
+     age to say so, and the old one-pixel line could not.
+
+     Each point is pushed away from the core as it ages, which is what bends
+     the streak into something pointing anti-sunward. */
+  {
+    const push = comet.R * 0.34 * heat;
     /* The sweep has to be strong enough to read from across the vault. At a
        sixth of the shell radius the tail was a short streak that looked like
        a bright star with motion blur; the point of drawing a comet at all is
        that you can tell it is one. */
-    const push = comet.R * 0.34 * heat;
-    cometTailPos[o]   = A.x + A.x/da * push * f0 * f0;
-    cometTailPos[o+1] = A.y + A.y/da * push * f0 * f0;
-    cometTailPos[o+2] = A.z + A.z/da * push * f0 * f0;
-    cometTailPos[o+3] = B.x + B.x/db * push * f1 * f1;
-    cometTailPos[o+4] = B.y + B.y/db * push * f1 * f1;
-    cometTailPos[o+5] = B.z + B.z/db * push * f1 * f1;
-    /* a shallower falloff than square: the far end of a real tail is faint
-       but it is still there, and squaring made it vanish by a third of the way */
-    const fade = (1 - f0) * (1 - f0*0.72) * heat * 1.15 * dusty;
-    const fb   = (1 - f1) * (1 - f1*0.72) * heat * 1.15 * dusty;
+    const S = COMET_TAIL + 1;
+    let vis = 0;
+    for (let k=0;k<S;k++){
+      const o = k*3;
+      if (k < n) {
+        const A = tr[k], da = A.length() || 1, f = k / COMET_TAIL;
+        const g = push * f * f;
+        _cq[o] = A.x + A.x/da * g; _cq[o+1] = A.y + A.y/da * g; _cq[o+2] = A.z + A.z/da * g;
+        vis = k;
+      } else {
+        _cq[o] = _cq[vis*3]; _cq[o+1] = _cq[vis*3+1]; _cq[o+2] = _cq[vis*3+2];
+      }
+    }
     /* sunlight off dust. The grains are large against a wavelength, so they
        scatter without much preference and the tail comes out very nearly the
        colour of the star lighting it. */
     const cr = 1.0, cg = 0.87, cb = 0.66;
-    cometTailCol[o]   = cr*fade; cometTailCol[o+1] = cg*fade; cometTailCol[o+2] = cb*fade;
-    cometTailCol[o+3] = cr*fb;   cometTailCol[o+4] = cg*fb;   cometTailCol[o+5] = cb*fb;
+    let w = 0;
+    for (let k=0;k<S;k++){
+      const o = k*3, f = k / COMET_TAIL;
+      const ai = (k > 0 ? k-1 : 0)*3, bi = (k < S-1 ? k+1 : S-1)*3;
+      /* a shallower falloff than square: the far end of a real tail is faint
+         but it is still there, and squaring made it vanish by a third of the way */
+      const fade = k < n ? (1 - f) * (1 - f*0.72) * heat * 1.15 * dusty : 0;
+      ribVert(cometTailPos, cometTailCol, w, _cq[o], _cq[o+1], _cq[o+2],
+              _cq[bi]-_cq[ai], _cq[bi+1]-_cq[ai+1], _cq[bi+2]-_cq[ai+2],
+              _cq[o]-cx, _cq[o+1]-cy, _cq[o+2]-cz,
+              fade > 0 ? (1.6 + 13.0 * f) * LWD * 0.5 * upx : 0,
+              cr*fade, cg*fade, cb*fade);
+      w += 2;
+    }
   }
 
   /* ---- the ion tail ----
@@ -7758,24 +8154,35 @@ function cometStep(dt) {
       out[1] = p0.y + uy*L + (ky*w + jy*v) * len;
       out[2] = p0.z + uz*L + (kz*w + jz*v) * len;
     };
-    const A = _ionA, B = _ionB;
+    const A = _ionA;
     const knot = f => 0.72 + 0.55 * Math.abs(Math.sin(f * 9.1 + T * 2.3));
-    for (let k=0;k<COMET_ION;k++){
-      const o = (COMET_TAIL + k) * 6;
-      const f0 = k / COMET_ION, f1 = (k+1) / COMET_ION;
-      pt(f0, A); pt(f1, B);
-      cometTailPos[o]   = A[0]; cometTailPos[o+1] = A[1]; cometTailPos[o+2] = A[2];
-      cometTailPos[o+3] = B[0]; cometTailPos[o+4] = B[1]; cometTailPos[o+5] = B[2];
-      const g0 = (1 - f0) * (1 - f0*0.55) * ion * knot(f0);
-      const g1 = (1 - f1) * (1 - f1*0.55) * ion * knot(f1);
-      cometTailCol[o]   = 0.42*g0; cometTailCol[o+1] = 0.72*g0; cometTailCol[o+2] = 1.0*g0;
-      cometTailCol[o+3] = 0.42*g1; cometTailCol[o+4] = 0.72*g1; cometTailCol[o+5] = 1.0*g1;
+    const S = COMET_ION + 1;
+    for (let k=0;k<S;k++){
+      pt(k / COMET_ION, A);
+      _cq[k*3] = A[0]; _cq[k*3+1] = A[1]; _cq[k*3+2] = A[2];
+    }
+    /* The ion tail stays narrow where the dust tail fans: it is gas being
+       carried on field lines rather than grains drifting apart, and every
+       photograph of a bright comet shows the two as a broad plume with a thin
+       blue ray beside it. Two tails that differed only in colour were the one
+       thing the old single-pixel line could say about them. */
+    let w = COMET_STRIDE;                       // strip one; the dust has strip zero
+    for (let k=0;k<S;k++){
+      const o = k*3, f = k / COMET_ION;
+      const ai = (k > 0 ? k-1 : 0)*3, bi = (k < S-1 ? k+1 : S-1)*3;
+      const g = (1 - f) * (1 - f*0.55) * ion * knot(f);
+      ribVert(cometTailPos, cometTailCol, w, _cq[o], _cq[o+1], _cq[o+2],
+              _cq[bi]-_cq[ai], _cq[bi+1]-_cq[ai+1], _cq[bi+2]-_cq[ai+2],
+              _cq[o]-cx, _cq[o+1]-cy, _cq[o+2]-cz,
+              (1.1 + 2.4 * f) * LWD * 0.5 * upx,
+              0.42*g, 0.72*g, 1.0*g);
+      w += 2;
     }
   }
   cometTailObj.geometry.attributes.position.needsUpdate = true;
-  cometTailObj.geometry.attributes.color.needsUpdate = true;
+  cometTailObj.geometry.attributes.aColor.needsUpdate = true;
 }
-const _ionA = [0,0,0], _ionB = [0,0,0];
+const _ionA = [0,0,0];
 
 /* ======================================================== SHOOTING STARS
    The one piece of sky here that is honestly a lie, and worth it.
@@ -11383,11 +11790,127 @@ const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vect
 const _pos = new THREE.Vector3();
 const _actUp = new THREE.Vector3();     // the active-note mark's own scratch
 
+/* ================================================ ADAPTIVE SUPERSAMPLING
+   An orrery spends most of its life being looked at rather than flown, and
+   the still frame was the one this instrument was least good at. Two reasons,
+   and the second is the one nobody would guess:
+
+     a thin bright thing on a dark ground is the hardest case there is for a
+     fixed sample grid — the starfield, the diffraction spikes, the ring
+     edges, every silhouette against black — and
+
+     the moment BLOOM is above zero the frame is drawn into a render target,
+     and a render target is not the canvas. `antialias: true` applies to the
+     default framebuffer and to nothing else, so the whole composite path —
+     which is the path anybody with the default settings is on — has been
+     running with no multisampling at all.
+
+   The obvious fix is temporal: jitter the projection a fraction of a pixel
+   and average frames. It is not available here. The scene never stops moving
+   — the planets are in orbit, the wakes sweep, the star scintillates — so
+   accumulating across frames would smear exactly the motion the whole thing
+   exists to show. Anything that rejects the motion has to know where every
+   pixel came from last frame, which is a velocity buffer and a reprojection
+   pass, and that is a large machine to build for a still frame.
+
+   So: sample the space instead of the time. When the camera stops, the
+   internal buffer is grown past the display and the downsample does the
+   averaging — every pixel on screen becomes the mean of two or four, edges
+   included, render targets included. It costs nothing while anybody is
+   flying, because it is not on then; it goes away the instant the camera
+   moves, in the same frame, so there is no version of this where a drag
+   feels heavier than it did.
+
+   And it is allowed to fail. A machine that cannot hold the frame rate at
+   two hundred percent gets asked once, loses the frame rate for about a
+   second, and is never asked again for the rest of the session. */
+const SS = {
+  base: Math.min(devicePixelRatio || 1, 2),
+  now: 1, want: 1,
+  still: 0, hold: 0,
+  /* the highest multiplier this machine has got away with. It only ever
+     comes down: a GPU that could not hold 2x a minute ago cannot hold it
+     now, and asking again every time somebody stops moving is a stutter on
+     a timer. */
+  ceil: 2,
+  px:0, py:0, pz:0, fx:0, fy:0, fz:0, had: false
+};
+/* Beyond about thirteen megapixels the win is invisible and the allocation
+   is not — six render targets at 2x on a 4K display is most of a gigabyte,
+   and some drivers answer that by refusing rather than by being slow. */
+const SS_MAXPX = 13e6;
+function ssTarget() {
+  if (SS.still < 0.45) return 1;
+  return SS.still < 1.1 ? Math.min(1.45, SS.ceil) : SS.ceil;
+}
+function ssStep(dt) {
+  /* ---- has the view moved ----
+     Asked in pixels, and it has to be. The obvious test is whether the
+     camera's numbers changed since the last frame, and the answer to that is
+     always yes: the rig is a damped spring and a damped spring approaches its
+     rest without ever arriving, so an exact comparison would report motion
+     for ever and this would never once switch on. What is being asked is not
+     "did the numbers change" but "did the picture" — so the eye's travel is
+     divided by the range it is looking at, the aim's travel is taken as the
+     angle it turned through, and both are multiplied into pixels of screen.
+     A sixteenth of a pixel is comfortably below anything a display can show
+     and comfortably above where the spring's tail sits.
+
+     Taking it off the world matrix rather than off the rig means the ship,
+     the surface camera and the mind map all answer the same question without
+     this having to know they exist. */
+  const e = camera.matrixWorld.elements;
+  const cxp = e[12], cyp = e[13], czp = e[14];
+  const fxp = -e[8], fyp = -e[9], fzp = -e[10];
+  let moved = !SS.had;
+  if (!moved) {
+    const fpxR = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+    const ref = Math.max(1, ship.on ? Math.max(60, camera.position.length()) : rig.dist);
+    const dp = Math.hypot(cxp - SS.px, cyp - SS.py, czp - SS.pz);
+    const df = Math.hypot(fxp - SS.fx, fyp - SS.fy, fzp - SS.fz);
+    moved = (dp / ref + df) * fpxR > 0.0625;
+  }
+  SS.px = cxp; SS.py = cyp; SS.pz = czp;
+  SS.fx = fxp; SS.fy = fyp; SS.fz = fzp; SS.had = true;
+  /* A vault being rebuilt, a mind map over the top of it, or a cockpit — none
+     of those is a still frame worth paying for. */
+  if (moved || !world || mindOpen || ship.on) SS.still = 0;
+  else SS.still += dt;
+
+  const want = ssTarget();
+  SS.hold += dt;
+  /* the guard. Given a second to settle, and then judged once. */
+  if (SS.now > 1 && SS.hold > 1.0 && fps < 42) {
+    SS.ceil = Math.max(1, SS.now - 0.55);
+    SS.now = 1; SS.hold = 0; ssApply();
+    return;
+  }
+  if (Math.abs(want - SS.now) < 0.01) return;
+  const w = innerWidth, h = innerHeight, b = SS.base;
+  if (want > SS.now && w * h * b * b * want * want > SS_MAXPX) {
+    SS.ceil = Math.max(1, Math.sqrt(SS_MAXPX / (w * h * b * b)));
+    if (Math.abs(ssTarget() - SS.now) < 0.01) return;
+  }
+  SS.now = ssTarget(); SS.hold = 0;
+  ssApply();
+}
+function ssApply() {
+  renderer.setPixelRatio(SS.base * SS.now);
+  resize();
+}
+
 function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w/h; camera.updateProjectionMatrix();
-  const sc = h / (2 * Math.tan(camera.fov * Math.PI/360));
+  /* gl_PointSize is in device pixels and this is in CSS ones, so growing the
+     buffer under a fixed uScale would quietly shrink every star, every glow
+     and every spike by exactly the factor the supersample gained — the same
+     correction the poster has always had to make, for the same reason. The
+     ratio is one whenever the supersample is off, which is to say the number
+     this writes is the number it has always written. */
+  const sc = h / (2 * Math.tan(camera.fov * Math.PI/360))
+             * (renderer.getPixelRatio() / SS.base);
   glowMats.forEach(m => { if (m.uniforms) m.uniforms.uScale.value = sc; });
   /* the offscreen buffers are sized in device pixels, not CSS ones, or the
      bloom is resampled from a frame at the wrong resolution on every screen
@@ -11902,6 +12425,10 @@ function viewStep() {
      camera is its own — so the range is taken from where the eye actually is
      relative to the core. Same for the ship, which is its own camera too. */
   FOG.ref = Math.max(60, ship.on ? camera.position.length() : rig.dist);
+  /* the ribbons carry the scene's fog themselves, and its density moves with
+     ORBIT GAP — one write for all of them, here, where the frame settles
+     everything else the writers below are going to read */
+  ribFog();
   camera.updateMatrixWorld();
   FRU.setFromProjectionMatrix(
     _fm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -12145,7 +12672,19 @@ function writeLinks() {
   const lock = ship.surveyed;
   const rip = ripples.length > 0 ? ripN : null;
   const VP = P, LP = linkPos, LC = linkCol, AL = alpha;
-  const STRIP = (SEG-1)*2;
+  /* vertices per edge, not segments: a ribbon is two per sample and there is
+     one more sample than there are segments */
+  const STRIP = linkStride;
+  /* ---- what width means here ----
+     Not brightness. Brightness is what LINK GLOW moves, and tying the two
+     together would give the knob a second job it was not asked to do — the
+     mistake ORBIT GAP was already caught making. Width says what *kind* of
+     fact a link is, which is the one thing the three kinds differ in and the
+     one thing a dash and a hue were carrying alone: a written wikilink is the
+     firm one and draws at the full width, a source link a little under it, an
+     inferred tag resonance thinner again. A selection or a scan thickens its
+     own links, because at that moment they are the subject. */
+  const lwd = SET.lwd;
   let w = 0, dirty = false;
   /* Segments that carry colour, as against the ones collapsed for a gap, a
      dead link or a sample the curve did not need. The frame budget readout
@@ -12297,8 +12836,8 @@ function writeLinks() {
        broken now and then; a latent one, inferred rather than written, is
        broken twice as often. Colour alone was doing this work and colour is
        the first thing lost to a dim link, a bright neighbour or a colour-blind
-       reader, whereas a gap survives all three. It costs nothing: the strip is
-       already a run of separate segments, so a dash is a segment not drawn.
+       reader, whereas a gap survives all three. It costs nothing: a dash is a
+       sample given no width, and the strip is written either way.
 
        The period is counted in pixels, not in samples. Skipping every third
        sample was the obvious way to write this and it made the dash length a
@@ -12320,41 +12859,58 @@ function writeLinks() {
       dash = dash < 2 ? 2 : dash > 7 ? 7 : dash;
     }
 
+    /* how wide this one is drawn — see the note on lwd above */
+    let wpx = lwd * (ty === 0 ? 1 : ty === 1 ? 0.86 : 0.72);
+    if (sel >= 0 && (ia === sel || ib === sel)) wpx *= 1.5;
+    if (scanSet && (ia === lock || ib === lock)) wpx *= 1.5;
+
     const tint = EDGE_TINT[ty];
     const r = tint.r*str, gg = tint.g*str, bb = tint.b*str;
+
+    /* ---- the samples, evaluated before any of them is drawn ----
+       So that each can be given the tangent *through* it rather than the
+       tangent of whichever segment happens to arrive at it. A ribbon built on
+       arrival tangents has a visible corner at every sample, which on a curve
+       cut into four is a link made of facets; one built on central tangents
+       is smooth. The cost is a scratch run of at most sixteen points that
+       never leaves the cache. */
     const inv = 1/(segE-1);
-    let px = ax, py = ay, pz = az;
+    _rq[0]=ax; _rq[1]=ay; _rq[2]=az;
     for (let s=1;s<segE;s++){
       const u = s*inv*prog, iu = 1-u, i2 = iu*iu, u2 = u*u, k = 2*iu*u;
-      const qx = i2*ax + k*mx + u2*bx;
-      const qy = i2*ay + k*my + u2*by;
-      const qz = i2*az + k*mz + u2*bz;
-      if (dash && (s % dash) === 0) {
-        /* the gap. Collapsed onto the point it would have started from rather
-           than skipped, because the strip's vertex count is fixed. */
-        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
-        LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
-        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
-        LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
-      } else {
-        /* the retracting tip runs hot, like something being reeled in */
-        const hot = (prog < 1 && s >= segE-2) ? 2.6 : 1;
-        const hr = r*hot, hg = gg*hot, hb = bb*hot;
-        LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
-        LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
-        LP[w*3]=qx; LP[w*3+1]=qy; LP[w*3+2]=qz;
-        LC[w*3]=hr; LC[w*3+1]=hg; LC[w*3+2]=hb; w++;
-        live++;
-      }
-      px = qx; py = qy; pz = qz;
+      _rq[s*3]   = i2*ax + k*mx + u2*bx;
+      _rq[s*3+1] = i2*ay + k*my + u2*by;
+      _rq[s*3+2] = i2*az + k*mz + u2*bz;
     }
-    /* the slots the ceiling reserved and this edge did not need, parked on the
-       curve's own last point */
-    for (let s=segE;s<SEG;s++){
-      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
-      LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
-      LP[w*3]=px; LP[w*3+1]=py; LP[w*3+2]=pz;
-      LC[w*3]=0; LC[w*3+1]=0; LC[w*3+2]=0; w++;
+    /* Half the width in world units, at this edge's range. One conversion per
+       edge rather than per sample, for the same reason the fog and the sample
+       count are taken once at the chord's midpoint: an edge whose two ends sit
+       at meaningfully different ranges is one whose width nobody is measuring.
+       Asked for in CSS pixels, so the structure is the same weight on a
+       hairline-sharp display as on a coarse one — which is exactly what the
+       one-pixel line could not do. */
+    const hw = wpx * 0.5 * eyeD / fpx;
+    for (let j=0;j<SEG;j++){
+      /* past the end of what this edge needed, every remaining sample parks
+         on the curve's last point at zero width and no colour */
+      const jj = j < segE ? j : segE-1;
+      const o = jj*3;
+      const qx = _rq[o], qy = _rq[o+1], qz = _rq[o+2];
+      const ai = (jj > 0 ? jj-1 : 0)*3;
+      const bi = (jj < segE-1 ? jj+1 : segE-1)*3;
+      /* A dash is a sample pinched to nothing rather than a segment left out.
+         The ribbon tapers into the gap and out of it, which is what a broken
+         line of light looks like and is not something a run of hard-ended
+         segments could have done. */
+      const gap = j >= segE || (dash && j > 0 && j < segE-1 && (j % dash) === 0);
+      /* the retracting tip runs hot, like something being reeled in */
+      const hot = gap ? 0 : (prog < 1 && j >= segE-2) ? 2.6 : 1;
+      ribVert(LP, LC, w, qx, qy, qz,
+              _rq[bi]-_rq[ai], _rq[bi+1]-_rq[ai+1], _rq[bi+2]-_rq[ai+2],
+              qx-cx, qy-cy, qz-cz,
+              gap ? 0 : hw, r*hot, gg*hot, bb*hot);
+      w += 2;
+      if (!gap) live++;
     }
     ec.ax=ax; ec.ay=ay; ec.az=az;
     ec.bx=bx; ec.by=by; ec.bz=bz;
@@ -12362,11 +12918,11 @@ function writeLinks() {
     ec.str=str; ec.ty=ty; ec.prog=prog;
   }
   PERF.linkLive = live;
-  PERF.linkCap = EN * (SEG-1);
+  PERF.linkCap = EN * SEG;
   PERF.linkCull = culled;
   if (dirty) {
     linkGeo.attributes.position.needsUpdate = true;
-    linkGeo.attributes.color.needsUpdate = true;
+    linkGeo.attributes.aColor.needsUpdate = true;
   }
 }
 
@@ -12468,8 +13024,7 @@ function writeTrails() {
        three thousand solves a frame, and each is three sines and a root. */
     const step = -TRAIL_SWEEP / (TRAIL_SEG-1) * (o.sp < 0 ? -1 : 1);
     const ecc = o.ecc || 0;
-    keplerXY(ecc, ang);
-    let ca = _ok[0], sa = _ok[1];
+    let ca = 0, sa = 0;
 
     const cr = COL[i*3], cg = COL[i*3+1], cb = COL[i*3+2];
     /* the trail is the body's own light, spent: bright where it just was and
@@ -12477,31 +13032,48 @@ function writeTrails() {
        as a wire hoop */
     const base = amt * grow * clamp(a0, 0, 1) * (i === selected ? 1.7 : 1)
                  * fogAt(dist) * 0.55;
-    let px0 = cen.x + (ca*ux + sa*vx)*orad      + DSP[i*3];
-    let py0 = cen.y + (ca*uy + sa*vy)*orad + oy + DSP[i*3+1];
-    let pz0 = cen.z + (ca*uz + sa*vz)*orad      + DSP[i*3+2];
-
-    for (let s=1;s<TRAIL_SEG;s++){
+    /* The whole arc first, then the ribbon over it — the same two passes the
+       link writer makes, and for the same reason: a wake wants the tangent
+       through each sample, not the one arriving at it. Nine points is nothing
+       to hold. */
+    for (let s=0;s<TRAIL_SEG;s++){
       keplerXY(ecc, ang + s * step);
       ca = _ok[0]; sa = _ok[1];
-      const qx = cen.x + (ca*ux + sa*vx)*orad      + DSP[i*3];
-      const qy = cen.y + (ca*uy + sa*vy)*orad + oy + DSP[i*3+1];
-      const qz = cen.z + (ca*uz + sa*vz)*orad      + DSP[i*3+2];
+      _rq[s*3]   = cen.x + (ca*ux + sa*vx)*orad      + DSP[i*3];
+      _rq[s*3+1] = cen.y + (ca*uy + sa*vy)*orad + oy + DSP[i*3+1];
+      _rq[s*3+2] = cen.z + (ca*uz + sa*vz)*orad      + DSP[i*3+2];
+    }
+    /* How wide the wake is where it leaves the body, in pixels. A fifth of
+       the body's own radius on screen, floored so a speck still draws a
+       thread and capped so a planet filling the frame does not tow a plank.
+       Tying it to the body rather than to a constant is what makes a wake
+       read as belonging to the thing that made it — and the cap goes on
+       after LINE WIDTH rather than before it, or the knob's top end turns
+       the largest wakes into planks by another route. */
+    const twd = clamp(px * 0.20 * SET.lwd, 0.8, 5.0);
+    const hw0 = twd * 0.5 * dist / fpx;
+    for (let s=0;s<TRAIL_SEG;s++){
+      const o = s*3;
+      const ai = (s > 0 ? s-1 : 0)*3, bi = (s < TRAIL_SEG-1 ? s+1 : TRAIL_SEG-1)*3;
       /* squared, so the fade is fastest right behind the body and the tail
-         thins to nothing instead of stopping */
-      const f0 = 1 - (s-1)/(TRAIL_SEG-1), f1 = 1 - s/(TRAIL_SEG-1);
-      const g0 = base*f0*f0, g1 = base*f1*f1;
-      TP[w*3]=px0; TP[w*3+1]=py0; TP[w*3+2]=pz0;
-      TC[w*3]=cr*g0; TC[w*3+1]=cg*g0; TC[w*3+2]=cb*g0; w++;
-      TP[w*3]=qx; TP[w*3+1]=qy; TP[w*3+2]=qz;
-      TC[w*3]=cr*g1; TC[w*3+1]=cg*g1; TC[w*3+2]=cb*g1; w++;
-      px0 = qx; py0 = qy; pz0 = qz;
+         thins to nothing instead of stopping. The width takes the same
+         falloff the colour does — a long exposure narrows as well as dims,
+         and a wake of constant width that only goes dim reads as a wire hoop
+         with the lights turned down. */
+      const f = 1 - s/(TRAIL_SEG-1), g = base*f*f;
+      ribVert(TP, TC, w, _rq[o], _rq[o+1], _rq[o+2],
+              _rq[bi]-_rq[ai], _rq[bi+1]-_rq[ai+1], _rq[bi+2]-_rq[ai+2],
+              _rq[o]-cx, _rq[o+1]-cy, _rq[o+2]-cz,
+              hw0 * f, cr*g, cg*g, cb*g);
+      w += 2;
     }
     trailPick[n++] = i;
   }
-  trailGeo.setDrawRange(0, w);
+  /* the draw range is over the index buffer now, and the strips are filled
+     from the front, so the trails actually written are the first n of them */
+  trailGeo.setDrawRange(0, n * trailIdxPer);
   trailGeo.attributes.position.needsUpdate = true;
-  trailGeo.attributes.color.needsUpdate = true;
+  trailGeo.attributes.aColor.needsUpdate = true;
   PERF.trails = n;
 }
 const _tp = new THREE.Vector3();
@@ -12531,54 +13103,152 @@ function writePulses(dt) {
   pulseGeo.attributes.aAlpha.needsUpdate = true;
 }
 
+/* The declutter queue: one entry per label that got as far as being placed
+   this frame, holding where it landed on screen and how much it deserves the
+   room. Plain arrays, grown on demand and never shrunk — a vault does not
+   change how many labels it has while it is open. */
+const LQ = { i:[], x:[], y:[], w:[], h:[], p:[], o:[], ok:[], ord:[], keep:[] };
+const _lp = new THREE.Vector3();
+
 function writeLabels() {
+  if (!labels || !labels.length) return;
   const camPos = camera.position;
-  labels.forEach(L => {
+  const W = innerWidth, H = innerHeight;
+  const fpx = (H * 0.5) / Math.tan(camera.fov * Math.PI / 360);
+  /* ---- which way is up ----
+     Screen-up, taken out of the camera, rather than world Y. A label lifted
+     along world Y stands clear of its body from every angle except the one
+     where you are looking down that axis — which on an orrery whose default
+     framing is from above the plane is not the corner case, it is the usual
+     one, and it put a good half of the names inside the planets they belong
+     to. Up on screen is up. */
+  const em = camera.matrixWorld.elements;
+  const ux = em[4], uy = em[5], uz = em[6];
+  let q = 0;
+
+  for (let li = 0; li < labels.length; li++) {
+    const L = labels[li];
+    if (L.vis === undefined) L.vis = 1;
     const p = L.node
       ? _pos.set(P[L.idx*3], P[L.idx*3+1], P[L.idx*3+2])
       : _pos.copy(L.get());
     const d = camPos.distanceTo(p);
-    /* Off screen before anything else. Every label is its own Sprite and so
-       its own draw call, and the alpha test below only asks whether a label is
-       far away — not whether it is behind you, which flying through the middle
-       of a vault makes the commoner case by a long way.
-
-       The radius is deliberately generous. A sprite is a flat card facing the
-       camera, so its centre can sit outside the frustum while a good part of
-       it is still on screen; the pad is the label's own offset plus a bound on
-       the height it is about to be scaled to, widened for the fact that a name
-       is wider than it is tall. Erring toward keeping is the cheap direction —
-       a label wrongly kept costs one draw call, a label wrongly dropped is a
-       name that flickers out at the edge of the frame. */
-    _fs.center.copy(p); _fs.center.y += L.off;
-    _fs.radius = L.off + 90 * clamp(d * 0.0016, .55, 5.2);
-    if (!FRU.intersectsSphere(_fs)) { L.sprite.visible = false; return; }
-    let op;
+    let op, pr;
     if (L.node) {
       const nd = nodes[L.idx];
-      /* naming the world you are standing on, in letters across the sky,
-         from a sprite centred on your own eye */
       op = clamp((L.far - d) / L.far, 0, 1) *
            (alpha[L.idx] < .05 ? 0 : alpha[L.idx] > .5 ? 1 : 0.12);
       op *= L.idx === selected ? 1.4 : (nd.inb > 12 ? 1 : .55);
       if (ship.on && L.idx === ship.lock) op = 1;
+      /* ---- what outranks what ----
+         Citation count is the ordinary answer — the note the vault points at
+         most is the one worth naming when only one name fits — and the four
+         things the reader is *doing* jump over all of it. They are ordered
+         against each other rather than merged, because being locked onto by
+         the ship and being the note open in the editor are different claims
+         and only one of them can win a given patch of screen. */
+      pr = (nd.inb | 0);
+      if (L.idx === selected)                pr += 4e5;
+      else if (ship.on && L.idx === ship.lock) pr += 3e5;
+      else if (L.idx === activeIdx)          pr += 2e5;
+      else if (L.idx === hovered)            pr += 1e5;
     } else {
       /* a system's name follows its light — off in the legend, or not yet
          condensed, and the label goes with it */
       const cv = L.cat.vis === undefined ? (L.cat.on ? 1 : 0) : L.cat.vis;
       op = clamp((L.far - d) / (L.far*.55), 0, 1) * (0.12 + cv * 0.83) * (cv < .05 ? 0 : 1);
       if (d < 130) op *= clamp(d/130, 0, 1);
+      /* A folder outranks any note in it. It is the middle term of the whole
+         picture, there are two orders of magnitude fewer of them, and a
+         cosmos that has lost its system names to a crowd of note names has
+         lost the thing you navigate by. */
+      pr = 5e5 + (L.cat.tier === 0 ? 4e5 : 0) + (L.cat.n | 0);
     }
-    L.sprite.material.opacity = clamp(op, 0, 1);
-    L.sprite.visible = op > 0.015;
-    if (!L.sprite.visible) return;
-    L.sprite.position.set(p.x, p.y + L.off, p.z);
+    op = clamp(op, 0, 1);
+    if (op <= 0.012) { L.sprite.visible = false; continue; }
+
+    /* ---- how big, and how far clear of its body ----
+       The stand-off used to be a multiple of the body's radius, which is a
+       length in the world, and the thing it has to clear is a length on the
+       screen — the *drawn* size of both. On a small moon the label was twice
+       the height of the gap it was given and sat across the thing it named.
+       So it is worked out in pixels, where the collision actually is, and
+       converted back: the body's own radius, half the label, and a few
+       pixels of air. */
     const k = clamp(d * 0.0016, .55, 5.2);
     const base = L.node ? (12 + Math.min(7, nodes[L.idx].inb*.12)) : (L.cat.tier===0?22:17);
     const hgt = base * k;
-    L.sprite.scale.set(hgt * (L.sprite.material.map.image.width /
-                              L.sprite.material.map.image.height), hgt, 1);
-  });
+    const img = L.sprite.material.map.image;
+    const asp = img.width / img.height;
+    const hpx = hgt * fpx / d;
+    const bodyR = L.node ? RAD[L.idx] : (L.cat.sR || L.cat.R || 6);
+    const off = (bodyR * fpx / d * 1.3 + hpx * 0.62 + 5) * d / fpx;
+    const lx = p.x + ux*off, ly = p.y + uy*off, lz = p.z + uz*off;
+
+    /* Off screen is answered on the screen, now that there is a screen
+       position to answer it with. The old test was a generous sphere against
+       the frustum, generous because a billboard's centre can be outside the
+       frustum while most of the card is still in frame; the box below is the
+       card, so it needs no slack and drops nothing that is visible. */
+    _lp.set(lx, ly, lz).project(camera);
+    if (_lp.z > 1) { L.sprite.visible = false; continue; }
+    const sx = (_lp.x*.5 + .5) * W, sy = (-_lp.y*.5 + .5) * H;
+    const hw = hpx * asp * 0.5, hh = hpx * 0.5;
+    if (sx + hw < 0 || sx - hw > W || sy + hh < 0 || sy - hh > H) {
+      L.sprite.visible = false; continue;
+    }
+
+    L.sprite.position.set(lx, ly, lz);
+    L.sprite.scale.set(hgt * asp, hgt, 1);
+    LQ.i[q] = li; LQ.x[q] = sx; LQ.y[q] = sy;
+    LQ.w[q] = hw; LQ.h[q] = hh; LQ.p[q] = pr; LQ.o[q] = op;
+    LQ.ord[q] = q;
+    q++;
+  }
+
+  /* ---- the arbitration ----
+     Two hundred labels each deciding on their own whether they are visible is
+     two hundred correct decisions and one illegible frame: in a dense system
+     every one of them is near enough, bright enough and important enough, and
+     they land on top of each other. Somebody has to say no.
+
+     Strongest first, and each one takes the room it needs; anything that
+     would land on top of what has already been placed stands down. Greedy
+     rather than optimal, because the optimum here is a packing problem solved
+     sixty times a second for a gain nobody could point at, and because greedy
+     in priority order has the property that matters: what you are looking at,
+     flying toward or editing is never the label that gets dropped.
+
+     It fades rather than switches. A label blinking out the instant another
+     drifts into it is worse than the overlap was — the eye is drawn to the
+     one thing on screen that changed — so the decision is a target and the
+     opacity walks toward it. Which also settles the ties: two labels of equal
+     rank sliding past each other trade the room smoothly instead of
+     strobing. */
+  LQ.ord.length = q;
+  LQ.ord.sort((a, b) => LQ.p[b] - LQ.p[a]);
+  let kept = 0;
+  for (let a = 0; a < q; a++) {
+    const i = LQ.ord[a];
+    let ok = true;
+    for (let b = 0; b < kept; b++) {
+      const j = LQ.keep[b];
+      /* a little tighter than touching across, a little looser down: names
+         are wide and short, so it is the vertical stacking that goes to
+         porridge first */
+      if (Math.abs(LQ.x[i] - LQ.x[j]) < (LQ.w[i] + LQ.w[j]) * 0.96 &&
+          Math.abs(LQ.y[i] - LQ.y[j]) < (LQ.h[i] + LQ.h[j]) * 1.15) { ok = false; break; }
+    }
+    if (ok) LQ.keep[kept++] = i;
+    LQ.ok[i] = ok;
+  }
+  for (let a = 0; a < q; a++) {
+    const L = labels[LQ.i[a]];
+    L.vis += ((LQ.ok[a] ? 1 : 0) - L.vis) * 0.16;
+    const o = LQ.o[a] * L.vis;
+    L.sprite.material.opacity = o;
+    L.sprite.visible = o > 0.012;
+  }
 }
 
 /* one frame's budget, at 60fps, for colouring a row that is eating it */
@@ -13017,6 +13687,11 @@ function frameLoop(now) {
   }
 
   writeHUD(now);
+  /* After every camera in the building has had its say and before the frame
+     is drawn, which is the one window where growing the buffer costs no
+     correctness: the writers above all measure in CSS pixels, which this does
+     not touch. */
+  ssStep(dt);
   const _p6 = perfNow();
   /* the ground goes on last, over the sky it belongs to — unless the bloom
      path drew it already, which it has to, or the one surface in frame would
