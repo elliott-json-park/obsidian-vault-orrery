@@ -208,6 +208,16 @@ body.dragdeck #hud{cursor:grabbing}
    four language cells collapse to about fourteen pixels each */
 #ctl.tight #langsel{min-width:104px}
 .sl{min-width:0;display:flex;flex-direction:column;justify-content:center}
+/* The command box moves the drawer out from under the reader — a different
+   tab, a filter that was not there a moment ago — so the row it went to has
+   to say so itself. Bright, then gone: a marker that stayed would be a
+   selected state, and nothing here is selected. */
+.sl.found{animation:knobFound 1.5s ease-out both}
+@keyframes knobFound{
+  0%{box-shadow:0 0 0 1px rgba(92,225,255,.75) inset;background:rgba(92,225,255,.14)}
+  100%{box-shadow:0 0 0 1px rgba(92,225,255,0) inset;background:transparent}
+}
+@media (prefers-reduced-motion:reduce){ .sl.found{animation-duration:.01s} }
 .sl>b{font-size:8.5px;letter-spacing:.15em;opacity:.55;font-weight:400;margin-bottom:6px;
   display:flex;justify-content:space-between;gap:6px;align-items:baseline}
 /* the row lights as a whole when the pointer is on it, so the thing being
@@ -978,7 +988,7 @@ body.ship #heat.on{display:block}
     </div>
     <div class="bd" style="padding:7px 10px">
       <div class="row" id="k-open" style="display:none"><span>OPEN NOTE</span><span>O · CTRL-CLICK</span></div>
-      <div class="row"><span>SEARCH</span><span>/</span></div>
+      <div class="row"><span>COMMAND</span><span>/ · CTRL-K</span></div>
       <div class="row"><span>MIND MAP</span><span>M · DBL-CLICK</span></div>
       <div class="row"><span>SPACESHIP</span><span>F</span></div>
       <div class="row"><span>GENESIS · TWINS</span><span>G · N</span></div>
@@ -1460,7 +1470,10 @@ const STR = {
                 'Drop a folder or markdown files and a cosmos is built from that vault',
                 'フォルダやマークダウンファイルを置くと、そのボルトから宇宙を作ります',
                 '放下文件夹或 Markdown 文件，就用那个仓库造一个宇宙'],
-'search.ph':   ['노트 검색 …','Search notes …','ノートを検索 …','搜索笔记 …'],
+'search.ph':   ['노트 · 설정 · 기능 검색 …','Search notes, settings, actions …',
+                'ノート・設定・機能を検索 …','搜索笔记 · 设置 · 功能 …'],
+'find.knob':   ['설정','SETTING','設定','设置'],
+'find.act':    ['기능','ACTION','機能','功能'],
 'load.notes':  ['{n}개 노트','{n} notes','ノート {n} 件','{n} 篇笔记'],
 'load.graph':  ['링크 · 태그 그래프 구성','Building the link and tag graph','リンク · タグのグラフを構成','构建链接与标签图谱'],
 'load.orbit':  ['궤도 계산','Computing orbits','軌道を計算','计算轨道'],
@@ -7647,6 +7660,25 @@ $('i-name').addEventListener('mouseover', e => {
    is inbound links, which is the same order the old finder used and is the
    closest thing here to "how important is this". */
 let searchOpen = false, searchSel = 0, searchHits = [];
+/* The actions, which are the SHORTCUTS panel written down as data. Each one
+   is something a key already does — this is a second way in for the reader
+   who knows the name of the thing but not the letter, which on a panel of
+   fourteen keys is most readers most of the time. */
+const ACTIONS = [
+  { label:'SPACESHIP',       key:'F',     run: () => toggleShip() },
+  { label:'MIND MAP',        key:'M',     run: () => toggleMind() },
+  { label:'SIMILAR NOTES',   key:'N',     run: () => twinsShow(selected) },
+  { label:'GENESIS',         key:'G',     run: () => toggleGenesis() },
+  { label:'RIPPLE',          key:'SPACE', run: () => rippleHere() },
+  { label:'POSTER',          key:'P',     run: () => savePoster() },
+  { label:'LINK LAYER',      key:'L',     run: () => cycleLayer() },
+  { label:'REFERENCE PLANE', key:'X',     run: () => toggleGrid() },
+  { label:'RESET VIEW',      key:'R',     run: () => resetView() },
+  { label:'SOUND',           key:'U',     run: () => audioSet(!AUD.on) },
+  { label:'FIRST FLIGHT',    key:'?',     run: () => showIntro() },
+  { label:'OPEN NOTE',       key:'O',     run: (e) => openNote(selected, e),
+    live: () => canOpen() && selected >= 0 }
+];
 function openSearch() {
   /* The notes need a vault; the knobs and the actions do not, and refusing
      the whole box because the cosmos is empty would be turning off the one
@@ -7656,6 +7688,32 @@ function openSearch() {
 }
 function closeSearch() {
   searchOpen = false; $('srch').style.display = 'none';
+}
+/* Take a knob to its shelf and light it up.
+
+   Three things have to happen or the reader is handed a promise rather than
+   a control: the drawer has to be open, the filter has to be showing that
+   knob, and the row has to be somewhere on screen. The flash is the fourth —
+   a drawer that changed contents while the eye was in the middle of the
+   screen needs to say where to look, and a border that fades is the cheapest
+   way to point. */
+function revealKnob(k) {
+  const kn = KNOB_OF[k];
+  if (!kn) return;
+  SET.adv = true;
+  $('ctl').classList.add('adv');
+  $('advtog').textContent = '▾ ADVANCED';
+  if (findEl) findEl.value = kn.label;
+  knobFind = kn.label.toLowerCase();
+  layoutKnobs(); syncControls(); saveSet(); layoutHUD();
+  const e = KNOB_EL.get(k);
+  if (!e) return;
+  try { e.wrap.scrollIntoView({ block:'nearest' }); } catch (err) {}
+  e.wrap.classList.remove('found');
+  /* one frame off before it goes back on, or the class never left and the
+     animation never restarts */
+  requestAnimationFrame(() => e.wrap.classList.add('found'));
+  setTimeout(() => e.wrap.classList.remove('found'), 1600);
 }
 function runSearch(q) {
   const raw = q.trim();
@@ -7668,38 +7726,67 @@ function runSearch(q) {
     for (let i=0;i<N;i++){
       const nd = nodes[i];
       const hay = (nd.n + ' ' + nd.p + ' ' + (nd.t||[]).join(' ')).toLowerCase();
-      if (hay.includes(filterTxt)) searchHits.push(i);
+      if (hay.includes(f)) hits.push(i);
     }
-    searchHits.sort((a,b) => nodes[b].inb - nodes[a].inb);
+    hits.sort((a,b) => nodes[b].inb - nodes[a].inb);
+    hits.forEach(i => searchHits.push({ kind:'note', i }));
+    /* ---- the controls ---- */
+    KNOBS.forEach(kn => {
+      if (kn.label.toLowerCase().includes(f) || kn.k.toLowerCase() === f)
+        searchHits.push({ kind:'knob', kn });
+    });
+    /* ---- and the things a key does ---- */
+    ACTIONS.forEach(a => {
+      if (a.live && !a.live()) return;
+      if (a.label.toLowerCase().includes(f)) searchHits.push({ kind:'act', a });
+    });
   }
   searchSel = 0;
-  $('sres').innerHTML = searchHits.slice(0,40).map((i,k) =>
-    '<div data-i="'+i+'" class="'+(k===0?'sel':'')+'">' + esc(nodes[i].n) +
-    '<i>' + (nodes[i].k==='raw'?'RAW':'WIKI') + (nodes[i].d?' '+nodes[i].d:'') +
-    '</i></div>').join('');
-  /* search is the one place a jump is still the point: you typed a name
-     because you wanted to be there */
+  $('sres').innerHTML = searchHits.slice(0,40).map((h,k) => {
+    const sel = k === 0 ? ' class="sel"' : '';
+    if (h.kind === 'note') {
+      const nd = nodes[h.i];
+      return '<div data-k="'+k+'"'+sel+'>' + esc(nd.n) +
+             '<i>' + (nd.k==='raw'?'RAW':'WIKI') + (nd.d?' '+nd.d:'') + '</i></div>';
+    }
+    if (h.kind === 'knob')
+      return '<div data-k="'+k+'"'+sel+'>' + esc(h.kn.label) +
+             '<i>' + T('find.knob') + ' · ' + h.kn.g.toUpperCase() + '</i></div>';
+    return '<div data-k="'+k+'"'+sel+'>' + esc(h.a.label) +
+           '<i>' + T('find.act') + ' · ' + h.a.key + '</i></div>';
+  }).join('');
   $('sres').querySelectorAll('div').forEach(d => {
-    d.onclick = e => {
-      const i = +d.dataset.i;
-      closeSearch();
-      if (canOpen() && (e.ctrlKey || e.metaKey)) { select(i); openNote(i, e); return; }
-      focusNode(i, true);
-    };
+    d.onclick = e => searchGo(+d.dataset.k, e);
   });
+}
+/* What Enter and a click both mean, which depends on what was highlighted.
+
+   A note is a place, so it is flown to — with Ctrl for "read it instead",
+   the same pair the host's own quick switcher uses. A knob is a control, so
+   it is put in front of the reader rather than moved: guessing which way
+   somebody wanted a slider pushed is not something a search box gets to do.
+   An action is a verb and is simply performed. */
+function searchGo(k, e) {
+  const h = searchHits[k];
+  if (!h) return;
+  closeSearch();
+  if (h.kind === 'note') {
+    if (canOpen() && (e.ctrlKey || e.metaKey)) { select(h.i); openNote(h.i, e); }
+    else focusNode(h.i, true);
+    return;
+  }
+  /* the dimming was for finding a note among notes, and neither of the other
+     two kinds is one — leaving it on would hide the cosmos behind a search
+     that has already been answered */
+  filterTxt = '';
+  if (h.kind === 'knob') revealKnob(h.kn.k);
+  else h.a.run(e);
 }
 $('sin').addEventListener('input', e => runSearch(e.target.value));
 $('sin').addEventListener('keydown', e => {
   if (e.key === 'Escape') { filterTxt=''; closeSearch(); }
-  else if (e.key === 'Enter' && searchHits[searchSel] !== undefined) {
-    const i = searchHits[searchSel];
-    closeSearch();
-    /* Enter flies to it, Ctrl/Cmd-Enter reads it — the same pair as the
-       quick switcher, so search here answers both "where is that" and
-       "take me to that". */
-    if (canOpen() && (e.ctrlKey || e.metaKey)) { select(i); openNote(i, e); }
-    else focusNode(i, true);
-  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+  else if (e.key === 'Enter') { e.preventDefault(); searchGo(searchSel, e); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     e.preventDefault();
     searchSel = clamp(searchSel + (e.key==='ArrowDown'?1:-1), 0,
                       Math.min(39, searchHits.length-1));
@@ -11827,6 +11914,10 @@ addEventListener('keydown', e => {
     return;
   }
 
+  /* The same box on the key everything else in the world puts it on. Slash
+     stays: it is what a reader who came from the host's quick switcher will
+     reach for, and the two do not collide. */
+  if ((e.ctrlKey || e.metaKey) && k === 'k') { e.preventDefault(); openSearch(); return; }
   if (k === '/') { e.preventDefault(); openSearch(); }
   else if (k === 'f') { e.preventDefault(); toggleShip(); }
   else if (k === 'm') { e.preventDefault(); toggleMind(); }
