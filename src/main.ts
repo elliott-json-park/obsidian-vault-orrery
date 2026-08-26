@@ -202,10 +202,39 @@ export default class VaultOrreryPlugin extends Plugin {
     this.views().forEach(v => { const api = v.getApi(); if (api) this.applySettingsTo(api); });
   }
 
+  /* What has already been pushed into each live engine.
+
+     These three settings are pushed on every workspace layout-change, because
+     Obsidian's excluded-files list can change while a view is open and there
+     is no event for it. Pushing them unconditionally meant the engine's own
+     copies of two of them were reverted the moment they were touched: the
+     view has a language chip and a MAX NODES knob of its own, and a click on
+     either was undone by the next layout event — which is every sidebar
+     toggle. Only a change to the *plugin's* value is an instruction. */
+  private pushed = new WeakMap<OrreryApi, { lang: string; maxNodes: number; filters: string }>();
+
   applySettingsTo(api: OrreryApi) {
-    api.setLang(this.resolveLang());
-    api.setMaxNodes(this.settings.maxNodes);
-    api.setIgnoreFilters(this.ignoreFilters());
+    const prev = this.pushed.get(api);
+    const lang = this.resolveLang();
+    const filters = this.ignoreFilters();
+    const key = JSON.stringify(filters);
+
+    /* "Match Obsidian" is a fallback, not an override: a view that already
+       carries a language someone chose inside it keeps it. An explicit choice
+       in this tab does override, because that is what choosing it means. */
+    if (!prev || prev.lang !== lang) {
+      if (this.settings.language !== 'auto' || !this.engineHasLang()) api.setLang(lang);
+    }
+    if (!prev || prev.maxNodes !== this.settings.maxNodes) api.setMaxNodes(this.settings.maxNodes);
+    if (!prev || prev.filters !== key) api.setIgnoreFilters(filters);
+    this.pushed.set(api, { lang, maxNodes: this.settings.maxNodes, filters: key });
+  }
+
+  /** Whether the engine has a language of its own in the plugin's data file.
+      The key is the engine's; it is read here and never written. */
+  private engineHasLang(): boolean {
+    const l = this.settings.engineStore['orrery2.lang'];
+    return l === 'ko' || l === 'en' || l === 'ja' || l === 'zh';
   }
 
   private resolveLang(): 'ko' | 'en' | 'ja' | 'zh' {

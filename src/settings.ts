@@ -30,7 +30,13 @@ export interface OrrerySettings {
 
 export const DEFAULT_SETTINGS: OrrerySettings = {
   language: 'auto',
-  maxNodes: 3000,
+  /* No ceiling, which is what the engine's own MAX NODES knob ships at. The
+     two used to disagree — the engine said NO LIMIT, this said 3000, and the
+     plugin pushes its value into the engine at mount, so the knob's own
+     default was never the one anybody got. A cap that quietly drops half a
+     vault answers 'show me my notes' with a subset; a slow first minute is at
+     least a problem whose cause is visible, and the slider is right there. */
+  maxNodes: 0,
   liveSync: true,
   /* Off by default. Following is a strong opinion about where the camera
      should be — right for a view kept open beside the editor, wrong for one

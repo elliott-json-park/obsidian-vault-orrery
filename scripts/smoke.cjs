@@ -105,9 +105,24 @@ const mkApp = vault => ({
 
   const seen = {};
   const fake = { setLang: v => seen.lang = v, setMaxNodes: v => seen.max = v, setIgnoreFilters: v => seen.ig = v };
+  /* An earlier check above put a language in the engine store. "Match
+     Obsidian" defers to that, so clear it first: this case is the one where
+     nobody has chosen inside the view. */
+  delete p.settings.engineStore['orrery2.lang'];
   p.applySettingsTo(fake);
   ok(seen.lang === 'ko', 'language follows Obsidian locale on auto -> ' + seen.lang);
-  ok(seen.max === 3000, 'node ceiling reaches the engine -> ' + seen.max);
+  ok(seen.max === 0, 'node ceiling reaches the engine -> ' + seen.max);
+
+  /* The engine has a language chip of its own, and it is persisted in this
+     same data file. On 'auto' a chosen one wins — otherwise the next workspace
+     layout-change, which is every sidebar toggle, undid the click. */
+  const held = {};
+  const pl = new P(mkApp({ getConfig: () => [] }), { dir: 'x' });
+  await pl.onload();
+  pl.settings.engineStore['orrery2.lang'] = 'ja';
+  pl.applySettingsTo({ setLang: v => held.lang = v, setMaxNodes() {}, setIgnoreFilters() {} });
+  ok(held.lang === undefined,
+     'auto does not overwrite a language chosen in the view -> ' + held.lang);
   ok(Array.isArray(seen.ig) && seen.ig.includes('journal') && seen.ig.includes('/^\d{4}-/'),
      'excluded files reach the engine -> ' + JSON.stringify(seen.ig));
 
@@ -120,6 +135,13 @@ const mkApp = vault => ({
   p.settings.language = 'ja';
   p.applySettingsTo(fake);
   ok(seen.lang === 'ja', 'explicit language overrides the locale');
+
+  /* And a repeat push of unchanged settings is not a push at all — the same
+     view, asked twice. Tracked per view, so this has to be the same object. */
+  seen.lang = seen.max = seen.ig = undefined;
+  p.applySettingsTo(fake);
+  ok(seen.lang === undefined && seen.max === undefined && seen.ig === undefined,
+     'unchanged settings are not re-pushed over the view');
 
   const p2 = new P(mkApp({}), { dir: 'x' });
   await p2.onload();
