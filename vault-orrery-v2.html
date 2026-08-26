@@ -2044,6 +2044,24 @@ const KNOBS = [
     fmt:v => offAt(v, mult(v)) },
   { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:180, sc:100, def:0,
     fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
+  /* ---- the grade ----
+     Four knobs for the four things in the composite's note, and they are
+     four rather than one because they fail differently: a curve that is too
+     strong is flat, a split that is too strong is a colour cast, a lens that
+     is too strong is a tunnel and grain that is too strong is dirt. One
+     "FILM" slider would move all four toward their own failure together.
+
+     All four are at zero what they were before they existed, and the frame
+     gate in renderFrame knows it — a reader who turns the whole grade off
+     gets the plain path back, not a full-screen pass that does nothing. */
+  { k:'cur', g:'light',  label:'FILM CURVE',    min:0,  max:100, sc:100, def:.6,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'spl', g:'light',  label:'SPLIT TONE',    min:0,  max:100, sc:100, def:.35,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'len', g:'light',  label:'LENS',          min:0,  max:100, sc:100, def:.4,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'grn', g:'light',  label:'GRAIN',         min:0,  max:100, sc:100, def:.35,
+    fmt:v => offAt(v, mult(v)) },
   /* One knob for two effects, because they are one effect: the cockpit
      shaking and the frame smearing radially are both "how hard is this being
      flown", they only ever appear together, and a reader who turns one off
@@ -3421,10 +3439,33 @@ const COMP_F = `
 uniform sampler2D tScene; uniform sampler2D tRay;
 uniform sampler2D tB1; uniform sampler2D tB2; uniform sampler2D tB3;
 uniform float uAmt, uRay, uBlur, uHeat;
+uniform float uCurve, uSplit, uLens, uGrain, uTime;
+uniform vec2 uRes;
 varying vec2 vUv;
 void main(){
   vec2 d = vUv - 0.5;
-  vec3 c = texture2D(tScene, vUv).rgb;
+  /* ---- the lens, and why half of it is up here ----
+     A real lens cannot bring three wavelengths to the same ring of glass, so
+     the corners of every photograph have colour separating in them and the
+     centre does not. The separation is cubic in radius rather than linear:
+     it is nothing at all across the middle half of the frame and then
+     arrives quickly, which is what keeps it reading as glass rather than as
+     a broken decoder.
+
+     It samples the *scene*, before the bloom is added, because that is where
+     a lens sits — light goes through the glass and then into the sensor, and
+     the glow is something the sensor does. Doing it at the end would put the
+     fringe on the bloom's own edges, which are already soft and have no
+     edges to fringe. The other half of the lens — the vignette — is at the
+     bottom for the same reason in reverse: falloff is the aperture cutting
+     light, so it takes everything with it. */
+  vec3 c;
+  if (uLens > 0.001) {
+    vec2 off = d * dot(d, d) * uLens * 0.0035;
+    c = vec3(texture2D(tScene, vUv + off).r,
+             texture2D(tScene, vUv).g,
+             texture2D(tScene, vUv - off).b);
+  } else c = texture2D(tScene, vUv).rgb;
   /* ---- radial blur ----
      What the warp streaks were standing in for. A streak field is a set of
      objects that happen to be long; motion blur is the whole frame being
@@ -3485,6 +3526,78 @@ void main(){
     c *= 1.0 + h * 0.50;
     c += vec3(0.12, 0.050, 0.018) * h;
   }
+  /* ---- the curve ----
+     Everything above is additive, and additive light in an eight-bit buffer
+     ends at 1.0 whether it arrived there gently or at four times over. That
+     hard stop is the single thing that made this read as rendered: a star
+     core, a dense knot of links and the sun's own disc all clip to the same
+     flat white, and a flat white patch is paint, not light. A sensor has a
+     shoulder instead — the brighter it gets the less each further photon
+     moves it, so highlights keep their shape all the way up.
+
+     Below the knee nothing happens at all. That is the point of doing it
+     this way rather than with one of the filmic curves that lift the blacks
+     as well: the dark here is not a lack of exposure, it is empty space, and
+     a curve that greys it out is describing a room with the lights off.
+     The shoulder is exponential, which is the one shape that meets the
+     straight part with the same slope — so there is no visible seam at the
+     knee for something drifting across it to pop through.
+
+     It cannot reach 1.0, only approach it, so the clip is gone rather than
+     moved: no amount of light coming in produces a flat patch going out. */
+  if (uCurve > 0.001) {
+    vec3 k = vec3(0.72);
+    vec3 over = max(c - k, 0.0);
+    vec3 rolled = k + (1.0 - k) * (1.0 - exp(-over / (1.0 - k)));
+    c = mix(c, rolled, uCurve);
+  }
+  /* ---- the split ----
+     Shadows cold, highlights warm. Every emulsion ever made does this and
+     every colourist since has kept doing it, because the eye reads warm-near
+     and cool-far without being told — it is the same inference it makes
+     about a fire in a blue dusk, and it separates two things at the same
+     distance on the screen into two distances in the head.
+
+     A multiply rather than a mix toward a colour, so it cannot add light to
+     something that has none. Empty space has luminance zero, gets a tint of
+     one times zero, and stays exactly as black as it was. */
+  if (uSplit > 0.001) {
+    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    vec3 tint = mix(vec3(0.90, 0.97, 1.10), vec3(1.09, 1.01, 0.90),
+                    smoothstep(0.05, 0.62, lum));
+    c *= mix(vec3(1.0), tint, uSplit);
+  }
+  /* ---- the lens, part two: the falloff ----
+     Quadratic and quartic together rather than either alone. The quadratic
+     term is the gentle darkening across the whole frame that nobody notices
+     and everybody feels; the quartic only arrives in the corners, which is
+     where a real aperture actually runs out of glass. One term on its own is
+     either a barely-there wash or a black ring. */
+  if (uLens > 0.001) {
+    float r2 = dot(d, d);
+    c *= 1.0 - uLens * (r2 * 0.34 + r2 * r2 * 0.55);
+  }
+  /* ---- the grain ----
+     A floor of noise, and it is here to stop banding rather than to be seen.
+     A dark gradient across eight bits is a staircase of flat steps, and the
+     steps are exactly what the eye is best at finding; a little noise makes
+     the boundary between two levels a dithered edge instead of a line, and
+     the picture reads as having more levels than it has.
+
+     Strongest in the shadows and gone by the highlights — which is both
+     where the banding is and, as it happens, where film's own grain shows.
+     Signed and centred on zero, so it dithers rather than fogs: the average
+     of the noise is nothing added, which keeps empty space empty.
+
+     Scaled by the pixel grid rather than by the uv, so the grain is the same
+     size on a small window and a large one instead of being stretched into
+     blotches, and moved by the clock so it is film rather than a dirty
+     sensor — a static pattern reads as something wrong with the screen. */
+  if (uGrain > 0.001) {
+    float n = fract(sin(dot(vUv * uRes + uTime, vec2(12.9898, 78.233))) * 43758.5453);
+    float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    c += (n - 0.5) * uGrain * 0.048 * (1.0 - smoothstep(0.0, 0.60, lum));
+  }
   gl_FragColor = vec4(c, 1.0);
 }`;
 function bloomInit() {
@@ -3507,7 +3620,10 @@ function bloomInit() {
   BLOOM.comp.uniforms = { tScene:{value:null}, tRay:{value:null},
                           tB1:{value:null}, tB2:{value:null}, tB3:{value:null},
                           uAmt:{value:0.6}, uRay:{value:0},
-                          uBlur:{value:0}, uHeat:{value:0} };
+                          uBlur:{value:0}, uHeat:{value:0},
+                          uCurve:{value:0}, uSplit:{value:0}, uLens:{value:0},
+                          uGrain:{value:0}, uTime:{value:0},
+                          uRes:{value:new THREE.Vector2(1,1)} };
   BLOOM.quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), BLOOM.bright);
   BLOOM.quad.frustumCulled = false;
   BLOOM.scene = new THREE.Scene();
@@ -3602,6 +3718,10 @@ function renderFrame() {
      work for everyone whose grade happens to be switched on. */
   const blur = ship.on ? ship.sf * ship.sf * SET.mot * (ship.boost ? 1.3 : 1) : 0;
   const heat = ship.on ? ship.heat : 0;
+  /* The grade, as one number for the gate below. Taken as a max rather than
+     a sum: any one of the four being wanted is enough to need the pass, and
+     a sum would let four quiet settings add up to a pass nobody asked for. */
+  const grade = Math.max(SET.cur, SET.spl, SET.len, SET.grn);
   /* The plain path stays exactly what it was, and is still taken whenever
      nothing has been asked for — the identity between it and the composite at
      zero was worth measuring once and is worth keeping. */
@@ -3669,6 +3789,16 @@ function renderFrame() {
   U.uRay.value   = rayAmt > 0.02 ? rayAmt : 0;
   U.uBlur.value  = blur;
   U.uHeat.value  = heat;
+  U.uCurve.value = SET.cur;
+  U.uSplit.value = SET.spl;
+  U.uLens.value  = SET.len;
+  U.uGrain.value = SET.grn;
+  /* the grain's clock is the wall, not the orrery's own: pausing the cosmos
+     freezes every orbit in it, and a frozen grain is a dirty lens */
+  /* wrapped, because the hash below multiplies it up and a float that has
+     been running for an hour has no low bits left to be random with */
+  U.uTime.value  = (performance.now() * 0.001) % 100;
+  U.uRes.value.set(BLOOM.w || 1, BLOOM.h || 1);
   BLOOM.quad.material = BLOOM.comp;
   renderer.setRenderTarget(null);
   renderer.render(BLOOM.scene, BLOOM.cam);
