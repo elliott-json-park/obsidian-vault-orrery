@@ -4,6 +4,126 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.9.0
+
+Four things about the picture and one about finding your way round it. The
+structural lines are ribbons that can be as wide as you ask; the composite
+finally does the grading its own source has been describing for versions; the
+sky's veil stopped being nine coloured gels; and there is one box now for
+every kind of thing this has a name for.
+
+### What is drawn
+
+- **Every structural line is a ribbon, and LINE WIDTH means pixels.** The
+  links, the orbit wakes, the comet's two tails and the twins were GL lines,
+  which are one device pixel wide whatever the display calls a pixel — so the
+  better the monitor the fainter the structure, and width, the one channel a
+  line has for saying how firm a fact is, was spent before anything could use
+  it. They are strips now, two vertices a sample out of one shared buffer,
+  with the profile across the width doing the antialiasing.
+
+  And the knob tells the truth. The first profile fell through half its peak
+  at thirteen per cent of the geometric half-width, so the 1.7 px default was
+  drawing a visible core about a quarter of a pixel across — a hairline again,
+  and thin enough to land on some pixel centres and miss others, which is why
+  the links read as *broken* rather than as fine. The strip is built wider
+  than the request and the profile is measured against the width that was
+  asked for, so the half power lands where the knob says the edge is. The
+  exposure does not move with it: the new profile integrates to what the old
+  one did, and the test holds it there. Width and brightness are separate
+  controls here, and LINK GLOW is still the one that does brightness.
+
+- **The composite has the grade it has been describing.** The note above it
+  has listed four things that separate a render from a photograph — the curve,
+  the split, the lens, the grain — and said all four were knobs. None of them
+  existed.
+
+  The curve is the one that matters. Everything before it is additive, and
+  additive light in an eight-bit buffer stops at 1.0 whether it arrived gently
+  or at four times over, so a star core, a knot of links and the sun's disc
+  all clipped to the same flat white — and a flat white patch is paint, not
+  light. There is an exponential shoulder instead, which meets the straight
+  part at the same slope so nothing pops crossing the knee, and which
+  approaches 1.0 without reaching it: the clip is gone rather than moved.
+  Below the knee nothing happens at all, because the dark here is empty space
+  and a curve that lifts it is describing a room with the lights off.
+
+  The split sends shadows cold and highlights warm, by multiplying rather than
+  mixing toward a colour, so a fragment carrying no light gets a tint of one
+  times zero and space stays black. The lens is in two halves for a physical
+  reason: the colour separating toward the corners is applied to the scene
+  before the bloom, because glass comes before the sensor, and the vignette is
+  last, because an aperture cuts everything. The grain is a dither floor
+  against banding — strongest in the shadows, where the banding is — moved by
+  the wall clock rather than the orrery's own, since a paused cosmos with
+  frozen grain is a dirty lens rather than film.
+
+  Four knobs and not one, because they fail differently: a curve too strong is
+  flat, a split too strong is a cast, a lens too strong is a tunnel and grain
+  too strong is dirt. All four at zero take the plain path again.
+
+- **The veil has one sky's colour instead of nine gels.** Nine curtains each
+  drew a hue out of a hundred and fifty degrees and then walked it another
+  hundred and twenty along their own length, so a sky could be teal and violet
+  and magenta at once — which is not a place, it is a set of gels over the
+  lens.
+
+  Colour comes from two emission lines now, hydrogen alpha and doubly ionised
+  oxygen, because that is where a real nebula's does and the violet between
+  them is those two mixing rather than a third choice. One anchor is drawn for
+  the whole vault and every curtain sits near it: forty degrees across a sky
+  rather than two hundred and seventy. Saturation is down to about a fifth of
+  what it was, which was the bigger half of the problem — a field that large
+  keeping its colour reads as a filter in front of the lens, because distance
+  takes saturation first and the eye knows it.
+
+  Most of the curtains lean the way the galaxy does, within thirty degrees of
+  the plane the band already sits in, with two left free to cross it: a sky
+  organised around one plane is a sky, and nine great circles at nine
+  unrelated angles is a wireframe whose crossings look like they mean
+  something. And they have two things they had none of — rifts, because an
+  additive sheet cannot draw a dark lane but it can be taken away where the
+  dust is, which lands the same picture with two bright edges; and a bent
+  envelope, because a sine put the bright part in the middle of all nine and
+  gave them one silhouette between them.
+
+### What it is like to use
+
+- **One box for a note, a knob or an action.** There were two. Slash opened a
+  note finder in the middle of the screen and the control deck had a filter of
+  its own in its tab strip, and between them they answered "where is that
+  note" and "where is that knob" — which is one question with two nouns in it.
+  Somebody who wanted GRAIN and typed slash got a list of notes with grain in
+  the title.
+
+  The box takes all three kinds of thing this has names for, with the kind as
+  a label on the row rather than a mode to be in first. A note is a place and
+  is flown to, Ctrl-Enter to read it instead. A knob is a control, so it is
+  put in front of you rather than moved: the drawer opens, the filter goes to
+  it, the row scrolls into view and flashes once — guessing which way you
+  wanted a slider pushed is not something a search box gets to do. An action
+  is a verb and is performed, which is a second way in for anyone who knows
+  the name of the thing but not the letter. Ctrl-K as well as slash, and it no
+  longer refuses an empty vault: the notes need one, the knobs and the actions
+  do not.
+
+- **A long link list can be asked for the rest of itself.** The inspector
+  printed fourteen links under a heading that said two hundred and three. It
+  told you exactly how much of the answer it was keeping and gave you no way
+  to ask for it. The cap stays — a hub with two hundred backlinks would push
+  every button under the list off the bottom of the pane — but the rest is one
+  click below it now. The heading also counts the notes it is about to list
+  rather than the edges behind them: two notes can be joined twice, a written
+  link and a tag resonance being different facts about the same pair, and the
+  list has always shown such a pair once.
+
+### Removed
+
+- **FOCUS DEPTH and DEPTH CUE.** The depth-of-field pass and the aerial
+  perspective are gone, and with them the depth texture attached to the scene
+  target, the half-resolution defocus buffer and the four blur passes that
+  filled it.
+
 ## 1.8.0
 
 The astronomy audited against itself. Every term this view uses as a name for
