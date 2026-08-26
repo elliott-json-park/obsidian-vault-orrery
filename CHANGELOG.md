@@ -4,6 +4,87 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.10.0
+
+The picture this opens with is a different picture, and the camera has stopped
+ticking.
+
+### What is drawn
+
+- **Every knob ships where somebody actually left it.** The defaults in the
+  table were the numbers each control happened to be written with, one at a
+  time, over nine versions — and a set of defaults chosen one at a time is not
+  a look, it is a list. These were taken together, from a deck that had been
+  flown rather than authored: ORBIT SPEED 0.10x, NODE GLOW 1.11x, LINK GLOW
+  0.42x, ORBIT GAP 2.81x, LINE WIDTH 0.6 px, ORBIT TRAILS 1.00, STARFIELD
+  1.20x, SHIP THRUST 0.29x, the four body sizes and the four body glows
+  rebalanced around a much brighter moon, SUN RAYS 0.53x and SUN HALO 0.80x.
+
+  The grade ships off. BLOOM, FILM CURVE, SPLIT TONE, LENS and GRAIN are all
+  at zero, which is the setting the composite's own gate was written for — a
+  frame that asks for none of them takes the plain path and pays for no
+  full-screen pass at all. They are one drag away for anyone who wants them,
+  and the note beside each one still says what it is for. What this changes is
+  which of those is a decision the reader makes rather than one already made
+  for them.
+
+  Nothing moves for anyone who has used this before. The saved settings blob
+  is read first and a value in it wins; these are what a fresh vault opens
+  with, and what RESET goes back to.
+
+- **MAX NODES really does ship at NO LIMIT.** It has said so in the engine
+  since the ceiling became a slider, and inside Obsidian it was never true:
+  the plugin's own Maximum notes setting defaulted to 3000 and is pushed into
+  the view at mount, so the engine's default was one nobody had ever been
+  given. The two agree now, and they agree on no ceiling — a cap that quietly
+  drops half a vault answers "show me my notes" with a subset, where a slow
+  first minute is at least a problem whose cause is visible.
+
+### What it is like to use
+
+- **The camera has stopped ticking.** A body's angle is not a function of the
+  clock: it is integrated frame by frame into its own accumulator, so that
+  ORBIT SPREAD and ORBIT GAP can change a period without rewriting the body's
+  past. That accumulator lived in an array the layout allocates, the folder
+  stars kept theirs on objects the layout builds, and a star's roll was drawn
+  fresh from Math.random() every time the objects were — so every rebuild threw
+  all three away and the whole sky snapped back to its opening phase.
+
+  Inside Obsidian the cosmos re-derives a couple of seconds after every save,
+  and the camera is restored across that exactly. So the symptom was not "the
+  planets jumped". It was the camera appearing to tick: holding perfectly
+  still while everything it was framing ran two and a half seconds forward and
+  then back to the beginning, over and over, for as long as anyone was writing
+  in the vault. The phases travel across a rebuild now, the way the camera
+  already did — keyed by the note's path and the folder's key, because indices
+  are rebuilt and name a different note by the next pass. A note that has just
+  arrived starts where the layout put it, which is the only place it can.
+
+- **The view's own controls stop being overwritten.** The plugin pushes three
+  settings into an open view on every workspace layout-change, because
+  Obsidian's excluded-files list can change underneath it and there is no
+  event for that. It pushed them unconditionally, and two of them the view
+  owns a control for — so clicking the language chip or dragging MAX NODES was
+  undone by the next layout event, which is every sidebar toggle. Only a
+  change to the plugin's own value is an instruction now. And "Match
+  Obsidian" is a fallback rather than an override: a view already carrying a
+  language somebody chose inside it keeps it.
+
+- **RESET puts back everything it says it does.** It restored the numbers and
+  told the audio graph and the tinted buffer about it, and told nothing else —
+  so the four body sizes, STARFIELD, SKY VEIL and RECENT WORK went back to
+  their defaults in the readout and stayed exactly where they had been dragged
+  in the picture, which is the one thing RESET exists not to do. It runs every
+  hook in the knob table now, so a control added later cannot be left out of
+  it the same way.
+
+- **A value with a unit in it stops breaking across two lines.** LINE WIDTH,
+  ROOM SIZE, ECHO TIME and TUNING read as a number and a unit with a space
+  between them, and in a narrow column that wrapped — which cost the row a
+  line of height and pushed its slider out of line with every other slider on
+  the shelf. The label beside it is already allowed to ellipse; the value
+  giving way instead of the label was nobody's intent.
+
 ## 1.9.0
 
 Four things about the picture and one about finding your way round it. The
