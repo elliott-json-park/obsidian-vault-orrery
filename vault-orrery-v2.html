@@ -223,8 +223,14 @@ body.dragdeck #hud{cursor:grabbing}
 /* the row lights as a whole when the pointer is on it, so the thing being
    dragged is legible while it is being dragged */
 .sl:hover>b{opacity:.9}
+/* The readout never wraps. Most of these are one token — 1.72× — but four
+   of them are a number and a unit with a space in it (0.6 px, 7.5 s, 0 st),
+   and a narrow column broke those across two lines. That costs the row an
+   extra line of height, which pushes its slider out of line with every other
+   slider on the shelf; the label beside it is already allowed to ellipse, so
+   the value giving way instead of the label was nobody's intent. */
 .sl>b i{font-style:normal;color:var(--cy);opacity:.95;font-variant-numeric:tabular-nums;
-  letter-spacing:.04em}
+  letter-spacing:.04em;flex:0 0 auto;white-space:nowrap}
 /* the label and its pin travel together on the left; the value stays right */
 .sl>b .nm{display:flex;align-items:baseline;gap:5px;min-width:0;overflow:hidden;
   white-space:nowrap;text-overflow:ellipsis}
@@ -1806,8 +1812,8 @@ const bt = setInterval(() => {
    worth nobody's while: additive line blending saturates to white well before
    it, so the whole top third of the knob bought glare rather than glow. The
    floor is the useful end and is left alone — OFF at zero, and every step up
-   from it still reads — while the top now stops at 0.85. The rest position
-   stays at 0.70, so nothing anyone is already looking at changes. */
+   from it still reads — while the top now stops at 0.85. Where the knob rests
+   is the table's business, not this constant's: see def in KNOBS. */
 const LNK_MAX = 0.85;
 /* maxNodes is a performance ceiling, not a preference: a five-thousand-note
    vault running a spring simulation and four thousand instanced bodies will
@@ -1883,9 +1889,9 @@ const SCALES = [
 const mult = v => v.toFixed(2) + '×';
 const offAt = (v, s) => v < 0.02 ? 'OFF' : s;
 const KNOBS = [
-  { k:'spd', g:'cosmos', label:'ORBIT SPEED',   min:0,  max:400, sc:100, def:.18, pin:1, fmt:mult },
-  { k:'bri', g:'cosmos', label:'NODE GLOW',     min:10, max:260, sc:100, def:2.6, pin:1, fmt:mult },
-  { k:'lnk', g:'cosmos', label:'LINK GLOW',     min:0,  max:LNK_MAX*100, sc:100, def:.05, pin:1,
+  { k:'spd', g:'cosmos', label:'ORBIT SPEED',   min:0,  max:400, sc:100, def:.10, pin:1, fmt:mult },
+  { k:'bri', g:'cosmos', label:'NODE GLOW',     min:10, max:260, sc:100, def:1.11, pin:1, fmt:mult },
+  { k:'lnk', g:'cosmos', label:'LINK GLOW',     min:0,  max:LNK_MAX*100, sc:100, def:.42, pin:1,
     fmt:v => offAt(v, mult(v)) },
   /* ORBIT GAP used to rebuild the cosmos when the handle was let go: the
      number followed the drag, the sky changed in one cut at the end, and the
@@ -1907,7 +1913,7 @@ const KNOBS = [
      grew around them: the fog, which turned the far half grey exactly when it
      became worth looking at, and the dust disk, which the cosmos walked out
      of. Both track the reach now — see applyDepth. */
-  { k:'gap', g:'cosmos', label:'ORBIT GAP',     min:50, max:600, sc:100, def:4.37,pin:1, fmt:mult },
+  { k:'gap', g:'cosmos', label:'ORBIT GAP',     min:50, max:600, sc:100, def:2.81,pin:1, fmt:mult },
   /* The one knob whose slider is not its value: the step past the ceiling is
      the off position, so "no limit" is a place on the same slider rather than
      a separate control.
@@ -1941,7 +1947,7 @@ const KNOBS = [
      is brightness — LINK GLOW owns that, and the two were deliberately not
      merged: "I cannot see the links" and "the links are drowning the notes"
      are opposite complaints and one slider answers only one of them. */
-  { k:'lwd', g:'cosmos', label:'LINE WIDTH',    min:60, max:400, sc:100, def:1.7,
+  { k:'lwd', g:'cosmos', label:'LINE WIDTH',    min:60, max:400, sc:100, def:.60,
     fmt:v => v.toFixed(1) + ' px' },
   /* RECENT WORK lights a note by when it was last touched.
 
@@ -1955,10 +1961,10 @@ const KNOBS = [
      gone by the far edge. */
   { k:'frs', g:'cosmos', label:'RECENT WORK',   min:0,  max:90,  sc:1,   def:14,
     fmt:v => !freshKnown() ? 'N/A' : v < 0.5 ? 'OFF' : Math.round(v) + 'd',
-    apply: () => computeFresh() },
-  { k:'trl', g:'cosmos', label:'ORBIT TRAILS',  min:0,  max:100, sc:100, def:.13,
+    apply: computeFresh },
+  { k:'trl', g:'cosmos', label:'ORBIT TRAILS',  min:0,  max:100, sc:100, def:1,
     fmt:v => offAt(v, v.toFixed(2)) },
-  { k:'grv', g:'cosmos', label:'NODE GRAVITY',  min:0,  max:300, sc:100, def:1.48,
+  { k:'grv', g:'cosmos', label:'NODE GRAVITY',  min:0,  max:300, sc:100, def:1.5,
     fmt:v => offAt(v, mult(v)) },
   { k:'spr', g:'cosmos', label:'ORBIT SPREAD',  min:30, max:320, sc:100, def:3.2, fmt:mult },
   /* Every orbit the layout lays down is tilted, and every one of them is
@@ -2000,8 +2006,8 @@ const KNOBS = [
      The floor is 0.30x rather than zero. A body scaled to nothing is still
      pickable, still labelled, still locked onto by the ship's reticle, and a
      cosmos of invisible targets is a bug report, not a setting. */
-  { k:'szSun', g:'bodies', label:'SUN SIZE',    min:30, max:300, sc:100, def:1.98,
-    fmt:mult, apply: () => applySizes() },
+  { k:'szSun', g:'bodies', label:'SUN SIZE',    min:30, max:300, sc:100, def:1.72,
+    fmt:mult, apply: applySizes },
   /* ---- the folder stars ------------------------------------------------
      A system's star is the middle term of the whole picture: the hub is the
      vault, a planet is a note, and this is the folder they are filed under.
@@ -2016,12 +2022,12 @@ const KNOBS = [
      only one of them. The clearance the planets orbit at follows the size —
      see applySizes — so growing a star pushes its own system outward rather
      than growing over it. */
-  { k:'szSys', g:'bodies', label:'SYSTEM SIZE',  min:30, max:400, sc:100, def:1.1,
-    fmt:mult, apply: () => applySizes() },
-  { k:'szPl',  g:'bodies', label:'PLANET SIZE', min:30, max:300, sc:100, def:.75,
-    fmt:mult, apply: () => applySizes() },
-  { k:'szMn',  g:'bodies', label:'MOON SIZE',   min:30, max:300, sc:100, def:.75,
-    fmt:mult, apply: () => applySizes() },
+  { k:'szSys', g:'bodies', label:'SYSTEM SIZE',  min:30, max:400, sc:100, def:.98,
+    fmt:mult, apply: applySizes },
+  { k:'szPl',  g:'bodies', label:'PLANET SIZE', min:30, max:300, sc:100, def:.96,
+    fmt:mult, apply: applySizes },
+  { k:'szMn',  g:'bodies', label:'MOON SIZE',   min:30, max:300, sc:100, def:.57,
+    fmt:mult, apply: applySizes },
   /* ---- and how brightly each class burns -------------------------------
      NODE GLOW moves all of them at once and stays: it is the master. These
      are the balance between the four, which is a different question — the
@@ -2031,24 +2037,24 @@ const KNOBS = [
      Zero is OFF and says so, except on the hub: a sun turned off is a cosmos
      with no light source in it, so its floor is a dim ember rather than
      nothing. */
-  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:.4, fmt:mult },
-  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:.6,
+  { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:.15, fmt:mult },
+  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:.59,
     fmt:v => offAt(v, mult(v)) },
   /* Planets and moons run to 8x where the sun and the folder stars stop at
      3x, and the asymmetry is the point: those two are light sources and the
      other two are lit, so a planet asked for more brightness has much further
      to climb before it reads at all. Eight is where the halo saturates. */
-  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:1.7,
+  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:2.65,
     fmt:v => offAt(v, mult(v)) },
-  { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:3,
+  { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:5.08,
     fmt:v => offAt(v, mult(v)) },
-  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:.66,
-    fmt:v => offAt(v, mult(v)), apply: () => applyStarfield() },
-  { k:'thr', g:'cosmos', label:'SHIP THRUST',   min:20, max:400, sc:100, def:.2, fmt:mult },
+  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:1.2,
+    fmt:v => offAt(v, mult(v)), apply: applyStarfield },
+  { k:'thr', g:'cosmos', label:'SHIP THRUST',   min:20, max:400, sc:100, def:.29, fmt:mult },
 
-  { k:'blm', g:'light',  label:'BLOOM',         min:0,  max:BLM_MAX*100, sc:100, def:.7,
+  { k:'blm', g:'light',  label:'BLOOM',         min:0,  max:BLM_MAX*100, sc:100, def:0,
     fmt:v => offAt(v, mult(v)) },
-  { k:'ray', g:'light',  label:'SUN RAYS',      min:0,  max:150, sc:100, def:.7,
+  { k:'ray', g:'light',  label:'SUN RAYS',      min:0,  max:150, sc:100, def:.53,
     fmt:v => offAt(v, mult(v)) },
   /* The scattering halo, which is the whole of what a star looks like once
      its disc is too small to be one. Separate from SUN RAYS because the rays
@@ -2063,10 +2069,10 @@ const KNOBS = [
      exactly the range where the star stops being a disc. This is the only
      thing here that grows as you back away, which is why nothing else can
      stand in for it. */
-  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:1,
+  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:.8,
     fmt:v => offAt(v, mult(v)) },
   { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:120, sc:100, def:0,
-    fmt:v => offAt(v, mult(v)), apply: () => applyVeil() },
+    fmt:v => offAt(v, mult(v)), apply: applyVeil },
   /* ---- the grade ----
      Four knobs for the four things in the composite's note, and they are
      four rather than one because they fail differently: a curve that is too
@@ -2077,13 +2083,13 @@ const KNOBS = [
      All four are at zero what they were before they existed, and the frame
      gate in renderFrame knows it — a reader who turns the whole grade off
      gets the plain path back, not a full-screen pass that does nothing. */
-  { k:'cur', g:'light',  label:'FILM CURVE',    min:0,  max:100, sc:100, def:.6,
+  { k:'cur', g:'light',  label:'FILM CURVE',    min:0,  max:100, sc:100, def:0,
     fmt:v => offAt(v, mult(v)) },
-  { k:'spl', g:'light',  label:'SPLIT TONE',    min:0,  max:100, sc:100, def:.35,
+  { k:'spl', g:'light',  label:'SPLIT TONE',    min:0,  max:100, sc:100, def:0,
     fmt:v => offAt(v, mult(v)) },
-  { k:'len', g:'light',  label:'LENS',          min:0,  max:100, sc:100, def:.4,
+  { k:'len', g:'light',  label:'LENS',          min:0,  max:100, sc:100, def:0,
     fmt:v => offAt(v, mult(v)) },
-  { k:'grn', g:'light',  label:'GRAIN',         min:0,  max:100, sc:100, def:.35,
+  { k:'grn', g:'light',  label:'GRAIN',         min:0,  max:100, sc:100, def:0,
     fmt:v => offAt(v, mult(v)) },
   /* One knob for two effects, because they are one effect: the cockpit
      shaking and the frame smearing radially are both "how hard is this being
@@ -2091,7 +2097,7 @@ const KNOBS = [
      wants the other off as well. It lives in LIGHT rather than COSMOS
      because half of it is a pass in the composite — and because someone
      turning the grade down is exactly the person who wants this down too. */
-  { k:'mot', g:'light',  label:'SPEED FEEL',    min:0,  max:150, sc:100, def:.14,
+  { k:'mot', g:'light',  label:'SPEED FEEL',    min:0,  max:150, sc:100, def:.08,
     fmt:v => offAt(v, mult(v)) },
 
   /* ---- sound ----------------------------------------------------------
@@ -2101,17 +2107,17 @@ const KNOBS = [
      what key the vault is in. The defaults are exactly the numbers that were
      hard-coded, so switching sound on sounds the way it did.               */
   { k:'sVol',   g:'sound', label:'MASTER',      min:0, max:150, sc:100, def:.55,
-    fmt:v => offAt(v, Math.round(v*100) + '%'), apply: () => audioApply() },
+    fmt:v => offAt(v, Math.round(v*100) + '%'), apply: audioApply },
   { k:'sTune',  g:'sound', label:'TUNING',      min:-24, max:24, sc:1, def:0,
-    fmt:v => (v > 0 ? '+' : '') + v + ' st', apply: () => audioApply() },
+    fmt:v => (v > 0 ? '+' : '') + v + ' st', apply: audioApply },
   { k:'sScale', g:'sound', label:'SCALE',       min:0, max:SCALES.length-1, sc:1, def:0,
     fmt:v => SCALES[clamp(v|0, 0, SCALES.length-1)].n },
   { k:'sRoom',  g:'sound', label:'ROOM SIZE',   min:5, max:140, sc:10, def:7.5,
-    fmt:v => v.toFixed(1) + ' s', apply: () => audioApply() },
+    fmt:v => v.toFixed(1) + ' s', apply: audioApply },
   { k:'sEcho',  g:'sound', label:'ECHO TAIL',   min:0, max:85, sc:100, def:.36,
-    fmt:v => offAt(v, v.toFixed(2)), apply: () => audioApply() },
+    fmt:v => offAt(v, v.toFixed(2)), apply: audioApply },
   { k:'sEchoT', g:'sound', label:'ECHO TIME',   min:12, max:170, sc:100, def:.62,
-    fmt:v => v.toFixed(2) + ' s', apply: () => audioApply() },
+    fmt:v => v.toFixed(2) + ' s', apply: audioApply },
   /* What DRONE was, under the name it always described. Three near-unison
      voices under a low filter is the bed the whole vault sits on — it is the
      ambience, and calling it by the synthesis technique that makes it was
@@ -2121,7 +2127,7 @@ const KNOBS = [
      those settings that is interesting exactly once and is then either right
      or forgotten, and it cost a slider in a panel that had thirteen. */
   { k:'sDrone', g:'sound', label:'AMBIENT',     min:0, max:200, sc:100, def:.2,
-    fmt:v => offAt(v, mult(v)), apply: () => audioApply() },
+    fmt:v => offAt(v, mult(v)), apply: audioApply },
 ];
 const KNOB_OF = {};
 KNOBS.forEach(kn => { KNOB_OF[kn.k] = kn; });
@@ -14361,12 +14367,27 @@ $('b-rst').onclick = () => {
      anything edits the defaults, and RESET has nothing left to reset to. */
   SET.pin = PIN_DEF.slice();
   /* RESET is a settings change like any other and every one of them is live,
-     so the audio graph and the tinted buffer both have to be told */
+     so the audio graph and the tinted buffer both have to be told.
+
+     And so does everything else a knob owns beyond its own number. Half a
+     dozen of them carry a buffer or a live node — the body sizes, the
+     starfield, the veil, the freshness pass — and RESET told none of them:
+     the readout went back to the default and the picture stayed exactly as
+     it had been dragged, which is the one thing RESET is for. Running the
+     table's own hooks rather than a hand-written list is what stops the next
+     knob added from being left out of it in the same way. */
+  const ran = new Set();
+  KNOBS.forEach(kn => {
+    if (!kn.apply || ran.has(kn.apply)) return;
+    ran.add(kn.apply);
+    try { kn.apply(); } catch (e) { console.error('vault-orrery: reset ' + kn.k, e); }
+  });
   knobFind = '';
   if (findEl) findEl.value = '';
   /* the arrangement includes where the thing is, not only what is in it */
   SET.deckAt = null;
-  layoutKnobs(); syncControls(); recolour(); audioApply();
+  /* audioApply is one of the hooks above, so it has already run. */
+  layoutKnobs(); syncControls(); recolour();
   saveSet(); toast('CONTROLS RESET');
   /* RESET puts the folds back too, and a pane that has just unfolded is a
      pane whose neighbour has to be measured again */
@@ -15075,12 +15096,83 @@ function viewRestore(m) {
   nudge();
 }
 
+/* ---- the orbital clock, across a rebuild -------------------------------
+   A body's angle is not a function of t. It is integrated frame by frame into
+   MA[i] — see advance() — so that ORBIT SPREAD and ORBIT GAP can change a
+   period without rewriting the body's past. The folder stars keep the same
+   accumulator on the cat objects as oMA, and a star's own roll is a third.
+
+   All three lived in things the layout allocates, so a rebuild threw them
+   away: every planet, moon and star snapped back to the phase the layout had
+   given it, and each star's roll to a fresh Math.random(). Nothing about the
+   vault had changed, and the whole sky moved.
+
+   Which is what this looked like from the reader's chair: the camera ticking.
+   Inside Obsidian the cosmos re-derives a couple of seconds after every save,
+   and viewRestore puts the camera back exactly where it was — so the camera
+   holds perfectly still and everything it was framing jumps. Two and a half
+   seconds forward, then back to the beginning, again and again.
+
+   So the phases travel the way the camera already does: marked before the
+   teardown, keyed by the note's path and the folder's key rather than by
+   index — indices are rebuilt and name a different note by the next pass —
+   and put back once the new layout and its objects have their own arrays. A
+   note that has only just arrived is not in the mark and starts where the
+   layout put it, which is the one place it can start. */
+function orbitMark() {
+  const ph = new Map(), sys = new Map();
+  /* Defensive because one caller is the failure path: swapVault(EMPTY) runs
+     from the catch of a swap that threw partway through, with a half-built
+     cosmos still in the module bindings. A mark that cannot be taken is not
+     worth taking down the recovery for. */
+  try {
+    if (MA && nodes) {
+      const n = Math.min(N, MA.length, nodes.length);
+      for (let i = 0; i < n; i++) {
+        const nd = nodes[i]; if (!nd) continue;
+        const key = nd.fp || nd.p;
+        if (key) ph.set(key, MA[i]);
+      }
+    }
+    if (cats) cats.forEach(c => {
+      if (!c || c.key === undefined) return;
+      if (c.oMA !== undefined || c.rz !== undefined)
+        sys.set(c.key, { oMA: c.oMA, sx: c.sx, sy: c.sy, rz: c.rz });
+    });
+  } catch (e) { console.warn('vault-orrery: orbital phases not carried', e); return null; }
+  return (ph.size || sys.size) ? { ph, sys } : null;
+}
+/* After buildObjects rather than after buildLayout: MA is seeded by the
+   layout, but the star spins are allocated with the objects, and one call
+   that puts back all three is one thing to keep true rather than two. */
+function orbitRestore(m) {
+  if (!m || !MA || !nodes) return;
+  const n = Math.min(N, MA.length, nodes.length);
+  for (let i = 0; i < n; i++) {
+    const nd = nodes[i]; if (!nd) continue;
+    const v = m.ph.get(nd.fp || nd.p);
+    if (v !== undefined && Number.isFinite(v)) MA[i] = v;
+  }
+  if (!cats) return;
+  cats.forEach(c => {
+    if (!c || c.key === undefined) return;
+    const v = m.sys.get(c.key); if (!v) return;
+    if (Number.isFinite(v.oMA)) c.oMA = v.oMA;
+    if (Number.isFinite(v.sx))  c.sx  = v.sx;
+    if (Number.isFinite(v.sy))  c.sy  = v.sy;
+    if (Number.isFinite(v.rz))  c.rz  = v.rz;
+  });
+}
+
 /* The graph the current cosmos was built from. Kept because two things now
    rebuild without reloading a single file: choosing a different centre, and
    anything else that changes the layout rather than the vault. */
 let lastData = null;
 function swapVault(data, keep) {
   lastData = data;
+  /* Read before anything is torn down: it describes the cosmos that is about
+     to be thrown away, and it is the only chance to. */
+  const phases = orbitMark();
   closeSearch();
   closeMind();
   /* everything that holds a node index from the old vault has to let go
@@ -15094,6 +15186,8 @@ function swapVault(data, keep) {
   /* the old map named the old indices */
   pathIdx = null;
   buildObjects();
+  /* the sky picks up where it left off — see orbitMark */
+  orbitRestore(phases);
   refreshHUD();
   renderInspector();
   resize();
