@@ -25,7 +25,31 @@ html[lang="zh"]{--kr:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC",
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
   font-family:var(--mono);-webkit-font-smoothing:antialiased;cursor:crosshair}
 canvas{display:block}
-#gl{position:fixed;inset:0;z-index:0}
+/* ---- why the width and height are written out ----
+   inset:0 looks like it sizes this, and for any ordinary element it would.
+   A canvas is a *replaced* element: it has an intrinsic size, taken from its
+   width and height attributes read as CSS pixels, and an absolutely
+   positioned replaced element with width:auto resolves to that intrinsic
+   size and then drops the side of the inset it cannot honour. So the element
+   was being sized by its own backing store.
+
+   Which is right at a pixel ratio of one and wrong at every other value.
+   renderer.setSize(w, h, false) writes a buffer of w times the pixel ratio,
+   and that third argument says "do not touch the style" — nothing else ever
+   touched it either, so each change of pixel ratio silently resized the
+   *element* by the same factor. The adaptive supersampler changes that ratio
+   in steps — 1, then 1.45, then 2, once the camera has been still for a
+   moment — so every step made the canvas a sharper picture and a larger box
+   in one go, anchored at its top-left corner, with the overflow clipped away
+   by the overflow:hidden below. What you saw was the view jumping larger
+   toward the top left, in stages, over the first seconds, and then settling
+   once the sampler stopped climbing. Not a camera bug. A layout one.
+
+   An explicit width and height mean the used value never comes from the
+   intrinsic size, so the box follows the containing block whatever the
+   backing store is doing — which is the whole of the relationship those two
+   are supposed to have. */
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:0}
 
 /* ---------- HUD frame ---------- */
 #hud{position:fixed;inset:0;z-index:10;pointer-events:none;
@@ -2044,7 +2068,7 @@ const KNOBS = [
      3x, and the asymmetry is the point: those two are light sources and the
      other two are lit, so a planet asked for more brightness has much further
      to climb before it reads at all. Eight is where the halo saturates. */
-  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:2.65,
+  { k:'briPl',  g:'bodies', label:'PLANET GLOW', min:0,  max:800, sc:100, def:.4,
     fmt:v => offAt(v, mult(v)) },
   { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:5.08,
     fmt:v => offAt(v, mult(v)) },
@@ -2069,9 +2093,9 @@ const KNOBS = [
      exactly the range where the star stops being a disc. This is the only
      thing here that grows as you back away, which is why nothing else can
      stand in for it. */
-  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:.8,
+  { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
-  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:120, sc:100, def:0,
+  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:120, sc:100, def:.2,
     fmt:v => offAt(v, mult(v)), apply: applyVeil },
   /* ---- the grade ----
      Four knobs for the four things in the composite's note, and they are
@@ -8554,11 +8578,18 @@ const _ionA = [0,0,0];
    wake is the air, which are two different colours. And the bright ones
    leave a train that outlives them by seconds, spreading and drifting in a
    wind. Every one of those is in a photograph somebody has taken.        */
-/* Forty-eight samples for a streak is a lot, and it is what the streak
-   costs: the points have to overlap into a line. At half this they resolve
-   into a dotted trail, which is the one thing that reads worse than no
-   meteor at all. Four of them at once is under two hundred points. */
-const MET_MAX = 4, MET_TAIL = 48;
+/* The samples have to overlap into a line. Below the count where they do,
+   the streak resolves into a dotted trail, which is the one thing that reads
+   worse than no meteor at all — so this number is not a quality setting, it
+   is a floor, and the floor moves with the length of the ribbon.
+
+   Forty-eight held a tail of 0.15 R-seconds. The ribbon is now 0.40, near
+   enough two and a half times as long, and a sample count that did not
+   follow would have spread the same beads over a longer thread and printed
+   exactly the dotted trail this is here to prevent. A hundred and twenty
+   restores the spacing that worked. Four at once is under five hundred
+   points, which for a Points geometry is nothing. */
+const MET_MAX = 4, MET_TAIL = 120;
 /* ---- what is burning, and it is two different things ------------------
    The head shows the metals the grain is made of, and every one of them is
    a line somebody has measured: magnesium at 518 nm blue-white, sodium at
@@ -8573,11 +8604,23 @@ const MET_MAX = 4, MET_TAIL = 48;
    different colours, and the change happens within the first fifth of the
    streak. Drawing the whole thing one colour was the last thing here that
    was a decision rather than an observation. */
-const MET_HEAD = [ [0.72, 0.85, 1.00],    // magnesium, and the fast ones
-                   [1.00, 0.93, 0.72],    // sodium
-                   [1.00, 0.82, 0.54],    // iron
-                   [1.00, 0.68, 0.42] ];  // slow, and never getting past it
-const MET_WAKE = [0.44, 1.00, 0.64];
+const MET_HEAD = [ [0.82, 0.94, 1.00],    // magnesium, and the fast ones
+                   [1.00, 0.95, 0.80],    // sodium
+                   [1.00, 0.86, 0.60],    // iron
+                   [1.00, 0.74, 0.48] ];  // slow, and never getting past it
+/* The wake was 0.44,1.00,0.64 — the forbidden oxygen line at 557.7 nm, which
+   is the correct colour and the reason a green meteor in a photograph is
+   real. It is being given up on purpose.
+
+   Green is the one hue on this palette with nothing else near it, so a green
+   streak across a cyan and amber sky does not read as part of the sky; it
+   reads as a lime highlighter. And the thing being reached for here is not a
+   photometric record, it is the shower in *Your Name* — where the trail is a
+   turquoise that sits a few degrees off the night behind it and glows rather
+   than announces itself. So: teal, one step toward the cyan the rest of this
+   view is already built out of. The physics note above still describes what
+   is actually happening in the air; this is a decision about the picture. */
+const MET_WAKE = [0.46, 0.92, 1.00];
 let metObj = null, metPos = null, metSz = null, metCol = null, metAl = null,
     metLive = 0;
 const meteors = [];
@@ -8622,7 +8665,16 @@ function meteorSpawn() {
   const p0  = dir.clone().multiplyScalar(R).add(camera.position);
   const p1  = edge(_mB, b).multiplyScalar(R).add(camera.position);
 
-  const dur  = 1.0 + Math.random() * 1.2;
+  /* ---- pace ----
+     One to two seconds is what a real grain takes and it is what a *streak*
+     looks like: a scratch, over before the eye has finished moving to it.
+     The film's are the other thing entirely — they cross slowly enough that
+     you watch them travel, which is the whole of why they are beautiful and
+     not merely bright. Three to five seconds, and everything downstream that
+     was tuned against the old number is retuned with it: the colour, which
+     is chosen by how fast the grain seems to be going, and the tail, which
+     is a length in seconds of flight. */
+  const dur  = 2.9 + Math.random() * 2.3;
   const span = p0.distanceTo(p1);
   const spd  = span / dur;
   const vdir = p1.sub(p0).normalize();
@@ -8640,9 +8692,13 @@ function meteorSpawn() {
      famously blue-green; the Taurids come in at twenty-eight and are
      famously orange. Here the only thing standing for speed is how long the
      streak takes to cross the frame, so that is what is asked. */
-  const fastness = clamp((2.2 - dur) / 1.2, 0, 1);
-  const col = MET_HEAD[fastness > 0.66 ? 0 : fastness > 0.42 ? 1
-                     : fastness > 0.20 ? 2 : 3];
+  /* Measured against the range above, not the old one — left alone, every
+     meteor in the sky would have come out at the slow end of the table and
+     the whole shower would have been orange. Weighted toward the cool end on
+     top of that: the film's are blue-white far more often than not. */
+  const fastness = clamp((5.2 - dur) / 2.3, 0, 1);
+  const col = MET_HEAD[fastness > 0.42 ? 0 : fastness > 0.24 ? 1
+                     : fastness > 0.10 ? 2 : 3];
 
   /* ---- flares ----
      A meteoroid is a poorly consolidated lump of dust and ice, not a pebble,
@@ -8651,21 +8707,34 @@ function meteorSpawn() {
      photometric records of bright meteors are full of them, and a fireball
      that ends without a terminal burst is the exception rather than the
      rule. This is the detail that separates a meteor from a streak. */
-  const nf = fire ? 1 + ((Math.random() * 3) | 0) : (Math.random() < 0.3 ? 1 : 0);
+  /* Fewer, and softer. Fragmentation spikes are real and they are also what
+     makes a streak read as crackling rather than gliding — on a three second
+     flight there was time for several and the eye caught every one. The
+     fireball keeps its terminal burst, because that one is an event rather
+     than a texture. */
+  const nf = fire ? 1 + ((Math.random() * 2) | 0) : (Math.random() < 0.16 ? 1 : 0);
   const flares = [];
   for (let i = 0; i < nf; i++)
     flares.push([0.34 + Math.random() * 0.48,
-                 (fire ? 0.85 : 0.40) * (0.5 + Math.random())]);
-  if (fire && Math.random() < 0.7)
-    flares.push([0.90 + Math.random() * 0.05, 1.6 + Math.random() * 1.1]);
+                 (fire ? 0.5 : 0.22) * (0.5 + Math.random())]);
+  if (fire && Math.random() < 0.6)
+    flares.push([0.90 + Math.random() * 0.05, 1.1 + Math.random() * 0.8]);
 
   meteors.push({
     p0, dur, t: 0, flares, col,
     v: vdir.clone().multiplyScalar(spd),
-    /* a shallow curve across the flight, so the path is not a ruled line */
-    bend: new THREE.Vector3().crossVectors(vdir, dir)
-            .normalize().multiplyScalar(spd * (Math.random() - 0.5) * 0.22 / dur),
-    tail: R * (fire ? 0.24 : 0.15) / spd,
+    /* A curve across the flight, so the path is not a ruled line — and more
+       of one than there was. Over a second a shallow bend is invisible; over
+       four it is the difference between a line and a trajectory, and an arc
+       is most of what makes the film's read as falling rather than as drawn.
+       Biased away from zero so no two are straight. */
+    bend: new THREE.Vector3().crossVectors(vdir, dir).normalize()
+            .multiplyScalar(spd * (Math.random() < 0.5 ? -1 : 1) *
+                            (0.18 + Math.random() * 0.26) / dur),
+    /* how many seconds of flight the ribbon holds. Long: the trail *is* the
+       meteor here, and a head with a short wake behind it is the streak this
+       is moving away from. */
+    tail: R * (fire ? 0.52 : 0.40) / spd,
     br: fire ? 2.1 : 0.55 + Math.random() * 0.7,
     sz: (fire ? 1.7 : 1) * (R / 4200),
     /* ---- the persistent train ----
@@ -8677,8 +8746,12 @@ function meteorSpawn() {
        kilometres up is moving at a hundred metres a second and shearing —
        which is why a photographed train ends up bent into a corkscrew and
        why this one is given a direction of its own to wander in. */
-    train: fire ? 0.55 + Math.random() * 0.45 : Math.random() * 0.22,
-    trainTau: (fire ? 1.4 + Math.random() * 1.8 : 0.35) ,
+    /* The lingering glow, raised for the ordinary ones and lengthened for
+       all of them. A train used to be the fireball's privilege and everything
+       else blinked out; leaving a little of it behind every meteor is what
+       stops the sky snapping shut the moment the grain is gone. */
+    train: fire ? 0.6 + Math.random() * 0.45 : 0.18 + Math.random() * 0.26,
+    trainTau: (fire ? 1.8 + Math.random() * 2.0 : 1.1 + Math.random() * 0.7),
     drift: new THREE.Vector3().crossVectors(vdir, dir).normalize()
              .multiplyScalar(spd * 0.012 * (Math.random() - 0.5))
   });
@@ -8691,7 +8764,7 @@ function meteorStep(dt) {
      whatever the rule behind it said. */
   if (N && meteors.length < MET_MAX && SET.spd > 0.02) {
     meteorNext -= dt * Math.min(2, SET.spd);
-    if (meteorNext <= 0) { meteorSpawn(); meteorNext = 11 + Math.random() * 30; }
+    if (meteorNext <= 0) { meteorSpawn(); meteorNext = 9 + Math.random() * 23; }
   }
   if (!metObj) return;
   for (let k = meteors.length - 1; k >= 0; k--) {
@@ -8726,8 +8799,17 @@ function meteorStep(dt) {
        bright meteor there are several with a larger one at the end. */
     let env = 0;
     if (live) {
-      env = Math.min(1, u / 0.05) * Math.exp(3.1 * (u - 1))
-          * (1 - sstep(clamp((u - 0.88) / 0.12, 0, 1)));
+      /* The climb is real and it stays — a meteor does brighten through most
+         of its flight, and a thing that arrives at full brightness and fades
+         is a spark off a grinder. What goes is the cliff. The grain running
+         out is an abrupt event and it was modelled as one, over the last
+         twelfth of the path; at this pace that reads as the light being
+         switched off, and the film's do the opposite — they thin away, and
+         the eye is still following the place where one was for a moment
+         after. So the climb is gentler and the ending is a long taper over
+         the last third rather than a cut at the end. */
+      env = Math.min(1, u / 0.05) * Math.exp(2.0 * (u - 1))
+          * (1 - sstep(clamp((u - 0.64) / 0.36, 0, 1)));
       for (let q = 0; q < M.flares.length; q++) {
         const d = (u - M.flares[q][0]) / 0.038;
         if (d > -4 && d < 4) env += M.flares[q][1] * Math.exp(-d * d);
@@ -8754,12 +8836,16 @@ function meteorStep(dt) {
            alight a moment ago and is spreading while it cools — so it does
            not only fade back, it widens. A trail that tapers to a needle is
            a brush stroke; one that opens out is a column of gas. */
-        metSz[i] = (k === 0 ? 96 : 26 + 46 * taper + 52 * f * M.train) * M.sz;
+        /* A wider, softer ribbon than the streak had. What is wanted is a
+           band of light with no edge to it, so the head is bigger and the
+           trail is given more body — a hairline at this length reads as a
+           scratch on the lens. */
+        metSz[i] = (k === 0 ? 132 : 34 + 58 * taper + 66 * f * M.train) * M.sz;
         metAl[i] = env * (k === 0 ? 1 : taper * 0.88) *
                    /* the trail cannot start before the meteor did */
                    (M.t - k * ds > 0 ? 1 : 0);
       } else {
-        metSz[i] = (34 + 58 * f + 120 * spread) * M.sz;
+        metSz[i] = (42 + 72 * f + 140 * spread) * M.sz;
         metAl[i] = tr * (1 - f * 0.7) * 0.42;
       }
       /* the metals at the head, the air behind it — and once the head has
@@ -9371,43 +9457,85 @@ function mmPlate(key, size, paint) {
 }
 const MM_BS = 128, MM_BR = 52;                 // sprite box, and the ball in it
 const MM_BK = MM_BS / (MM_BR * 2);             // draw-size multiplier
+/* A note is drawn as a shell, not as a ball.
+
+   It used to be a lit sphere: a radial gradient with the highlight off to one
+   side, a terminator across it, a warm limb facing the star and a cold one
+   facing away — a little planet, rotated so its day side pointed at the
+   middle of the plate. It was accurate to the orrery next door and it was the
+   wrong object. A planet is opaque, and an opaque body on a graph hides the
+   links that pass behind it; a planet is lit, and light implies a direction
+   the plate does not have; and a shaded ball with a specular dot on it is the
+   house style of every 3D chart written since about 2004.
+
+   What is wanted here is the thing itself — a note, with structure inside it,
+   suspended. So: a mostly empty interior that the links show through, a rim
+   that catches the light all the way round (which is what a soap bubble and a
+   hologram have in common, and what a marble does not), two orbital wires
+   crossing inside it, and a nucleus. Nothing about it claims a light source,
+   which is why it can sit at any bearing without being turned. */
 function mmBody(R, G, B) {
   return mmPlate('b' + R + ',' + G + ',' + B, MM_BS, (x, S) => {
     const c = S / 2, r = MM_BR;
     const up = (v, n) => Math.min(255, Math.round(v + n));
-    const dn = (v, f) => Math.round(v * f);
-    const g = x.createRadialGradient(c - r * 0.44, c - r * 0.10, r * 0.05, c, c, r * 1.02);
-    g.addColorStop(0.00, 'rgb(' + up(R,120) + ',' + up(G,120) + ',' + up(B,120) + ')');
-    g.addColorStop(0.30, 'rgb(' + up(R,46)  + ',' + up(G,46)  + ',' + up(B,46)  + ')');
-    g.addColorStop(0.66, 'rgb(' + R + ',' + G + ',' + B + ')');
-    g.addColorStop(1.00, 'rgb(' + dn(R,.20) + ',' + dn(G,.20) + ',' + dn(B,.24) + ')');
+    const rgba = (rr, gg, bb, a) => 'rgba(' + rr + ',' + gg + ',' + bb + ',' + a + ')';
+    const HR = up(R,150), HG = up(G,150), HB = up(B,150);
+
+    /* the interior. Translucent on purpose — a link running behind a node
+       should be dimmed by it, not deleted. */
+    const g = x.createRadialGradient(c, c, 0, c, c, r);
+    g.addColorStop(0.00, rgba(R, G, B, .26));
+    g.addColorStop(0.64, rgba(Math.round(R*.45), Math.round(G*.55), Math.round(B*.7), .13));
+    g.addColorStop(1.00, rgba(R, G, B, .04));
     x.fillStyle = g;
     x.beginPath(); x.arc(c, c, r, 0, TAU); x.fill();
-    /* the terminator — without it a lit gradient still reads as a sticker */
-    x.globalCompositeOperation = 'source-atop';
-    const t = x.createLinearGradient(c - r, 0, c + r, 0);
-    t.addColorStop(0.00, 'rgba(0,0,0,0)');
-    t.addColorStop(0.48, 'rgba(0,0,0,0)');
-    t.addColorStop(1.00, 'rgba(0,3,10,.70)');
-    x.fillStyle = t; x.fillRect(c - r, c - r, r * 2, r * 2);
+
+    x.globalCompositeOperation = 'lighter';
+    /* the rim. This is the whole illusion: a band of light that closes on
+       itself reads as a curved surface seen edge-on, and the eye supplies the
+       sphere. Whitest just inside the silhouette, gone by the edge, so the
+       shell has no hard outline to look printed. */
+    const rim = x.createRadialGradient(c, c, r * 0.74, c, c, r);
+    rim.addColorStop(0.00, rgba(HR, HG, HB, 0));
+    rim.addColorStop(0.86, rgba(HR, HG, HB, .34));
+    rim.addColorStop(1.00, rgba(HR, HG, HB, 0));
+    x.fillStyle = rim;
+    x.beginPath(); x.arc(c, c, r, 0, TAU); x.fill();
+
+    /* One hairline at the silhouette, and nothing else.
+
+       There were two crossed ellipses here for a moment — the across-and-down
+       pair that draws a sphere in line — and they were too literal by half:
+       what they drew was not a note, it was the electron-shell diagram off
+       the cover of a school chemistry book. The association was the one being
+       reached for and it arrived far too loudly.
+
+       So the wires are gone and the rim is a line rather than a band. A
+       single bright circle at the edge of a soft interior is enough — the eye
+       reads a closed highlight as a curved surface without being told twice,
+       and what is left is a mark rather than a model. Twenty-six of these on
+       a plate should read as quiet points of light, and anything drawn inside
+       one is a detail nobody is close enough to see. */
+    x.lineWidth = Math.max(1, r * 0.055);
+    x.strokeStyle = rgba(238, 252, 255, .8);
+    x.beginPath(); x.arc(c, c, r * 0.93, 0, TAU); x.stroke();
+
+    /* the core: a soft centre so the shell is not a hole, well short of the
+       rim so the two never read as concentric rings */
+    const nuc = x.createRadialGradient(c, c, 0, c, c, r * 0.42);
+    nuc.addColorStop(0.00, rgba(HR, HG, HB, .62));
+    nuc.addColorStop(1.00, rgba(R, G, B, 0));
+    x.fillStyle = nuc;
+    x.beginPath(); x.arc(c, c, r * 0.42, 0, TAU); x.fill();
     x.globalCompositeOperation = 'source-over';
-    /* a cold fill light along the night limb, so the dark side is space-lit
-       rather than simply missing */
-    x.lineWidth = 2.2;
-    x.strokeStyle = 'rgba(120,190,255,.20)';
-    x.beginPath(); x.arc(c, c, r - 1, -1.15, 1.15); x.stroke();
-    /* and the bright limb facing the star, which is what sells the curve */
-    x.lineWidth = 1.6;
-    x.strokeStyle = 'rgba(' + up(R,140) + ',' + up(G,140) + ',' + up(B,140) + ',.62)';
-    x.beginPath(); x.arc(c, c, r - 0.8, Math.PI - 1.25, Math.PI + 1.25); x.stroke();
   });
 }
 function mmHalo(R, G, B) {
   return mmPlate('h' + R + ',' + G + ',' + B, 128, (x, S) => {
     const c = S / 2;
     const g = x.createRadialGradient(c, c, 0, c, c, c);
-    g.addColorStop(0.00, 'rgba(' + R + ',' + G + ',' + B + ',.30)');
-    g.addColorStop(0.35, 'rgba(' + R + ',' + G + ',' + B + ',.10)');
+    g.addColorStop(0.00, 'rgba(' + R + ',' + G + ',' + B + ',.20)');
+    g.addColorStop(0.35, 'rgba(' + R + ',' + G + ',' + B + ',.07)');
     g.addColorStop(1.00, 'rgba(' + R + ',' + G + ',' + B + ',0)');
     x.fillStyle = g; x.fillRect(0, 0, S, S);
   });
@@ -10064,27 +10192,33 @@ function mindDraw(now) {
     };
 
     if (near) {
-      casing(7.2 * iz2, 0.72);
+      casing(4.4 * iz2, 0.62);
+      /* Additive from here down. A filament is light, and light that crosses
+         other light gets brighter — which is both what the eye expects and
+         what stops a crowded plate turning to mud, because two dim lines over
+         each other now read as a crossing rather than as a thicker line. */
+      mctx.globalCompositeOperation = 'lighter';
       /* a wide soft pass under the line reads as the link glowing rather than
          merely being thicker */
-      mctx.strokeStyle = 'rgba(' + col + ',' + (0.16 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 6 * iz2;
+      mctx.strokeStyle = 'rgba(' + col + ',' + (0.13 * grow).toFixed(3) + ')';
+      mctx.lineWidth = 5 * iz2;
       setDash(null);
       path();
-      mctx.strokeStyle = 'rgba(' + col + ',' + (0.92 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 1.9 * iz2;
+      mctx.strokeStyle = 'rgba(' + col + ',' + (0.85 * grow).toFixed(3) + ')';
+      mctx.lineWidth = 1.15 * iz2;
       setDash(dash);
       path();
       /* the travelling dash says which way the link runs, and rides on top of
          the type pattern rather than replacing it — direction and firmness
          are two different things to know about a link */
-      mctx.strokeStyle = 'rgba(235,250,255,' + (0.55 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 1.5 * iz2;
+      mctx.strokeStyle = 'rgba(235,250,255,' + (0.5 * grow).toFixed(3) + ')';
+      mctx.lineWidth = 0.9 * iz2;
       mctx.setLineDash([2.5 * iz2, 11 * iz2]);
       mctx.lineDashOffset = -(now * 0.022) % (13.5 * iz2);
       path();
       mctx.setLineDash([]);
       mctx.lineDashOffset = 0;
+      mctx.globalCompositeOperation = 'source-over';
       return;
     }
     /* At a line this thin on a background this dark the structure was only
@@ -10092,15 +10226,50 @@ function mindDraw(now) {
        entirely — the shape of the graph is the point, so the quiet links are
        given enough weight to survive being quiet. The second hop is quieter
        again; it is context, not the subject. */
-    const lw = (far ? .7 : hot ? 1.3 : .95) * iz2;
+    /* Every one of these was about a third thicker, and each carried a dark
+       casing nearly three pixels wider than itself. At two dozen links that is
+       a plate drawn in cable: the ink says "heavy wire", and the thing being
+       described is a citation. Thin enough to read as filament, and the
+       casing narrowed to match — it still has to break a crossing, it does
+       not have to outline the line. */
+    const lw = (far ? .5 : hot ? .8 : .72) * iz2;
     /* the second hop is a thicket and casing every strand of it would print a
        dark web over the dust; it is context, and context may overlap */
-    if (!far) casing(lw + 2.6 * iz2, 0.55 * grow);
+    if (!far && !hot) casing(lw + 1.5 * iz2, 0.5 * grow);
     setDash(dash);
-    mctx.strokeStyle = 'rgba(' + col + ',' +
-      ((far ? .13 : hot ? .46 : .22) * grow).toFixed(3) + ')';
+    mctx.globalCompositeOperation = 'lighter';
+    if (hot) {
+      /* ---- the spokes ----
+         Twenty-six identical lines from the middle to the first ring, and the
+         proposition every one of them states is "this note is a neighbour of
+         the note in the centre" — which is what being on the first ring
+         already says. Half the ink on the plate, carrying nothing, and the
+         links that do carry something (first ring to first ring: which of
+         these notes cite each other, i.e. where the clusters are) were drawn
+         in the same weight and lost inside the wheel.
+
+         They are not deleted, because a spoke that vanishes takes the sense
+         of attachment with it. They are faded out toward the star instead:
+         full weight where the line meets its note, nothing by the time it
+         reaches the middle. The attachment is still legible at the end where
+         you look for it, the hub stops being a knot of twenty-six converging
+         strokes, and the chords are left as the brightest structure on the
+         plate — which is the right way round. */
+      const rootA = (a === 0);
+      const lg = mctx.createLinearGradient(
+        rootA ? A.x : g.ex, rootA ? A.y : g.ey,
+        rootA ? g.ex : A.x, rootA ? g.ey : A.y);
+      lg.addColorStop(0.00, 'rgba(' + col + ',0)');
+      lg.addColorStop(0.45, 'rgba(' + col + ',' + (0.07 * grow).toFixed(3) + ')');
+      lg.addColorStop(1.00, 'rgba(' + col + ',' + (0.40 * grow).toFixed(3) + ')');
+      mctx.strokeStyle = lg;
+    } else {
+      mctx.strokeStyle = 'rgba(' + col + ',' +
+        ((far ? .15 : .34) * grow).toFixed(3) + ')';
+    }
     mctx.lineWidth = lw;
     path();
+    mctx.globalCompositeOperation = 'source-over';
     mctx.setLineDash([]);
   }
 
@@ -10183,7 +10352,12 @@ function mindDraw(now) {
         !(adj[focusI] && adj[focusI].has(n.i))) return 0;
     return 1;
   };
-  order.sort((p, q) => rank(p) - rank(q));
+  /* and within a rank, back to front. The plate is a disc seen from above and
+     slightly in front — MM.ax has always widened it into an ellipse, which is
+     what that means — so a node's height on screen is its distance from the
+     viewer. Sorting by it costs one comparison and buys the one thing a flat
+     drawing cannot fake: near things overlapping far ones. */
+  order.sort((p, q) => rank(p) - rank(q) || MM.nodesL[p].y - MM.nodesL[q].y);
 
   const labelQ = [];
   order.forEach(k => {
@@ -10199,10 +10373,21 @@ function mindDraw(now) {
     /* a slow breath, biggest on the node being read: a system held by springs
        that have settled should still look alive */
     const breathe = 1 + Math.sin(now * 0.0016 + n.i * 1.7) * (isSel ? 0.030 : 0.014);
-    const pr = rad0(n.r * (isSel ? 1.22 : isHov ? 1.12 : 1) * (n.root ? 1 : ease) * breathe);
+    /* ---- depth ----
+       Where the node sits on its own ring, as a number from -1 at the far
+       edge to +1 at the near one. Two cues come off it and they are the two
+       every painter uses: things nearer are bigger, and things further away
+       lose contrast to the air between. Neither is large — this is a disc
+       seen almost face on, not a corridor — and both together are what stops
+       a ring reading as a circle drawn on glass. */
+    const zf = n.root ? 0 : clamp(n.y / Math.max(1, n.ring), -1, 1);
+    const persp = 1 + zf * 0.15;
+    const aerial = 1 - Math.max(0, -zf) * 0.24;
+    const pr = rad0(n.r * (isSel ? 1.22 : isHov ? 1.12 : 1) * (n.root ? 1 : ease)
+                    * breathe * persp);
     if (pr < 0.3) return;
     const [R, G, B] = mmRGB(n.i);
-    mctx.globalAlpha = (n.root ? 1 : ease) * dim;
+    mctx.globalAlpha = (n.root ? 1 : ease) * dim * aerial;
 
     if (n.root) {
       /* the mount goes under the stone */
@@ -10219,7 +10404,11 @@ function mindDraw(now) {
       const s = pr * MM_BK;
       mctx.save();
       mctx.translate(n.x, n.y);
-      mctx.rotate(Math.atan2(n.y, n.x));
+      /* No rotation. The old sphere was turned so its lit side faced the
+         middle of the plate; the shell that replaced it was turned to spread
+         the bearing of its wires. It has neither now — a circle inside a
+         circle is the same mark at every angle — so the transform is one
+         translate and the turn is simply not done. */
       mctx.drawImage(mmBody(R, G, B), -s, -s, s * 2, s * 2);
       mctx.restore();
       mmDrawMoons(n, pr, born, iz);
@@ -11873,9 +12062,28 @@ function dragBody(i, ndcx, ndcy, dt) {
   }
 }
 
+/* Anything a keystroke could be *text* in. INPUT/TEXTAREA/SELECT for the
+   plain controls, isContentEditable for a rich editor's surface, and the
+   closest() walk for the child nodes a rich editor puts inside it — a caret
+   parked in a <strong> or a code span reports that element as the target,
+   and only its ancestor carries the flag. */
+function typingTarget(t){
+  if (!t || t.nodeType !== 1) return false;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return true;
+  if (t.isContentEditable) return true;
+  return !!(t.closest && t.closest('input,textarea,select,[contenteditable="true"],[contenteditable=""],.cm-editor'));
+}
+
 addEventListener('keydown', e => {
   if (searchOpen) return;
-  if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  /* Every listener here is on the window, and the window belongs to the host
+     as much as to us: an orrery open in a background tab still sees the keys
+     typed into the note in the foreground one. A tagName test was the whole
+     guard, and Obsidian's editor is a contenteditable div — so SPACE reached
+     the branch below, was preventDefault-ed into a ripple, and never reached
+     the sentence being typed. Ask what the element is for, not what it is
+     called: an editing surface is anything focus can put text into. */
+  if (typingTarget(e.target)) return;
   const k = e.key.toLowerCase();
 
   /* The card is over everything, so it takes the keyboard with it: a mode key
@@ -12176,6 +12384,13 @@ const SS = {
    is not — six render targets at 2x on a 4K display is most of a gigabyte,
    and some drivers answer that by refusing rather than by being slow. */
 const SS_MAXPX = 13e6;
+/* How long a newly built cosmos is allowed to be arriving before the sampler
+   is willing to call the frame still. Long enough to cover the range ease-in,
+   the gap spring's overshoot and the first-use shader compiles; short enough
+   that nobody who opened the view to look at it waits for the sharp version.
+   See the note in ssStep on why the camera alone cannot answer this. */
+const SS_SETTLE = 1.6;
+let worldAge = 0;
 function ssTarget() {
   if (SS.still < 0.45) return 1;
   return SS.still < 1.1 ? Math.min(1.45, SS.ceil) : SS.ceil;
@@ -12209,9 +12424,30 @@ function ssStep(dt) {
   }
   SS.px = cxp; SS.py = cyp; SS.pz = czp;
   SS.fx = fxp; SS.fy = fyp; SS.fz = fzp; SS.had = true;
+  worldAge = world ? worldAge + dt : 0;
   /* A vault being rebuilt, a mind map over the top of it, or a cockpit — none
-     of those is a still frame worth paying for. */
-  if (moved || !world || mindOpen || ship.on) SS.still = 0;
+     of those is a still frame worth paying for. Nor is the opening, and the
+     opening is the one that used to be mistaken for one.
+
+     `moved` is read off the camera matrix, and for the first second after a
+     vault is built the camera is very nearly the only thing in the picture
+     that is *not* moving: fitView eases the range in and its spring is under
+     a sixteenth of a pixel long before the sky has finished arriving, while
+     the gap spring opens every orbit underneath it and deliberately
+     overshoots, and every material is still compiling the first time it is
+     drawn. So the sampler read a motionless camera, promoted to 2x, met a
+     frame rate that was low for reasons that had nothing to do with how many
+     pixels it was drawing, demoted itself and lowered its ceiling for the
+     rest of the session, then promoted again as the average recovered. Each
+     one of those is setPixelRatio plus a full resize — every render target
+     reallocated, every glow rescaled — which is to say a visible cut. Three
+     or four of them, over exactly the seconds somebody is watching the
+     cosmos appear, and then quiet: the bug read as the opening stuttering
+     and then fixing itself, because that is precisely what it was.
+
+     What has to have stopped is the cosmos, not the camera. */
+  const arriving = worldAge < SS_SETTLE || gapVel !== 0 || gapNow !== SET.gap;
+  if (moved || arriving || !world || mindOpen || ship.on) SS.still = 0;
   else SS.still += dt;
 
   const want = ssTarget();
@@ -15191,6 +15427,11 @@ function swapVault(data, keep) {
   refreshHUD();
   renderInspector();
   resize();
+  /* the sampler has to treat this as a cosmos that has just arrived — see
+     SS_SETTLE. disposeWorld and buildObjects both happen inside this call, so
+     no frame ever observes `world` as null and the clock would not otherwise
+     restart. */
+  worldAge = 0;
   if (keep) viewRestore(keep); else fitView();
   /* re-resolve after the fit, so the marker is placed against the cosmos that
      is actually on screen rather than the one that has just been thrown away */
