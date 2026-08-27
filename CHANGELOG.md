@@ -4,6 +4,112 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.11.0
+
+The mind map is drawn in a different material, the meteors have slowed down,
+and the view has stopped zooming into its own top-left corner.
+
+### What is drawn
+
+- **A note on the mind map is a shell, not a sphere.** It was a lit ball: a
+  radial gradient with the highlight off to one side, a terminator across it,
+  a warm limb facing the star and a cold one facing away, turned so its day
+  side pointed at the middle of the plate. Accurate to the cosmos next door,
+  and the wrong object here — a planet is opaque, so it deleted the links
+  passing behind it; a planet is lit, so it claimed a light source the plate
+  does not have; and a shaded ball with a specular dot on it is the house
+  style of every 3D chart drawn since about 2004.
+
+  What is there now is an interior faint enough to see a link through, one
+  hairline at the silhouette, and a soft core. Nothing inside it: a pair of
+  crossed ellipses went in first and came straight back out, because what they
+  drew was not a note but the electron-shell diagram off a school chemistry
+  book. Twenty-six of these on a plate should read as quiet points of light,
+  and anything drawn inside one is a detail nobody is close enough to see.
+
+- **The spokes give way to the chords.** Every first-ring note had a line to
+  the star, all of them the same weight, and the proposition each one stated
+  was "this note is a neighbour of the note in the middle" — which is what
+  being on the first ring already says. Half the ink on the plate, carrying
+  nothing, while the links that carry something — first ring to first ring,
+  which is to say where the clusters are — were drawn in the same weight and
+  lost inside the wheel. The spokes are faded out toward the star now: full
+  weight where the line meets its note, nothing by the time it reaches the
+  middle. The attachment is still legible at the end you look for it at, and
+  the structure is left as the brightest thing on the plate.
+
+- **The links are filaments.** Every one of them was about a third thicker
+  than it is now and carried a dark casing nearly three pixels wider than
+  itself, which at two dozen links is a plate drawn in cable. The casing still
+  breaks a crossing; it no longer outlines the line. And the coloured pass is
+  additive, so two dim links over each other read as a crossing rather than as
+  one thicker link.
+
+- **The plate has a near side.** Bodies are painted back to front and scaled
+  by where they sit on their own ring, with the far half losing a little
+  contrast to the air in between. Both cues are small — this is a disc seen
+  almost face on — and together they are what stops a ring reading as a circle
+  drawn on glass.
+
+- **The meteors cross slowly.** One to two seconds is what a real grain takes
+  and it is what a *streak* looks like: a scratch, over before the eye has
+  finished moving to it. Three to five seconds, a ribbon two and a half times
+  as long behind them, a curve biased away from zero so none of them is ruled,
+  and a glow left in the air after every one rather than only after a
+  fireball. The light curve keeps its climb, because a meteor really does
+  brighten through most of its flight; what it loses is the cliff at the end,
+  which was the grain running out modelled honestly and read as the light
+  being switched off.
+
+  The wake is teal rather than green. Green is correct — it is the forbidden
+  oxygen line at 557.7 nm, and it is why a green meteor in a photograph is
+  real — and it is the one hue on this palette with nothing else near it, so a
+  green streak across a cyan and amber sky reads as a highlighter rather than
+  as part of the sky. The physics note in the source still says what is
+  actually happening in the air. This is a decision about the picture.
+
+- **Three knobs ship where they were left.** PLANET GLOW 0.40x, SUN HALO
+  1.00x, SKY VEIL 0.20x.
+
+### What it is like to use
+
+- **The view stops zooming into its own top-left corner.** `#gl` was given
+  `inset: 0` and no width, and a canvas is a replaced element: an absolutely
+  positioned one with `width: auto` takes its intrinsic size — the backing
+  store, read as CSS pixels — and drops the side of the inset it cannot
+  honour. So the element was sized by its own buffer. `setSize(w, h, false)`
+  says "do not touch the style" and nothing else touched it either, so every
+  change of pixel ratio resized the element by the same factor; and the
+  adaptive supersampler changes that ratio in steps once the camera has been
+  still for a moment. Each step made the canvas a sharper picture and a larger
+  box at once, anchored top-left, with the overflow clipped away — the view
+  jumping larger toward the top left, in stages, over the first seconds, and
+  then settling once the sampler stopped climbing. Not a camera bug, a layout
+  one. The other two canvases in this file were always sized explicitly; this
+  was the one exception.
+
+- **The space bar reaches the note you are typing in.** The mind map, the
+  spaceship, the search box and the rest are bound on the window, and the
+  window belongs to the host as much as to this view: an orrery open in a
+  background tab still sees the keys typed into the note in the foreground
+  one. The guard against that was a test of the target's tag name, and
+  Obsidian's editor is a contenteditable div — so SPACE reached the ripple
+  branch, was preventDefault-ed, and never reached the sentence being typed.
+  So were `/`, `F`, `M`, `G`, `N`, `P`, `U`, `O`, `R`, `L`, `X`, `H`, Ctrl-K
+  and Escape. The question is what the element is *for*, not what it is
+  called, and an editing surface is anything focus can put text into.
+
+- **The opening is not judged as a still frame.** The supersampler decides the
+  frame is still by reading the camera matrix, and for the first second after
+  a vault is built the camera is very nearly the only thing in the picture
+  that is not moving: the range eases in and its spring is under a sixteenth
+  of a pixel long before the sky has finished arriving, the gap spring opens
+  every orbit underneath it and overshoots on purpose, and every material is
+  still compiling the first time it is drawn. So it promoted, met a frame rate
+  that was low for reasons that had nothing to do with how many pixels it was
+  drawing, demoted itself and lowered its ceiling for the rest of the session.
+  What has to have stopped is the cosmos, not the camera.
+
 ## 1.10.0
 
 The picture this opens with is a different picture, and the camera has stopped
