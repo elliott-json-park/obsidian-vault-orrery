@@ -4,6 +4,111 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.12.0
+
+The mind map is not drawn on top of the cosmos any more. It is drawn *in* it.
+The meteors are gone.
+
+### What is drawn
+
+- **The mind map is a place, not a picture of one.** It was a second renderer:
+  a 2D canvas laid over the view with its own starfield, its own milky way,
+  its own spiral dust and nebula, its own orbits, bodies, links and pulses —
+  the same cosmos implemented a second time in miniature, in a different
+  language, against a different set of bugs. Everything 1.11.0 did to it was
+  work spent making the copy look more like the original.
+
+  What opens now is the original. The note goes to the middle of the sky you
+  were already looking at, its neighbours are lifted onto lanes around it, and
+  the rest of the vault stays where it is and dims. Nothing is rebuilt and
+  nothing is restored on the way out: the bodies keep their own orbits and
+  their own mean anomalies the whole time it is open, so closing the map puts
+  every one of them back exactly where the cosmos had got to, still moving.
+  The starfield, the nebula, the dust and the light are the real ones, because
+  they are the same ones.
+
+- **A note's size on the plate is which ring it is on, and nothing else.** That
+  is the whole claim this mode makes — structure without the hierarchy the
+  cosmos draws — and it is made in three places at once, because a size is not
+  the only thing that says how big something is. The radii are flattened to
+  one value per hop. The halos are flattened with them: the same law, the same
+  phase, the same one of the three SIZE knobs, for every body on the plate. And
+  the light comes from the middle of the map rather than from whichever folder
+  star each note happens to belong to, so the terminator falls the same way on
+  all of them and the plate reads as one system instead of as a dozen.
+
+- **The index note keeps its gold and loses its glare.** Its halo used to be
+  drawn under the core's law — full brightness, no phase, scaled by SUN GLOW —
+  while its body was collapsed to nothing for the sun to draw, and the sun is
+  not drawn in here. What that came out as was a soft ball of light two lanes
+  wide with nothing inside it, and a wheel of neighbours nobody could see past
+  it. It is a planet like the rest of them now, and then held to half of one:
+  equal alpha is not equal presence when the hues are this far apart — the
+  wheel is teal against a blue-black sky and vanishes into it, the hub's gold
+  is that sky's opposite and carries. Half is the setting at which it is the
+  one body on the lane wearing a visible glow, which is all "this is the
+  index" needs to say.
+
+- **The lanes are wider.** They were set to the tightest arrangement that
+  still read, which is not the same thing as the one that reads best: packed
+  to the floor, every note sat inside the glow of the next one and the plate
+  came out as a bright ring rather than as a note with things around it. The
+  camera frames whatever the lanes work out to, so the extra room is spent on
+  the gaps rather than taken off the screen.
+
+- **The meteors are gone.** Not slowed further — removed. They were the one
+  thing in this sky that was honestly a lie: an atmospheric event, drawn where
+  there is no atmosphere, in a picture whose whole argument is that everything
+  in it is either measured or says out loud that it is not. Three hundred
+  lines of very good physics for something that should not have been in the
+  frame. The physics is in the history if it is ever wanted back.
+
+### What it is like to use
+
+- **Clicking a note in the map lights that note's links.** The map used to hold
+  the selection back from the links deliberately — every link in there is one
+  of the things it was opened to show. At seventeen neighbours that reasoning
+  breaks: each of them is crossed by a dozen links that have nothing to do with
+  the one being read. So a selection dims the rest in here exactly as it does
+  out in the cosmos, and the map opens with its own middle selected, which is
+  the picture it was opened for.
+
+- **The camera slides out from under the rail.** The map's panel covers the
+  right of the leaf, so a system framed against the window was framed half
+  underneath it. The camera now steps along its own right axis by half the
+  rail's width, measured in world units at the range it is looking from —
+  position only, orientation untouched. The framing the rig worked out is
+  otherwise exactly kept.
+
+- **The camera stops following a body around its lane.** Selecting a note out
+  in the cosmos locks the view onto it, which in here would turn the whole
+  plate under the reader every time they read something. The map holds the
+  camera on the system.
+
+- **Opening a note does not leave the map.** With FOLLOW ACTIVE NOTE on, every
+  tab switch flew the camera at the newly active body — dropping the range
+  onto one note and taking the plate off the edges of the leaf. A reveal is
+  answered in the map's own terms now: the note is read if it is on the plate,
+  and the map re-roots on it if it is not, which is the same walk the rail
+  already does.
+
+### Underneath
+
+- **The build checks its own seam.** The generator wraps the engine in a
+  preamble and an epilogue, and those two were exempt from the check that every
+  call in the file resolves to something. So when the mind map's resize handler
+  was deleted, the epilogue went on calling it for a build — a dead call in the
+  eleven lines the checker was not looking at. Anything that ends up inside
+  `createOrrery()` is code, whoever wrote it.
+
+- **The harness runs a frame of the map.** Nothing else in the repository can:
+  the mind map is a mode of the live scene now, so what it does is rewrite
+  positions, radii and alphas in place and hand them all back on the way out,
+  and none of that exists until something draws. The new step opens it, checks
+  that bodies one hop out came out the same size, walks it, closes it, and
+  asserts the cosmos got its own radii back — a radius left flattened after the
+  map closes is a vault that has quietly stopped reporting citation counts.
+
 ## 1.11.0
 
 The mind map is drawn in a different material, the meteors have slowed down,
