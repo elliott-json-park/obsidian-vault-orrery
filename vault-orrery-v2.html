@@ -530,40 +530,36 @@ body.dragdeck #hud{cursor:grabbing}
   text-transform:none;color:rgba(223,246,255,.8)}
 #introgo{margin-top:14px;text-align:center;padding:10px 0}
 
-/* ================= MIND MAP POPUP ================= */
-/* The popup arrives the way something in space would: a wormhole opens from
-   the point you were looking at, the panel folds out of it, and the nodes
-   themselves are flung outward by the physics rather than being placed. */
-@keyframes mindWell{
-  0%  {opacity:0;
-       background:radial-gradient(circle at center,
-         rgba(140,220,255,.55) 0%,rgba(60,140,210,.30) 3%,
-         rgba(2,4,10,0) 6%,rgba(2,4,10,0) 100%);
-       backdrop-filter:blur(0px)}
-  45% {opacity:1;
-       background:radial-gradient(circle at center,
-         rgba(140,220,255,.30) 0%,rgba(40,110,180,.22) 26%,
-         rgba(2,4,10,.62) 52%,rgba(2,4,10,.76) 100%)}
-  100%{opacity:1;
-       background:radial-gradient(circle at center,
-         rgba(30,80,130,.16) 0%,rgba(6,16,32,.66) 45%,
-         rgba(2,4,10,.80) 100%);
-       backdrop-filter:blur(7px)}
-}
+/* ================= MIND MAP ================= */
+/* The map used to be a card that opened over the cosmos, and it arrived like
+   one: a wormhole flared at the centre of the screen, the backdrop went dark
+   and blurred behind it, and the panel folded out toward the reader.
+
+   None of that survives the map becoming the cosmos. A backdrop that dims
+   the view is now dimming the map itself, and a card in the middle of the
+   screen is standing on top of the thing it is describing. What is left is a
+   rail sliding in from the edge it lives on, over a sky that has already
+   started rearranging itself into one note's neighbourhood — which is the
+   entrance, and it is drawn in WebGL rather than in CSS. */
 @keyframes mindFold{
-  0%  {opacity:0;transform:perspective(1400px) translateZ(-620px) rotateX(24deg) scale(.72)}
-  55% {opacity:1}
-  100%{opacity:1;transform:perspective(1400px) translateZ(0) rotateX(0deg) scale(1)}
+  0%{opacity:0;transform:translateX(46px)}
+  100%{opacity:1;transform:translateX(0)}
 }
-#mind{position:fixed;inset:0;z-index:26;display:none;align-items:center;
-  justify-content:center;background:radial-gradient(circle at center,
-    rgba(30,80,130,.16) 0%,rgba(6,16,32,.66) 45%,rgba(2,4,10,.80) 100%);
-  backdrop-filter:blur(7px)}
-#mind.on{display:flex;animation:mindWell .62s cubic-bezier(.16,.85,.3,1) both}
+#mind{position:fixed;inset:0;z-index:26;display:none;align-items:stretch;
+  justify-content:flex-end;pointer-events:none}
+#mind.on{display:flex}
 #mind.on #mindbox{animation:mindFold .66s cubic-bezier(.16,.9,.28,1) both}
-#mindbox{width:min(1320px,94vw);height:min(760px,88vh);display:flex;
-  flex-direction:column;transform-origin:50% 50%;position:relative;
-  box-shadow:0 0 90px rgba(60,160,230,.20),0 0 240px rgba(20,60,110,.35)}
+/* A rail rather than a card, and it only takes the pointer over itself: the
+   cosmos underneath is the map, and it has to stay draggable. The gradient
+   down the inboard edge is the seam — a hard border against a starfield
+   reads as a window, and this is meant to read as an instrument standing in
+   front of one. */
+#mindbox{width:clamp(288px,26vw,392px);height:100%;display:flex;
+  flex-direction:column;transform-origin:100% 50%;position:relative;
+  pointer-events:auto;border-radius:0;
+  box-shadow:-30px 0 90px rgba(2,6,14,.55),0 0 120px rgba(20,60,110,.22)}
+#mindbox:before{content:"";position:absolute;left:-46px;top:0;bottom:0;width:46px;
+  background:linear-gradient(90deg,transparent,rgba(3,8,16,.55));pointer-events:none}
 /* a hairline of light along the top edge — the panel reads as machined rather
    than as a rectangle with a border */
 #mindbox>.ttl{position:relative}
@@ -594,35 +590,21 @@ body.dragdeck #hud{cursor:grabbing}
 #mmcrumbs i{direction:ltr;font-style:normal;opacity:.22;flex:0 0 auto}
 
 #mindbody{flex:1 1 auto;display:flex;min-height:0}
-/* The sky is painted inside the canvas now, so the wrapper only has to be the
-   colour of nothing — anything lighter shows through as a rectangle of haze
-   where the starfield is supposed to be continuous with the void. */
-#mmcwrap{flex:1 1 auto;position:relative;min-width:0;min-height:0;overflow:hidden;
-  background:#01030a}
-#mmc{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
-#mmc.drag{cursor:grabbing}
-#mmc.node{cursor:pointer}
-
-/* ---- canvas furniture ---- */
-#mmlegend{position:absolute;left:12px;bottom:10px;display:flex;gap:12px;
+/* ---- the rail's foot ----
+   The switch, the key and the caption. They used to float over the canvas as
+   furniture; with the map behind the rail there is nothing to float over, so
+   they are a footer and the reading panel above them scrolls independently. */
+#mmfoot{flex:0 0 auto;border-top:1px solid rgba(92,225,255,.14);
+  padding:9px 14px 10px;display:flex;flex-direction:column;gap:8px}
+#mmlegend{display:flex;gap:11px;flex-wrap:wrap;
   pointer-events:none;font-size:8.5px;letter-spacing:.11em;opacity:.55}
 #mmlegend b{display:flex;align-items:center;gap:5px;font-weight:400}
 #mmlegend u{text-decoration:none;width:13px;height:2px;display:block;border-radius:2px}
-#mmhint{position:absolute;right:12px;bottom:10px;font-size:8.5px;letter-spacing:.11em;
-  opacity:.34;pointer-events:none;text-align:right;line-height:1.8}
+#mmhint{font-size:8.5px;letter-spacing:.11em;
+  opacity:.34;pointer-events:none;line-height:1.8}
 #mmhint b{font-weight:400;color:var(--cy);opacity:.9;padding:0 3px;
   border:1px solid rgba(92,225,255,.3);border-radius:2px;margin:0 1px}
-#mmzoom{position:absolute;right:12px;top:10px;display:flex;gap:4px;align-items:center}
-#mmzoom u{text-decoration:none;cursor:pointer;width:20px;height:20px;display:flex;
-  align-items:center;justify-content:center;border:1px solid rgba(92,225,255,.24);
-  color:var(--cy);font-size:12px;line-height:1;transition:.15s;
-  background:rgba(3,10,18,.5);backdrop-filter:blur(3px)}
-#mmzoom u:hover{background:rgba(92,225,255,.16)}
-#mmzoom b{font-weight:400;font-size:8.5px;letter-spacing:.1em;opacity:.45;
-  min-width:34px;text-align:center}
-/* the two view switches live top-left, away from the zoom cluster, because
-   they change what is on the map rather than how close you are to it */
-#mmview{position:absolute;left:12px;top:10px;display:flex;gap:5px;align-items:center}
+#mmview{display:flex;gap:5px;align-items:center}
 #mmview u{text-decoration:none;cursor:pointer;height:20px;padding:0 8px;display:flex;
   align-items:center;gap:5px;border:1px solid rgba(92,225,255,.24);color:var(--cy);
   font-size:8.5px;letter-spacing:.12em;transition:.15s;white-space:nowrap;
@@ -630,8 +612,7 @@ body.dragdeck #hud{cursor:grabbing}
 #mmview u:hover{background:rgba(92,225,255,.16)}
 #mmview u.on{border-color:var(--am);color:var(--am);background:rgba(255,182,72,.12);
   box-shadow:0 0 12px rgba(255,182,72,.18)}
-#mmside{flex:0 0 clamp(250px,25%,340px);border-left:1px solid rgba(92,225,255,.16);
-  overflow:auto;font-family:var(--kr);text-transform:none;
+#mmside{flex:1 1 auto;min-height:0;overflow:auto;font-family:var(--kr);text-transform:none;
   letter-spacing:0;scrollbar-width:thin;scrollbar-color:rgba(92,225,255,.3) transparent;
   display:flex;flex-direction:column;
   background:linear-gradient(180deg,rgba(8,22,36,.5),transparent 220px)}
@@ -676,11 +657,7 @@ body.dragdeck #hud{cursor:grabbing}
    with a diagram attached. Below a certain width the panel goes underneath
    instead, and the canvas keeps the majority of the box. */
 @media (max-width:1020px), (max-height:620px){
-  #mindbox{width:96vw;height:92vh}
-  #mindbody{flex-direction:column}
-  #mmcwrap{flex:1 1 60%}
-  #mmside{flex:0 0 auto;max-height:42%;border-left:0;
-    border-top:1px solid rgba(92,225,255,.16)}
+  #mindbox{width:clamp(240px,42vw,320px)}
   #mm-x{max-height:120px}
   #mmhint{display:none}
 }
@@ -1158,27 +1135,6 @@ body.ship #heat.on{display:block}
       <s id="mm-close" data-i18n="mm.close">닫기 [ ESC ]</s>
     </div>
     <div id="mindbody">
-      <div id="mmcwrap">
-        <canvas id="mmc"></canvas>
-        <div id="mmview">
-          <u id="mm-hop" data-i18n="mm.hop" data-i18n-title="mm.hop.t">◌ 2홉</u>
-          <u id="mm-orb" class="on" data-i18n="mm.orb" data-i18n-title="mm.orb.t">◐ 공전</u>
-        </div>
-        <div id="mmzoom">
-          <u id="mmz-out">−</u><b id="mmz-val">100%</b><u id="mmz-in">+</u>
-          <u id="mmz-fit" data-i18n-title="mm.fit.t" style="font-size:9px">⤢</u>
-        </div>
-        <div id="mmlegend">
-          <!-- the swatches carry the stroke as well as the colour now, because
-               the plate draws the stroke — a key that shows only half of what
-               distinguishes three things is a key you have to read twice -->
-          <b><u style="background:#5cd8ff"></u><i data-i18n="leg.wiki" style="font-style:normal">위키링크</i></b>
-          <b><u style="background:repeating-linear-gradient(90deg,#ff9d3c 0 4px,transparent 4px 7px)"></u><i data-i18n="leg.src" style="font-style:normal">출처</i></b>
-          <b><u style="background:repeating-linear-gradient(90deg,#8b6bff 0 2px,transparent 2px 4px)"></u><i data-i18n="leg.tag" style="font-style:normal">태그공명</i></b>
-          <b id="mmleg2" style="display:none"><u style="background:rgba(150,210,255,.4)"></u><i data-i18n="mm.hop2" style="font-style:normal">2홉</i></b>
-        </div>
-        <div id="mmhint" data-i18n="mm.hint">끌기 = 이동 · 놓으면 중력 복귀<br>더블클릭 = 중심 이동 · 휠 = 확대</div>
-      </div>
       <div id="mmside">
         <div class="mmsec">
           <div id="mm-kind">—</div>
@@ -1211,6 +1167,18 @@ body.ship #heat.on{display:block}
           <div class="mini" id="mm-center" data-i18n="mm.center">◈ 이 노드를 중심으로</div>
         </div>
       </div>
+    </div>
+    <div id="mmfoot">
+      <div id="mmview">
+        <u id="mm-hop" data-i18n="mm.hop" data-i18n-title="mm.hop.t">◌ 2홉</u>
+      </div>
+      <div id="mmlegend">
+        <b><u style="background:#5cd8ff"></u><i data-i18n="leg.wiki" style="font-style:normal">위키링크</i></b>
+        <b><u style="background:repeating-linear-gradient(90deg,#ff9d3c 0 4px,transparent 4px 7px)"></u><i data-i18n="leg.src" style="font-style:normal">출처</i></b>
+        <b><u style="background:repeating-linear-gradient(90deg,#8b6bff 0 2px,transparent 2px 4px)"></u><i data-i18n="leg.tag" style="font-style:normal">태그공명</i></b>
+        <b id="mmleg2" style="display:none"><u style="background:rgba(150,210,255,.4)"></u><i data-i18n="mm.hop2" style="font-style:normal">2홉</i></b>
+      </div>
+      <div id="mmhint" data-i18n="mm.hint">클릭 = 선택 · 더블클릭 = 중심 이동<br>끌기 = 시점 회전 · 휠 = 확대</div>
     </div>
   </div>
 </div>
@@ -1472,23 +1440,19 @@ const STR = {
 'mm.hop2':     ['2홉','2 HOPS','2ホップ','2跳'],
 'mm.hop.t':    ['이웃의 이웃까지 한 겹 더 [2]','One more ring — neighbours of neighbours [2]',
                 '隣の隣までもう一層 [2]','再加一层 — 邻居的邻居 [2]'],
-'mm.orb':      ['◐ 공전','◐ ORBITS','◐ 公転','◐ 公转'],
-'mm.orb.t':    ['행성 공전 켜기 / 끄기 [O]','Planet orbits on / off [O]',
-                '惑星の公転 オン / オフ [O]','行星公转 开 / 关 [O]'],
-'mm.fit.t':    ['맞춤 [F]','Fit [F]','フィット [F]','适应 [F]'],
 'leg.wiki':    ['위키링크','WIKILINK','ウィキリンク','维基链接'],
 'leg.src':     ['출처','SOURCE','出典','来源'],
 'leg.tag':     ['태그공명','TAG RESONANCE','タグ共鳴','标签共鸣'],
-'mm.hint':     ['끌기 = 이동 · 놓으면 중력 복귀<br>더블클릭 = 중심 이동 · 휠 = 확대',
-                'DRAG = MOVE · RELEASE = PULLED HOME<br>DOUBLE-CLICK = RECENTRE · WHEEL = ZOOM',
-                'ドラッグ = 移動 · 離すと重力で復帰<br>ダブルクリック = 中心移動 · ホイール = 拡大',
-                '拖动 = 移动 · 松开则被引力拉回<br>双击 = 移动中心 · 滚轮 = 缩放'],
+'mm.hint':     ['클릭 = 선택 · 더블클릭 = 중심 이동<br>끌기 = 시점 회전 · 휠 = 확대',
+                'CLICK = SELECT · DOUBLE-CLICK = RECENTRE<br>DRAG = ORBIT THE VIEW · WHEEL = ZOOM',
+                'クリック = 選択 · ダブルクリック = 中心移動<br>ドラッグ = 視点回転 · ホイール = 拡大',
+                '单击 = 选择 · 双击 = 移动中心<br>拖动 = 旋转视角 · 滚轮 = 缩放'],
 'mm.trunc':    ['연결 {t}개 중 상위 {n}개','TOP {n} OF {t} LINKS','接続 {t} 件中 上位 {n} 件','{t} 条连接中的前 {n} 条'],
 'mm.trunc2':   ['2홉 {t}개 중 상위 {n}개','TOP {n} OF {t} SECOND-HOP','2ホップ {t} 件中 上位 {n} 件','{t} 个二跳中的前 {n} 个'],
-'mm.hintfull': ['끌기 = 이동 · 더블클릭 = 중심 이동 · 휠 = 확대<br><b>← →</b> 선택 · <b>ENTER</b> 중심 · <b>F</b> 맞춤 · <b>2</b> 2홉 · <b>O</b> 공전',
-                'DRAG = MOVE · DOUBLE-CLICK = RECENTRE · WHEEL = ZOOM<br><b>← →</b> SELECT · <b>ENTER</b> CENTRE · <b>F</b> FIT · <b>2</b> 2 HOPS · <b>O</b> ORBITS',
-                'ドラッグ = 移動 · ダブルクリック = 中心移動 · ホイール = 拡大<br><b>← →</b> 選択 · <b>ENTER</b> 中心 · <b>F</b> フィット · <b>2</b> 2ホップ · <b>O</b> 公転',
-                '拖动 = 移动 · 双击 = 移动中心 · 滚轮 = 缩放<br><b>← →</b> 选择 · <b>ENTER</b> 居中 · <b>F</b> 适应 · <b>2</b> 二跳 · <b>O</b> 公转'],
+'mm.hintfull': ['클릭 = 선택 · 더블클릭 = 중심 이동 · 끌기 = 시점 회전<br><b>← →</b> 선택 · <b>ENTER</b> 중심 · <b>F</b> 맞춤 · <b>2</b> 2홉',
+                'CLICK = SELECT · DOUBLE-CLICK = RECENTRE · DRAG = ORBIT<br><b>← →</b> SELECT · <b>ENTER</b> CENTRE · <b>F</b> FIT · <b>2</b> 2 HOPS',
+                'クリック = 選択 · ダブルクリック = 中心移動 · ドラッグ = 視点回転<br><b>← →</b> 選択 · <b>ENTER</b> 中心 · <b>F</b> フィット · <b>2</b> 2ホップ',
+                '单击 = 选择 · 双击 = 移动中心 · 拖动 = 旋转视角<br><b>← →</b> 选择 · <b>ENTER</b> 居中 · <b>F</b> 适应 · <b>2</b> 二跳'],
 'mm.hintopen': ['<b>CTRL+ENTER</b> 노트 열기','<b>CTRL+ENTER</b> OPEN NOTE',
                 '<b>CTRL+ENTER</b> ノートを開く','<b>CTRL+ENTER</b> 打开笔记'],
 'mm.sec.conn': ['연결','CONNECTIONS','接続','连接'],
@@ -1776,7 +1740,16 @@ function nodeByPath(p) {
 function revealPath(p, opts) {
   const i = nodeByPath(p);
   if (i < 0) return false;
-  if (opts && opts.select === true) select(i); else focusNode(i, true);
+  if (opts && opts.select === true) select(i);
+  /* With the map open, flying the camera at the note is not revealing it —
+     it is leaving. focusNode drops the range onto one body, and the plate
+     the reader was looking at goes off the edges of the leaf; with FOLLOW
+     ACTIVE NOTE on, that happened on every tab switch. So in here a reveal
+     is answered in the map's own terms: read the note if it is on the plate
+     already, and re-root on it if it is not, which is the same walk the rail
+     does when you click a link in it. */
+  else if (mindOpen) { if (MM.has.has(i)) select(i); else buildMind(i); }
+  else focusNode(i, true);
   return true;
 }
 
@@ -1831,7 +1804,7 @@ const bt = setInterval(() => {
    spd  orbital time · bri  node glow · ten  link tautness
    arc  how high a link stands out of the orbital plane
    grv  how hard a dragged node is pulled home · str  background starfield
-   thr  ship thrust · mmHop second hop in the mind map · mmOrb its orbits  */
+   thr  ship thrust · mmHop second hop in the mind map                      */
 /* LINK GLOW used to run to 3.00×, then to 1.30×, and even 1.30 was a ceiling
    worth nobody's while: additive line blending saturates to white well before
    it, so the whole top third of the knob bought glare rather than glow. The
@@ -2169,7 +2142,7 @@ const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
    have not moved it", which is a different state from "you moved it back to
    the middle" — the first follows the automatic layout for ever and the
    second is a placement that happens to coincide with it today. */
-const SET_DEF = { mmHop:false, mmOrb:true, snd:false, coreNote:'', grid:false,
+const SET_DEF = { mmHop:false, snd:false, coreNote:'', grid:false,
                   tab:'cosmos', deckAt:null,
                   adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
@@ -2392,6 +2365,11 @@ function applySizes() {
     gSz0[i] = RAD[i] * (k === 'core' ? 16 : k === 'wiki' ? 9 : 7.5);
     gSz[i] = gSz0[i];
   }
+  /* Last, and over the top of everything above: in the mind map a body's
+     radius is which hop it is on and nothing else. This is an override of
+     what the knobs have just worked out rather than a competitor to it —
+     they still scale the plate, they no longer set the ratios inside it. */
+  if (mindOpen) mindSizes();
 }
 
 /* Samples per link — now a *ceiling*, not a count. Nine draws a visibly
@@ -4282,6 +4260,15 @@ function starLit(sh, instanced) {
 let litStar, litS0;
 const HUB_LIGHT = new THREE.Color(0xffd9a0);
 function starLightAt(i, spr, gs, out) {
+  /* In the mind map the note in the middle is the light. Every body drawn
+     there is in orbit about it, so lighting them from the folder star each
+     one happens to belong to would put the terminator somewhere different on
+     every one of them and the plate would stop reading as a system. */
+  if (mindOpen && MM.has.has(i)) {
+    out[0] = MM.anchor.x; out[1] = MM.anchor.y; out[2] = MM.anchor.z;
+    out[3] = MM_RAD[0] * SET.szPl;
+    return;
+  }
   const c = litStar[i];
   if (c) {
     out[0] = c.pos.x; out[1] = c.pos.y; out[2] = c.pos.z;
@@ -7386,7 +7373,23 @@ function applyCam(dt) {
     rig.tgt.z + cdist*sp*Math.cos(cth));
   camera.up.set(Math.sin(croll), Math.cos(croll), 0);
   camera.lookAt(rig.tgt);
+  /* The mind map's rail covers the right of the leaf, so a system framed
+     against the window is framed half under it. The camera slides along its
+     own right axis by half the rail's width, measured in world units at the
+     range it is looking from — position only, orientation untouched, which
+     is a pan and not a turn: the plate moves into the space that is actually
+     visible and the framing the rig computed is otherwise exactly kept. */
+  if (mindOpen) {
+    const bw = $('mindbox').offsetWidth;
+    if (bw > 1) {
+      const wWorld = 2 * cdist * Math.tan(camera.fov * Math.PI / 360) * camera.aspect;
+      _mmPan.set(1, 0, 0).applyQuaternion(camera.quaternion)
+            .multiplyScalar(wWorld * (bw * 0.5 / Math.max(1, innerWidth)));
+      camera.position.add(_mmPan);
+    }
+  }
 }
+const _mmPan = new THREE.Vector3();
 function orbitBy(dx, dy, live) {
   rig.thD -= dx;
   rig.phD = clamp(rig.phD - dy, 0.12, Math.PI - 0.12);
@@ -7538,10 +7541,14 @@ function select(i, quiet) {
   if (twinState && twinState.i !== i) twinsClear();
   /* selecting locks the view onto the body without approaching it — getting
      closer is a separate, deliberate act (the inspector's travel button) */
-  if (!ship.on) rig.follow = i;
+  /* The mind map's camera is held on the system rather than on a body in
+     it: following one planet round its lane turns the whole plate under the
+     reader, which is the opposite of what a map is for. */
+  if (!ship.on) rig.follow = mindOpen ? -1 : i;
   if (i >= 0 && adj[i]) adj[i].forEach(j => neighbours.add(j));
   renderInspector();
-  if (mindOpen && i >= 0) buildMind(i);
+  /* reading a node, not re-rooting on it — that is the double-click */
+  if (mindOpen && i >= 0) mmSide(i);
 }
 
 /* =============================================================== HUD */
@@ -8543,325 +8550,6 @@ function cometStep(dt) {
 }
 const _ionA = [0,0,0];
 
-/* ======================================================== SHOOTING STARS
-   The one piece of sky here that is honestly a lie, and worth it.
-
-   A meteor is an atmospheric event: a grain of dust hitting air at forty
-   kilometres a second and the air, not the grain, doing the glowing. There
-   is no air out here and there is nothing to be under. What is drawn is the
-   same grain lit the same way and put in the sky anyway, because a sky in
-   which nothing has ever happened is a photograph, and because looking up
-   at the moment one crosses is a thing that happens to people and not a
-   thing that happens to a rendering.
-
-   Two decisions do most of the work:
-
-   It is aimed. A streak spawned in a random direction on a sphere is almost
-   never inside a sixty-degree frustum, so tuning the rate to make one
-   *visible* now and then means running dozens of them behind your head.
-   These are spawned across the frame you are actually looking at, which is
-   the difference between "occasionally" meaning occasionally seen and
-   occasionally meaning occasionally emitted.
-
-   It is a trail of points and not a line. A LineSegments streak is one
-   pixel wide at any distance and reads as a scratch on the lens; a chain of
-   overlapping glow points, tapering in size and brightness toward the tail,
-   reads as something burning. The path is sampled from the flight equation
-   at fixed intervals of time rather than accumulated from frames, so the
-   streak is the same length at thirty frames a second as at a hundred and
-   forty.
-
-   Everything else about it is observed. The light curve climbs and then
-   stops rather than fading, because the thing burning is the air and there
-   is exponentially more of it further down. It flares where the grain comes
-   apart, and a bright one ends in a burst. Its head is the metal and its
-   wake is the air, which are two different colours. And the bright ones
-   leave a train that outlives them by seconds, spreading and drifting in a
-   wind. Every one of those is in a photograph somebody has taken.        */
-/* The samples have to overlap into a line. Below the count where they do,
-   the streak resolves into a dotted trail, which is the one thing that reads
-   worse than no meteor at all — so this number is not a quality setting, it
-   is a floor, and the floor moves with the length of the ribbon.
-
-   Forty-eight held a tail of 0.15 R-seconds. The ribbon is now 0.40, near
-   enough two and a half times as long, and a sample count that did not
-   follow would have spread the same beads over a longer thread and printed
-   exactly the dotted trail this is here to prevent. A hundred and twenty
-   restores the spacing that worked. Four at once is under five hundred
-   points, which for a Points geometry is nothing. */
-const MET_MAX = 4, MET_TAIL = 120;
-/* ---- what is burning, and it is two different things ------------------
-   The head shows the metals the grain is made of, and every one of them is
-   a line somebody has measured: magnesium at 518 nm blue-white, sodium at
-   589 the warm yellow of a street lamp, iron a crowd of lines that add to
-   gold. Which of them dominates is a question about speed — see the note in
-   meteorSpawn.
-
-   The wake is not the grain at all. It is atomic oxygen in the air the
-   grain is going through, at 557.7 nanometres, which is the same forbidden
-   green line the aurora is made of and the reason a green meteor in a
-   photograph is real and nobody believes it. So the head and the trail are
-   different colours, and the change happens within the first fifth of the
-   streak. Drawing the whole thing one colour was the last thing here that
-   was a decision rather than an observation. */
-const MET_HEAD = [ [0.82, 0.94, 1.00],    // magnesium, and the fast ones
-                   [1.00, 0.95, 0.80],    // sodium
-                   [1.00, 0.86, 0.60],    // iron
-                   [1.00, 0.74, 0.48] ];  // slow, and never getting past it
-/* The wake was 0.44,1.00,0.64 — the forbidden oxygen line at 557.7 nm, which
-   is the correct colour and the reason a green meteor in a photograph is
-   real. It is being given up on purpose.
-
-   Green is the one hue on this palette with nothing else near it, so a green
-   streak across a cyan and amber sky does not read as part of the sky; it
-   reads as a lime highlighter. And the thing being reached for here is not a
-   photometric record, it is the shower in *Your Name* — where the trail is a
-   turquoise that sits a few degrees off the night behind it and glows rather
-   than announces itself. So: teal, one step toward the cyan the rest of this
-   view is already built out of. The physics note above still describes what
-   is actually happening in the air; this is a decision about the picture. */
-const MET_WAKE = [0.46, 0.92, 1.00];
-let metObj = null, metPos = null, metSz = null, metCol = null, metAl = null,
-    metLive = 0;
-const meteors = [];
-let meteorNext = 7 + Math.random() * 16;
-const _mR = new THREE.Vector3(), _mU = new THREE.Vector3(), _mF = new THREE.Vector3(),
-      _mA = new THREE.Vector3(), _mB = new THREE.Vector3();
-
-function meteorBuild() {
-  if (metObj) return;
-  metObj = pointsFrom(MET_MAX * MET_TAIL, (i, pos, sz, cl, al) => { al[i] = 0; },
-                      glowMat(700, 0, 0.85, false));
-  metObj.renderOrder = 3;
-  const at = metObj.geometry.attributes;
-  metPos = at.position.array; metSz = at.aSize.array;
-  metCol = at.aColor.array;   metAl = at.aAlpha.array;
-}
-
-function meteorSpawn() {
-  meteorBuild();
-  if (meteors.length >= MET_MAX) return;
-  /* the camera's own axes, so "across the frame" means across the frame */
-  _mR.set(1, 0, 0).applyQuaternion(camera.quaternion);
-  _mU.set(0, 1, 0).applyQuaternion(camera.quaternion);
-  _mF.set(0, 0, -1).applyQuaternion(camera.quaternion);
-
-  const R = SKY_R * (0.26 + Math.random() * 0.22);
-  /* The frame, in the units the frustum is actually described in. Guessing
-     an angle instead — half a radian off the view axis, say — puts most of
-     them outside the picture on a wide window and all of them outside it on
-     a tall one, and then the rate has to be raised until one lands, which
-     is how you end up with a sky full of meteors nobody sees. */
-  const hh = Math.tan(camera.fov * Math.PI / 360), hw = hh * camera.aspect;
-  /* in at one edge and out at the far one: a chord across the picture, at a
-     random angle, never through the centre twice the same way */
-  const a = Math.random() * TAU;
-  const b = a + Math.PI + (Math.random() - 0.5) * 1.6;
-  const edge = (v, ang) => v.copy(_mF)
-    .addScaledVector(_mR, Math.cos(ang) * hw * 1.12)
-    .addScaledVector(_mU, Math.sin(ang) * hh * 1.12).normalize();
-
-  const dir = edge(_mA, a).clone();
-  const p0  = dir.clone().multiplyScalar(R).add(camera.position);
-  const p1  = edge(_mB, b).multiplyScalar(R).add(camera.position);
-
-  /* ---- pace ----
-     One to two seconds is what a real grain takes and it is what a *streak*
-     looks like: a scratch, over before the eye has finished moving to it.
-     The film's are the other thing entirely — they cross slowly enough that
-     you watch them travel, which is the whole of why they are beautiful and
-     not merely bright. Three to five seconds, and everything downstream that
-     was tuned against the old number is retuned with it: the colour, which
-     is chosen by how fast the grain seems to be going, and the tail, which
-     is a length in seconds of flight. */
-  const dur  = 2.9 + Math.random() * 2.3;
-  const span = p0.distanceTo(p1);
-  const spd  = span / dur;
-  const vdir = p1.sub(p0).normalize();
-  /* a fireball, one in eight: brighter, longer, and it is the one you point
-     at. Rarer than it was — the real ratio is far steeper still, but a sky
-     that offers a meteor every twenty seconds cannot also make you wait an
-     hour for the good one. */
-  const fire = Math.random() < 0.12;
-
-  /* ---- speed decides the colour, and for a reason ----
-     A fast grain arrives with an order of magnitude more energy per atom,
-     which is enough to excite magnesium and ionised calcium and comes out
-     blue-white; a slow one never gets past sodium and iron and comes out
-     yellow. The Leonids hit at seventy-one kilometres a second and are
-     famously blue-green; the Taurids come in at twenty-eight and are
-     famously orange. Here the only thing standing for speed is how long the
-     streak takes to cross the frame, so that is what is asked. */
-  /* Measured against the range above, not the old one — left alone, every
-     meteor in the sky would have come out at the slow end of the table and
-     the whole shower would have been orange. Weighted toward the cool end on
-     top of that: the film's are blue-white far more often than not. */
-  const fastness = clamp((5.2 - dur) / 2.3, 0, 1);
-  const col = MET_HEAD[fastness > 0.42 ? 0 : fastness > 0.24 ? 1
-                     : fastness > 0.10 ? 2 : 3];
-
-  /* ---- flares ----
-     A meteoroid is a poorly consolidated lump of dust and ice, not a pebble,
-     and what it does under the load is come apart. Every fragment presents
-     new surface to the air at once, which is a spike in the light curve —
-     photometric records of bright meteors are full of them, and a fireball
-     that ends without a terminal burst is the exception rather than the
-     rule. This is the detail that separates a meteor from a streak. */
-  /* Fewer, and softer. Fragmentation spikes are real and they are also what
-     makes a streak read as crackling rather than gliding — on a three second
-     flight there was time for several and the eye caught every one. The
-     fireball keeps its terminal burst, because that one is an event rather
-     than a texture. */
-  const nf = fire ? 1 + ((Math.random() * 2) | 0) : (Math.random() < 0.16 ? 1 : 0);
-  const flares = [];
-  for (let i = 0; i < nf; i++)
-    flares.push([0.34 + Math.random() * 0.48,
-                 (fire ? 0.5 : 0.22) * (0.5 + Math.random())]);
-  if (fire && Math.random() < 0.6)
-    flares.push([0.90 + Math.random() * 0.05, 1.1 + Math.random() * 0.8]);
-
-  meteors.push({
-    p0, dur, t: 0, flares, col,
-    v: vdir.clone().multiplyScalar(spd),
-    /* A curve across the flight, so the path is not a ruled line — and more
-       of one than there was. Over a second a shallow bend is invisible; over
-       four it is the difference between a line and a trajectory, and an arc
-       is most of what makes the film's read as falling rather than as drawn.
-       Biased away from zero so no two are straight. */
-    bend: new THREE.Vector3().crossVectors(vdir, dir).normalize()
-            .multiplyScalar(spd * (Math.random() < 0.5 ? -1 : 1) *
-                            (0.18 + Math.random() * 0.26) / dur),
-    /* how many seconds of flight the ribbon holds. Long: the trail *is* the
-       meteor here, and a head with a short wake behind it is the streak this
-       is moving away from. */
-    tail: R * (fire ? 0.52 : 0.40) / spd,
-    br: fire ? 2.1 : 0.55 + Math.random() * 0.7,
-    sz: (fire ? 1.7 : 1) * (R / 4200),
-    /* ---- the persistent train ----
-       What is left in the air after the grain has gone. Bright meteors leave
-       one and faint ones essentially do not: it is ionised gas recombining,
-       so it needs enough of the meteor to have happened, and it lasts
-       seconds to minutes rather than the fraction of one the streak did.
-       It also drifts, because it is sitting in a wind that at ninety
-       kilometres up is moving at a hundred metres a second and shearing —
-       which is why a photographed train ends up bent into a corkscrew and
-       why this one is given a direction of its own to wander in. */
-    /* The lingering glow, raised for the ordinary ones and lengthened for
-       all of them. A train used to be the fireball's privilege and everything
-       else blinked out; leaving a little of it behind every meteor is what
-       stops the sky snapping shut the moment the grain is gone. */
-    train: fire ? 0.6 + Math.random() * 0.45 : 0.18 + Math.random() * 0.26,
-    trainTau: (fire ? 1.8 + Math.random() * 2.0 : 1.1 + Math.random() * 0.7),
-    drift: new THREE.Vector3().crossVectors(vdir, dir).normalize()
-             .multiplyScalar(spd * 0.012 * (Math.random() - 0.5))
-  });
-}
-
-function meteorStep(dt) {
-  /* Spawning belongs to the orbital clock — freeze the sky and no more of
-     them arrive — but a streak already falling finishes on the wall clock.
-     Half a meteor left hanging in a stopped sky would be a bug on screen
-     whatever the rule behind it said. */
-  if (N && meteors.length < MET_MAX && SET.spd > 0.02) {
-    meteorNext -= dt * Math.min(2, SET.spd);
-    if (meteorNext <= 0) { meteorSpawn(); meteorNext = 9 + Math.random() * 23; }
-  }
-  if (!metObj) return;
-  for (let k = meteors.length - 1; k >= 0; k--) {
-    const M = meteors[k];
-    M.t += dt;
-    /* it outlives its own flight by whatever its train is worth */
-    if (M.t > M.dur + M.trainTau * 3.4) meteors.splice(k, 1);
-  }
-  if (!meteors.length && !metLive) return;         // nothing to clear again
-
-  for (let m = 0; m < MET_MAX; m++) {
-    const M = meteors[m], base = m * MET_TAIL;
-    if (!M) {
-      for (let k = 0; k < MET_TAIL; k++) metAl[base + k] = 0;
-      continue;
-    }
-    const u = M.t / M.dur;
-    const live = u <= 1;
-    /* ---- the light curve, which is a climb and not a fade ---------------
-       A meteor does not brighten and then fade away. The thing setting the
-       air alight is the air, and there is exponentially more of it the
-       further down the grain gets, so the light *climbs* through most of
-       the flight and then stops — abruptly, because what stops it is the
-       grain running out. Peak somewhere past three quarters of the path and
-       an end rather than a tail is the shape every photometric record of a
-       meteor has, and the old curve here was the exact opposite of it: lit
-       in a twentieth of the flight and dying over the rest, which is what a
-       spark thrown off a grinder does.
-
-       On top of that the flares, which are the grain coming apart. Each one
-       is a moment where new surface meets the air all at once, and on a
-       bright meteor there are several with a larger one at the end. */
-    let env = 0;
-    if (live) {
-      /* The climb is real and it stays — a meteor does brighten through most
-         of its flight, and a thing that arrives at full brightness and fades
-         is a spark off a grinder. What goes is the cliff. The grain running
-         out is an abrupt event and it was modelled as one, over the last
-         twelfth of the path; at this pace that reads as the light being
-         switched off, and the film's do the opposite — they thin away, and
-         the eye is still following the place where one was for a moment
-         after. So the climb is gentler and the ending is a long taper over
-         the last third rather than a cut at the end. */
-      env = Math.min(1, u / 0.05) * Math.exp(2.0 * (u - 1))
-          * (1 - sstep(clamp((u - 0.64) / 0.36, 0, 1)));
-      for (let q = 0; q < M.flares.length; q++) {
-        const d = (u - M.flares[q][0]) / 0.038;
-        if (d > -4 && d < 4) env += M.flares[q][1] * Math.exp(-d * d);
-      }
-      env *= M.br;
-    }
-    /* and what is left in the air once the grain has gone */
-    const age = M.t - M.dur;
-    const tr  = live ? 0 : Math.exp(-age / M.trainTau) * M.train;
-    const spread = live ? 0 : Math.min(1.6, age / M.trainTau);
-    const ds = M.tail / MET_TAIL;
-    for (let k = 0; k < MET_TAIL; k++) {
-      const i = base + k, o = i * 3;
-      /* Clamped at the end of the flight, so when the grain is gone the
-         streak stops travelling and the tail closes up behind it instead of
-         the whole thing sailing on with nothing at its head. */
-      const s = Math.min(M.dur, Math.max(0, M.t - k * ds));
-      metPos[o]   = M.p0.x + M.v.x * s + M.bend.x * s * s + M.drift.x * age * spread;
-      metPos[o+1] = M.p0.y + M.v.y * s + M.bend.y * s * s + M.drift.y * age * spread;
-      metPos[o+2] = M.p0.z + M.v.z * s + M.bend.z * s * s + M.drift.z * age * spread;
-      const f = k / MET_TAIL, taper = (1 - f) * (1 - f * 0.55);
-      if (live) {
-        /* The head is a burning point and the trail is air that was set
-           alight a moment ago and is spreading while it cools — so it does
-           not only fade back, it widens. A trail that tapers to a needle is
-           a brush stroke; one that opens out is a column of gas. */
-        /* A wider, softer ribbon than the streak had. What is wanted is a
-           band of light with no edge to it, so the head is bigger and the
-           trail is given more body — a hairline at this length reads as a
-           scratch on the lens. */
-        metSz[i] = (k === 0 ? 132 : 34 + 58 * taper + 66 * f * M.train) * M.sz;
-        metAl[i] = env * (k === 0 ? 1 : taper * 0.88) *
-                   /* the trail cannot start before the meteor did */
-                   (M.t - k * ds > 0 ? 1 : 0);
-      } else {
-        metSz[i] = (42 + 72 * f + 140 * spread) * M.sz;
-        metAl[i] = tr * (1 - f * 0.7) * 0.42;
-      }
-      /* the metals at the head, the air behind it — and once the head has
-         gone there is nothing left but the air */
-      const g = live ? Math.min(1, f * 2.6) : 1;
-      metCol[o]   = M.col[0] + (MET_WAKE[0] - M.col[0]) * g;
-      metCol[o+1] = M.col[1] + (MET_WAKE[1] - M.col[1]) * g;
-      metCol[o+2] = M.col[2] + (MET_WAKE[2] - M.col[2]) * g;
-    }
-  }
-  metLive = meteors.length;
-  const at = metObj.geometry.attributes;
-  at.position.needsUpdate = true; at.aSize.needsUpdate = true;
-  at.aColor.needsUpdate = true;   at.aAlpha.needsUpdate = true;
-}
-
 /* ================================================================ POSTER
    The renderer has no preserveDrawingBuffer — reading the canvas is only
    valid in the same tick as the draw — so this renders and copies back to
@@ -9300,277 +8988,257 @@ if (SET.snd) {
 }
 
 /* ============================================================= MIND MAP
-   The same cosmos as the main view, seen from directly above.
+   One note's neighbourhood, built as a star system inside the cosmos
+   itself.
 
-   A note and everything one hop from it, arranged the way the orrery
-   arranges a star system: the note is the sun, its neighbours are planets
-   on visible orbits, and the raw sources tethered to each one are that
-   planet's moons. The whole plate turns — slowly, on the ORBIT SPEED clock,
-   so the one knob that freezes the sky freezes this too.
+   This used to be a flat plate drawn on a 2D canvas over the top of the
+   view, and it was the same picture twice: a starfield, orbits, bodies,
+   links and pulses, all re-implemented in miniature against a renderer
+   that already had every one of them. Opening it replaced the sky with a
+   card — which is a strange thing to do to a view whose whole subject is
+   where a note sits.
 
-   Everything behind the orbits is painted into the canvas rather than left
-   to CSS: a deep starfield and a milky-way band in screen space, spiral
-   dust and nebula in world space. They move at different rates against the
-   pan, which is what stops the popup reading as a diagram on a dark card.
+   So the map is the sky now. The note is placed at the centre of an
+   ephemeral system, everything one hop from it goes on the first lane and
+   everything two hops out on the second, and every other body in the vault
+   fades to nothing. Nothing is re-laid-out: the cosmos keeps its own
+   positions and gets them back untouched on the way out. What changes is
+   which bodies are lit, where these few are drawn, and how big.
 
-   Drag a planet and it follows; let go and the star's gravity walks it back
-   to wherever its orbit has got to by then. Pull too far and the leash
-   takes over — the map can be stretched, never torn apart.               */
+   ---- what a lane is worth, which is the whole of it ----
+   Out there a body's radius is its citation count and its orbit is its
+   rank inside a folder, because out there the question is which notes
+   carry the vault. In here the question is what this one note is attached
+   to, and to that question every neighbour is the same kind of answer. So
+   size and brightness are properties of the *hop* and never of the note:
+   two notes one hop out are drawn identically, however many links either
+   of them has.
+
+   That is also why a crowded lane widens rather than splitting in two. The
+   flat map put its overflow on a second ring, which is a reasonable answer
+   to a shortage of canvas and the exact claim this mode exists not to
+   make — two notes the same distance from the middle, drawn at different
+   distances from it. The spacing between neighbours is the constant here
+   instead, and a busy note simply has a wider first orbit.
+
+   What survives is colour, and it survives on purpose. Colour says which
+   folder a note lives in, which is a different axis from importance, and
+   it does not compete with the cue this mode has just given up.
+
+   The lanes are drawn as a plate: leaned a few degrees, in different
+   directions, so the thing reads as a system seen from above rather than
+   as a diagram — and near enough coplanar that the labels do not pile onto
+   each other at the horizon. ORBIT SHELL is deliberately not consulted: a
+   shell is a good answer to "how big is this vault" and a bad one to "what
+   is this note next to".                                                */
 const MM = {
-  root: -1, sel: -1, nodesL: [], links: [], pulses: [],
-  drag: -1, panning: false, mx: 0, my: 0, hover: -1,
-  w: 0, h: 0, dpr: 1, lastClick: 0, lastIdx: -1, lastX: -1e4, lastY: -1e4,
-  age: 0, clock: 0, zoom: 1, px: 0, py: 0, trail: [], r1: 150, order: [], ax: 1,
-  hint: null,                 // the live counts the map's caption quotes
-  rings: [], hop2: false, orbit: true,
-  sky: null, bright: [], spr: new Map(),
-  bloom: null                  // the quarter-size buffer the glow is built in
+  root: -1, sel: -1, trail: [], hint: null, hop2: false,
+  list: [],                     // the drawn set, in lane order — what ← → walk
+  has: new Set(),               // membership, for the alpha gate and the light
+  cnt: [0, 0, 0],               // how many sit on each hop
+  rr:  [0, 0, 0],               // and how far out that hop's lane has to be
+  anchor: new THREE.Vector3(),  // where the system stands, fixed on entry
+  guide: null                   // the drawn orbits
 };
-const MM_MAX  = 26;           // first-ring neighbours; beyond this the wheel mushes
-const MM_HOP2 = 34;           // second ring, when it is asked for
-let MM_LEASH  = 190;          // how far a node can be pulled before the leash
-/* Past the leash the pointer stops buying distance. A linear give is still
-   unbounded — drag far enough and the node leaves the canvas — so the excess
-   is squashed through tanh instead: the node can never get more than
-   MM_STRETCH times the leash from home, however hard you pull. That is what
-   makes the star's hold feel like gravity rather than like a long rope. */
-const MM_STRETCH = 1.45;
-const MM_LINK_COL = ['92,216,255', '255,157,60', '139,107,255'];
-/* rad/s on the innermost orbit, before the ORBIT SPEED knob. One turn takes
-   just under two minutes: enough that the plate is visibly alive, little
-   enough that a node never walks out from under the cursor. */
-const MM_W0 = 0.055;
+const MM_MAX  = 26;             // first hop; past this the wheel stops counting
+const MM_HOP2 = 34;             // second hop, when it is asked for
+/* The drawn size of a body is the one number this mode is opinionated
+   about, so it is three constants rather than derived from anything. World
+   units, at the shipped PLANET SIZE and ORBIT SPREAD. */
+const MM_RAD  = [19, 10.5, 6.6];      // centre, first hop, second hop
+/* The floor under each lane, and the clear space kept between neighbours
+   standing on it. Both were set to the tightest arrangement that still read,
+   which is not the same thing as the one that reads best: a wheel packed to
+   its floor puts every neighbour inside the glow of the next one, and the
+   plate came out as a bright ring rather than as a note with things around
+   it. The camera frames whatever the lanes work out to — see openMind — so
+   widening them does not push anything off screen; it spends the room on
+   the gaps instead of on the bodies. */
+const MM_LANE = [0, 250, 460];        // the floor under each lane
+const MM_PAD  = [0, 36, 24];          // clear space between neighbours on it
+/* A few degrees, in opposite directions, about different axes. Enough that
+   the two lanes are tellable apart once the camera comes down off the top;
+   not enough to cost a label. */
+const MM_INC  = [0, 0.062, -0.094];
+const MM_NODE = [0, 0, 1.95];
+/* rad/ms on the first lane, before ORBIT SPEED — about a minute and a half
+   to the turn. Visibly alive, and slow enough that a node never walks out
+   from under the cursor while it is being read.
+
+   Kepler against the *nominal* lane radii rather than the drawn ones, so a
+   busy note's wider first orbit does not also come out slower: the tempo of
+   this plate is a property of the instrument, not of the note in it. */
+const MM_W0 = 0.00007;
 let mindOpen = false;
-const mmc = $('mmc'), mctx = mmc.getContext('2d');
 
-MM.hop2  = !!SET.mmHop;
-MM.orbit = SET.mmOrb !== false;
+MM.hop2 = !!SET.mmHop;
 
-/* Canvas geometry wants numbers no transform has touched. getBoundingClientRect
-   reports the *transformed* box and this popup opens under a scale-plus-
-   perspective animation, so measuring there sized the backbuffer to about a
-   quarter of the real canvas and left it that way until the next window
-   resize — the map was upscaled and stretched for its whole life. offsetWidth
-   is a layout value and is immune to that. */
-function mmResize() {
-  MM.dpr = Math.min(devicePixelRatio || 1, 2);
-  const w = Math.max(80, mmc.offsetWidth || 80);
-  const h = Math.max(80, mmc.offsetHeight || 80);
-  const changed = (w !== MM.w || h !== MM.h);
-  MM.w = w; MM.h = h;
-  mmc.width  = Math.round(w * MM.dpr);
-  mmc.height = Math.round(h * MM.dpr);
-  if (changed) mmBuildSky();
+/* u along the ascending node, v a quarter turn ahead inside the lane's own
+   plane — the same orthonormal pair orbBasis builds for a real orbit, with a
+   longitude on it so the two lanes do not lean the same way. */
+const MM_U = [], MM_V = [];
+for (let h = 0; h < 3; h++) {
+  const ci = Math.cos(MM_INC[h]), si = Math.sin(MM_INC[h]);
+  const cn = Math.cos(MM_NODE[h]), sn = Math.sin(MM_NODE[h]);
+  MM_U.push([cn, 0, -sn]);
+  MM_V.push([sn * ci, -si, cn * ci]);
 }
 
-/* ---- deterministic noise ----
-   The sky has to survive a resize without reshuffling itself, so nothing in
-   here may call Math.random(). */
-function mmRng(seed) {
-  let s = seed >>> 0;
-  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+/* ---- how wide a lane has to be ----
+   Read every frame rather than baked at build, so PLANET SIZE and ORBIT
+   SPREAD both move the plate live — the two knobs whose subject is the size
+   of things are the two a reader will reach for while looking at it. */
+function mmRadii() {
+  const s = SET.spr / 3.2, z = SET.szPl;
+  for (let h = 1; h < 3; h++) {
+    const need = MM.cnt[h] * (MM_RAD[h] * z * 2 + MM_PAD[h]) / TAU;
+    MM.rr[h] = Math.max(MM_LANE[h], need) * s;
+  }
+  /* the outer lane never crowds the inner one, however few sit on it */
+  if (MM.rr[2] < MM.rr[1] * 1.85) MM.rr[2] = MM.rr[1] * 1.85;
 }
 
-/* ---- the sky, in screen space ----
-   Painted once per resize into an oversized plate; the draw offsets it by a
-   fraction of the pan, so the stars lag the orbits and the popup gets depth
-   for two drawImage calls a frame. */
-const MM_SKY_PAD = 110;
-function mmBuildSky() {
-  const W = Math.ceil(MM.w) + MM_SKY_PAD * 2, H = Math.ceil(MM.h) + MM_SKY_PAD * 2;
-  const c = MM.sky || (MM.sky = document.createElement('canvas'));
-  c.width = W; c.height = H;
-  const x = c.getContext('2d');
-  const rnd = mmRng(20260731);
-  x.clearRect(0, 0, W, H);
-
-  /* the milky way: a band of unresolved stars across one corner, which is
-     most of what makes a starfield read as a galaxy rather than as noise */
-  x.save();
-  x.translate(W / 2, H / 2);
-  x.rotate(-0.46);
-  const band = x.createLinearGradient(0, -H * 0.5, 0, H * 0.5);
-  band.addColorStop(0.00, 'rgba(70,120,180,0)');
-  band.addColorStop(0.40, 'rgba(80,130,190,.030)');
-  band.addColorStop(0.50, 'rgba(120,170,225,.055)');
-  band.addColorStop(0.60, 'rgba(80,130,190,.030)');
-  band.addColorStop(1.00, 'rgba(70,120,180,0)');
-  x.fillStyle = band;
-  x.fillRect(-W, -H * 0.55, W * 2, H * 1.1);
-  for (let i = 0; i < 900; i++) {
-    /* three samples summed gives a fat-tailed bulge toward the equator */
-    const b = (rnd() + rnd() + rnd() - 1.5) * 0.34;
-    const px = (rnd() - 0.5) * W * 1.6, py = b * H * 0.62;
-    x.fillStyle = 'rgba(190,225,255,' + (0.03 + rnd() * 0.09).toFixed(3) + ')';
-    x.fillRect(px, py, 1, 1);
-  }
-  x.restore();
-
-  /* the field itself — dim, and deliberately not all one colour */
-  for (let i = 0; i < 620; i++) {
-    const px = rnd() * W, py = rnd() * H;
-    const r = 0.35 + rnd() * 1.05;
-    const warm = rnd() < 0.17;
-    const a = 0.12 + rnd() * 0.40;
-    x.fillStyle = warm
-      ? 'rgba(255,214,168,' + a.toFixed(3) + ')'
-      : 'rgba(198,232,255,' + a.toFixed(3) + ')';
-    x.beginPath(); x.arc(px, py, r, 0, TAU); x.fill();
-  }
-
-  /* the bright foreground is drawn live instead of baked, because the only
-     stars that should scintillate are the ones close enough to */
-  MM.bright.length = 0;
-  for (let i = 0; i < 30; i++) {
-    MM.bright.push({
-      x: rnd() * W, y: rnd() * H,
-      r: 0.9 + rnd() * 1.5,
-      ph: rnd() * TAU, sp: 0.6 + rnd() * 1.5,
-      warm: rnd() < 0.32
-    });
+/* ---- the drawn sizes ----
+   Handed out from applySizes, after the knobs have had their say, because
+   this is an override of what they just worked out rather than a competitor
+   to it: the sliders still scale the plate, they just no longer decide the
+   ratios inside it. */
+function mindSizes() {
+  if (!MM.list.length || !RAD) return;
+  const z = SET.szPl;
+  for (let k = 0; k < MM.list.length; k++) {
+    const e = MM.list[k], i = e.i;
+    RAD[i] = MM_RAD[e.hop] * z;
+    /* one halo law for every body here as well — the cosmos gives the hub,
+       a planet and a moon three different multipliers, and three of them
+       would put back through brightness exactly the ranking the radii have
+       just been flattened to remove */
+    if (gSz0 && gSz) gSz0[i] = gSz[i] = RAD[i] * 9;
   }
 }
 
-/* ---- the deep field ----
-   Gone. It was a nebula of twenty-six dim blobs and twenty-four hundred dust
-   motes in three spiral arms, baked onto a plate and turned slowly under the
-   orbits. It was the best-looking thing on this canvas and it was answering a
-   question nobody brought here: the mind map exists to show what one note is
-   connected to, and a galaxy behind the answer is scenery in front of it.
-
-   What stays is the starfield, which is a backdrop rather than a subject —
-   it says "space" in one layer and then gets out of the way. */
-
-/* ---- cached bodies ----
-   Two radial gradients per node per frame was the whole cost of this canvas.
-   Each colour gets one sphere sprite and one halo sprite instead, lit from
-   the -x side; the draw rotates them so the lit limb faces the star. */
-function mmPlate(key, size, paint) {
-  let c = MM.spr.get(key);
-  if (c) return c;
-  if (MM.spr.size > 80) MM.spr.clear();
-  c = document.createElement('canvas');
-  c.width = c.height = size;
-  paint(c.getContext('2d'), size);
-  MM.spr.set(key, c);
-  return c;
-}
-const MM_BS = 128, MM_BR = 52;                 // sprite box, and the ball in it
-const MM_BK = MM_BS / (MM_BR * 2);             // draw-size multiplier
-/* A note is drawn as a shell, not as a ball.
-
-   It used to be a lit sphere: a radial gradient with the highlight off to one
-   side, a terminator across it, a warm limb facing the star and a cold one
-   facing away — a little planet, rotated so its day side pointed at the
-   middle of the plate. It was accurate to the orrery next door and it was the
-   wrong object. A planet is opaque, and an opaque body on a graph hides the
-   links that pass behind it; a planet is lit, and light implies a direction
-   the plate does not have; and a shaded ball with a specular dot on it is the
-   house style of every 3D chart written since about 2004.
-
-   What is wanted here is the thing itself — a note, with structure inside it,
-   suspended. So: a mostly empty interior that the links show through, a rim
-   that catches the light all the way round (which is what a soap bubble and a
-   hologram have in common, and what a marble does not), two orbital wires
-   crossing inside it, and a nucleus. Nothing about it claims a light source,
-   which is why it can sit at any bearing without being turned. */
-function mmBody(R, G, B) {
-  return mmPlate('b' + R + ',' + G + ',' + B, MM_BS, (x, S) => {
-    const c = S / 2, r = MM_BR;
-    const up = (v, n) => Math.min(255, Math.round(v + n));
-    const rgba = (rr, gg, bb, a) => 'rgba(' + rr + ',' + gg + ',' + bb + ',' + a + ')';
-    const HR = up(R,150), HG = up(G,150), HB = up(B,150);
-
-    /* the interior. Translucent on purpose — a link running behind a node
-       should be dimmed by it, not deleted. */
-    const g = x.createRadialGradient(c, c, 0, c, c, r);
-    g.addColorStop(0.00, rgba(R, G, B, .26));
-    g.addColorStop(0.64, rgba(Math.round(R*.45), Math.round(G*.55), Math.round(B*.7), .13));
-    g.addColorStop(1.00, rgba(R, G, B, .04));
-    x.fillStyle = g;
-    x.beginPath(); x.arc(c, c, r, 0, TAU); x.fill();
-
-    x.globalCompositeOperation = 'lighter';
-    /* the rim. This is the whole illusion: a band of light that closes on
-       itself reads as a curved surface seen edge-on, and the eye supplies the
-       sphere. Whitest just inside the silhouette, gone by the edge, so the
-       shell has no hard outline to look printed. */
-    const rim = x.createRadialGradient(c, c, r * 0.74, c, c, r);
-    rim.addColorStop(0.00, rgba(HR, HG, HB, 0));
-    rim.addColorStop(0.86, rgba(HR, HG, HB, .34));
-    rim.addColorStop(1.00, rgba(HR, HG, HB, 0));
-    x.fillStyle = rim;
-    x.beginPath(); x.arc(c, c, r, 0, TAU); x.fill();
-
-    /* One hairline at the silhouette, and nothing else.
-
-       There were two crossed ellipses here for a moment — the across-and-down
-       pair that draws a sphere in line — and they were too literal by half:
-       what they drew was not a note, it was the electron-shell diagram off
-       the cover of a school chemistry book. The association was the one being
-       reached for and it arrived far too loudly.
-
-       So the wires are gone and the rim is a line rather than a band. A
-       single bright circle at the edge of a soft interior is enough — the eye
-       reads a closed highlight as a curved surface without being told twice,
-       and what is left is a mark rather than a model. Twenty-six of these on
-       a plate should read as quiet points of light, and anything drawn inside
-       one is a detail nobody is close enough to see. */
-    x.lineWidth = Math.max(1, r * 0.055);
-    x.strokeStyle = rgba(238, 252, 255, .8);
-    x.beginPath(); x.arc(c, c, r * 0.93, 0, TAU); x.stroke();
-
-    /* the core: a soft centre so the shell is not a hole, well short of the
-       rim so the two never read as concentric rings */
-    const nuc = x.createRadialGradient(c, c, 0, c, c, r * 0.42);
-    nuc.addColorStop(0.00, rgba(HR, HG, HB, .62));
-    nuc.addColorStop(1.00, rgba(R, G, B, 0));
-    x.fillStyle = nuc;
-    x.beginPath(); x.arc(c, c, r * 0.42, 0, TAU); x.fill();
-    x.globalCompositeOperation = 'source-over';
-  });
-}
-function mmHalo(R, G, B) {
-  return mmPlate('h' + R + ',' + G + ',' + B, 128, (x, S) => {
-    const c = S / 2;
-    const g = x.createRadialGradient(c, c, 0, c, c, c);
-    g.addColorStop(0.00, 'rgba(' + R + ',' + G + ',' + B + ',.20)');
-    g.addColorStop(0.35, 'rgba(' + R + ',' + G + ',' + B + ',.07)');
-    g.addColorStop(1.00, 'rgba(' + R + ',' + G + ',' + B + ',0)');
-    x.fillStyle = g; x.fillRect(0, 0, S, S);
-  });
-}
-/* The colour a note is drawn in, taken from the same array the orrery reads.
-
-   This used to go straight to the folder's colour, which was the same thing
-   right up until notes started carrying an age tint — and then the two views
-   quietly stopped agreeing. The same note was amber in the cosmos and cyan on
-   the plate, so whichever screen you were looking at was teaching you a
-   different meaning for colour. COL is where a node's colour is decided; this
-   asks there. */
-function mmRGB(i) {
-  if (COL && i >= 0 && i < N)
-    return [Math.round(COL[i*3] * 255),
-            Math.round(COL[i*3+1] * 255),
-            Math.round(COL[i*3+2] * 255)];
-  const c = (catOf[i] && catOf[i].color) || CORE_COLOR;
-  return [Math.round(c.r * 255), Math.round(c.g * 255), Math.round(c.b * 255)];
+/* ---- where the bodies are, this frame ----
+   Written straight into P, after updatePositions has run its own two passes
+   over the real orbits. Those orbits are left alone and their mean anomalies
+   are never touched — each drawn node carries its own — so closing the map
+   puts every body back exactly where the cosmos had it, still moving, with
+   no rebuild and nothing to restore. */
+function mindPos(dOrb) {
+  mmRadii();
+  const A = MM.anchor;
+  for (let k = 0; k < MM.list.length; k++) {
+    const e = MM.list[k], i = e.i;
+    if (!e.hop) { P[i*3] = A.x; P[i*3+1] = A.y; P[i*3+2] = A.z; continue; }
+    e.ma += dOrb * e.sp;
+    const r = MM.rr[e.hop], u = MM_U[e.hop], v = MM_V[e.hop];
+    const a = e.ang + e.ma, ca = Math.cos(a), sa = Math.sin(a);
+    P[i*3]   = A.x + (ca*u[0] + sa*v[0]) * r;
+    P[i*3+1] = A.y + (ca*u[1] + sa*v[1]) * r;
+    P[i*3+2] = A.z + (ca*u[2] + sa*v[2]) * r;
+  }
 }
 
-/* ---- where a body is, this instant ----
-   Rest position is a point on a turning orbit rather than a fixed spot, so
-   the spring in mindStep chases a moving anchor. At these angular rates the
-   lag is about a pixel, which is why that works at all. */
-function mmRest(n) {
-  const a = n.a0 + MM.clock * n.w;
-  n.ang = a;
-  n.rx = Math.cos(a) * n.ring * MM.ax;
-  n.ry = Math.sin(a) * n.ring;
+/* ---- the lanes, drawn ----
+   Two circles, built once at unit radius in the lane's own plane and scaled
+   to it each frame, so a lane that widens under a busier note takes its own
+   guide with it. Additive and dim: an orbit is a thing you should be able to
+   see and never the thing you are looking at. */
+function mmGuide() {
+  if (MM.guide) return MM.guide;
+  const g = MM.guide = new THREE.Group();
+  g.renderOrder = 1;
+  for (let h = 1; h < 3; h++) {
+    const SEGS = 240, pos = new Float32Array(SEGS * 3);
+    const u = MM_U[h], v = MM_V[h];
+    for (let k = 0; k < SEGS; k++) {
+      const a = k / SEGS * TAU, c = Math.cos(a), s = Math.sin(a);
+      pos[k*3]   = c*u[0] + s*v[0];
+      pos[k*3+1] = c*u[1] + s*v[1];
+      pos[k*3+2] = c*u[2] + s*v[2];
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.add(new THREE.LineLoop(geo, new THREE.LineBasicMaterial({
+      color: 0x5cd8ff, transparent: true, opacity: h === 1 ? 0.15 : 0.09,
+      depthWrite: false, blending: THREE.AdditiveBlending })));
+  }
+  scene.add(g);
+  return g;
+}
+function mmGuideStep() {
+  if (!MM.guide) return;
+  MM.guide.visible = mindOpen;
+  if (!mindOpen) return;
+  MM.guide.position.copy(MM.anchor);
+  MM.guide.children[0].scale.setScalar(MM.rr[1]);
+  MM.guide.children[1].scale.setScalar(MM.rr[2]);
+  MM.guide.children[1].visible = MM.cnt[2] > 0;
 }
 
-/* rest positions: the root at the centre as the star, neighbours on one or
-   two orbits ordered so the heaviest notes sit where the eye lands first,
-   and — when asked — a third orbit of everything one hop further out */
+/* ---- the cosmos's own furniture ----
+   The ring tracks, the archive spiral, the boundary shell and the grid are
+   all statements about the whole vault, and none of them has anything to say
+   about one note's neighbours. They are hidden rather than faded because
+   they are geometry rather than bodies: there is no alpha on them that the
+   frame is already damping. */
+let mmRingKeep = null;
+function mindGuides(on) {
+  if (boundary)    boundary.visible    = on ? false : N > 0;
+  if (spiralTrack) spiralTrack.visible = !on;
+  if (ringGuides)  ringGuides.visible  = !on;
+  if (gridPlane)   gridPlane.visible   = on ? false : SET.grid;
+  if (ringMesh)    ringMesh.visible    = !on;
+  /* the hub's distance layers are written by a block that no longer runs in
+     here, so the frame that turns it off has to put them out itself */
+  if (on) {
+    if (coronaObj) coronaObj.visible = false;
+    if (coronaRay) coronaRay.visible = false;
+    if (glareObj)  glareObj.visible  = false;
+    if (haloObj)   haloObj.visible   = false;
+  }
+  /* the ring shadows, which are an instanced attribute rather than an
+     object — saved rather than recomputed, because what is in there is the
+     layout's and this has no way to derive it back */
+  if (bRing && bodyGeo && bodyGeo.attributes.aRingS) {
+    if (on) {
+      if (!mmRingKeep) mmRingKeep = bRing.slice();
+      for (let i = 3; i < bRing.length; i += 4) bRing[i] = 0;
+    } else if (mmRingKeep) {
+      bRing.set(mmRingKeep); mmRingKeep = null;
+    } else return;
+    bodyGeo.attributes.aRingS.needsUpdate = true;
+  }
+}
+
+/* ---- framing ----
+   Frames the outer lane rather than the bodies on it: they are moving, and a
+   fit that chased them settled somewhere slightly different every time it
+   ran. The lean is deliberate and is not straight down — an orrery seen from
+   exactly above is a diagram again, and a few degrees off is what puts the
+   lanes in front of and behind the star rather than only around it.
+
+   On a walk only the range moves. Where the reader has turned the camera to
+   is theirs, and re-levelling it under them every time they step to the next
+   note is the popup's cut coming back in another form. */
+function mmFrame(enter) {
+  mmRadii();
+  const R = Math.max(MM.rr[1], MM.cnt[2] ? MM.rr[2] : 0)
+          + MM_RAD[1] * SET.szPl * 6;
+  rig.follow = -1;
+  rig.tgtD.copy(MM.anchor);
+  rig.distD = clamp(R * 1.85 + 90, 120, 9000);
+  rig.thV = 0; rig.phV = 0;
+  if (enter) { rig.phD = 0.46; rig.rollD = 0; }
+  nudge();
+}
+
+/* ---- the neighbourhood ----
+   Which notes are drawn, and where on the plate. The selection rules are the
+   flat map's, unchanged: the first hop is the note's own adjacency sorted by
+   how much the vault cites it and capped, and the second is whatever the
+   first hop agrees on, placed facing the neighbours that pulled it in. What
+   is new is only what those rules are allowed to decide — a bearing and a
+   lane, and nothing about how big anything is drawn. */
 function buildMind(root, opts) {
   if (root < 0 || root >= N) return;
   const push = !opts || opts.push !== false;
@@ -9583,9 +9251,6 @@ function buildMind(root, opts) {
   }
   MM.root = root;
   MM.sel = root;
-  MM.drag = -1;
-  MM.zoom = 1; MM.px = 0; MM.py = 0;
-  MM.clock = 0;
 
   let nb = adj[root] ? Array.from(adj[root]) : [];
   nb.sort((a, b) => (nodes[b].inb | 0) - (nodes[a].inb | 0));
@@ -9593,16 +9258,12 @@ function buildMind(root, opts) {
   nb = nb.slice(0, MM_MAX);
 
   /* Bearings first, because the second hop is placed by where its parents
-     are and the ring scale depends on whether there turns out to be one. */
-  const inner = Math.min(nb.length, 12);
-  const outerN = nb.length - inner;
+     are. One lane, so the angle is the whole of the placement. */
   const angOf = new Map();
   const slot = nb.map((j, k) => {
-    const ri = k < inner ? 0 : 1;
-    const idx = ri ? k - inner : k, cnt = ri ? outerN : inner;
-    const a = (idx / Math.max(1, cnt)) * TAU + (ri ? 0.42 : 0) - Math.PI / 2;
+    const a = (k / Math.max(1, nb.length)) * TAU;
     angOf.set(j, a);
-    return { j, ri, a, delay: 0.10 + ri * 0.16 + (idx / Math.max(1, cnt)) * 0.22 };
+    return { j, a };
   });
 
   let h2 = [], hop2total = 0;
@@ -9617,7 +9278,7 @@ function buildMind(root, opts) {
         if (seen.has(k2)) return;
         let c = cand.get(k2);
         if (!c) { c = { i: k2, s: 0, vx: 0, vy: 0 }; cand.set(k2, c); }
-        /* how many first-ring notes reach it, and roughly from where */
+        /* how many first-hop notes reach it, and roughly from where */
         c.s++; c.vx += Math.cos(pa); c.vy += Math.sin(pa);
       });
     });
@@ -9634,83 +9295,33 @@ function buildMind(root, opts) {
     h2.sort((a, b) => a.a - b.a);
   }
 
-  /* The outermost orbit in use has to fit inside the shorter axis with room
-     for labels, and there is one more of them when a second hop exists —
-     asking for one that turns out to be empty must not shrink the system. */
-  const short = Math.min(MM.w, MM.h) || 300;
-  /* True circles waste a wide canvas: on the stacked layout the box is nearly
-     three times as wide as it is tall, the ring scale comes off the short
-     axis, and the whole system ends up a small disc in a lot of empty space
-     with its labels piled on top of each other. The orbits take some of that
-     width back — not all of it, because past a certain flattening it stops
-     reading as a system seen from above and starts reading as a distortion. */
-  const R1 = short * (h2.length ? 0.168 : 0.235);
-  MM.ax = clamp(1 + (MM.w / Math.max(1, MM.h) - 1) * 0.45, 1, 1.30);
-  MM.r1 = R1;
-  MM_LEASH = Math.max(90, R1 * 1.25);
-  const R2 = R1 * 1.72, R3 = R1 * 2.42;
-  MM.rings = [R1];
-  if (outerN) MM.rings.push(R2);
-  if (h2.length) MM.rings.push(R3);
-
-  MM.nodesL = [];
-  const add = (i, ring, a0, r, delay, hop) => {
-    const n = { i, ring, a0, hop, r, delay, root: hop === 0,
-                /* Kepler, loosely: the outer orbits lag the inner ones, which
-                   is why the plate shears instead of turning as one disc */
-                w: hop === 0 ? 0 : MM_W0 * Math.pow(R1 / Math.max(1, ring), 1.5),
-                x: 0, y: 0, vx: 0, vy: 0, rx: 0, ry: 0, ang: a0 };
-    mmRest(n);
-    /* Released from close to the star, the spring alone throws a node out and
-       overshoots by roughly a fifth — that is the burst, no velocity kick
-       required. Each waits its turn so the system unfurls rather than
-       snapping open as one rigid hoop. */
-    if (hop) { n.x = n.rx * 0.10; n.y = n.ry * 0.10; }
-    MM.nodesL.push(n);
-    return n;
+  MM.list = [];
+  MM.has = new Set();
+  MM.cnt[0] = 1; MM.cnt[1] = nb.length; MM.cnt[2] = h2.length;
+  const add = (i, hop, ang) => {
+    MM.list.push({ i, hop, ang, ma: 0,
+                   sp: hop ? MM_W0 * Math.pow(MM_LANE[1] / MM_LANE[hop], 1.5) : 0 });
+    MM.has.add(i);
   };
-
-  add(root, 0, 0, 15 + Math.min(9, (nodes[root].inb | 0) * .22), 0, 0);
-  slot.forEach(s => add(s.j, s.ri ? R2 : R1, s.a,
-                        7.5 + Math.min(8, (nodes[s.j].inb | 0) * .20), s.delay, 1));
-  const hop2n = h2.length;
-  h2.forEach((c, k) => add(c.i, R3, -Math.PI + ((k + 0.5) / hop2n) * TAU,
-                           5 + Math.min(4, (nodes[c.i].inb | 0) * .12),
-                           0.34 + (k / hop2n) * 0.26, 2));
-
-  /* edges among the drawn set, so a tight cluster shows as a mesh and a
-     hub-and-spoke note shows as a star */
-  const inMap = new Map();
-  MM.nodesL.forEach((n, k) => inMap.set(n.i, k));
-  MM.links = [];
-  edges.forEach(([a, b, t]) => {
-    if (!inMap.has(a) || !inMap.has(b)) return;
-    const ka = inMap.get(a), kb = inMap.get(b);
-    /* two second-ring notes linking to each other says nothing about the
-       note in the middle, and at thirty-four of them it is a hairball */
-    if (MM.nodesL[ka].hop === 2 && MM.nodesL[kb].hop === 2) return;
-    MM.links.push([ka, kb, t]);
-  });
-
-  /* data pulses, the same idea as the ones running the orrery's links */
-  MM.pulses.length = 0;
-  const np = Math.min(44, Math.ceil(MM.links.length * 0.8));
-  for (let k = 0; k < np; k++)
-    MM.pulses.push({ e: (k * 7) % Math.max(1, MM.links.length), u: k / Math.max(1, np) });
-
+  add(root, 0, 0);
+  slot.forEach(s => add(s.j, 1, s.a));
+  h2.forEach((c, k) => add(c.i, 2, ((k + 0.5) / h2.length) * TAU));
 
   /* the caption is rebuilt on every language switch, so the counts it quotes
      have to be kept rather than baked into the string */
-  MM.hint = { trunc: truncated ? adj[root].size : 0, hop2total, hop2n };
+  MM.hint = { trunc: truncated ? adj[root].size : 0, hop2total, hop2n: h2.length };
   mmHint();
-  $('mmleg2').style.display = hop2n ? '' : 'none';
-  /* the entry runs on the map's own clock, advanced by the same dt the
-     springs use — keyed to wall time it drifts out of step with the physics
-     whenever a frame runs long */
-  MM.age = 0;
+  $('mmleg2').style.display = h2.length ? '' : 'none';
+  /* the plate has to exist before the frame can be fitted to it, and the
+     drawn radii before either */
+  mmRadii();
+  applySizes();
+  mmFrame(false);
   mmCrumbs();
+  /* quiet: a walk is not the same gesture as picking a note out of the sky,
+     and pinging and rippling on every step of one is noise */
+  select(root, true);
   mmSide(root);
-  mmZoomLabel();
 }
 
 function mmHint() {
@@ -9781,1037 +9392,74 @@ function mmSide(i) {
   if (wasSel !== i) $('mmside').scrollTop = 0;
 }
 
-function openMind(i) {
-  const t = (i !== undefined && i >= 0) ? i : selected;
-  if (t < 0 || t >= N) { toast(T('need.node')); return; }
-  mindOpen = true;
-  /* the popup covers the canvas, and a cursor that never moves afterwards
-     would leave the orrery's hover label stranded underneath it */
-  hovered = -1; pointerIn = false; dragging = 0;
-  $('mind').classList.add('on');
-  mmResize();
-  MM.trail = [];
-  buildMind(t);
-}
-function closeMind() {
-  if (!mindOpen) return;
-  mindOpen = false;
-  MM.drag = -1; MM.panning = false;
-  $('mind').classList.remove('on');
-}
-function toggleMind() { mindOpen ? closeMind() : openMind(); }
-
-/* ---- view transform ---- */
-function mmZoomLabel(){ $('mmz-val').textContent = Math.round(MM.zoom*100) + '%'; }
-function mmZoomAt(f, cx, cy) {
-  const z0 = MM.zoom;
-  MM.zoom = clamp(z0 * f, 0.45, 3.2);
-  const k = MM.zoom / z0;
-  /* keep whatever is under the cursor pinned while the scale changes */
-  MM.px = cx - (cx - MM.px) * k;
-  MM.py = cy - (cy - MM.py) * k;
-  mmZoomLabel();
-}
-/* "Fit" frames the outermost orbit in use rather than the nodes' current
-   positions: the bodies are moving, and a fit that chased them settled on a
-   slightly different zoom every time it was pressed. */
-function mmFit() {
-  const R = (MM.rings.length ? MM.rings[MM.rings.length - 1] : MM.r1) + 34;
-  MM.zoom = clamp(Math.min(MM.w / (R * MM.ax * 2), MM.h / (R * 2)), 0.45, 3.2);
-  MM.px = 0; MM.py = 0;
-  mmZoomLabel();
-}
-$('mmz-in').onclick  = () => { mmZoomAt(1.25, 0, 0); };
-$('mmz-out').onclick = () => { mmZoomAt(0.8, 0, 0); };
-$('mmz-fit').onclick = mmFit;
-
 function mmSetHop(on) {
   MM.hop2 = !!on;
   SET.mmHop = MM.hop2; saveSet();
   $('mm-hop').classList.toggle('on', MM.hop2);
   if (mindOpen && MM.root >= 0) buildMind(MM.root, { push:false });
 }
-function mmSetOrbit(on) {
-  MM.orbit = !!on;
-  SET.mmOrb = MM.orbit; saveSet();
-  $('mm-orb').classList.toggle('on', MM.orbit);
-}
 $('mm-hop').onclick = () => mmSetHop(!MM.hop2);
-$('mm-orb').onclick = () => mmSetOrbit(!MM.orbit);
 $('mm-hop').classList.toggle('on', MM.hop2);
-$('mm-orb').classList.toggle('on', MM.orbit);
 
 /* ---- keyboard ----
-   Aiming at a 9-pixel disc with a mouse is the slow way to walk a graph. The
-   arrows step around the orbits in the order they were laid out, so the whole
-   map is reachable without the pointer at all. */
+   Aiming at a body with a mouse is the slow way to walk a graph. The arrows
+   step around the lanes in the order they were laid out, so the whole
+   neighbourhood is reachable without the pointer at all — and because
+   stepping is a selection rather than a redraw, the rings and the inspector
+   follow it the same way they follow a click. */
 function mmCycle(dir) {
-  if (MM.nodesL.length < 2) return;
-  let at = MM.nodesL.findIndex(n => n.i === MM.sel);
+  if (MM.list.length < 2) return;
+  let at = MM.list.findIndex(n => n.i === MM.sel);
   if (at < 0) at = 0;
-  const k = (at + dir + MM.nodesL.length) % MM.nodesL.length;
-  MM.hover = k;
-  mmSide(MM.nodesL[k].i);
-}
-mmc.addEventListener('wheel', e => {
-  e.preventDefault();
-  const r = mmc.getBoundingClientRect();
-  mmZoomAt(Math.exp(-e.deltaY * 0.0016),
-           e.clientX - r.left - MM.w/2, e.clientY - r.top - MM.h/2);
-}, { passive:false });
-
-/* ---- physics ----
-   Springs toward the rest position, which is itself walking round an orbit.
-   The dragged node is not simulated: it is placed, but the placement is
-   leashed so that past MM_LEASH the pointer only buys a shrinking fraction of
-   what it asks for. Release and the same spring reels it back to wherever its
-   orbit has got to. */
-function mindStep(dt) {
-  const h = Math.min(dt, 1/40);
-  MM.age += h;
-  if (MM.orbit) MM.clock += h * SET.spd;
-  const age = MM.age;
-  MM.nodesL.forEach((n, k) => {
-    if (n.root) { n.x = 0; n.y = 0; n.vx = n.vy = 0; return; }
-    mmRest(n);
-    if (age < n.delay) {                        // still waiting to be released
-      n.x = n.rx * 0.10; n.y = n.ry * 0.10;
-      return;
-    }
-    if (k === MM.drag) {
-      let dx = MM.mx - n.rx, dy = MM.my - n.ry;
-      const d = Math.hypot(dx, dy);
-      if (d > MM_LEASH) {
-        const t = Math.tanh((d - MM_LEASH) / MM_LEASH);      // saturates at 1
-        const f = (MM_LEASH * (1 + (MM_STRETCH - 1) * t)) / d;
-        dx *= f; dy *= f;
-      }
-      const px = n.x, py = n.y;
-      n.x = n.rx + dx; n.y = n.ry + dy;
-      n.vx = (n.x - px) / Math.max(1e-3, h) * 0.30;   // carry the fling
-      n.vy = (n.y - py) / Math.max(1e-3, h) * 0.30;
-      return;
-    }
-    /* heavier notes are held more firmly, same idea as PULL in the orrery */
-    const kk = 34 + (nodes[n.i].inb|0) * 0.6;
-    const c  = 0.90 * Math.sqrt(kk);
-    n.vx += (-kk*(n.x - n.rx) - c*n.vx) * h;
-    n.vy += (-kk*(n.y - n.ry) - c*n.vy) * h;
-    n.x += n.vx * h; n.y += n.vy * h;
-  });
-  const L = MM.links.length;
-  if (L) MM.pulses.forEach(p => {
-    p.u += h * 0.34;
-    if (p.u > 1) { p.u = 0; p.e = (p.e + 13) % L; }
-  });
+  const k = (at + dir + MM.list.length) % MM.list.length;
+  select(MM.list[k].i, true);
 }
 
-/* A radius that has gone negative throws IndexSizeError out of arc(), and the
-   frame loop schedules the next frame before it calls this — so the exception
-   did not stop the app, it silently dropped the rest of the frame, WebGL
-   render included, every time a body was small enough. Everything that can
-   shrink toward zero goes through here. */
-const rad0 = v => v > 0 ? v : 0;
-
-/* ---- the case the instrument sits in ----------------------------------
-   The plate was stripped back to the graph and nothing else, which fixed the
-   problem it had — four layers of scenery in front of an answer about six
-   links — and left it plain. Plain is not the same as fine. What follows is
-   ornament, and every piece of it obeys one rule: it is *structure* that has
-   been made beautiful, never decoration added beside the structure. The rings
-   were already there and are now engraved; the star was already there and now
-   sits in a setting; the light was already coming from the middle and now
-   passes through something on its way out.
-
-   The accent is warm. Everything on this plate is cyan, because everything in
-   the cosmos is cyan, and a single warm note against a cold field is the
-   oldest trick there is for making a cold field look expensive rather than
-   merely cold. It is used at alphas between two and eight per cent — this is
-   gilding, and gilding that announces itself is brass. */
-const MM_GOLD = '198,163,92';
-const MM_GOLD_HI = '241,214,150';
-
-/* ---- guilloche ----
-   The engine-turned pattern on the face of a good watch: fine concentric
-   lines, close enough together that the eye reads a surface rather than the
-   lines themselves. Here it is drawn on the orbit rings the map already has,
-   as a doublet — a broad, almost invisible band with a hairline running
-   along its centre — plus a tick at each of twelve divisions.
-
-   Twelve, and not the twenty-four the old version had, and only on the ring
-   itself rather than standing off it. A tick is a graduation and a graduation
-   is a claim that the position between two of them means something; on a
-   plate where the angle round the ring is arbitrary, few and small is the
-   honest amount. */
-function mmGuilloche(R, AX, a, iz, gr) {
-  const rx = rad0(R * AX), ry = rad0(R);
-  /* the broad band under the hairline: this is the part that reads as a
-     machined surface rather than as a drawn circle */
-  mctx.strokeStyle = 'rgba(' + MM_GOLD + ',' + (a * 0.22 * gr).toFixed(4) + ')';
-  mctx.lineWidth = 5 * iz;
-  mctx.beginPath(); mctx.ellipse(0, 0, rx, ry, 0, 0, TAU); mctx.stroke();
-  /* the hairline itself, cool — the ring belongs to the cosmos and the gold
-     is only the light falling on it */
-  mctx.strokeStyle = 'rgba(150,220,255,' + (a * gr).toFixed(4) + ')';
-  mctx.lineWidth = iz;
-  mctx.beginPath(); mctx.ellipse(0, 0, rx, ry, 0, 0, TAU); mctx.stroke();
-  /* and a companion hairline just inside it. Two lines a hair apart is the
-     single most reliable signal of a drawn instrument as against a drawn
-     diagram, and it costs one more ellipse. */
-  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',' + (a * 0.5 * gr).toFixed(4) + ')';
-  mctx.beginPath();
-  mctx.ellipse(0, 0, rad0(rx - 3 * iz), rad0(ry - 3 * iz), 0, 0, TAU);
-  mctx.stroke();
-  /* the divisions */
-  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',' + (a * 1.5 * gr).toFixed(4) + ')';
-  mctx.lineWidth = 1.1 * iz;
-  for (let k = 0; k < 12; k++) {
-    const th = k / 12 * TAU;
-    const c = Math.cos(th), si = Math.sin(th);
-    const len = (k % 3 === 0 ? 6 : 3) * iz;
-    mctx.beginPath();
-    mctx.moveTo(c * (rx - len), si * (ry - len));
-    mctx.lineTo(c * rx, si * ry);
-    mctx.stroke();
+function openMind(i) {
+  const t = (i !== undefined && i >= 0) ? i : selected;
+  if (t < 0 || t >= N) { toast(T('need.node')); return; }
+  mindOpen = true;
+  /* The system stands where the note already was. Entering is then the
+     camera coming in to a place rather than a cut to somewhere else, and the
+     one body that does not move between the two views is the one the reader
+     was looking at when they asked. */
+  MM.anchor.set(P[t*3], P[t*3+1], P[t*3+2]);
+  mindGuides(true);
+  mmGuide();
+  /* a comet crossing a mind map is the cosmos wandering into a diagram */
+  cometEnd();
+  hovered = -1; dragging = 0;
+  $('mind').classList.add('on');
+  MM.trail = [];
+  buildMind(t);
+  mmFrame(true);
+}
+function closeMind() {
+  if (!mindOpen) return;
+  mindOpen = false;
+  $('mind').classList.remove('on');
+  mindGuides(false);
+  if (MM.guide) MM.guide.visible = false;
+  MM.list.length = 0; MM.has.clear();
+  MM.cnt[0] = MM.cnt[1] = MM.cnt[2] = 0;
+  /* the drawn sizes were this mode's; they go back to the knobs */
+  applySizes();
+  /* You come out looking at the note you walked to — it is the one thing you
+     were holding on the way in, and leaving the camera on an anchor whose
+     system has just evaporated would put the reader nowhere. The positions
+     are settled first: everything drawn in here is still standing on a lane
+     until the cosmos's own two passes have run once more. */
+  if (world && MM.root >= 0 && MM.root < N && !ship.on) {
+    updatePositions(0);
+    rig.follow = MM.root;
+    rig.tgtD.set(P[MM.root*3], P[MM.root*3+1], P[MM.root*3+2]);
+    rig.distD = clamp(RAD[MM.root] * 34 + 240, 240, 3000);
+    nudge();
   }
 }
-
-/* ---- the setting ----
-   A gem is not simply a bright thing; it is a bright thing that something is
-   holding. The claws are what make a stone read as *set* rather than as
-   printed on, and four of them at the diagonals stay clear of the ring's own
-   twelve divisions, which sit on the axes.
-
-   Drawn under the star rather than over it, so the star's corona washes over
-   the mount the way light does over metal it is sitting in. */
-function mmSetting(x, y, pr, iz, now) {
-  const spin = now * 0.00007;
-  mctx.save();
-  mctx.translate(x, y);
-  mctx.rotate(spin);
-  /* the bezel: two fine rings with a gap, the outer one heavier */
-  mctx.strokeStyle = 'rgba(' + MM_GOLD + ',.30)';
-  mctx.lineWidth = 1.6 * iz;
-  mctx.beginPath(); mctx.arc(0, 0, rad0(pr * 1.62), 0, TAU); mctx.stroke();
-  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',.20)';
-  mctx.lineWidth = iz;
-  mctx.beginPath(); mctx.arc(0, 0, rad0(pr * 1.44), 0, TAU); mctx.stroke();
-  /* the claws */
-  mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',.34)';
-  mctx.lineWidth = 2.2 * iz;
-  mctx.lineCap = 'round';
-  for (let k = 0; k < 4; k++) {
-    const th = Math.PI / 4 + k * Math.PI / 2;
-    const c = Math.cos(th), si = Math.sin(th);
-    mctx.beginPath();
-    mctx.moveTo(c * pr * 1.10, si * pr * 1.10);
-    mctx.lineTo(c * pr * 1.72, si * pr * 1.72);
-    mctx.stroke();
-  }
-  mctx.restore();
-}
-
-function mmDrawSky(now) {
-  if (!MM.sky) return;
-  /* the field lags the pan by a twentieth, which is enough to say "far away"
-     without the parallax itself becoming the thing you notice */
-  const ox = -MM_SKY_PAD + clamp(MM.px * 0.05, -MM_SKY_PAD, MM_SKY_PAD);
-  const oy = -MM_SKY_PAD + clamp(MM.py * 0.05, -MM_SKY_PAD, MM_SKY_PAD);
-  mctx.drawImage(MM.sky, ox, oy);
-  /* the bright foreground scintillates; the field behind it deliberately
-     does not, which is also how the real thing looks */
-  mctx.globalCompositeOperation = 'lighter';
-  MM.bright.forEach(s => {
-    const tw = 0.55 + 0.45 * Math.sin(now * 0.0013 * s.sp + s.ph);
-    const x = s.x + ox, y = s.y + oy;
-    if (x < -8 || y < -8 || x > MM.w + 8 || y > MM.h + 8) return;
-    const g = mctx.createRadialGradient(x, y, 0, x, y, s.r * 6);
-    const col = s.warm ? '255,220,175' : '205,240,255';
-    g.addColorStop(0, 'rgba(' + col + ',' + (0.85 * tw).toFixed(3) + ')');
-    g.addColorStop(0.3, 'rgba(' + col + ',' + (0.20 * tw).toFixed(3) + ')');
-    g.addColorStop(1, 'rgba(' + col + ',0)');
-    mctx.fillStyle = g;
-    mctx.beginPath(); mctx.arc(x, y, s.r * 6, 0, TAU); mctx.fill();
-  });
-  mctx.globalCompositeOperation = 'source-over';
-}
-
-function mindDraw(now) {
-  const w = MM.w, h = MM.h;
-  mctx.setTransform(MM.dpr, 0, 0, MM.dpr, 0, 0);
-  mctx.globalCompositeOperation = 'source-over';
-  mctx.globalAlpha = 1;
-  mctx.fillStyle = '#01030a';
-  mctx.fillRect(0, 0, w, h);
-
-  mmDrawSky(now);
-
-  /* A breath of warmth out of the middle of the plate, over the starfield and
-     under everything else.
-
-     The star at the centre is the only light source in this picture, and
-     until now it lit the nodes and nothing else — the space between them was
-     the same flat black at the centre as at the corners, which is what makes
-     a rendering look like a rendering. This is that light arriving on the air
-     between the reader and the plate. Warm, because the star is; enormous and
-     very faint, because air is; and painted in screen space rather than plate
-     space, so panning does not drag the light source around with the graph. */
-  {
-    const cx = w/2 + MM.px * 0.35, cy = h/2 + MM.py * 0.35;
-    const rr = Math.max(w, h) * 0.62;
-    const wg = mctx.createRadialGradient(cx, cy, 0, cx, cy, rr);
-    wg.addColorStop(0.00, 'rgba(255,226,168,.050)');
-    wg.addColorStop(0.30, 'rgba(210,180,140,.022)');
-    wg.addColorStop(0.70, 'rgba(120,150,190,.008)');
-    wg.addColorStop(1.00, 'rgba(0,0,0,0)');
-    mctx.globalCompositeOperation = 'lighter';
-    mctx.fillStyle = wg;
-    mctx.fillRect(0, 0, w, h);
-    mctx.globalCompositeOperation = 'source-over';
-  }
-
-  mctx.save();
-  mctx.translate(w/2 + MM.px, h/2 + MM.py);
-  mctx.scale(MM.zoom, MM.zoom);
-
-  const age = MM.age;
-  const iz = 1 / MM.zoom;
-
-  /* The orbits, drawn as one hairline each.
-
-     This used to be a polar plot: eight rotating spokes under everything, a
-     nine-pixel glow bed under each ring, the ring itself over that, and
-     twenty-four graduation ticks around each one, all turning. It read as an
-     instrument, which was the intent, and an instrument is a thing with a lot
-     of markings on it — so the markings were competing with the six or eight
-     bodies they exist to position.
-
-     One line per ring is enough to say "these are at the same radius", which
-     is the only thing the guides have to say. They still come up after the
-     entry has passed, so they never compete with it. */
-  const gr = clamp((age - 0.75) / 1.1, 0, 1);
-  if (gr > 0.004) {
-    const AX = MM.ax;
-    /* the inner ring carries the most weight and the outer ones step down,
-       which is what gives the three of them a reading order */
-    MM.rings.forEach((R, ri) => mmGuilloche(R, AX, [0.15, 0.11, 0.08][ri] || 0.07,
-                                            iz, gr));
-    mctx.lineWidth = iz;
-  }
-
-  /* The ring of light that used to leave the star on open is gone with the
-     rest of it. It announced an arrival that the nodes flying to their orbits
-     already announce, and it was the one element on this canvas that had
-     nothing at all to do with the note being looked at. */
-
-  /* the leash, drawn faintly, so "it comes back" is visible before it does */
-  if (MM.drag > 0) {
-    const n = MM.nodesL[MM.drag];
-    mctx.strokeStyle = 'rgba(255,182,72,.14)';
-    mctx.setLineDash([3,5]);
-    mctx.beginPath(); mctx.arc(n.rx, n.ry, rad0(MM_LEASH), 0, TAU); mctx.stroke();
-    mctx.setLineDash([]);
-    mctx.strokeStyle = 'rgba(255,182,72,.28)';
-    mctx.beginPath(); mctx.moveTo(n.rx, n.ry); mctx.lineTo(n.x, n.y); mctx.stroke();
-  }
-
-  /* which node is the pointer interested in — hover, else selection */
-  const focusK = MM.hover >= 0 ? MM.hover
-               : MM.nodesL.findIndex(n => n.i === MM.sel);
-  const focusI = focusK >= 0 ? MM.nodesL[focusK].i : -1;
-
-  /* Links: each one grows out of the centre as its far end is released, so
-     the graph draws itself rather than appearing. The ones touching whatever
-     the pointer is interested in are drawn last, brighter, and with a slow
-     travelling dash — a link you are reading should say which way it runs. */
-  const lit = [];
-  mctx.lineCap = 'round';
-  MM.links.forEach(L => {
-    const [a, b] = L;
-    if (focusI === MM.nodesL[a].i || focusI === MM.nodesL[b].i) lit.push(L);
-    else drawLink(L, false);
-  });
-  lit.forEach(L => drawLink(L, true));
-  mctx.setLineDash([]);
-
-  /* the control point of a link, bowed away from the star so parallel spokes
-     stay separable — shared by the line and by the pulses riding it */
-  function linkGeom(A, B, grow) {
-    const ex = lerp(A.x, B.x, grow), ey = lerp(A.y, B.y, grow);
-    const mx = (A.x + ex)/2, my = (A.y + ey)/2;
-    const d = Math.hypot(ex-A.x, ey-A.y) || 1;
-    const nx = -(ey-A.y)/d, ny = (ex-A.x)/d;
-    return { ex, ey, cx: mx + nx*d*0.10, cy: my + ny*d*0.10 };
-  }
-  function drawLink([a, b, t], near) {
-    const A = MM.nodesL[a], B = MM.nodesL[b];
-    const grow = clamp((age - Math.max(A.delay, B.delay) - 0.04) / 0.42, 0, 1);
-    if (grow <= 0) return;
-    const hot = (a === 0 || b === 0);
-    const far = A.hop === 2 || B.hop === 2;
-    const col = MM_LINK_COL[t];
-    const g = linkGeom(A, B, grow);
-    const iz2 = 1 / MM.zoom;
-    const path = () => {
-      mctx.beginPath();
-      mctx.moveTo(A.x, A.y);
-      mctx.quadraticCurveTo(g.cx, g.cy, g.ex, g.ey);
-      mctx.stroke();
-    };
-    /* The stroke pattern the orrery uses for the same three kinds of link:
-       a written wikilink whole, a source tether broken now and then, an
-       inferred one broken twice as often. The two views were teaching
-       different conventions for the same fact — the cosmos had learned to say
-       "how firm is this" with a gap, and the plate was still saying it with
-       colour alone, which is the channel that goes first in a crowd.
-
-       Lengths are in screen pixels, divided back out by the zoom, so the
-       pattern holds its size as the plate is scaled — the same reasoning as
-       the pixel-period dashes on the orrery's arcs. */
-    const dashOf = ty => ty === 1 ? [7*iz2, 5*iz2] : ty === 2 ? [2.5*iz2, 4*iz2] : null;
-    const dash = dashOf(t);
-    const setDash = d => mctx.setLineDash(d || []);
-
-    /* ---- casing ----
-       A dark pass under the line, a little wider than it. On a plate where
-       two dozen curves cross each other this is the whole difference between
-       a graph and a ball of wool: at every crossing the line drawn later cuts
-       the one drawn earlier, and the eye gets to follow a single link from
-       one end to the other instead of losing it in the tangle.
-
-       It is the trick the labels already use to stay readable over the links
-       they sit on, pointed at the links themselves. Not opaque — the sky and
-       the dust behind have to survive it — but dark enough to break the line
-       underneath. Never dashed: a casing with gaps in it does not case
-       anything, so it is always the solid version of the same curve. */
-    const casing = (wide, alpha) => {
-      setDash(null);
-      mctx.strokeStyle = 'rgba(1,4,10,' + alpha + ')';
-      mctx.lineWidth = wide;
-      path();
-    };
-
-    if (near) {
-      casing(4.4 * iz2, 0.62);
-      /* Additive from here down. A filament is light, and light that crosses
-         other light gets brighter — which is both what the eye expects and
-         what stops a crowded plate turning to mud, because two dim lines over
-         each other now read as a crossing rather than as a thicker line. */
-      mctx.globalCompositeOperation = 'lighter';
-      /* a wide soft pass under the line reads as the link glowing rather than
-         merely being thicker */
-      mctx.strokeStyle = 'rgba(' + col + ',' + (0.13 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 5 * iz2;
-      setDash(null);
-      path();
-      mctx.strokeStyle = 'rgba(' + col + ',' + (0.85 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 1.15 * iz2;
-      setDash(dash);
-      path();
-      /* the travelling dash says which way the link runs, and rides on top of
-         the type pattern rather than replacing it — direction and firmness
-         are two different things to know about a link */
-      mctx.strokeStyle = 'rgba(235,250,255,' + (0.5 * grow).toFixed(3) + ')';
-      mctx.lineWidth = 0.9 * iz2;
-      mctx.setLineDash([2.5 * iz2, 11 * iz2]);
-      mctx.lineDashOffset = -(now * 0.022) % (13.5 * iz2);
-      path();
-      mctx.setLineDash([]);
-      mctx.lineDashOffset = 0;
-      mctx.globalCompositeOperation = 'source-over';
-      return;
-    }
-    /* At a line this thin on a background this dark the structure was only
-       just visible, and dimming a node dropped its links out of the picture
-       entirely — the shape of the graph is the point, so the quiet links are
-       given enough weight to survive being quiet. The second hop is quieter
-       again; it is context, not the subject. */
-    /* Every one of these was about a third thicker, and each carried a dark
-       casing nearly three pixels wider than itself. At two dozen links that is
-       a plate drawn in cable: the ink says "heavy wire", and the thing being
-       described is a citation. Thin enough to read as filament, and the
-       casing narrowed to match — it still has to break a crossing, it does
-       not have to outline the line. */
-    const lw = (far ? .5 : hot ? .8 : .72) * iz2;
-    /* the second hop is a thicket and casing every strand of it would print a
-       dark web over the dust; it is context, and context may overlap */
-    if (!far && !hot) casing(lw + 1.5 * iz2, 0.5 * grow);
-    setDash(dash);
-    mctx.globalCompositeOperation = 'lighter';
-    if (hot) {
-      /* ---- the spokes ----
-         Twenty-six identical lines from the middle to the first ring, and the
-         proposition every one of them states is "this note is a neighbour of
-         the note in the centre" — which is what being on the first ring
-         already says. Half the ink on the plate, carrying nothing, and the
-         links that do carry something (first ring to first ring: which of
-         these notes cite each other, i.e. where the clusters are) were drawn
-         in the same weight and lost inside the wheel.
-
-         They are not deleted, because a spoke that vanishes takes the sense
-         of attachment with it. They are faded out toward the star instead:
-         full weight where the line meets its note, nothing by the time it
-         reaches the middle. The attachment is still legible at the end where
-         you look for it, the hub stops being a knot of twenty-six converging
-         strokes, and the chords are left as the brightest structure on the
-         plate — which is the right way round. */
-      const rootA = (a === 0);
-      const lg = mctx.createLinearGradient(
-        rootA ? A.x : g.ex, rootA ? A.y : g.ey,
-        rootA ? g.ex : A.x, rootA ? g.ey : A.y);
-      lg.addColorStop(0.00, 'rgba(' + col + ',0)');
-      lg.addColorStop(0.45, 'rgba(' + col + ',' + (0.07 * grow).toFixed(3) + ')');
-      lg.addColorStop(1.00, 'rgba(' + col + ',' + (0.40 * grow).toFixed(3) + ')');
-      mctx.strokeStyle = lg;
-    } else {
-      mctx.strokeStyle = 'rgba(' + col + ',' +
-        ((far ? .15 : .34) * grow).toFixed(3) + ')';
-    }
-    mctx.lineWidth = lw;
-    path();
-    mctx.globalCompositeOperation = 'source-over';
-    mctx.setLineDash([]);
-  }
-
-  /* ---- orbit trails ----
-     The cosmos got these; the plate turns too, and for the same reason it
-     wanted them there. A node creeping round its ring reads as a dot that is
-     somewhere slightly different each time you look at it, and a short wake
-     behind it reads as a system going round.
-
-     Rest positions, not drawn positions: the wake is where the orbit has
-     been, and a node that has been flung out on its spring is somewhere the
-     orbit never took it. Stepping back is a rotation of the angle, so this is
-     one cos and one sin per node and no history to keep — the same trick the
-     orrery uses, and cheaper here, where there are sixty nodes rather than
-     three thousand.
-
-     Off when the orbits are, because then nothing has been anywhere. */
-  if (MM.orbit && SET.trl > 0.02 && age > 0.9) {
-    const amt = SET.trl;
-    const AX = MM.ax;
-    mctx.globalCompositeOperation = 'lighter';
-    mctx.lineCap = 'round';
-    MM.nodesL.forEach(n => {
-      if (n.root || !n.w) return;
-      const born = clamp((age - n.delay) / 0.34, 0, 1);
-      if (born < 0.6) return;
-      const [R, G, B] = mmRGB(n.i);
-      /* far enough back to be a wake, short enough not to become a ring */
-      const sweep = -0.30 * (n.w < 0 ? -1 : 1);
-      const M = 7;
-      let px2 = n.rx, py2 = n.ry;
-      for (let s = 1; s <= M; s++) {
-        const a2 = n.ang + sweep * (s / M);
-        const qx = Math.cos(a2) * n.ring * AX, qy = Math.sin(a2) * n.ring;
-        /* squared falloff, so it is brightest just behind the node and thins
-           to nothing rather than stopping */
-        const f = 1 - s / M;
-        mctx.strokeStyle = 'rgba(' + R + ',' + G + ',' + B + ',' +
-                           (f * f * 0.52 * amt * born).toFixed(3) + ')';
-        mctx.lineWidth = (n.r * 0.5 * f + 0.3) * iz;
-        mctx.beginPath(); mctx.moveTo(px2, py2); mctx.lineTo(qx, qy); mctx.stroke();
-        px2 = qx; py2 = qy;
-      }
-    });
-    mctx.globalCompositeOperation = 'source-over';
-  }
-
-  /* data pulses — the same travelling light the orrery runs along its links,
-     and the clearest signal that this is a live system and not a diagram */
-  if (MM.links.length && age > 0.8) {
-    mctx.globalCompositeOperation = 'lighter';
-    const pz = 1.9 / MM.zoom;
-    MM.pulses.forEach(p => {
-      const L = MM.links[p.e];
-      if (!L) return;
-      const A = MM.nodesL[L[0]], B = MM.nodesL[L[1]];
-      if (A.hop === 2 || B.hop === 2) return;
-      const g = linkGeom(A, B, 1);
-      const u = p.u, iu = 1 - u;
-      const x = iu*iu*A.x + 2*iu*u*g.cx + u*u*B.x;
-      const y = iu*iu*A.y + 2*iu*u*g.cy + u*u*B.y;
-      mctx.fillStyle = 'rgba(' + MM_LINK_COL[L[2]] + ',' +
-                       (Math.sin(u * Math.PI) * 0.85).toFixed(3) + ')';
-      mctx.beginPath(); mctx.arc(x, y, pz, 0, TAU); mctx.fill();
-    });
-    mctx.globalCompositeOperation = 'source-over';
-  }
-
-  /* Bodies, painted back to front: the dimmed ones first, then the rest, and
-     the star and whatever is under the pointer last. Drawing in list order
-     let a faded neighbour's halo wash over the node being read. */
-  const order = MM.order;
-  order.length = 0;
-  for (let k=0;k<MM.nodesL.length;k++) order.push(k);
-  const rank = k => {
-    const n = MM.nodesL[k];
-    if (k === MM.hover || n.i === MM.sel) return 3;
-    if (n.root) return 2;
-    if (focusI >= 0 && !n.root && n.i !== focusI &&
-        !(adj[focusI] && adj[focusI].has(n.i))) return 0;
-    return 1;
-  };
-  /* and within a rank, back to front. The plate is a disc seen from above and
-     slightly in front — MM.ax has always widened it into an ellipse, which is
-     what that means — so a node's height on screen is its distance from the
-     viewer. Sorting by it costs one comparison and buys the one thing a flat
-     drawing cannot fake: near things overlapping far ones. */
-  order.sort((p, q) => rank(p) - rank(q) || MM.nodesL[p].y - MM.nodesL[q].y);
-
-  const labelQ = [];
-  order.forEach(k => {
-    const n = MM.nodesL[k];
-    /* fade and swell into place on this node's own beat */
-    const born = clamp((age - n.delay) / 0.34, 0, 1);
-    if (born <= 0 && !n.root) return;
-    const ease = 1 - Math.pow(1 - born, 3);
-    const isSel = n.i === MM.sel, isHov = k === MM.hover;
-    /* enough of a drop to say "not this one", not so much that the rest of
-       the system stops being readable while you look at one node */
-    const dim = rank(k) === 0 ? (n.hop === 2 ? 0.34 : 0.46) : (n.hop === 2 ? 0.8 : 1);
-    /* a slow breath, biggest on the node being read: a system held by springs
-       that have settled should still look alive */
-    const breathe = 1 + Math.sin(now * 0.0016 + n.i * 1.7) * (isSel ? 0.030 : 0.014);
-    /* ---- depth ----
-       Where the node sits on its own ring, as a number from -1 at the far
-       edge to +1 at the near one. Two cues come off it and they are the two
-       every painter uses: things nearer are bigger, and things further away
-       lose contrast to the air between. Neither is large — this is a disc
-       seen almost face on, not a corridor — and both together are what stops
-       a ring reading as a circle drawn on glass. */
-    const zf = n.root ? 0 : clamp(n.y / Math.max(1, n.ring), -1, 1);
-    const persp = 1 + zf * 0.15;
-    const aerial = 1 - Math.max(0, -zf) * 0.24;
-    const pr = rad0(n.r * (isSel ? 1.22 : isHov ? 1.12 : 1) * (n.root ? 1 : ease)
-                    * breathe * persp);
-    if (pr < 0.3) return;
-    const [R, G, B] = mmRGB(n.i);
-    mctx.globalAlpha = (n.root ? 1 : ease) * dim * aerial;
-
-    if (n.root) {
-      /* the mount goes under the stone */
-      mmSetting(n.x, n.y, pr, iz, now);
-      mmDrawStar(n, pr, R, G, B, now);
-    }
-    else {
-      /* halo first, then the lit sphere turned so its bright limb faces the
-         star — the light in this view comes from the middle of the plate */
-      mctx.globalCompositeOperation = 'lighter';
-      const hr = pr * 3.4;
-      mctx.drawImage(mmHalo(R, G, B), n.x - hr, n.y - hr, hr * 2, hr * 2);
-      mctx.globalCompositeOperation = 'source-over';
-      const s = pr * MM_BK;
-      mctx.save();
-      mctx.translate(n.x, n.y);
-      /* No rotation. The old sphere was turned so its lit side faced the
-         middle of the plate; the shell that replaced it was turned to spread
-         the bearing of its wires. It has neither now — a circle inside a
-         circle is the same mark at every angle — so the transform is one
-         translate and the turn is simply not done. */
-      mctx.drawImage(mmBody(R, G, B), -s, -s, s * 2, s * 2);
-      mctx.restore();
-      mmDrawMoons(n, pr, born, iz);
-    }
-
-    /* A collet on the node under the pointer — the same idea as the star's
-       setting, one size down and without the claws. It is drawn for hover as
-       well as for selection, because on this plate hovering *is* reading, and
-       a mark that appears only after a click tells you what you already knew.
-
-       Under the selection arcs rather than over them: the arcs are the state
-       and this is the mount, and a mount drawn over its own stone is a bad
-       piece of jewellery. */
-    if ((isHov || isSel) && !n.root) {
-      mctx.strokeStyle = 'rgba(' + MM_GOLD + ',' + (isSel ? .34 : .22) + ')';
-      mctx.lineWidth = 1.2 * iz;
-      mctx.beginPath(); mctx.arc(n.x, n.y, rad0(pr * 1.95), 0, TAU); mctx.stroke();
-      mctx.strokeStyle = 'rgba(' + MM_GOLD_HI + ',' + (isSel ? .22 : .13) + ')';
-      mctx.lineWidth = iz;
-      mctx.beginPath(); mctx.arc(n.x, n.y, rad0(pr * 2.20), 0, TAU); mctx.stroke();
-    }
-
-    if (isSel && !n.root) {
-      /* the orrery's selection rig, flattened: two counter-turning arcs */
-      const sp = now * 0.0011;
-      mctx.strokeStyle = 'rgba(255,182,72,.95)'; mctx.lineWidth = 1.5*iz;
-      for (let s2=0;s2<2;s2++){
-        mctx.beginPath();
-        mctx.arc(n.x, n.y, rad0(pr + 5), sp + s2*Math.PI, sp + s2*Math.PI + 2.2);
-        mctx.stroke();
-      }
-      mctx.strokeStyle = 'rgba(255,182,72,.35)'; mctx.lineWidth = iz;
-      mctx.beginPath(); mctx.arc(n.x, n.y, rad0(pr + 8.5), -sp*1.6, -sp*1.6 + 4.4);
-      mctx.stroke();
-    }
-    /* the pointer's own mark: an arc pair that turns, so hover is legible
-       even on a node that is already selected */
-    if (isHov) {
-      const sp = now * 0.0022;
-      mctx.strokeStyle = 'rgba(255,255,255,.72)'; mctx.lineWidth = 1.3*iz;
-      for (let s2=0;s2<2;s2++){
-        mctx.beginPath();
-        mctx.arc(n.x, n.y, rad0(pr + 11), sp + s2*Math.PI, sp + s2*Math.PI + 0.9);
-        mctx.stroke();
-      }
-    }
-
-    /* Second-ring notes are context. Labelling all thirty-four of them turns
-       the outer orbit into a wall of text, so they speak only when the view
-       is zoomed in or the pointer is on them. */
-    const speak = n.hop !== 2 || isSel || isHov || MM.zoom > 1.25;
-    if (born > 0.35 && speak)
-      labelQ.push({ n, pr, a: ((born - 0.35) / 0.65) * dim, isSel, isHov });
-    mctx.globalAlpha = 1;
-    mctx.globalCompositeOperation = 'source-over';
-  });
-
-  mmDrawLabels(labelQ, iz);
-  mctx.restore();
-
-  mmBloom();
-}
-
-/* ---- bloom, on a 2D canvas ----
-   The plate fakes light the way a painter does: every glowing thing carries
-   its own radial gradient. That puts a halo on the object and stops there, so
-   nothing here ever lights anything else, and the cosmos next door — which
-   now has a real bloom — reads as the more luminous of the two for no reason
-   the vault could explain.
-
-   Canvas2D will do this in three draws. The whole plate goes into a quarter
-   size buffer through a filter that doubles as the bright pass: `contrast`
-   pivots at mid grey, so cranking it drives everything below halfway to black
-   and everything above it to white, which is a threshold with a soft knee for
-   free. Blur while it is small — a five pixel blur at a quarter scale is a
-   twenty pixel spill at full — then lay it back over the plate with `lighter`.
-
-   Drawn after the transform is released and before the vignette: bloom is
-   light in the scene, and the vignette is the lens the scene is seen through.
-
-   `filter` is checked rather than assumed. It is on everywhere this plugin
-   can run, but a canvas that silently ignores the string would paint the
-   whole plate over itself at full strength, and a wash-out is a much worse
-   failure than no bloom. */
-let MM_FILTER_OK = null;
-function mmBloom() {
-  const amt = SET.blm;
-  if (amt <= 0.02) return;
-  if (MM_FILTER_OK === null) {
-    const p = document.createElement('canvas').getContext('2d');
-    p.filter = 'blur(1px)';
-    MM_FILTER_OK = p.filter === 'blur(1px)';
-  }
-  if (!MM_FILTER_OK) return;
-  const bw = Math.max(1, Math.round(MM.w * MM.dpr / 4));
-  const bh = Math.max(1, Math.round(MM.h * MM.dpr / 4));
-  let b = MM.bloom;
-  if (!b || b.canvas.width !== bw || b.canvas.height !== bh) {
-    const c = document.createElement('canvas');
-    c.width = bw; c.height = bh;
-    b = MM.bloom = c.getContext('2d');
-  }
-  b.setTransform(1, 0, 0, 1, 0, 0);
-  b.globalCompositeOperation = 'copy';
-  b.filter = 'brightness(1.1) contrast(2.7) blur(5px)';
-  b.drawImage(mmc, 0, 0, bw, bh);
-  b.filter = 'none';
-  b.globalCompositeOperation = 'source-over';
-
-  mctx.save();
-  mctx.setTransform(MM.dpr, 0, 0, MM.dpr, 0, 0);
-  mctx.globalCompositeOperation = 'lighter';
-  /* held below the orrery's own strength on the same knob: the plate is a
-     smaller, denser picture and the same spill closes its gaps up */
-  mctx.globalAlpha = Math.min(1, amt * 0.62);
-  mctx.imageSmoothingEnabled = true;
-  mctx.drawImage(b.canvas, 0, 0, MM.w, MM.h);
-  mctx.restore();
-}
-
-/* ---- the star at the centre ----
-   The root is a note, not a category, so it keeps its system's colour — but
-   it is also the thing everything here orbits, and a lit sphere reads as a
-   rock. The corona is what makes it read as a sun. */
-function mmDrawStar(n, pr, R, G, B, now) {
-  const iz = 1 / MM.zoom;
-  mctx.save();
-  mctx.globalCompositeOperation = 'lighter';
-  /* Corona: the note's own hue pulled most of the way to starlight. It has to
-     stay inside the first orbit — at seven radii it reached past the inner
-     ring and the planets nearest the star were reading through a haze. */
-  const cr = pr * 5.0;
-  const wR = Math.round(R*0.35 + 255*0.65), wG = Math.round(G*0.35 + 240*0.65),
-        wB = Math.round(B*0.35 + 200*0.65);
-  const g = mctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, cr);
-  g.addColorStop(0.00, 'rgba(255,250,232,.50)');
-  g.addColorStop(0.09, 'rgba(' + wR + ',' + wG + ',' + wB + ',.30)');
-  g.addColorStop(0.30, 'rgba(' + wR + ',' + wG + ',' + wB + ',.10)');
-  g.addColorStop(0.62, 'rgba(' + R + ',' + G + ',' + B + ',.035)');
-  g.addColorStop(1.00, 'rgba(0,0,0,0)');
-  mctx.fillStyle = g;
-  mctx.beginPath(); mctx.arc(n.x, n.y, cr, 0, TAU); mctx.fill();
-
-  /* diffraction spikes — the one optical cue that says "this is a light
-     source" rather than "this is a big ball" */
-  const sp = now * 0.00012;
-  mctx.lineCap = 'butt';
-  for (let s = 0; s < 4; s++) {
-    const a = sp + s * Math.PI / 2;
-    const len = pr * (s % 2 ? 2.9 : 4.4);
-    const lg = mctx.createLinearGradient(n.x, n.y,
-      n.x + Math.cos(a)*len, n.y + Math.sin(a)*len);
-    lg.addColorStop(0, 'rgba(255,248,225,.42)');
-    lg.addColorStop(1, 'rgba(255,230,180,0)');
-    mctx.strokeStyle = lg;
-    mctx.lineWidth = 1.6 * iz;
-    mctx.beginPath();
-    mctx.moveTo(n.x, n.y);
-    mctx.lineTo(n.x + Math.cos(a)*len, n.y + Math.sin(a)*len);
-    mctx.stroke();
-  }
-  mctx.lineCap = 'round';
-  mctx.restore();
-
-  /* the surface: white at the centre, the note's colour at the limb */
-  const bg = mctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, pr);
-  bg.addColorStop(0.00, 'rgb(255,253,244)');
-  bg.addColorStop(0.42, 'rgb(' + Math.min(255,R+110) + ',' +
-                                 Math.min(255,G+100) + ',' +
-                                 Math.min(255,B+70) + ')');
-  bg.addColorStop(1.00, 'rgb(' + R + ',' + Math.round(G*.92) + ',' + Math.round(B*.7) + ')');
-  mctx.fillStyle = bg;
-  mctx.beginPath(); mctx.arc(n.x, n.y, pr, 0, TAU); mctx.fill();
-
-  /* and the tilted ring the orrery hangs on its category stars, seen from
-     above: an ellipse, turning */
-  const rr = pr * 2.35, rt = now * 0.00021;
-  mctx.strokeStyle = 'rgba(255,236,190,.30)';
-  mctx.lineWidth = 1.2 * iz;
-  mctx.beginPath();
-  mctx.ellipse(n.x, n.y, rad0(rr), rad0(rr * 0.30), rt, 0, TAU);
-  mctx.stroke();
-  mctx.strokeStyle = 'rgba(255,236,190,.13)';
-  mctx.beginPath();
-  mctx.ellipse(n.x, n.y, rad0(rr * 1.34), rad0(rr * 0.40), rt + 1.2, 0, TAU);
-  mctx.stroke();
-}
-
-/* ---- moons ----
-   childrenOf is the raw originals tethered to a curated note, which in the
-   orrery are exactly that note's satellites. Drawing them as satellites here
-   too means the mind map and the cosmos agree about what a note is made of. */
-function mmDrawMoons(n, pr, born, iz) {
-  const kids = childrenOf[n.i];
-  if (!kids || !kids.length || born < 0.6 || pr < 3.5) return;
-  const shown = Math.min(kids.length, 8);
-  const mo = pr + 6.5;
-  mctx.strokeStyle = 'rgba(200,225,255,.09)';
-  mctx.lineWidth = iz;
-  mctx.beginPath(); mctx.arc(n.x, n.y, rad0(mo), 0, TAU); mctx.stroke();
-  mctx.globalCompositeOperation = 'lighter';
-  for (let s = 0; s < shown; s++) {
-    const a = (s / shown) * TAU + MM.clock * 0.42 + n.i * 0.7;
-    const c = mmRGB(kids[s]);
-    mctx.fillStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',.85)';
-    mctx.beginPath();
-    mctx.arc(n.x + Math.cos(a)*mo, n.y + Math.sin(a)*mo, rad0(1.5), 0, TAU);
-    mctx.fill();
-  }
-  mctx.globalCompositeOperation = 'source-over';
-}
-
-/* ---- labels ----
-   Drawn in one pass after every body, so a name is never buried under the
-   next planet's halo.
-
-   Two things make a ring of Korean note titles readable. They are hung
-   *outward* along the radius rather than always underneath, so a wheel of
-   them fans out instead of stacking into a column either side of the star;
-   and what still collides is dropped, most important first, because a name
-   half-covered by another name is worse than no name at all. */
-const MM_LFONT = '"Malgun Gothic","Apple SD Gothic Neo",sans-serif';
-function mmDrawLabels(q, iz) {
-  if (!q.length) return;
-  q.sort((a, b) => (b.isSel|0) - (a.isSel|0) || (b.isHov|0) - (a.isHov|0) ||
-                   (a.n.hop - b.n.hop) || (b.pr - a.pr));
-  const placed = [];
-  q.forEach(L => {
-    const n = L.n, nd = nodes[n.i];
-    const full = L.isSel || L.isHov;
-    let nm = nd.n;
-    if (!full && nm.length > 16) nm = nm.slice(0, 15) + '…';
-    else if (nm.length > 30) nm = nm.slice(0, 29) + '…';
-    const fs = (n.root ? 13 : n.hop === 2 ? 9.5 : 11) /
-               Math.max(0.8, Math.min(MM.zoom, 1.6));
-    if (n._t !== nm) {
-      mctx.font = '500 11px ' + MM_LFONT;
-      n._w = mctx.measureText(nm).width;
-      n._t = nm;
-    }
-    const w = n._w * fs / 11, hh = fs * 1.2;
-    const d = Math.hypot(n.x, n.y);
-    const side = !n.root && d >= 1 && Math.abs(n.x / d) > 0.36;
-    const dir = side ? (n.x > 0 ? 1 : -1) : (n.y > 0 ? 1 : -1);
-    /* the star has no outward direction, and its own ring lives at 2.35r */
-    const align = n.root || d < 1 ? 'center' : side ? (dir > 0 ? 'left' : 'right') : 'center';
-    const base  = n.root || d < 1 ? 'top' : side ? 'middle' : (dir > 0 ? 'top' : 'bottom');
-    const at = g => {
-      if (n.root || d < 1) {
-        const y = n.y + n.r * 2.9;
-        return { ax:n.x, ay:y, box:[n.x - w/2, y, n.x + w/2, y + hh] };
-      }
-      if (side) {
-        const x = n.x + dir * g;
-        return { ax:x, ay:n.y,
-                 box:[dir > 0 ? x : x - w, n.y - hh/2, dir > 0 ? x + w : x, n.y + hh/2] };
-      }
-      const y = n.y + dir * g;
-      return { ax:n.x, ay:y,
-               box:[n.x - w/2, dir > 0 ? y : y - hh, n.x + w/2, dir > 0 ? y + hh : y] };
-    };
-    const clash = box => {
-      for (let p = 0; p < placed.length; p++) {
-        const o = placed[p];
-        if (box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1]) return true;
-      }
-      return false;
-    };
-    const gap = n.r + 7 * iz;
-    /* Sliding a name a little further out along its own radius clears most
-       collisions on a ring, and costs nothing to read — it is still plainly
-       attached to its node. Only what is still buried after two nudges is
-       dropped, because a half-covered name is worse than no name. */
-    let pos = at(gap);
-    if (!(n.root || full)) {
-      let ok = !clash(pos.box);
-      for (let tries = 1; !ok && tries <= 2; tries++) {
-        pos = at(gap + tries * hh * 1.35);
-        ok = !clash(pos.box);
-      }
-      if (!ok) return;
-    }
-    const ax = pos.ax, ay = pos.ay;
-    placed.push(pos.box);
-    mctx.globalAlpha = L.a;
-    mctx.font = (n.root ? '600 ' : '500 ') + fs.toFixed(1) + 'px ' + MM_LFONT;
-    mctx.textAlign = align; mctx.textBaseline = base;
-    /* Names sat straight on top of the links and vanished into them wherever
-       the two crossed. A dark stroke laid under the glyphs costs one extra
-       pass and makes every label readable over anything. */
-    mctx.lineJoin = 'round';
-    mctx.strokeStyle = 'rgba(1,4,10,.94)';
-    mctx.lineWidth = 3.4 * iz;
-    mctx.strokeText(nm, ax, ay);
-    mctx.fillStyle = L.isSel ? '#ffd79a'
-                   : n.root ? '#fff4dd'
-                   : n.hop === 2 ? 'rgba(200,226,244,.6)'
-                   : 'rgba(228,248,255,.86)';
-    mctx.fillText(nm, ax, ay);
-    /* The subject of the map gets a rule under it, in the same gold as the
-       rings, tapered to nothing at both ends.
-
-       A title with a line under it is the oldest typographic way of saying
-       "this one is the thing" — and every alternative here is worse: making
-       it larger fights the star it sits beneath, making it brighter puts it
-       in the same register as the selection, and a box around it would be a
-       label on a plate that has no other boxes. The taper is what keeps it
-       from reading as a table cell: a rule with hard ends is a border, and a
-       rule that fades is an underline. */
-    if (n.root) {
-      const uy = ay + hh * 1.02, uw = Math.max(w, 26 * iz) * 0.62;
-      const ug = mctx.createLinearGradient(ax - uw, 0, ax + uw, 0);
-      ug.addColorStop(0.00, 'rgba(' + MM_GOLD + ',0)');
-      ug.addColorStop(0.50, 'rgba(' + MM_GOLD_HI + ',.62)');
-      ug.addColorStop(1.00, 'rgba(' + MM_GOLD + ',0)');
-      mctx.strokeStyle = ug;
-      mctx.lineWidth = 1.1 * iz;
-      mctx.beginPath();
-      mctx.moveTo(ax - uw, uy); mctx.lineTo(ax + uw, uy);
-      mctx.stroke();
-    }
-  });
-  mctx.globalAlpha = 1;
-}
-
-/* ---- pointer ---- */
-function mmLocal(ev) {
-  const r = mmc.getBoundingClientRect();
-  return { x: (ev.clientX - r.left - MM.w/2 - MM.px) / MM.zoom,
-           y: (ev.clientY - r.top  - MM.h/2 - MM.py) / MM.zoom };
-}
-/* The tolerance is a screen distance and the board is scaled, so it has to be
-   divided back out: a flat 15 units of board space was a 7px target at the
-   minimum zoom and a 48px blob at the maximum, which is why aiming in here
-   felt wrong at both ends. Overlapping nodes are separated by how far into
-   each one the cursor is, not by raw distance, so the small node on top of a
-   big one is still reachable. */
-function mmPick(ev, prefer) {
-  const p = mmLocal(ev);
-  const pad = 11 / MM.zoom;
-  let best = -1, bs = 1e9;
-  MM.nodesL.forEach((n, k) => {
-    const d = Math.hypot(n.x - p.x, n.y - p.y);
-    const t = n.r + pad;
-    if (d > t) return;
-    let s = d / t;
-    if (k === prefer) s -= 0.14;             // held nodes keep a small edge
-    if (s < bs) { bs = s; best = k; }
-  });
-  return { k: best, x: p.x, y: p.y };
-}
-let mmPanFrom = null;
-mmc.addEventListener('pointerdown', e => {
-  const p = mmPick(e, MM.hover);
-  MM.mx = p.x; MM.my = p.y;
-  if (p.k < 0) {
-    /* empty space drags the whole board */
-    MM.panning = true;
-    mmPanFrom = { cx:e.clientX, cy:e.clientY, px:MM.px, py:MM.py };
-    mmc.classList.add('drag');
-    try { mmc.setPointerCapture(e.pointerId); } catch(err) {}
-    return;
-  }
-  const n = MM.nodesL[p.k];
-  mmSide(n.i);
-  const now = performance.now();
-  /* Same trap as the orrery: the first click of a pair can move what the
-     second one lands on — a node nudged by the drag, or one that has simply
-     orbited on. Two clicks in the same place count even if the second one
-     resolved to a different node. */
-  const near = Math.hypot(e.clientX - MM.lastX, e.clientY - MM.lastY) < 18;
-  if ((MM.lastIdx === p.k || near) && now - MM.lastClick < 400) {
-    MM.lastClick = 0; MM.lastIdx = -1; MM.lastX = MM.lastY = -1e4;
-    buildMind(n.i);                       // double click re-centres the system
-    return;
-  }
-  MM.lastClick = now; MM.lastIdx = p.k; MM.lastX = e.clientX; MM.lastY = e.clientY;
-  if (p.k > 0) {
-    MM.drag = p.k; mmc.classList.add('drag');
-    try { mmc.setPointerCapture(e.pointerId); } catch (err) {}
-  }
-});
-mmc.addEventListener('pointermove', e => {
-  if (MM.panning && mmPanFrom) {
-    MM.px = mmPanFrom.px + (e.clientX - mmPanFrom.cx);
-    MM.py = mmPanFrom.py + (e.clientY - mmPanFrom.cy);
-    return;
-  }
-  const p = mmPick(e, MM.hover);
-  MM.mx = p.x; MM.my = p.y;
-  MM.hover = MM.drag >= 0 ? MM.drag : p.k;
-  mmc.classList.toggle('node', MM.drag < 0 && p.k >= 0);
-});
-const mmEnd = () => {
-  MM.drag = -1; MM.panning = false; mmPanFrom = null;
-  mmc.classList.remove('drag');
-};
-mmc.addEventListener('pointerup', mmEnd);
-mmc.addEventListener('pointercancel', mmEnd);
-mmc.addEventListener('pointerleave', () => { MM.hover = -1; });
+function toggleMind() { mindOpen ? closeMind() : openMind(); }
 
 $('mm-close').onclick = closeMind;
-$('mind').addEventListener('pointerdown', e => { if (e.target === $('mind')) closeMind(); });
 $('mm-go').onclick = () => {
   const i = MM.sel;
   closeMind();
@@ -10825,7 +9473,6 @@ $('mm-center').onclick = () => { if (MM.sel !== MM.root) buildMind(MM.sel); };
    is the case where you do want both on screen at once. */
 $('mm-open').onclick = e => openNote(MM.sel, e);
 $('i-mm').onclick = () => openMind(selected);
-addEventListener('resize', () => { if (mindOpen) { mmResize(); buildMind(MM.root, {push:false}); } });
 /* ============================================================ SHIP MODE
    The orrery rig looks at the vault from outside. This flies through it.
 
@@ -12027,6 +10674,8 @@ function tapNode(i, e) {
   const near = Math.hypot(e.clientX - clickX, e.clientY - clickY) < DBL_SLOP;
   if (now - clickT < DBL_MS && (clickIdx === i || near)) {
     clickT = 0; clickIdx = -1; clickX = clickY = -1e4;
+    /* inside the map the same gesture means the next step of the same walk */
+    if (mindOpen) { buildMind(i); return; }
     select(i); openMind(i); return;
   }
   clickT = now; clickIdx = i; clickX = e.clientX; clickY = e.clientY;
@@ -12108,10 +10757,13 @@ addEventListener('keydown', e => {
       if (MM.sel !== MM.root) buildMind(MM.sel);      // walk to the highlighted node
     }
     else if (k === 'backspace') { e.preventDefault(); $('mmback').onclick(); }
-    else if (k === 'f') { e.preventDefault(); mmFit(); }
+    else if (k === 'f') { e.preventDefault(); mmFrame(true); }
     else if (k === 'g') { e.preventDefault(); $('mm-go').onclick(); }
     else if (k === '2') { e.preventDefault(); mmSetHop(!MM.hop2); }
-    else if (k === 'o') { e.preventDefault(); mmSetOrbit(!MM.orbit); }
+    /* everything the map does not claim — orbiting the camera, zooming,
+       ORBIT SPEED — is the cosmos's, because in this mode the cosmos is
+       what the reader is looking at */
+    else return;
     return;
   }
 
@@ -12491,7 +11143,6 @@ function resize() {
   const pr = renderer.getPixelRatio();
   bloomSize(Math.max(1, Math.round(w * pr)), Math.max(1, Math.round(h * pr)));
   layoutHUD();
-  if (mindOpen) mmResize();
 }
 addEventListener('resize', resize);
 
@@ -12741,7 +11392,7 @@ function updatePositions(dtms) {
     /* the hub is where the formation starts: nothing, then a point, then a
        sun, with the light it casts on everything else coming up with it */
     const ig = GEN.on ? genScale[coreIdx] : 1;
-    sunObj.visible = ig > 0.001;
+    sunObj.visible = ig > 0.001 && !mindOpen;
     /* SUN GLOW is the one brightness knob that is not only a matter of how
        the frame looks: the hub is the vault's light source, so turning it
        down darkens everything it lights, which is the point. */
@@ -12807,6 +11458,11 @@ function updatePositions(dtms) {
     P[i*3+1] = P[p*3+1] + (ca*_ou[1] + sa*_ov[1]) * mr + DSP[i*3+1];
     P[i*3+2] = P[p*3+2] + (ca*_ou[2] + sa*_ov[2]) * mr + DSP[i*3+2];
   }
+  /* The mind map's own system, over the top of the two passes above. It is
+     placed rather than fallen into, and it never writes MA or AREF — so the
+     real orbits underneath are still turning, and closing the map hands
+     every body back exactly where the cosmos had it. */
+  if (mindOpen) { mindPos(dOrb); mmGuideStep(); }
   /* both passes have now written a reference axis for every body, so the
      next frame measures a^-3/2 against it instead of overwriting it */
   arefDone = true;
@@ -12814,6 +11470,16 @@ function updatePositions(dtms) {
 
 function updateVisibility(dt) {
   const k = 1 - Math.pow(0.004, dt);
+  /* The mind map answers one question and everything else in the vault is a
+     different question's answer, so nothing else is lit. Ahead of every
+     other rule here — a filter, a selection or the cockpit clamp all take
+     the whole cosmos as their subject, and in this mode there isn't one. */
+  if (mindOpen) {
+    for (let i=0;i<N;i++)
+      alpha[i] = lerp(alpha[i], MM.has.has(i) ? 1 : 0, k);
+    updateStars(dt);
+    return;
+  }
   for (let i=0;i<N;i++){
     const c = catOf[i];
     let want = c.on ? 1 : 0.02;
@@ -12854,7 +11520,7 @@ function updateStars(dt) {
   let dirty = false;
   cats.forEach((c, ci) => {
     if (!c.op0) return;
-    let want = c.on ? 1 : 0;
+    let want = mindOpen ? 0 : c.on ? 1 : 0;
     /* during the formation a star does not exist until it condenses */
     if (GEN.on) want *= GEN.u >= c.genT
       ? clamp((GEN.u - c.genT) / GEN.grow, 0, 1) : 0;
@@ -13031,6 +11697,20 @@ function writeInstances() {
   const fpx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
   const st = bodyGeo.attributes.aStar;
   for (let i=0;i<N;i++){
+    /* In the map a body has no kind. The radii were flattened to the hop in
+       mindSizes for exactly one reason — a body's size is how far out it is
+       and nothing else — and the halo is the other half of that claim: the
+       kind decides the sprite's brightness, whether it takes the phase, and
+       which of the three SIZE knobs scales it, so a hub note left as a
+       'core' comes out twice as bright as the neighbours beside it on the
+       same lane. Which is what it did: a soft ball of light two lanes wide
+       with no body inside it, because the core's instance is collapsed for
+       the sun to draw and the sun is not drawn in here.
+
+       So every body on the plate is read as a planet, and the two lines
+       below that treat the core as a special case stop firing on it. */
+    const mmKind = mindOpen && MM.has.has(i) ? 'wiki' : orb[i].kind;
+    const mmCore = mmKind !== orb[i].kind && i === coreIdx;
     _pos.set(P[i*3], P[i*3+1], P[i*3+2]);
     /* where this body's light is coming from, this frame */
     starLightAt(i, spr, gs, bStar.subarray(i*4, i*4+4));
@@ -13038,12 +11718,18 @@ function writeInstances() {
        rather than off the parent's own orbit, so a planet dragged by the
        reader takes its shadow with it the way it takes its moons. */
     if (bOcc[i*4+3] > 0) {
-      const q = orb[i].anchorNode;
-      bOcc[i*4] = P[q*3]; bOcc[i*4+1] = P[q*3+1]; bOcc[i*4+2] = P[q*3+2];
+      /* the occluder is a moon's planet, which in the mind map is wherever
+         the cosmos left it — an eclipse cast from off-stage is worse than
+         no eclipse, so it is sent out of range instead */
+      if (mindOpen) { bOcc[i*4] = 0; bOcc[i*4+1] = 1e7; bOcc[i*4+2] = 0; }
+      else {
+        const q = orb[i].anchorNode;
+        bOcc[i*4] = P[q*3]; bOcc[i*4+1] = P[q*3+1]; bOcc[i*4+2] = P[q*3+2];
+      }
     }
     /* the core has its own unlit geometry, so its instance is collapsed to
        nothing rather than drawn black inside the sun */
-    let s = (i === coreIdx && sunObj) ? 0 : RAD[i];
+    let s = (i === coreIdx && sunObj && !mindOpen) ? 0 : RAD[i];
     /* the body whose own world has been generated is drawn by the hero mesh */
     if (i === heroIdx && heroReady) s = 0;
     /* during the formation a body is still condensing, and the ripple gives
@@ -13058,14 +11744,29 @@ function writeInstances() {
     if (i === selected) dim = 1;
     else if (i === hovered) dim = Math.min(1, dim * 1.35);
     if (rip && ripN[i] > 0.004) dim += ripN[i] * 0.9;
-    const kb = KIND_BRI[orb[i].kind] || 1;
+    const kb = KIND_BRI[mmKind] || 1;
     const cf = Math.min(1.8, dim * (0.55 + bri * kb * 0.45));
     ic[i*3]   = COL[i*3]   * cf;
     ic[i*3+1] = COL[i*3+1] * cf;
     ic[i*3+2] = COL[i*3+2] * cf;
 
     gPos[i*3]=P[i*3]; gPos[i*3+1]=P[i*3+1]; gPos[i*3+2]=P[i*3+2];
-    let a = alpha[i] * (orb[i].kind==='wiki' ? .62 : orb[i].kind==='core' ? 1 : .38);
+    let a = alpha[i] * (mmKind==='wiki' ? .62 : mmKind==='core' ? 1 : .38);
+    /* The index note keeps its gold, and a little of its standing with it.
+
+       Read as a planet like everything else on the lane — same law, same
+       phase, same size — and then held to half. Which looks backwards for
+       something that is meant to stand out, and is not: equal alpha is not
+       equal presence when the hues are this far apart. The wheel is drawn in
+       teals against a blue-black sky and its halos disappear into it within
+       a few pixels; the hub's gold is the sky's opposite and stays legible a
+       long way out at the same number. At parity it read as a lamp with a
+       wheel of dark beads around it — the neighbours were the thing being
+       buried, and they are what the map is for. Halved, it is the one body
+       on the lane wearing a visible glow, which is all "this is the index"
+       has to say. Its colour is already the hub's, so this is the whole of
+       the difference. */
+    if (mmCore) a *= 0.5;
     const dcx = P[i*3]-ccx, dcy = P[i*3+1]-ccy, dcz = P[i*3+2]-ccz;
     const dcam = Math.sqrt(dcx*dcx + dcy*dcy + dcz*dcz);
     /* The halo is reflected light, and reflected light has a phase.
@@ -13081,7 +11782,7 @@ function writeInstances() {
        halo goes, because a world seen from orbit does not glow; it is lit,
        and the terminator and the limb are now doing the work the sprite was
        faking. The floor keeps a breath of atmosphere. */
-    if (orb[i].kind !== 'core') {
+    if (mmKind !== 'core') {
       const sx = bStar[i*4]-P[i*3], sy = bStar[i*4+1]-P[i*3+1], sz = bStar[i*4+2]-P[i*3+2];
       const ls = Math.sqrt(sx*sx + sy*sy + sz*sz);
       const ph = 0.5 * (1 + (sx*dcx + sy*dcy + sz*dcz) / (ls * dcam + 1e-6));
@@ -13239,6 +11940,14 @@ function writeLinks() {
   const lift = (0.20 + 0.34 * (1 - SET.ten)) * SET.arc;
   const bow  = 0.05 + 0.09 * (1 - SET.ten);
   const scanSet = (ship.on && ship.scan && ship.surveyed >= 0) ? scanLit : null;
+  /* Clicking a body in here asks one question — what is this note joined to
+     — and the answer is only legible if the rest of the wheel gets out of the
+     way: at seventeen neighbours every one of them is crossed by a dozen
+     links that have nothing to do with the one being read. So the selection
+     holds the others down in the map exactly as it does out in the cosmos.
+
+     The map opens with its own middle selected, so the state this starts in
+     is the note's own links lit, which is the picture it was opened for. */
   const lnk = SET.lnk, sel = selected;
   /* the scan burns the links of the body it was taken of, not of whatever the
      nose has drifted onto since — see setScan */
@@ -14005,14 +12714,13 @@ function frameLoop(now) {
   /* the surface camera is placed from this frame's positions, not the last
      one's — standing on a body that is itself in orbit, a frame of lag is a
      frame of the whole sky sliding */
-  cometStep(dt);
-  meteorStep(dt);
+  if (!mindOpen) cometStep(dt);
   updateVisibility(dt);
   heroStep(dt);
   const _p1 = perfNow();
   /* Now that this frame's positions are final, answer the pointer — every
      frame, not only when the mouse moves, because the bodies move too. */
-  if (pointerIn && !ship.on && !dragging && !mindOpen)
+  if (pointerIn && !ship.on && !dragging)
     hovered = pickAt(mouseNDC.x, mouseNDC.y, hovered);
   const _p2 = perfNow();
   stepLinkLayers(dt);
@@ -14031,8 +12739,6 @@ function frameLoop(now) {
   twinWrite();
   const _p5 = perfNow();
   audioStep();
-
-  if (mindOpen) { mindStep(dt); mindDraw(now); }
 
   /* one clock for every glow material: twinkle, flare, scintillation */
   const gt = now * 0.001;
@@ -14090,7 +12796,7 @@ function frameLoop(now) {
   /* half the viewport height over tan(fov/2): multiply by a radius and divide
      by a distance and the answer is that radius in pixels */
   const glarePx = (innerHeight * 0.5) / Math.tan(camera.fov * Math.PI / 360);
-  if (coronaObj && N) {
+  if (coronaObj && N && !mindOpen) {
     /* the corona has to shrink with distance more slowly than a sphere does,
        or it either vanishes up close or eats the screen from far away */
     const d = camera.position.length();
@@ -15786,7 +14492,34 @@ window.vaultOrrery = {
                     cls: +ship.cls.toFixed(2), heat: +ship.heat.toFixed(3),
                     sys: ship.sys ? ship.sys.code : null,
                     cands: ship.cands.length, rear: ship.rear, filter: ship.filter
-                  } : null }),
+                  } : null,
+                  /* ---- the mind map ----
+                     It has no state of its own on screen worth reading: what
+                     it does is rewrite positions, radii and alphas in place
+                     and give them all back on the way out, none of which any
+                     other line here reports. `lit` is how much of the vault
+                     is showing, and hopRadii is the claim the mode makes —
+                     one drawn radius per hop, or null where two bodies the
+                     same distance from the middle came out different sizes.
+
+                     radiiRestored is the same question asked from outside
+                     the mode, and it is the one that can fail quietly: a
+                     radius left flattened after the map closed is a cosmos
+                     that has silently stopped reporting citation counts. */
+                  mind: mindOpen ? {
+                    root: MM.root, lit: MM.has.size,
+                    lanes: MM.rr.map(r => +r.toFixed(1)),
+                    hopRadii: [0,1,2].map(h => {
+                      const on = MM.list.filter(e => e.hop === h);
+                      if (!on.length) return 0;
+                      const r0 = RAD[on[0].i];
+                      return on.every(e => RAD[e.i] === r0) ? +r0.toFixed(3) : null;
+                    })
+                  } : null,
+                  radiiRestored: !!(N && RAD0 &&
+                    RAD.every((r, i) => Math.abs(r - RAD0[i] *
+                      (orb[i].kind === 'core' ? SET.szSun
+                       : orb[i].kind === 'moon' ? SET.szMn : SET.szPl)) < 1e-3)) }),
   setHosted,
   setVisible(on) { RUN.host = !!on; runSync(); },
   setIgnoreFilters,

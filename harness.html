@@ -171,6 +171,43 @@ window.__run = async () => {
     if (/touched/i.test(bare))
       throw new Error('a note with no file time claimed one: ' + bare);
   });
+  /* ---- the mind map ----
+     It is a mode of the live scene now rather than a canvas over the top of
+     it, so nothing about it can be exercised without a frame: what it does is
+     rewrite positions, sizes and alphas in place and hand them all back on
+     the way out. The assertion that matters is that last part — a mode that
+     leaks its own geometry into the cosmos is the failure this shape of
+     change invites, and it would show up nowhere else. */
+  await step('mind map builds, walks and hands the cosmos back', async () => {
+    const settle = () => new Promise(r => setTimeout(r, 260));
+    api.revealPath('research/optics.md');
+    await settle();
+    const before = api.debug();
+    root.querySelector('#i-mm').click();
+    await settle();
+    if (!root.querySelector('#mind').classList.contains('on'))
+      throw new Error('the rail never opened');
+    const inMap = api.debug();
+    if (!(inMap.mind && inMap.mind.lit > 1))
+      throw new Error('nothing was lit in the map: ' + JSON.stringify(inMap.mind));
+    /* every body at the same hop is drawn at the same size — the whole of
+       what this mode claims */
+    if (inMap.mind.hopRadii.some(r => r === null))
+      throw new Error('two bodies one hop out came out different sizes');
+    log.push('   lit ' + inMap.mind.lit + ' of ' + inMap.nodes +
+             ' · radii ' + JSON.stringify(inMap.mind.hopRadii));
+    /* walking re-roots without leaving the place the system stands in */
+    root.querySelector('#mm-links a')?.click();
+    await settle();
+    root.querySelector('#mm-close').click();
+    await settle();
+    const after = api.debug();
+    if (root.querySelector('#mind').classList.contains('on'))
+      throw new Error('the rail never closed');
+    if (after.nodes !== before.nodes) throw new Error('node count moved');
+    if (after.mind && after.mind.lit) throw new Error('the map is still lit');
+    if (!after.radiiRestored) throw new Error('the drawn sizes were not handed back');
+  });
   /* A reload the user did not ask for must not move the camera. */
   await step('quiet reload keeps the view', async () => {
     api.revealPath('research/lasers.md');

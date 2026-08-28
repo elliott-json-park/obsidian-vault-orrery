@@ -243,7 +243,7 @@ const STORE = store && typeof store.get === 'function' ? store : (() => {
 const epilogue = `
 /* Resizing is the host's call: a leaf can change size without the window
    doing anything, so a window resize event is not enough on its own. */
-API.resize = () => { resize(); layoutHUD(); if (mindOpen) mmResize(); };
+API.resize = () => { resize(); layoutHUD(); };
 API.root = root;
 const _destroy = API.destroy;
 API.destroy = () => {
@@ -342,7 +342,12 @@ const GLOBALS = new Set([
 /* Comments and string literals go first. GLSL lives in template strings and is
    full of things that look like calls — sin(), vec3(), texture2D() — and prose
    in a comment does the same the moment it says "condenses (roughly)". */
-const bare = js
+/* The generator's own preamble and epilogue go through this too. They were
+   exempt, which is exactly how API.resize kept calling a mind-map function
+   for one build after that function was deleted: the check read the engine's
+   source and the dead call was in the seam bolted onto it. Anything that
+   ends up inside createOrrery() is code, whoever wrote it. */
+const bare = [preamble, js, epilogue].join('\n')
   /* Regex literals go before comments: a pattern is not code either, and
      /^wiki(\/|$)/ reads as a call to wiki() otherwise. Recognised by what can
      precede one — an operator or an opening bracket, never a value — which is

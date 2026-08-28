@@ -240,9 +240,6 @@ the opposite one: if the code uses a word, the word has to be doing work in it.
   rather than amber, because that is what Thomson-scattered photospheric
   light is. The glare around a star is the published CIE glare equation, not
   a curve picked to look right.
-- **A meteor's light climbs and then stops**, flares where the grain breaks
-  up, wears the metal's colour at its head and oxygen's green in its wake,
-  and leaves a train that spreads and drifts after it has gone.
 - **The Milky Way is lumpy, narrows toward the anticentre, and its rift only
   runs down one side**, because the star clouds are sight lines down an arm,
   the band is a disc seen from inside it rather than a ribbon laid over the
