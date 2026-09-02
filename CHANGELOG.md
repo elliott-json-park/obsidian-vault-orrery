@@ -4,6 +4,207 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.13.0
+
+The light was all built and none of it was switched on. It is on now, and
+turning it on found the reason it had never been: the film curve was lifting
+the blacks instead of leaving them alone. And three things that stood between
+the reader and the cosmos — a spaceship, a similarity guesser and a preset
+switch — are gone, so what is left is the vault, lit.
+
+### What is drawn
+
+- **The picture ships lit.** BLOOM, FILM CURVE, SPLIT TONE, LENS and GRAIN
+  were all written, all argued for at length in the source, and all shipped at
+  zero — so the frame everybody actually saw was the one those notes were
+  complaining about: a sun that is a flat white coin, folder stars that are
+  pale dots, and a highlight that clips rather than rolls off. All five are on
+  at the defaults now, chosen against each other rather than one at a time,
+  and the frame gate is unchanged, so anyone who turns them off gets the plain
+  path back exactly as before.
+
+- **LINK GLOW opens at 0.15× and STARFIELD at 0.40×.** Both were tuned for a
+  frame with no bloom in it. With the bloom on, links at 0.42× were the
+  brightest thing in the picture — a web of light with a vault somewhere
+  behind it — and a starfield at 1.20× competed with the systems for the eye.
+  The links are now a structure you read and the sky is a place the vault
+  sits in. A saved value that is the old default to the digit is moved to the
+  new one once; a value somebody chose is left alone.
+
+- **A note is never smaller than a star.** A glow sprite scales with range,
+  and past a few thousand units every planet in the vault had scaled to under
+  a pixel and gone: the opening frame was ten folder stars and nothing else, a
+  vault of four hundred notes reading as a vault of ten. The node and star
+  sprites now have a floor in pixels, the way a star in a photograph is never
+  smaller than the seeing lets it be, so every note stays a point of light
+  from as far as the camera goes. The sky's own points keep no floor; the sky
+  is meant to fall away.
+
+- **The opening frame is closer.** 1.25 of the fitted radius rather than 1.7.
+  The percentile fit already drops the scatter; what was left was a frame
+  with the vault in its middle third and black round it.
+
+- **Each system sits in its own gas.** From across the vault a folder was a
+  coloured point with a name under it and the room its orbits take up was
+  black, which is a diagram's idea of a system. A cluster of young stars sits
+  in the cloud it condensed out of, lit from inside by its own light, and that
+  faint colour round a bright point is most of what makes a region of sky read
+  as a place. So every wiki system gets three very large, very dim points in
+  its own colour — a core on the star and two lobes out along an axis of the
+  system's own, because gas is drawn out along whatever compressed it and a
+  single gaussian is a round fog — sized to its orbits and riding ORBIT GAP
+  and ORBIT SPREAD live. It is a map-range object — full from four reaches
+  out, gone by a reach and a half, because up close a haze in front of the
+  planets is fog over the thing you came to look at. SYSTEM GLOW scales it
+  with the star.
+
+- **The worlds are worn, and their air shows.** Two planets of one folder
+  were the same planet twice. The hull plating now varies slowly over groups
+  of plates as well as plate by plate, so each has weathering of its own; the
+  day gradient carries more of the star's light; and the atmosphere on the
+  limb — Rayleigh blue at noon, copper at the terminator, a white forward
+  halo when the star is behind — is turned up to where it can be seen at the
+  range a planet is actually read from.
+
+- **The HUD steps back.** Nine seconds without a hand on the mouse or a key
+  and the four panels fade to a quarter, over a couple of seconds; any input
+  brings them straight back. They are most of the frame at leaf sizes, and
+  the frame is what the view is for. Never while searching, in Genesis or in
+  the mind map, and never to nothing.
+
+- **The film curve was lifting the blacks, not leaving them alone.** Below the
+  knee the shoulder term is zero, so the whole expression is the straight part
+  — which has to be the pixel and was the knee itself. Every value under 0.72
+  came out *at* 0.72 and was then mixed back toward itself, so empty space at
+  rgb(3,5,12) left the composite at rgb(72,73,77): a grey sky, in a renderer
+  whose entire subject is points of light on a black one. It never showed
+  because the knob shipped at zero. Both halves still meet with the same
+  slope, which is what the exponential was chosen for.
+
+- **The bloom spills only what is over.** The bright pass masked rather than
+  subtracted, so a mid-grey region that crossed the threshold contributed all
+  of itself — and the sky is full of exactly that: the galaxy's band, a nebula
+  complex, the dust disk, four thousand starfield points. None of them bright,
+  all of them over, and three chained blurs spreading their sum across the
+  frame. What a lens spills is the light in excess of what the sensor could
+  hold, so the threshold is subtracted now. A star's core still blooms; the
+  Milky Way no longer washes the frame it is in.
+
+- **A folder's colour is computed from how many folders there are.** It was
+  eleven hues in a list, taken modulo the count — so a twelfth top-level
+  folder got hue number one back exactly, in the legend and in the sky, and a
+  vault with twelve of them is ordinary rather than large. The list also
+  spanned 82°, which is seven degrees a folder, and seven degrees at this
+  saturation is a difference you can measure and cannot see. The band is 148°
+  now — aqua to magenta, still one arc of the wheel, stopping short of the
+  green that reads as a highlighter and of the warm end that belongs to star
+  temperature and to the HUD's amber — and it is divided by the count, so
+  there is no list to run out of. The order is a stride rather than a walk,
+  because adjacent legend rows are what get compared, and saturation and
+  lightness cycle underneath the hue so that the closest pair in any palette
+  is never relying on hue alone.
+
+- **A folder star keeps its colour at map range.** Its glow sprite was mixed
+  0.62 of the way to white, and that sprite is the only thing carrying a
+  system's identity from across the vault — the disc is four pixels, the ring
+  is under one, and the label has usually been arbitrated away. It is 0.44
+  now. The core stays white, which is what a bright source looks like.
+
+- **The opening frame is of the vault, not of its furthest body.** fitView
+  took the maximum radius over every node, and the maximum is the one
+  statistic this cosmos cannot be described by: the archive shell and the far
+  end of the undated spiral are a handful of bodies sitting a long way outside
+  everything else, and the whole picture was being backed off until they were
+  in it. The ninety-third percentile instead — every folder star and every
+  planet kept, the scatter that was setting the range on its own dropped.
+
+### What is gone
+
+- **The spaceship.** `F` put you in a cockpit with WASD, a scanner, a radar
+  bowl, a contacts list, a rear scan, a folder filter, a patrol, a heat alarm,
+  a warp field, streaking stars, motion blur, camera shake and its own engine
+  noise — a second application inside the first, with its own HUD, its own
+  key map, its own sound and eleven hundred lines of its own. Everything it
+  did that mattered to reading a vault the orrery already does from where you
+  are: the inspector's travel button goes to a note, the ripple lights what a
+  note is tied to, the mind map lays its neighbourhood out. What the cockpit
+  added was a game over the instrument, and the two were fighting for the
+  same screen. Gone with it: SHIP THRUST and SPEED FEEL, the `ship` command,
+  the radar's own store key, the two cockpit passes in the composite, the
+  streak arithmetic in the glow shader, the thruster, the rumble, the
+  proximity alarm and the Doppler on the ping.
+
+- **Twins.** `N` proposed notes alike but not yet linked, from shared tags and
+  shared neighbours, and drew the proposals in violet across the cosmos. A
+  guess, drawn in the same space as the facts, and a guess about the vault is
+  the editor's question rather than the orrery's. The `twins` command and the
+  inspector's button go with it.
+
+- **Latent links.** The parser inferred a third kind of edge from tags between
+  orphans and the notes that shared them, and LINK LAYER had a LATENT stop
+  for it. Same reasoning: the cosmos shows what the vault says. It is ALL ·
+  WIKI · SOURCE · OFF now, the violet is out of the legend, and the vault's
+  edge count is the count of links that are written.
+
+- **The look switch.** PLAIN · DEEP · CINEMA lived on the deck for the length
+  of one unreleased build. Two of the three differed from each other by
+  amounts that needed a pixel probe to tell apart, and a control whose
+  positions cannot be seen is a control that should not be on the deck. The
+  defaults are what DEEP was; PLAIN is every LIGHT knob at OFF, which they all
+  reach; and CINEMA's one real difference — the orbits leaning out of the
+  plane — is ORBIT TILT, which is still there.
+
+### What is heard
+
+- **A note comes from where it is.** Every ping is placed in the stereo field
+  at its body's position on screen, through a panner made for that one voice,
+  so a note on the left is heard on the left and the ones still ringing do not
+  slew toward the newest.
+
+- **The ripple is heard.** The wave already lights each note as its front
+  arrives; it sounds it now too, in the note's own pitch, quieter with every
+  hop in step with the light. A shell of notes reached together is queued a
+  few tens of milliseconds apart rather than struck at once — an arpeggio,
+  which is what a wave crossing a structure sounds like — and a shell too big
+  for its moment is cut rather than compressed. Genesis borrows the same voice
+  for bodies as they condense, so a replay of the formation is a melody in
+  the vault's own order. **RIPPLE** under SOUND is the level, and goes to OFF.
+
+- **The room follows the range.** The one thing the camera does all day is
+  move in and out, and the sound knew nothing about it. Pulled back to take
+  in the whole vault the drone closes down and the tail comes forward; in
+  among the planets it opens up and dries out. Small on purpose, and slewed,
+  so a zoom is a movement rather than a wobble.
+
+### Underneath
+
+- **The build parses what it writes.** A backtick inside a comment inside a
+  GLSL template string closes the string, and everything after it becomes code
+  — a syntax error a hundred lines from the character that caused it. Nothing
+  here could see it: the substitutions all match, the residue scan is regexes
+  over text, the call check strips template strings before it looks, and the
+  smoke test never gets as far as parsing the engine. `new Function` on the
+  output does, and costs nothing.
+
+- **The harness reads the frame back off the GPU.** The curve bug was a
+  pixel, and a pixel is the one thing the build and the smoke test cannot
+  see. A new step resets the deck and reads the corner of the frame through
+  `readPixels`, asserting that empty space is still empty and that RESET
+  lands on the two defaults this release pinned. A second step asserts the
+  removed modes are neither commands nor markup. The harness takes a store
+  now, so what happens to settings written by an older version can be tested
+  at all.
+
+- **The new defaults reach the people who never chose the old ones.** A blob
+  saved before this holds five explicit zeros for the grade, and they are
+  real numbers, so the load keeps them — correctly, because overwriting a
+  setting somebody chose is the one thing a load must never do. All five at
+  zero is exactly what the old defaults left behind and is the only evidence
+  available that nobody has been in there, so that state is moved to the lit
+  defaults once, marked, and never asked about again. LINK GLOW and
+  STARFIELD get the same treatment by value: the old default to the digit
+  moves, anything else stays.
+
 ## 1.12.0
 
 The mind map is not drawn on top of the cosmos any more. It is drawn *in* it.
