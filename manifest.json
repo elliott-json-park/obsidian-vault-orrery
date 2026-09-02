@@ -1,9 +1,9 @@
 {
   "id": "vault-orrery",
   "name": "Vault Orrery",
-  "version": "1.13.0",
+  "version": "1.13.1",
   "minAppVersion": "1.7.2",
-  "description": "Fly through your vault as a star system — a 3D graph with a spaceship, a surface mode and a formation timeline. Runs entirely offline.",
+  "description": "Your vault as a lit star system — folders are stars, notes are planets, sources are moons — with a mind map, a Genesis timeline that plays the vault's formation, and ambient sound. Runs entirely offline.",
   "author": "Elliott Park",
   "authorUrl": "https://github.com/elliott-json-park",
   "fundingUrl": "https://github.com/sponsors/elliott-json-park",

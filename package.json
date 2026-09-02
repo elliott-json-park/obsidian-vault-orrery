@@ -1,7 +1,7 @@
 {
   "name": "vault-orrery",
-  "version": "1.13.0",
-  "description": "Fly through your Obsidian vault as a star system.",
+  "version": "1.13.1",
+  "description": "Your vault as a lit star system — folders are stars, notes are planets, sources are moons — with a mind map, a Genesis timeline that plays the vault's formation, and ambient sound. Runs entirely offline.",
   "main": "main.js",
   "//": "No \"type\": \"module\" — Obsidian loads main.js as CommonJS, and declaring the package as ESM makes Node treat the built bundle as a module too. Build scripts use .mjs instead.",
   "scripts": {

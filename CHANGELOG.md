@@ -4,6 +4,16 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.13.1
+
+- **The description says what the plugin is.** The line the community list
+  shows — and the one in the manifest — still promised a spaceship and a
+  surface mode. The ship went in 1.13.0 and the surface mode some releases
+  before that; neither is what anyone installing this will find. It now says
+  what is there: a lit star system, a mind map, Genesis, ambient sound, and
+  nothing fetched from anywhere. The same wording is submitted to the
+  community list, which keeps its own copy.
+
 ## 1.13.0
 
 The light was all built and none of it was switched on. It is on now, and
