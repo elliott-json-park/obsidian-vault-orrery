@@ -104,7 +104,7 @@ function scopeSelector(sel) {
     if (s === ':root' || s === 'html' || s === 'body' || s === 'html,body') return '.' + CLS;
     /* the reset has to reach the root as well as its descendants */
     if (s === '*') return `.${CLS}, .${CLS} *`;
-    /* body.ship / body.sky / body.look / body.cursor are mode flags that the
+    /* body.sky and the like are mode flags that the
        engine now toggles on the root */
     if (/^body(?=[.#:\[])/.test(s)) return '.' + CLS + s.slice(4);
     if (/^html(?=[.#:\[])/.test(s)) return '.' + CLS + s.slice(4);
@@ -182,15 +182,15 @@ js = subRx(js, /\binnerWidth\b/g,  'VW()', 8, 'innerWidth -> VW()');
 js = subRx(js, /\binnerHeight\b/g, 'VH()', 8, 'innerHeight -> VH()');
 
 /* 4. mode flags live on the root, not on <body> */
-js = subRx(js, /document\.body\.classList/g, 'root.classList', 3, 'body.classList -> root.classList');
+js = subRx(js, /document\.body\.classList/g, 'root.classList', 2, 'body.classList -> root.classList');
 
 /* 5. the i18n sweep and the language chips must not reach outside this view */
 js = subRx(js, /document\.querySelectorAll/g, 'root.querySelectorAll', 5, 'querySelectorAll scoped');
 
 /* 6. listeners have to be removable, or every reopened leaf leaves a live
       keydown handler behind that still drives an orrery nobody can see */
-js = subRx(js, /^addEventListener\(/gm,          'onWin(', 11, 'window listeners -> tracked');
-js = subRx(js, /^document\.addEventListener\(/gm, 'onDoc(', 2,  'document listeners -> tracked');
+js = subRx(js, /^addEventListener\(/gm,          'onWin(', 10, 'window listeners -> tracked');
+js = subRx(js, /^document\.addEventListener\(/gm, 'onDoc(', 1,  'document listeners -> tracked');
 /* the audio arming pair is indented and removes itself when it fires, but a
    leaf closed before the first click would leave both behind */
 js = sub(js,
@@ -210,7 +210,7 @@ js = sub(js,
       it hands it a store it has already hydrated, and STORE.set() is what
       schedules the write back. */
 js = subRx(js, /\blocalStorage\.getItem\(/g, 'STORE.get(', 4, 'localStorage.getItem -> host store');
-js = subRx(js, /\blocalStorage\.setItem\(/g, 'STORE.set(', 5, 'localStorage.setItem -> host store');
+js = subRx(js, /\blocalStorage\.setItem\(/g, 'STORE.set(', 4, 'localStorage.setItem -> host store');
 
 /* 7. the missing-dependency screen cannot fire here (three is bundled), but it
       still refers to the page */
@@ -301,6 +301,31 @@ for (const [name, rx, allowed] of residue) {
 }
 if (dirty) fail(`${dirty} page-level references survived. The engine changed shape; ` +
                 `add or adjust a substitution above.`);
+
+/* ---- does the thing parse ----
+   The cheapest check here and the last one to be added, because the failure
+   it catches did not look possible until it happened twice in an afternoon:
+   a backtick typed inside a comment inside a GLSL template string. The
+   shader source is a template literal, so the stray backtick closes it, and
+   everything after it up to the next one becomes code — a syntax error a
+   hundred lines away from the character that caused it.
+
+   Nothing else here would find it. The substitutions all matched, the
+   residue scan is a set of regexes over text, the call check strips template
+   strings before it looks, and the smoke test never gets as far as parsing
+   this file. What did find it was the harness refusing to start, which is
+   two builds and a browser reload away from the edit.
+
+   `new Function` parses without running: import and export are the only two
+   things in the output it cannot take, and neither can be malformed here
+   because this script writes both. */
+try {
+  new Function(out.replace(/^import .*$/m, '').replace(/^export /gm, ''));
+} catch (e) {
+  fail(`the generated module does not parse: ${e.message}. ` +
+       `Most likely a backtick inside one of the shader template strings.`);
+}
+notes.push(`     1  generated module parses`);
 
 /* Every $('id') must exist in the markup that ships with it. Deleting a
    feature means deleting both its panels and its code, and a lookup left

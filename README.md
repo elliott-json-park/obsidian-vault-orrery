@@ -1,16 +1,16 @@
 # Vault Orrery
 
-**Fly through your vault as a star system.**
+**Your vault as a star system.**
 
-Vault Orrery renders your notes as an orbiting cosmos you can pilot: folders
-become stars, notes become planets, and the sources they cite become moons.
+Vault Orrery renders your notes as an orbiting cosmos: folders become stars,
+notes become planets, and the sources they cite become moons.
 
 > **Not another galaxy graph.** Several plugins draw your vault as a starfield.
-> This one is a *flight simulator* for it: a WASD spaceship with a scanner and
-> radar, orbits you can open from a disc into a sphere, and a Genesis timeline
-> that plays the vault's formation from void to present. If you only want a
-> prettier graph, the other plugins are lighter and you should use one of
-> those.
+> This one is an *orrery* of it: every folder is a lit system sitting in its
+> own gas, every note is a world in orbit round its star, orbits you can open
+> from a disc into a sphere, and a Genesis timeline that plays the vault's
+> formation from void to present. If you only want a prettier graph, the
+> other plugins are lighter and you should use one of those.
 
 ---
 
@@ -29,9 +29,9 @@ can be reading a second later.
 - **Get there from anywhere.** *Reveal the active note in the orrery* is a
   command, **Show in Vault Orrery** is on every note's context menu, and the
   camera will follow the editor if you turn that on in settings.
-- **Every mode is a command**, so the spaceship, Genesis, the mind map, the
-  reference plane, the poster and the rest can be bound to whatever keys you
-  like. None is bound by default.
+- **Every mode is a command**, so Genesis, the mind map, the reference plane,
+  the poster and the rest can be bound to whatever keys you like. None is
+  bound by default.
 - **You are told how to fly it once.** The first time a vault loads, a card
   names the four moves that are enough to get going, over the cosmos it has
   just built. Any key dismisses it and it is not shown again; `?` brings it
@@ -108,13 +108,56 @@ clock and the audio context are all suspended when the view's leaf is hidden or
 the window is in the background, and resume where they left off. An orrery in a
 background tab costs nothing.
 
-If a large vault still runs slowly, the cheapest wins are lowering **LINK
-GLOW**, turning **STARFIELD** down, and reducing **MAX NODES**.
+If a large vault still runs slowly, the first thing to try is turning
+**BLOOM** and the four grade knobs under LIGHT to OFF, which puts the renderer
+back on the path it takes when nothing has been asked for. After that, the
+cheapest wins are lowering **LINK GLOW**, turning **STARFIELD** down, and
+reducing **MAX NODES**.
 
 Keeping up with the vault re-reads every note each time it rebuilds, debounced
 so that writing a note costs one rebuild rather than one per save. On a vault
 large enough for that to be felt, turn **Keep up with the vault** off in
 settings; the *Reload vault* command then does it when you ask.
+
+---
+
+## How it is lit
+
+The picture ships lit: BLOOM and the four grade knobs under LIGHT are on at
+the defaults, chosen against each other rather than one at a time — the curve
+is what stops the bloom clipping to flat white, the split is what stops the
+curve reading as grey, the lens is what stops the split reading as a colour
+cast, and the grain is what stops the whole thing banding in the dark. Every
+one of them goes to OFF, and with all of them off the renderer takes the plain
+path and the composite never runs.
+
+Each folder's system sits in a faint, drawn-out cloud of its own colour, the
+size of its orbits. It is a map-range thing — it is what a system looks like
+from where you can see the whole of it, and it fades out as the camera comes
+inside, so up close there is no fog over the planets you came to read. SYSTEM
+GLOW scales it with the star it belongs to. Every note stays a point of light
+however far out you go: the sprites have a floor in pixels, the way a star in
+a photograph does.
+
+Leave the mouse alone for nine seconds and the panels fade back to let the
+picture through; any input brings them back. `H` hides them outright.
+
+Underneath, the grade is the same four things a camera does:
+
+- **the bloom** is veiling glare. It spills only the light *in excess* of what
+  the frame could hold, so a star's core throws light across the picture and
+  the Milky Way behind it does not.
+- **the curve** is the shoulder a sensor has and eight bits do not. Above the
+  knee each further photon moves the value less, so a star core, a dense knot
+  of links and the sun's own disc stop clipping to the same flat white. Below
+  the knee it does nothing at all: the dark here is empty space, not
+  underexposure, and a curve that greys it out is describing a room with the
+  lights off.
+- **the split** puts the shadows cold and the highlights warm, which every
+  emulsion does and which the eye reads as depth. It multiplies, so it cannot
+  add light to something that has none.
+- **the lens** is a vignette and colour separating toward the corners, and
+  **the grain** is a floor of noise that stops a dark gradient banding.
 
 ---
 
@@ -141,9 +184,9 @@ class of body at once. They never change the *ratios* between notes — a body's
 radius is its citation count and that is worth reading — so what moves is how
 big the whole class is drawn. Four controls rather than one because the
 complaint is never "everything is too small": it is a hub that swallows its
-inner ring on a vault with one enormous folder, or moons that are specks from
-the deck of the ship. Orbits widen with the body they stand off from, so
-nothing turned up ends up with its satellites inside it.
+inner ring on a vault with one enormous folder, or moons that are specks up
+close. Orbits widen with the body they stand off from, so nothing turned up
+ends up with its satellites inside it.
 
 **SUN GLOW**, **SYSTEM GLOW**, **PLANET GLOW** and **MOON GLOW** do the same
 for brightness. NODE GLOW is still the master and moves all of them together;
@@ -281,42 +324,23 @@ the vault.
 
 ---
 
-## Flying it
+## Hearing it
 
-`F` puts you in the cockpit. WASD moves, QE goes up and down, the mouse looks,
-`SHIFT` is the throttle.
+`U` switches the sound on; it is off by default and nothing is built until it
+is. What it plays is the vault: every note has a pitch of its own, taken from
+a scale you choose, and selecting one sounds it. Three things on top of that:
 
-- **Arriving is a capture.** Travel to a note — from the inspector, from the
-  mind map, from search — and the ship falls into orbit around it and stays
-  there, in the plane it arrived on. Come in from below and you end up in a
-  polar orbit. Any key on the stick hands control back, with the speed the
-  orbit had.
-- **The deck says whether you are getting there.** A time to arrival on
-  whatever is locked, measured to the orbit you would end up in rather than to
-  the body itself, and accounting for the target's own motion — a note is a
-  planet, and it is going somewhere too. The reticle reaches two thirds of the
-  way across the cosmos, so it answers about places you can see and have not
-  reached yet rather than only about what you are nearly on top of.
-- **A scan stays taken.** `SPACE` lights up everything the locked note is tied
-  to, and it keeps them lit while you turn to look at where they went. Only
-  `SPACE` again puts them out.
-- **You are told which system you are in.** Crossing into a folder's territory
-  announces it, and the deck names it the whole time you are inside.
-- **The scanner reports everything it found.** The aiming cone usually holds
-  four or five bodies; the CONTACTS panel lists them, `1`–`6` holds one against
-  the cone's own opinion, `B` turns the cone round to see what you just passed,
-  and `T` filters it to one folder at a time.
-- **The radar has a third dimension.** It is a bowl, not a plan: the ship's
-  plane is an ellipse and height off it is a real vertical offset with a stalk
-  and a shadow, so above and below are told apart at a glance. The locked
-  note's links are drawn between blips.
-- **Do not fly into the star.** Inside six stellar radii the exposure goes, the
-  frame warms and an alarm pulses faster the closer you get.
-- **`X` flies it for you.** An ambient tour that walks the graph to notes you
-  have not visited, dwelling in orbit at each long enough to read its name.
-
-**SPEED FEEL** on the control panel scales the camera shake and the radial
-motion blur together, and goes to zero.
+- **Notes come from where they are.** A ping is placed in the stereo field
+  where its body sits on screen, so a note on the left is heard on the left.
+- **The ripple is heard.** `SPACE` sends a wave out along the links from the
+  selected note, and each note it reaches sounds as the front arrives —
+  quieter with every hop, and a shell of notes reached together lands as an
+  arpeggio rather than a chord. Genesis borrows the same voice for bodies as
+  they condense, so a replay of the vault's formation is a melody in its own
+  order. **RIPPLE** under SOUND is how loud that is, and goes to OFF.
+- **The room follows the range.** Pulled back to take in the whole vault the
+  drone closes down and the tail comes forward; in among the planets it
+  opens up and dries out.
 
 ---
 
@@ -327,13 +351,10 @@ motion blur together, and goes to zero.
 | `O` · ctrl/cmd-click | open the note in Obsidian |
 | `/` | search |
 | `M` · double-click | mind map |
-| `F` | spaceship (WASD to fly, `SPACE` to scan links) |
-| in the cockpit | `1`–`6` hold a contact · `B` rear scan · `T` filter · `X` patrol · `[` `]` radar size |
 | `G` | Genesis — play the vault's formation |
-| `N` | find twins (notes alike but not yet linked) |
 | `SPACE` | ripple from the selected note |
 | `P` | save a poster (high-resolution PNG, no HUD) |
-| `L` | cycle the link layer |
+| `L` | cycle the link layer — ALL · WIKI · SOURCE · OFF |
 | `X` | the reference plane on the layout's own plane |
 | `U` | ambient sound |
 | `R` · `H` | reset view · hide HUD |

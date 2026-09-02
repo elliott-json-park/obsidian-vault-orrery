@@ -55,8 +55,19 @@ host.appendChild(root);
 const doc = new DOMParser().parseFromString(ENGINE_HTML, 'text/html');
 while (doc.body.firstChild) root.appendChild(doc.body.firstChild);
 
+/* A store, the way the plugin supplies one. The engine falls back to a
+   plain Map without it, which is fine for drawing a frame and useless for
+   the one thing a store is for: what happens to settings written by an
+   older version. Backed by web storage under a prefix of its own so a blob
+   can be seeded before a reload and read back after one. This file is a
+   scratch rig and is not shipped, so the rule against the engine touching
+   web storage does not reach it. */
+const store = {
+  get: k => localStorage.getItem('harness:' + k),
+  set: (k, v) => localStorage.setItem('harness:' + k, String(v)),
+};
 let api = null;
-try { api = createOrrery(root); log.push('created'); }
+try { api = createOrrery(root, store); log.push('created'); }
 catch (e) { log.push('createOrrery: ' + e.message + ' | ' + (e.stack||'').split('\n')[1]); }
 window.__api = api;
 
@@ -224,6 +235,79 @@ window.__run = async () => {
     if (!/lasers/.test(root.querySelector('#i-name').textContent))
       throw new Error('the inspector is showing ' + root.querySelector('#i-name').textContent);
     log.push('   range before ' + cam + ' after ' + root.querySelector('#s-dist').textContent);
+  });
+
+  /* ---- the grade, and the black it must not lift ----
+     The grade shipped switched off for a release, and turning it on found a
+     sign error in the film curve that had been sitting in the composite the
+     whole time: below the knee the shoulder returned the knee itself rather
+     than the pixel, so empty space came out at rgb(72,73,77) instead of
+     rgb(3,5,12). A grey sky, in a renderer whose entire subject is points of
+     light on a black one.
+
+     Nothing in this repository could have seen it. The build checks the text
+     of the file, the smoke test never draws, and the one number that would
+     have given it away is a pixel. So it is asked for here, directly: with
+     everything at its shipped default, read the corner of the frame back off
+     the GPU.
+
+     The corner, and a patch of it rather than a point — the failure was a
+     pedestal under the whole image, so its signature is that *every* pixel
+     of a region that should hold nothing is lifted. The tenth-percentile
+     pixel is what is read: a system's haze or a starfield point wandering
+     into the patch lifts the bright end of it and leaves the dark end where
+     it was, and a pedestal lifts the dark end with everything else. */
+  await step('the lit defaults leave empty space empty', async () => {
+    const cv = root.querySelector('#gl');
+    const gl = cv.getContext('webgl2') || cv.getContext('webgl');
+    if (!gl) throw new Error('no GL context to read back from');
+    /* Read inside the frame callback. The drawing buffer belongs to the
+       compositor the moment this task ends, and the renderer is not asked
+       to preserve it — so the only place its contents can be seen is
+       between the engine's own frame returning and the task finishing. */
+    const S = 48;
+    const meanCorner = () => new Promise(res => {
+      const raf = window.requestAnimationFrame;
+      window.requestAnimationFrame = cb => raf(t => {
+        cb(t);
+        window.requestAnimationFrame = raf;
+        try {
+          const px = new Uint8Array(S * S * 4);
+          gl.readPixels(2, 2, S, S, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          const lum = new Float32Array(S * S);
+          for (let i = 0, j = 0; i < px.length; i += 4, j++) lum[j] = (px[i] + px[i+1] + px[i+2]) / 3;
+          lum.sort();
+          res(lum[Math.floor(S * S * 0.10)]);
+        } catch (e) { res(-1); }
+      });
+    });
+    root.querySelector('#b-rst').click();
+    await new Promise(r => setTimeout(r, 520));
+    const sky = +(await meanCorner()).toFixed(1);
+    if (sky < 0) throw new Error('the frame could not be read back');
+    if (sky > 12)
+      throw new Error('the defaults lifted the corner of the sky to ' + sky +
+                      ' — the composite is adding a pedestal to the blacks');
+    /* and the two defaults this release pinned are what RESET lands on */
+    const set = JSON.parse(localStorage.getItem('harness:orrery2.set') || '{}');
+    if (Math.abs(set.lnk - 0.15) > 0.001 || Math.abs(set.str - 0.4) > 0.001)
+      throw new Error('RESET landed on lnk ' + set.lnk + ' / str ' + set.str);
+    log.push('   dark end of the sky ' + sky + ' · lnk ' + set.lnk + ' · str ' + set.str);
+  });
+
+  /* ---- what is gone stays gone ----
+     The cockpit, the twins and the look switch were each a panel, a key, a
+     command and a store key. A leftover from any of them is a $() lookup the
+     build would catch, or a command the palette would still offer — which
+     the build would not. */
+  await step('the removed modes are not offered', async () => {
+    const cmds = api.commands();
+    const left = ['ship', 'twins', 'look'].filter(c => cmds.includes(c));
+    if (left.length) throw new Error('still commands: ' + left.join(', '));
+    const el = ['shud', 'radar', 'xhair', 'canopy', 'looksel', 'i-twins']
+      .filter(id => root.querySelector('#' + id));
+    if (el.length) throw new Error('still in the markup: ' + el.join(', '));
+    log.push('   ' + cmds.length + ' commands · ' + cmds.join(' '));
   });
   return log;
 };
