@@ -12,6 +12,9 @@ notes become planets, and the sources they cite become moons.
 > formation from void to present. If you only want a prettier graph, the
 > other plugins are lighter and you should use one of those.
 
+![Uploading 1.png…]()
+
+
 ---
 
 ## It is wired into the editor
