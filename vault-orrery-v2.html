@@ -1020,6 +1020,14 @@ const $ = id => document.getElementById(id);
 const TAU = Math.PI * 2;
 const clamp = (v,a,b) => v<a?a:(v>b?b:v);
 const lerp  = (a,b,t) => a+(b-a)*t;
+/* Note names, folder names and tags come out of somebody's vault, and several
+   panels build their rows as markup. This is what stands between the two.
+
+   It escapes the three characters that matter *between* tags, and quotes are
+   deliberately not among them — every use here puts the result in text
+   position, and there is no call site where it lands inside an attribute. If
+   one is ever added, this is not the function for it: escape the quotes too,
+   or set the attribute through the DOM. */
 const esc = s => String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
 
 /* ====================================================================== I18N
@@ -1206,6 +1214,12 @@ const STR = {
 'load.empty':  ['읽을 노트가 없습니다','No notes to read','読めるノートがありません','没有可读的笔记'],
 'load.render': ['렌더 실패 — 빈 우주로 복귀','Render failed — back to empty space',
                 'レンダー失敗 — 空の宇宙に戻ります','渲染失败 — 返回空白宇宙'],
+'gl.lost':     ['그래픽 컨텍스트를 잃었습니다 — 복구를 기다리는 중',
+                'Lost the graphics context — waiting for the browser to give it back',
+                'グラフィックスコンテキストを失いました — 復帰を待っています',
+                '图形上下文已丢失 — 正在等待恢复'],
+'gl.restored': ['그래픽 컨텍스트 복구됨','Graphics context restored',
+                'グラフィックスコンテキストが復帰しました','图形上下文已恢复'],
 'vault.empty': ['빈 우주','EMPTY SPACE','空の宇宙','空白宇宙'],
 'cat.rawYear': ['{y} 원문','{y} SOURCES','{y} 原文','{y} 原始材料'],
 'cat.rawUndated':['무연도 원문','UNDATED SOURCES','年不明の原文','无日期原始材料'],
@@ -11138,8 +11152,19 @@ function writeHUD(now) {
    Suspending means the whole instrument stops, not just the draw: the physics
    clock, the camera pump feeding the hand tracker, and the audio context. A
    webcam that keeps running behind a note you switched to is both a battery
-   drain and, more to the point, a surprise.                                  */
-const RUN = { host: true, running: false, raf: 0 };
+   drain and, more to the point, a surprise.
+
+   `lost` is the third way the instrument can be off, and the only one that is
+   nobody's decision. A GPU driver reset, a laptop waking from sleep, a machine
+   under memory pressure — any of these can take the WebGL context away, and
+   what is left behind looks exactly like a working plugin: the panels are laid
+   out, the vault is loaded, the keys respond, and the canvas is black forever.
+   three stops drawing when that happens and says so on the console, which is
+   the one place a user is not looking. Holding it in the gate means the frame
+   loop stops burning a core simulating a cosmos nobody can see, and the toast
+   means the black rectangle has an explanation attached to it.               */
+const RUN = { host: true, running: false, raf: 0, lost: false };
+
 
 /* ==================================================== FRAME BUDGET
    Half the comments in this file argue about milliseconds — the link writer
@@ -11173,7 +11198,7 @@ const PERF = {
 function perfMix(k, v) { PERF[k] = PERF[k]*0.9 + v*0.1; }
 function perfNow() { return PERF.on ? performance.now() : 0; }
 
-function runShould() { return RUN.host && !document.hidden; }
+function runShould() { return RUN.host && !document.hidden && !RUN.lost; }
 function runSync() { runShould() ? runResume() : runPause(); }
 
 function runPause() {
@@ -11203,6 +11228,40 @@ function runResume() {
   if (AUD.on && AUD.ctx && AUD.ctx.state === 'suspended') AUD.ctx.resume().catch(()=>{});
 }
 document.addEventListener('visibilitychange', runSync);
+
+/* Context loss, which three already half-handles and nobody else finishes.
+
+   three's own listeners sit on this same canvas and were bound first, at
+   construction: they call preventDefault() — which is what tells the browser
+   it is worth trying to hand the context back — flip an internal flag that
+   turns render() into a no-op, and on the way back run initGLContext(), which
+   rebuilds every GL-side object from the JS-side data still in memory. Nothing
+   in the cosmos is lost across that: the geometries, the instance buffers and
+   every CanvasTexture are ours and were never on the GPU alone.
+
+   What three does not do is tell anyone. Its whole report is a console.log,
+   and the user's report is "it stopped drawing". So the two things left are
+   both here: stop the loop while there is no context to draw with, and put
+   the reason on screen. Bound on the canvas rather than the window because
+   that is the element the events are dispatched at, and because a listener on
+   a node inside the root leaves with the root — there is nothing for destroy()
+   to remember. */
+canvas.addEventListener('webglcontextlost', () => {
+  RUN.lost = true;
+  runSync();
+  /* Long, because it is not a status change the user asked for and there is
+     nothing on screen behind it to read instead. */
+  toast(T('gl.lost'), 8000);
+}, false);
+
+canvas.addEventListener('webglcontextrestored', () => {
+  RUN.lost = false;
+  /* The drawing buffer comes back at whatever size the new context chose, and
+     the leaf may well have been resized while we were dark. */
+  resize();
+  runSync();
+  toast(T('gl.restored'));
+}, false);
 
 function frameLoop(now) {
   RUN.raf = requestAnimationFrame(frameLoop);
@@ -12930,6 +12989,9 @@ window.vaultOrrery = {
   /* The run gate, in the host's terms. A canvas that never paints looks the
      same from outside whatever the reason, and the reason is in here. */
   debug: () => ({ running: RUN.running, host: RUN.host, raf: RUN.raf,
+                  /* the one reason for a black canvas that is not somebody's
+                     choice — see the RENDER GATING block */
+                  glLost: RUN.lost,
                   hidden: document.hidden, frames: frame, nodes: N,
                   /* the gap spring, which nothing else reports and which
                      three separate things scale off — the ring structure,
