@@ -6,6 +6,7 @@ note you can be reading a second later. Runs entirely offline.
 
 ![A 263-note vault drawn as a star system: twelve lit folder-stars — MENUS, PRINCIPLES, SERVICE-NOTES, BAKERY — with their notes in orbit and the links drawn between them](docs/screenshots/hero.jpg)
 
+
 ---
 
 ## Not another galaxy graph
