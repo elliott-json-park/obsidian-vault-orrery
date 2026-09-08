@@ -1,7 +1,7 @@
 {
   "id": "vault-orrery",
   "name": "Vault Orrery",
-  "version": "1.13.1",
+  "version": "1.13.2",
   "minAppVersion": "1.7.2",
   "description": "Folders become stars, notes orbit them, and a Genesis timeline replays how your vault grew. Open any note with one click. Runs entirely offline.",
   "author": "Elliott Park",

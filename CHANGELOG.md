@@ -4,6 +4,37 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.13.2
+
+- **A lost graphics context no longer looks like a working plugin.** A driver
+  reset, a laptop waking from sleep, a machine under memory pressure — any of
+  these can take the WebGL context away, and it is the one way the instrument
+  goes off that is nobody's decision. What it leaves behind looks exactly like
+  a working plugin: the panels are laid out, the vault is loaded, the keys
+  respond, and the canvas is black forever. three stops drawing when that
+  happens and reports it to the console, which is the one place a user is not
+  looking. `lost` is now the third thing the run gate asks about, so the frame
+  loop stops rather than burning a core simulating a cosmos nobody can see,
+  and a toast — in all four languages — gives the black rectangle an
+  explanation. Nothing in the cosmos is lost across the round trip: the
+  geometries, the instance buffers and every texture are ours and were never
+  on the GPU alone, so what comes back is the view you left.
+
+- **The description leads with what you see.** The line the community list and
+  the settings pane show now opens on folders becoming stars and notes
+  orbiting them, rather than on a list of what is inside. It is the same
+  sentence in the manifest, the package and the README, which is the only way
+  three copies of a sentence stay the same sentence.
+
+- **The page in the community browser has pictures in it.** That page is this
+  repository's README rendered, and the README had no images at all: two
+  placeholders sitting inside HTML comments, aimed at files that were never
+  made, while two real screenshots sat in `docs/screenshots` unreferenced.
+  Five images now — the cosmos, one note in the inspector, the mind map, the
+  link web and the flight deck. The six `docs/` pages the README has been
+  linking to all along are committed too; until now every "the long version"
+  link was a 404 for anyone who followed one.
+
 ## 1.13.1
 
 - **The description says what the plugin is.** The line the community list
