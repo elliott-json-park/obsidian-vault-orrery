@@ -47,8 +47,6 @@ can bind a key to.
 - **Ripple** — `SPACE` — a wave along the links from the selected note.
 - **Poster** — `P` — a high-resolution PNG of the cosmos with no HUD.
 - **Ambient sound** — `U` — every note has a pitch; off until you ask.
-- **Spaceship** — `F` — leave the camera behind and fly the cosmos from inside
-  it, with radar.
 - **한국어 · English · 日本語 · 中文**, switchable without reloading.
 
 ![Mind map of one note: `index` at the centre with its neighbours — Sourdough programme, Collagen and gelatin, Bread basket — laid out in a ring around it](docs/screenshots/mind-map.jpg)
@@ -76,7 +74,6 @@ were, and no loading curtain over a view you are using.
 | `G` | Genesis — play the vault's formation |
 | `SPACE` | ripple from the selected note |
 | `P` | save a poster (high-resolution PNG, no HUD) |
-| `F` | spaceship — fly the cosmos from inside it |
 | `L` | cycle the link layer — ALL · WIKI · SOURCE · OFF |
 | `X` | the reference plane on the layout's own plane |
 | `U` | ambient sound |
@@ -87,8 +84,6 @@ were, and no loading curtain over a view you are using.
 
 The first time a vault loads, a card names the four moves that are enough to
 get going. Any key dismisses it; `?` brings it back.
-
-![Spaceship mode: the flight deck HUD with speed and radar, flying in past a folder's star](docs/screenshots/spaceship-mode.png)
 
 ---
 

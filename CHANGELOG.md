@@ -29,9 +29,10 @@ publish a version that has no section.
 - **The page in the community browser has pictures in it.** That page is this
   repository's README rendered, and the README had no images at all: two
   placeholders sitting inside HTML comments, aimed at files that were never
-  made, while two real screenshots sat in `docs/screenshots` unreferenced.
-  Five images now — the cosmos, one note in the inspector, the mind map, the
-  link web and the flight deck. The six `docs/` pages the README has been
+  made, while the only two screenshots in `docs/screenshots` were older than
+  the last release and referenced by nothing. Four images now, all of the
+  cosmos as it is drawn today — the vault, one note in the inspector, the
+  mind map and the link web. The six `docs/` pages the README has been
   linking to all along are committed too; until now every "the long version"
   link was a 404 for anyone who followed one.
 
