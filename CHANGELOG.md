@@ -4,7 +4,7 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
-## Unreleased
+## 1.14.0
 
 - **The ripple sounds like drops on glass.** It borrowed the selection ping
   at a lower level, so a wave through forty notes was a pad. It is a drop
