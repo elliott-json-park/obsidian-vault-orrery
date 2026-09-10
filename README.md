@@ -47,6 +47,12 @@ can bind a key to.
 - **Ripple** — `SPACE` — a wave along the links from the selected note.
 - **Poster** — `P` — a high-resolution PNG of the cosmos with no HUD.
 - **Ambient sound** — `U` — every note has a pitch; off until you ask.
+- **Broken links**, counted in the status panel and named in the inspector.
+  Click the count to keep only the notes carrying them.
+- **Properties** — a note's front matter is on the inspector and in the search
+  box, so `status: blocked` is a thing you can look for.
+- **Route** — pick two notes and the shortest way between them lights up,
+  with the rest of the vault held down to a trace.
 - **한국어 · English · 日本語 · 中文**, switchable without reloading.
 
 ![Mind map of one note: `index` at the centre with its neighbours — Sourdough programme, Collagen and gelatin, Bread basket — laid out in a ring around it](docs/screenshots/mind-map.jpg)
@@ -74,16 +80,19 @@ were, and no loading curtain over a view you are using.
 | `G` | Genesis — play the vault's formation |
 | `SPACE` | ripple from the selected note |
 | `P` | save a poster (high-resolution PNG, no HUD) |
-| `L` | cycle the link layer — ALL · WIKI · SOURCE · OFF |
+| `L` | cycle the link layer — ALL · WIKI · SOURCE · BRIDGE · OFF |
 | `X` | the reference plane on the layout's own plane |
 | `U` | ambient sound |
 | `R` · `H` | reset view · hide HUD |
-| `?` | first-flight guide (also `[ ? ]` in the SHORTCUTS pane) |
+| `?` | the guide — every key above with a line on what it does |
 | drag / wheel | orbit · zoom |
 | right-drag · shift-drag | pan · move a node |
 
 The first time a vault loads, a card names the four moves that are enough to
-get going. Any key dismisses it; `?` brings it back.
+get going. Any key dismisses it. `?` — or the `[ ? ]` in the SHORTCUTS title
+bar — opens the full guide, which explains each of the above and the three
+things that have no key: the broken-link filter, the route, and BRIDGE. The
+four-move card is one click away at the bottom of it.
 
 ---
 

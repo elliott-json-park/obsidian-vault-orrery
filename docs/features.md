@@ -26,12 +26,20 @@ a scale you choose, and selecting one sounds it. Three things on top of that:
 
 - **Notes come from where they are.** A ping is placed in the stereo field
   where its body sits on screen, so a note on the left is heard on the left.
-- **The ripple is heard.** `SPACE` sends a wave out along the links from the
-  selected note, and each note it reaches sounds as the front arrives —
-  quieter with every hop, and a shell of notes reached together lands as an
-  arpeggio rather than a chord. Genesis borrows the same voice for bodies as
-  they condense, so a replay of the vault's formation is a melody in its own
+- **The ripple is heard, as drops on glass.** `SPACE` sends a wave out along
+  the links from the selected note, and each note it reaches sounds as the
+  front arrives. Not the selection ping at a lower level, which is what it
+  used to be — a wave through forty notes in that voice was a pad. It is a
+  drop: a four-millisecond click, a pitch that rises for fifty milliseconds
+  as the cavity the drop made in the water closes, and two glass modes at
+  2.76 and 5.40 times the note that die faster than the note does, because
+  that is how glass rings. An octave above the note's own pitch, quieter with
+  every hop, and a shell of notes reached together lands as a run of drops
+  rather than a chord. Genesis borrows the same voice for bodies as they
+  condense, so a replay of the vault's formation is a melody in its own
   order. **RIPPLE** under SOUND is how loud that is, and goes to OFF.
 - **The room follows the range.** Pulled back to take in the whole vault the
   drone closes down and the tail comes forward; in among the planets it
-  opens up and dries out.
+  opens up and dries out. The drone itself — **AMBIENT** — starts at OFF:
+  switching sound on is a request to hear the vault answer when you touch it,
+  and a hum that begins the moment the context opens answers nothing.

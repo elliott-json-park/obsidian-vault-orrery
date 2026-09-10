@@ -24,8 +24,18 @@ GPU driver reset or a laptop waking from sleep — so the loop stops instead of
 simulating a cosmos that cannot be drawn, and the view says what happened
 rather than going quietly black.
 
+**SURFACE DETAIL** is the knob for a slow machine that would rather have the
+frame than the grain. A world is computed rather than looked up, so what it
+costs is decided by how much of it is asked for — and at map range the two
+expensive parts, the crater field and the fine grain over every surface, are
+being resolved to a fraction of a pixel and then thrown away. They are skipped
+once the shader can see that is happening, and this moves the line. What it
+can never do is change the *shape* of a world: a body has to look the same
+from four pixels away as from four hundred, which is the rule the whole
+surface design is built on.
+
 If a large vault still runs slowly, the first thing to try is turning
-**BLOOM** and the four grade knobs under LIGHT to OFF, which puts the renderer
+**BLOOM** and the grade knobs under LIGHT to OFF, which puts the renderer
 back on the path it takes when nothing has been asked for. After that, the
 cheapest wins are lowering **LINK GLOW**, turning **STARFIELD** down, and
 reducing **MAX NODES**.

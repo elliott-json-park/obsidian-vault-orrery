@@ -4,13 +4,22 @@ Part of the [Vault Orrery](../README.md) documentation.
 
 ## How it is lit
 
-The picture ships lit: BLOOM and the four grade knobs under LIGHT are on at
+The picture ships lit: BLOOM and the grade knobs under LIGHT are on at
 the defaults, chosen against each other rather than one at a time — the curve
 is what stops the bloom clipping to flat white, the split is what stops the
 curve reading as grey, the lens is what stops the split reading as a colour
 cast, and the grain is what stops the whole thing banding in the dark. Every
 one of them goes to OFF, and with all of them off the renderer takes the plain
 path and the composite never runs.
+
+**AUTO EXPOSURE** is the one thing a camera does that the grade does not: it
+meters. The frame used to be exposed for the sun whatever was in it, so a
+folder out on the rim with nothing bright near it was a black rectangle with
+some pale points in it. Now the frame is metered off its brightest point, and
+opens up when that point is dim — over about a second, the way an iris does.
+It can only lift: with a source in frame the gain is one and the picture is
+the byte-for-byte one it was, and the knob is how far it may open when there
+is none.
 
 Each folder's system sits in a faint, drawn-out cloud of its own colour, the
 size of its orbits. It is a map-range thing — it is what a system looks like
@@ -20,8 +29,21 @@ GLOW scales it with the star it belongs to. Every note stays a point of light
 however far out you go: the sprites have a floor in pixels, the way a star in
 a photograph does.
 
+The hub's system has its own light in its plane: the **ZODIACAL LIGHT**, the
+sheet of dust a star's planets never swept up, lit by the star. It is what
+says which plane the vault is laid out on without a grid being switched on,
+and it is drawn from the real thing — see [the astronomy](astronomy.md). Like
+the systems' haze it is a map-range thing, gone by the time the camera is
+inside the inner ring.
+
 Leave the mouse alone for nine seconds and the panels fade back to let the
 picture through; any input brings them back. `H` hides them outright.
+
+A scale bar sits at the bottom of the frame — a round number of units, sized
+to the range the camera is focused on — and the **SCALE** row in the status
+panel is the same number as units per pixel. A perspective picture has no
+single scale, so this is the one at the middle of the frame, which is what
+"how big is that" means.
 
 Underneath, the grade is the same four things a camera does:
 
@@ -42,6 +64,95 @@ Underneath, the grade is the same four things a camera does:
 
 ---
 
+## The links are routed, and that is a map's choice
+
+A link used to be the shortest line between its two notes. Five hundred
+shortest lines over a vault is a lattice — every one crossing every other, no
+two sharing a path — and what a lattice reports is that there are a great many
+links, not where any of them goes. The hub was the worst of it: seventy
+straight rays out of one point.
+
+**LINK ROUTING** draws each end of a link toward the star its own note orbits
+before the link sets off across the vault. Every link leaving one folder for
+another then leaves along the same road, and two hundred of them braid into a
+strand you can see and follow. The strand is the fact worth having — *these two
+folders talk to each other* — and it is exactly the fact a lattice buries.
+
+**This is cartography, not physics, and the difference is worth saying out
+loud** in a plugin that spends [a whole page](astronomy.md) insisting on it.
+Nothing out there bends a straight path because other paths are near it. What
+stays honest is that the endpoints are exact, the route between them is the
+only thing drawn as a choice, and the choice is one knob wide: at 0.00 a link
+is the arc it always was, to the float. A link is also only routed as far out
+of its way as it is long, so a moon reaching the planet it orbits stays the
+short straight thing it is rather than looping out to a star a thousand units
+away.
+
+**A routed link never doubles back on itself.** Nothing above says the star
+is anywhere near the line between the two notes, and often it is behind one of
+them — in which case that end's control point lands behind its own note, the
+curve leaves in the wrong direction, and it has to turn round to get where it
+is going. What that draws is a hairpin with a point on it. On a 263-note vault
+it was one link in seven at the shipped setting and two in five with the knob
+at the top, which is why the strands looked spiky exactly where the routing
+was working hardest. Each control is now held inside its own third of the
+span, along the chord only — the sideways pull is the routing and is left
+alone — and a control polygon that advances is a curve that cannot reverse.
+
+**And it is cut finely enough to be a curve.** How many straight pieces an arc
+is drawn in is decided per link, per frame, from how much the curve bends on
+screen, to a third of a pixel. That measurement used to be taken on how far
+the arc left its own chord, which is the same number on a symmetric arch and
+the wrong one on a routed link: routing pulls the two ends toward two
+different stars, so the halves lean opposite ways and cancel in the chord
+measurement while doubling the bending there is to follow. Links were asking
+for four pieces and needing nine. Measuring the curve's own bending instead
+holds every link under half a pixel of error, costs about seventy per cent
+more samples on the links that were wrong, and leaves the unrouted arch on
+exactly the count it had.
+
+**The resting shape is an arch.** ARC HEIGHT rests at 0.60× and LINK TENSION
+at 0.70. Flat and taut, the old pair, drew straight spokes from the range the
+vault opens at, because a small bow on a short link is not a visible curve and
+routing only bends the ends. FLAT and 1.00 are still on the sliders.
+
+**BRIDGE** is the one link layer that is not a filter on the *kind* of link.
+It keeps only the links whose two ends are in different folders and drops
+every link inside one, which on most vaults is the large majority. What is
+left is the traffic between systems — and with routing on, that is exactly the
+set of strands, with nothing else in the frame to read them against.
+
+**Each end of a link wears the colour of the body it touches**, fading back to
+the link type's own tint by the middle. That much is not a choice: the end of a
+link sits inside its body's own glow, and a cyan thread ending inside an amber
+halo is the one part of the picture that could not happen. The middle stays
+exactly the tint, so the key in the status panel stays true — every wiki link
+is cyan where it crosses the space between systems, every source link amber.
+
+## Three kinds of world, and the same world at every range
+
+Every body used to wear one machined shell: a plated hull with seams and a
+heavier band round the equator. It was chosen for a good reason — the
+generated worlds before it only ever appeared on the *one* body you had flown
+to, and everything else sampled a patch of a shared texture, so a planet
+changed its whole character as you approached it.
+
+That constraint is kept and the machine is not. There are three kinds of world
+now — a giant, a terrestrial, a rock — and all three are computed from the
+sphere's own direction in the fragment shader. No texture, no generation pass,
+no cache, and the instanced bodies and the high-detail mesh compile the same
+function, which is what makes a world identical at four pixels and at four
+hundred. Which one a body gets comes out of its own size, and
+[the astronomy page](astronomy.md) has the reasoning, the albedos and the
+physics of each.
+
+The relief on a rock is a real bend in the surface normal rather than a change
+of colour, because a crater seen only as a stain is not what anybody
+recognises — the shading on a bowl is. It is taken from the screen-space
+gradient of the height field, which is the one way to bump a surface that is a
+function rather than a texture, and it is the only GL extension any of this
+needs.
+
 ## Giving the vault room
 
 Two knobs on the control panel decide how tightly the cosmos is packed, and
@@ -58,7 +169,9 @@ they are not the same question.
   away from their star without moving the vault around them.
 
 A dense folder — a few hundred notes in one place — is the case worth reaching
-for these on. Start with ORBIT GAP.
+for these on. Start with ORBIT GAP. It runs to 12.00× and SPREAD to 8.00×,
+which is headroom for a vault of a hundred-odd folders rather than a new look:
+both defaults are where they were.
 
 **SUN SIZE**, **SYSTEM SIZE**, **PLANET SIZE** and **MOON SIZE** scale a whole
 class of body at once. They never change the *ratios* between notes — a body's

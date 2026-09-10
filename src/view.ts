@@ -10,6 +10,15 @@ export const VIEW_TYPE_ORRERY = 'vault-orrery-view';
     event would be a rebuild every couple of seconds while someone writes. */
 const SYNC_DELAY = 2500;
 
+/** How many of a note's dead links travel with it. The inspector lists a
+    handful and says how many more there were, so the rest would be carried
+    across the whole vault to be counted and thrown away. */
+const BROKEN_NAME_CAP = 24;
+
+/** How many front-matter keys travel with a note. The inspector shows a
+    dozen and a vault of ten thousand notes carries every one of these. */
+const PROP_CAP = 24;
+
 export class OrreryView extends ItemView {
   private api: OrreryApi | null = null;
   private io: IntersectionObserver | null = null;
@@ -282,19 +291,60 @@ export class OrreryView extends ItemView {
        other non-markdown targets are in there too; the engine drops the ones
        it has no body for. */
     const links = cache.resolvedLinks[f.path];
+    /* A dead link is the one fact about a note that is worth acting on the
+       moment you see it, and a count on its own cannot be acted on: it says
+       three of this note's links reach nothing and leaves you to go and find
+       which three. The keys of the unresolved map are what was written, so
+       they come along with the count.
+
+       Capped, because nothing downstream lists more than a handful and a
+       note pasted full of broken references should not be able to make the
+       payload for a whole vault large on its own. */
     const unresolved = cache.unresolvedLinks[f.path];
     let broken = 0;
-    if (unresolved) for (const k in unresolved) broken += unresolved[k];
+    const brokenNames: string[] = [];
+    if (unresolved) for (const k in unresolved) {
+      broken += unresolved[k];
+      if (brokenNames.length < BROKEN_NAME_CAP) brokenNames.push(k);
+    }
     /* getAllTags merges the front matter and the body, and returns them with
        the leading '#', which the engine strips. Nested tags arrive whole
        (#project/orrery); leaving them whole is right, because two notes under
        the same parent are not the same subject. */
     const fc = cache.getFileCache(f);
     const tags = fc ? getAllTags(fc) : null;
+    /* ---- and whatever else the note keeps about itself ----
+       Obsidian's Properties are a first-class part of a vault, and the
+       orrery read four keys out of the front matter and discarded the rest.
+       Passed as they were parsed, minus the one key Obsidian adds for its
+       own bookkeeping: `position` is where the block sat in the file, which
+       is a fact about the text and not about the subject.
+
+       Scalars and flat lists only. Nothing downstream can render a nested
+       map and the whole vault's worth of these travels together, so a note
+       carrying an object graph in its front matter contributes its scalars
+       and nothing else. */
+    const props: Record<string, unknown> = {};
+    const fm = fc?.frontmatter;
+    if (fm) {
+      let n = 0;
+      for (const k in fm) {
+        if (k === 'position' || n >= PROP_CAP) continue;
+        const v = (fm as Record<string, unknown>)[k];
+        if (v === null || v === undefined) continue;
+        const ok = typeof v !== 'object' ||
+          (Array.isArray(v) && v.every(x => x === null || typeof x !== 'object'));
+        if (!ok) continue;
+        props[k] = v;
+        n++;
+      }
+    }
     return {
       links: links ? { ...links } : {},
       broken,
+      brokenNames,
       tags: tags ? tags.map(t => t.replace(/^#/, '')) : [],
+      props,
       /* When the file was last written, which is not the same question as the
          date inside it. A note's front matter says when the thing it describes
          happened; the file system says when the person last had their hands on

@@ -41,8 +41,20 @@ export interface OrreryFileMeta {
   links?: Record<string, number>;
   /** How many of this file's links resolve to nothing. */
   broken?: number;
+  /** What those links were reaching for, as written. A count says a note has
+      three dead links and leaves the reader to go and find them; the names
+      are the half of the fact that can be acted on. Capped by the host, since
+      a note can in principle carry hundreds and nothing downstream lists more
+      than a handful. */
+  brokenNames?: string[];
   /** Tags, with or without the leading '#', body and front matter alike. */
   tags?: string[];
+  /** The note's front matter as the host parsed it. Obsidian reads real YAML;
+      the engine's own fallback reads one line at a time and gets a nested
+      value or a quoted colon wrong, so where there is a host this wins. The
+      engine drops the keys it already consumes — tags, date, sources — and
+      whatever Obsidian adds for itself. */
+  props?: Record<string, unknown>;
   /** When the file was last written, in epoch milliseconds. Distinct from the
       date the engine reads out of the note: that one says when the thing
       described happened, this one says when someone last touched the file.

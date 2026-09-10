@@ -4,6 +4,328 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## Unreleased
+
+- **The ripple sounds like drops on glass.** It borrowed the selection ping
+  at a lower level, so a wave through forty notes was a pad. It is a drop
+  now: a four-millisecond click, a pitch that rises for fifty milliseconds as
+  the cavity the drop made in the water closes, and two glass modes at 2.76
+  and 5.40 times the note that die faster than the note does. An octave above
+  the note's own pitch, still panned to where it is on screen, and Genesis
+  condenses its bodies in the same voice.
+
+- **Links are curves at the range the vault opens at.** ARC HEIGHT shipped
+  FLAT and LINK TENSION at 1.00, and from six thousand units — each link a
+  few hundred pixels long — that drew a web of straight spokes meeting at
+  points: a five-per-cent bow is not a curve at that size, and routing only
+  bends a link near its two ends. They rest at 0.60× and 0.70 now, measured
+  side by side against the old pair on a 263-note vault: the same links stand
+  up out of the plane and bow enough to read as arcs from the default camera
+  and from overhead. Both old values are still on the sliders.
+
+  And they are cut finely enough to stay curves. The sample ceiling on a
+  vault of up to 1,500 links goes from 16 to 24, because nine links in ten
+  were asking for more than 16 and being handed 16 — the ceiling, not the
+  tolerance, was deciding how every visible arc was drawn. With it at 24 they
+  use three quarters of it and every link is held to its third of a pixel.
+  The two larger tiers move one step each (12 to 14, 8 to 10), since there
+  the ceiling is also the per-frame upload. 48 fps on the test vault, the
+  links costing 0.9 ms a frame.
+
+- **AMBIENT ships off.** Switching sound on asks to hear the vault answer
+  when you touch it; a drone that starts the moment the context opens answers
+  nothing. The ping, the chime and the wave are reactions and all still come.
+
+- **Every knob says what it is for, on the line that was already there.** The
+  foot of the deck carried the pin hint. Put the cursor on a knob and that
+  line becomes a sentence on what the knob does — all forty-three, in all four
+  languages — and takes the hint back when the cursor leaves. Nothing appears,
+  moves or covers anything, and the answer is a hair below the slider being
+  touched.
+
+- **Dragging a control no longer raises VAULT DROP.** A drag that caught the
+  text of a knob's label is a text drag, and it fired the window's dragenter
+  exactly as a folder from the desktop does, so the full-screen drop curtain
+  came down over the control being adjusted. The drop target now asks
+  `dataTransfer.types` whether a file is what is being dragged, and the labels
+  are no longer draggable at all.
+
+- **The sun is still there from far away.** Its corona, streamers and glare
+  took the scene's fog, and the fog is measured from the eye and falls as an
+  exponential of a square — so pulling back to see the whole vault put the
+  star behind twenty thousand units of it, and past about eight thousand the
+  fog is not faint, it is zero. All three went out. They now apply the same
+  fog themselves with a floor under it: identical at every range anyone was
+  already looking from, and from far out the corona keeps three tenths, the
+  streamers two, the scattering skirt a little under one. Lifting the fog off
+  them outright was tried and rejected — it hung a milky disc over the middle
+  of the vault at the default view.
+
+- **ORBIT GAP reaches 12.00× and ORBIT SPREAD 8.00×.** GAP had been raised to
+  6.00× for forty folders and a hundred and forty still outgrow it. SPREAD
+  shipped with its default equal to its ceiling, so anyone wanting a crowded
+  system opened out had run out of slider before touching it. Neither default
+  moved.
+
+- **Every key on the panel now says what it does.** The SHORTCUTS pane is a
+  list of letters with no sentences in it, which is the right shape for a
+  panel you glance at and the wrong one for a panel you are meeting. The
+  `[ ? ]` in its title bar reopened FIRST FLIGHT — four moves you already knew
+  by then, and nothing about the eleven you did not.
+
+  It opens a guide instead: every row of that pane with a line on what it
+  does, plus the three things that have no key and were therefore nowhere in
+  the panel at all — the broken-link filter, the route between two notes, and
+  what BRIDGE keeps. `?` opens it too, it takes the keyboard while it is up so
+  a mode key cannot fire into a cosmos you cannot see, and FIRST FLIGHT is one
+  click away at the bottom of it, which is the right way round: the reference
+  is what you come back for and the four-move card is a thing inside it.
+
+- **Routed links are curves again.** Two faults, and only one of them was
+  about drawing.
+
+  The shape: nothing says a note's star is anywhere near the line between it
+  and the note it links to, and often it is behind. That end's control point
+  then lands behind its own note, the link leaves in the wrong direction, and
+  it turns round to get where it is going — a hairpin with a point on it. One
+  link in seven at the shipped routing, two in five with the knob at the top,
+  which is why the strands looked spiky exactly where the routing was working
+  hardest. Each control is now kept inside its own third of the span, along
+  the chord only, so the sideways pull that *is* the routing survives whole
+  and a curve that advances cannot double back.
+
+  The sampling: how finely an arc is cut was decided from how far it left its
+  own chord, which is the same number on a symmetric arch and the wrong one on
+  a routed link — the two halves lean opposite ways, so they cancel in that
+  measurement while doubling the bending there is to follow. Links were asking
+  for four straight pieces and needing nine. The curve's own bending is
+  measured now, every link holds under half a pixel, and the unrouted arch
+  comes out on exactly the count it had.
+
+- **LINK GLOW reaches 3.00× again, and rests at 0.20×.** The ceiling was cut
+  to 1.30× and then to 0.85× because an additive *line* saturates to white
+  long before the top of a knob — both cuts made against a one-pixel line, and
+  the links have not been one for some time. A ribbon spreads the same light
+  across its width instead of piling it into a single pixel, so the old
+  ceiling landed a long way short of anything glaring. The default stays low,
+  a quiet structure under the notes; the rest of the range is there for
+  anyone who wants the strands in front.
+
+- **The comet's ion tail is cut at 42 samples instead of 26.** The dust tail
+  is the comet's own path recorded frame by frame and is as smooth as the
+  trajectory; the ion tail is a formula, and a formula is only as smooth as it
+  is cut up. It held to a fifth of a pixel from across the vault and most of
+  one with the camera alongside — which is the view a comet is worth flying
+  over to see. The strip was already cut for 53, so this costs the sixteen
+  samples and nothing else.
+
+- **The way between two notes.** A vault's graph is full of paths nobody
+  drew: two notes that were never linked to each other are joined all the
+  same, through three or four others, and which three is the interesting
+  part. A graph view can show you that everything is connected; the useful
+  question is *how* this is connected to that.
+
+  **ROUTE FROM HERE**, on the inspector. Press it on one note, choose the
+  other the ordinary way — from the sky, the search box or the link list, all
+  three come through the same place — and the shortest way between them
+  lights up while the rest of the cosmos goes down to a trace. Breadth-first,
+  because every link is one step and nothing here weighs one more than
+  another, and undirected, because which of two notes did the mentioning is a
+  fact about the link rather than about whether you can get from one to the
+  other. It says how many hops, or that there is no way at all. Escape or a
+  second press puts it away.
+
+- **A note's own properties are in the picture.** Obsidian's Properties are a
+  first-class part of a vault — `status: active`, `type: project`, a client, a
+  rating, whatever somebody decided to keep about their own notes — and the
+  orrery read four keys out of the front matter and threw the rest away. The
+  one place a vault carries the structure its owner put there by hand was the
+  one place the picture could not see.
+
+  They are on the inspector now, and in the search box: a vault that keeps
+  `status: blocked` can be asked for its blocked notes in the same box
+  everything else is asked for. Inside Obsidian the values come from
+  Obsidian's own YAML parser rather than the engine's line-at-a-time
+  fallback, so a nested value or a quoted colon comes out right. The keys the
+  engine already consumes are left out, because they are shown somewhere
+  better: the tags have their own row, the date is on the badge, and the
+  sources are the moons.
+
+- **Dead links are visible, and they are a job rather than a statistic.** The
+  count of links that resolve to nothing has been collected on every note
+  since the host metadata went in, and was never once shown. It is a row in
+  the status panel now, and the names come with it: Obsidian resolves the
+  whole vault and knows exactly which text failed, so the inspector lists what
+  each note was reaching for instead of only how many times it missed. The
+  rows are struck through and are not clickable, because there is nothing at
+  the other end to click.
+
+  The row is also the control. Clicking it filters the cosmos down to the
+  notes carrying dead links, which is the question a count of ninety of them
+  leaves you with and cannot answer. It multiplies with the search filter, so
+  "broken, and about kimchi" is a question you can ask, and it clears when a
+  vault is loaded. On a vault with none, the row says so and does nothing.
+
+- **Every star in the vault is a star now, not just the hub.** The folder
+  stars were a flat-coloured ball under a *wireframe* icosahedron with two
+  rings turning over it — precisely the construction the hub was rescued from,
+  and precisely what this file's own comments call the tell. One of those got
+  fixed and the ten to forty in front of it did not. They compile the same
+  photosphere as the hub now: limb darkening, granulation drawn as the lanes
+  between the cells, supergranulation, faculae, spots that walk toward the
+  equator over a cycle, and differential rotation. Which star is being drawn
+  is a `#define` rather than a second design, so the two cannot drift.
+
+  Each one carries a seed and its own temperature. The seed turns the sample
+  point about the spin axis, which preserves latitude, so the physics is
+  identical on every star and no two of them show the same face or sit at the
+  same point of their cycle. The temperature comes from the folder's size,
+  because on the main sequence a star's colour follows from its mass and
+  nothing else, and it is spread over F to M weighted to the cool end. A vault
+  comes out mostly amber and orange with its largest folders going
+  yellow-white. The wireframe shell is a soft backside skirt instead, which is
+  the construction the hub's own outer glow uses.
+
+  Two things had to be untangled to get there. A star's colour is now what
+  lights its planets, because the disc and the light have to agree or a
+  planet's day side stops matching the thing lighting it. And SYSTEM GLOW used
+  to arrive as the disc's *alpha*, which does not dim a star — it makes it
+  see-through, and the nebula behind it comes up through the photosphere. It
+  is brightness now, and alpha is left to mean what the legend needs it to.
+
+- **Star colours are no longer encoded twice.** `blackbody()` hands back an
+  sRGB triple, which is what an additive sprite wants and exactly what a
+  hand-written star shader does not: it encodes its own output at the end, so
+  the transfer curve was going on twice. That pulls everything toward white,
+  which is why a 4500 K star that ought to be plainly orange came out a pale
+  tan. The star shaders take the linear pair now, the hub included.
+
+- **A bare surface does not scatter like a painted ball.** The full Moon looks
+  like a flat disc, not a lit sphere: the limb is as bright as the middle,
+  with no falloff at all. A Lambert sphere cannot do that. Rock bodies now
+  obey Lommel-Seeliger, which is what single scattering through a
+  semi-infinite layer of loose grains gives, and it is why every airless body
+  photographs the way it does. Written as a correction to the term the
+  renderer already applies, normalised so what changes is the shape across the
+  disc rather than how bright the body is.
+
+- **A giant's aurorae sit on its magnetic axis**, which is about ten degrees
+  off the spin axis on Jupiter and is why its auroral ovals are visibly
+  off-centre. Seeded per body, so a world's ovals are where they are every
+  time the vault is opened.
+
+- **BRIDGE, a fifth link layer.** The other four filter on the *kind* of link;
+  this one keeps only the links whose ends are in different folders and drops
+  every link inside one, which on most vaults is the large majority. What is
+  left is the traffic between systems — with routing on, exactly the set of
+  strands, with nothing else in the frame to read them against.
+
+- **SURFACE DETAIL**, under BODIES. A world is computed rather than looked up,
+  so what it costs is decided by how much of it is asked for, and at map range
+  the crater field and the fine grain are being resolved to a fraction of a
+  pixel and then discarded. They are now skipped once the shader can see that
+  is what is happening, and the knob moves the line for a machine that would
+  rather have the frame. It cannot change the shape of a world, only detail
+  finer than the picture can hold.
+
+- **A folder's name is set like a designation.** Heavier and tracked out,
+  where a note's name keeps the ordinary weight of something you read rather
+  than navigate by. Size and colour were carrying that distinction alone, and
+  both of them are already carrying other things — size is the citation count
+  and colour is the link layer's key.
+
+- **A Genesis phase arrives rather than being swapped.** The one cue that the
+  formation had moved on was a word that changed between two frames with
+  nothing to mark it, which is exactly the kind of change the eye does not
+  catch. The tracking now opens out and the glow comes up over a third of a
+  second.
+
+- **Every body is a world again, and it is the same world at every range.**
+  Bodies wore one machined shell — a plated hull with seams and a band round
+  the equator — chosen because the generated worlds before it only ever
+  appeared on the one body you had flown to and everything else sampled a
+  shared texture, so a planet changed character as you approached it. That
+  constraint is kept and the machine is not: there are three kinds of world
+  now, all computed from the sphere's own direction in the fragment shader,
+  with no texture, no generation pass and no cache, and the instanced bodies
+  and the high-detail mesh compile the same function. Which one a body gets
+  is decided by its own size — giants for the vault's most-cited notes,
+  terrestrials below that, rock for moons and the archive — and the reasoning,
+  the albedos and the physics of each are in `docs/astronomy.md`. Craters have
+  relief rather than being drawn as stains; giants have zonal bands, a
+  long-lived storm and polar aurorae. Giants are flattened about their own
+  spin axis the way a fast rotator is, oceans throw a specular glint, and a
+  rock brightens sharply at full phase the way a regolith surface does.
+
+- **The mind map is one note's neighbourhood again.** Three things had been
+  drawing over it. Bodies that are not on the plate were faded to alpha zero,
+  which never did what it sounded like — alpha rides the instance colour and
+  the instance colour is not multiplied into a body's diffuse at all — so
+  every note in the vault was still a fully lit sphere in the scene, the hub
+  among them at the sun's own radius. The hub's corona, streamers and halo
+  were put out when the map opened and turned straight back on by the next
+  frame, so the plate was lit by a star that is not on it. And the recency
+  glow is added rather than multiplied, deliberately, so it survived the
+  fade: on an active vault that lit almost every note in the vault at once.
+  All three are fixed, and the map is now what it claims to be.
+
+- **The links are routed instead of ruled.** A link was the shortest line
+  between its two notes, and five hundred shortest lines is a lattice: every
+  one crosses every other, none shares a path with the one beside it, and
+  what the picture reports is that there are a lot of links rather than where
+  they go. The hub was seventy straight rays out of one point. Each end of a
+  link is now drawn toward the star its own note orbits, so every link leaving
+  one folder for another leaves along the same road and the two hundred of
+  them braid into one visible strand. **LINK ROUTING**, under COSMOS, and at
+  0.00 a link is the arc it always was, to the float — the quadratic is
+  degree-elevated to a cubic, which is the same curve at the same parameter,
+  so the two ends can be moved independently without the knob's zero meaning
+  anything new. It is cartography and not physics, and `docs/rendering.md`
+  says so. A link is only routed as far out of its way as it is long, so a
+  moon reaching its own planet stays short and straight.
+
+- **A link wears its endpoints' colours.** One flat tint per kind said what
+  kind of fact a link was and nothing about which two things it joined. Each
+  end now carries the colour of the body it touches — which is the honest
+  reading, because the end of a link is inside that body's own glow — fading
+  back to the kind's tint by the middle, so the key in the status panel stays
+  true. With the routing above, a strand between two folders now runs from
+  one folder's colour to the other's.
+
+- **The orbital elements are on the inspector.** Kepler's equation has been
+  solved for every body every frame since the ellipses went in, and nothing
+  on screen said so. Select a note and the inspector now shows the four
+  numbers the solver is using for it: the semi-major axis as drawn this
+  frame, the eccentricity, the period at the current ORBIT SPEED in
+  wall-clock time, and the inclination of the plane it is actually on —
+  under ORBIT SHELL, its own plane. Refreshed while the note stays selected,
+  because the axis breathes with ORBIT GAP and the period breathes with it.
+
+- **The zodiacal light.** The hub's system now shows the plane it is laid
+  out on the way a real one does: a sheet of dust in the plane, lit by the
+  star, brightest looked at toward it and with the gegenschein opposite it.
+  The radial law, the phase function and the colour are the measured ones —
+  see `docs/astronomy.md`. A map-range thing, gone by the time the camera is
+  inside the inner ring, on its own **ZODIACAL LIGHT** knob under COSMOS.
+
+- **The frame meters.** A folder out on the rim with nothing bright near it
+  used to be a black rectangle with some pale points in it, because every
+  frame was exposed for the sun. **AUTO EXPOSURE**, under LIGHT, meters the
+  frame off its brightest point and opens up when that point is dim, over
+  about a second. It can only lift — with a source in frame the picture is
+  the byte-for-byte one it was.
+
+- **A planet's halo obeys the inverse square.** On top of the phase it
+  already carried, a body's point of light is now brighter at periapsis than
+  at apoapsis by the square of the distance ratio, which is what an ellipse
+  does to the light on it and up to a factor of two at the eccentricities
+  here.
+
+- **A scale bar.** At the bottom of the frame, a round number of units sized
+  to the range the camera is focused on, and a **SCALE** row in the status
+  panel with the same number as units per pixel. A map with no scale is a
+  picture.
+
 ## 1.13.2
 
 - **A lost graphics context no longer looks like a working plugin.** A driver
