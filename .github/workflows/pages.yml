@@ -44,12 +44,14 @@ jobs:
 
       # Fills vendor/ from node_modules at the pinned version, then lays the
       # page and the library out the way a static host serves them.
+      #
+      # The no-remote gate runs inside build-demo.mjs rather than as a step of
+      # its own here. scripts/check-no-remote.mjs reads the built plugin —
+      # main.js and the generated module — and this job deliberately does not
+      # build one, because the demo does not serve one. What it serves is the
+      # page, and that is the file build-demo scans before it copies it.
       - run: npm run vendor
       - run: npm run demo
-
-      # The same gate the release runs. A demo is a page on the open web, which
-      # is the one place a remote script would quietly start working.
-      - run: node scripts/check-no-remote.mjs
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
