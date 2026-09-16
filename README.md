@@ -59,6 +59,9 @@ can bind a key to.
   box, so `status: blocked` is a thing you can look for.
 - **Route** — pick two notes and the shortest way between them lights up,
   with the rest of the vault held down to a trace.
+- **The sky has events, and each one is the vault doing something.** A
+  comet lands on the note you just touched. A note deleted while you watch
+  goes out as a supernova, and says its name.
 - **한국어 · English · 日本語 · 中文**, switchable without reloading.
 
 ![Mind map of one note: `index` at the centre with its neighbours — Sourdough programme, Collagen and gelatin, Bread basket — laid out in a ring around it](docs/screenshots/mind-map.jpg)
@@ -91,7 +94,7 @@ were, and no loading curtain over a view you are using.
 | `U` | ambient sound |
 | `R` · `H` | reset view · hide HUD |
 | `?` | the guide — every key above with a line on what it does |
-| drag / wheel | orbit · zoom |
+| drag / wheel | orbit · zoom toward the cursor |
 | right-drag · shift-drag | pan · move a node |
 
 The first time a vault loads, a card names the four moves that are enough to

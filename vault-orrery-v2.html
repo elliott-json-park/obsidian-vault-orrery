@@ -691,7 +691,9 @@ body.dragdeck #hud{cursor:grabbing}
   opacity:.34;pointer-events:none;line-height:1.8}
 #mmhint b{font-weight:400;color:var(--cy);opacity:.9;padding:0 3px;
   border:1px solid rgba(92,225,255,.3);border-radius:2px;margin:0 1px}
-#mmview{display:flex;gap:5px;align-items:center}
+#mmview{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+#mmkeys{font-style:normal;font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;
+  opacity:.5;margin-left:8px;white-space:nowrap}
 #mmview u{text-decoration:none;cursor:pointer;height:20px;padding:0 8px;display:flex;
   align-items:center;gap:5px;border:1px solid rgba(92,225,255,.24);color:var(--cy);
   font-size:8.5px;letter-spacing:.12em;transition:.15s;white-space:nowrap;
@@ -1044,11 +1046,11 @@ body.dragdeck #hud{cursor:grabbing}
     <div id="mmfoot">
       <div id="mmview">
         <u id="mm-hop" data-i18n="mm.hop" data-i18n-title="mm.hop.t">◌ 2홉</u>
+        <i id="mmkeys" data-i18n="mm.keys"></i>
       </div>
       <div id="mmlegend">
         <b><u style="background:#5cd8ff"></u><i data-i18n="leg.wiki" style="font-style:normal">위키링크</i></b>
         <b><u style="background:repeating-linear-gradient(90deg,#ff9d3c 0 4px,transparent 4px 7px)"></u><i data-i18n="leg.src" style="font-style:normal">출처</i></b>
-        <b><u style="background:repeating-linear-gradient(90deg,#8b6bff 0 2px,transparent 2px 4px)"></u><i data-i18n="leg.tag" style="font-style:normal">태그공명</i></b>
         <b id="mmleg2" style="display:none"><u style="background:rgba(150,210,255,.4)"></u><i data-i18n="mm.hop2" style="font-style:normal">2홉</i></b>
       </div>
       <div id="mmhint" data-i18n="mm.hint">클릭 = 선택 · 더블클릭 = 중심 이동<br>끌기 = 시점 회전 · 휠 = 확대</div>
@@ -1260,6 +1262,7 @@ const STR = {
    it a job rather than a statistic. */
 'insp.broken': ['끊어진 링크','BROKEN','リンク切れ','断开的链接'],
 'hud.broken':  ['끊어진 링크','BROKEN','リンク切れ','断开的链接'],
+'hud.off':     ['HUD 숨김 · H 로 다시 표시','HUD hidden · H brings it back','HUD 非表示 · H で戻る','HUD 已隐藏 · 按 H 恢复'],
 'broken.on':   ['끊어진 링크가 있는 노트만','Only notes with broken links',
                 'リンク切れのあるノートのみ','仅显示有断开链接的笔记'],
 'broken.off':  ['필터 해제','Filter cleared','フィルター解除','已清除筛选'],
@@ -1294,6 +1297,18 @@ const STR = {
 'open.none':   ['먼저 노트를 선택하십시오','Select a note first','先にノートを選択してください','请先选择一篇笔记'],
 'open.fail':   ['그 노트를 열지 못했습니다','Could not open that note','そのノートを開けませんでした','无法打开该笔记'],
 'sync.done':   ['볼트 갱신 · 노트 {n}개','Vault updated · {n} notes','ボルト更新 · ノート {n} 件','仓库已更新 · {n} 篇笔记'],
+/* ---- the sky's events ------------------------------------------------ */
+'ev.nova':     ['✦ {n} — 사라졌습니다','✦ {n} — gone','✦ {n} — 消えました','✦ {n} — 已消失'],
+'ev.comet':    ['☄ {n} 에 혜성이 닿았습니다','☄ comet down on {n}','☄ 彗星が {n} に到達','☄ 彗星抵达 {n}'],
+'cls.giant':   ['가스 거성','GAS GIANT','ガス惑星','气态巨行星'],
+'cls.terr':    ['지구형 행성','TERRESTRIAL','地球型惑星','类地行星'],
+'cls.rock':    ['암석 천체','ROCK','岩石天体','岩质天体'],
+'cls.ringed':  ['고리','RINGED','環あり','有环'],
+'cls.star':    ['{s}형 별 · {t} K','{s}-type star · {t} K','{s}型星 · {t} K','{s}型恒星 · {t} K'],
+'guide.sky':   ['혜성은 방금 손댄 노트에 내려앉고, 초신성은 보는 동안 삭제된 노트입니다.',
+                'A comet lands on the note you just touched; a supernova is a note deleted while you were watching.',
+                '彗星は今触れたノートに降り立ち、超新星は見ている間に削除されたノートです。',
+                '彗星降落在你刚触碰的笔记上，超新星是你观看时被删除的笔记。'],
 'go.travel':   ['','◎ GO TO {n}','◎ {n} へ移動','◎ 前往 {n}'],
 
 /* ---- genesis ----------------------------------------------------------- */
@@ -1325,12 +1340,15 @@ const STR = {
 'mm.back':     ['← 뒤로','← BACK','← 戻る','← 返回'],
 'mm.close':    ['닫기 [ ESC ]','CLOSE [ ESC ]','閉じる [ ESC ]','关闭 [ ESC ]'],
 'mm.hop':      ['◌ 2홉','◌ 2 HOPS','◌ 2ホップ','◌ 2跳'],
+'mm.keys':     ['← → 이웃 · ENTER 중심으로 · ⌫ 뒤로 · 2 두 홉 · F 화면 맞춤 · G 이동 · ESC 닫기',
+                '← → STEP · ENTER CENTRE · ⌫ BACK · 2 HOPS · F FRAME · G GO TO · ESC CLOSE',
+                '← → 隣へ · ENTER 中心に · ⌫ 戻る · 2 ホップ · F 全体 · G 移動 · ESC 閉じる',
+                '← → 邻居 · ENTER 居中 · ⌫ 返回 · 2 两跳 · F 适配 · G 前往 · ESC 关闭'],
 'mm.hop2':     ['2홉','2 HOPS','2ホップ','2跳'],
 'mm.hop.t':    ['이웃의 이웃까지 한 겹 더 [2]','One more ring — neighbours of neighbours [2]',
                 '隣の隣までもう一層 [2]','再加一层 — 邻居的邻居 [2]'],
 'leg.wiki':    ['위키링크','WIKILINK','ウィキリンク','维基链接'],
 'leg.src':     ['출처','SOURCE','出典','来源'],
-'leg.tag':     ['태그공명','TAG RESONANCE','タグ共鳴','标签共鸣'],
 'mm.hint':     ['클릭 = 선택 · 더블클릭 = 중심 이동<br>끌기 = 시점 회전 · 휠 = 확대',
                 'CLICK = SELECT · DOUBLE-CLICK = RECENTRE<br>DRAG = ORBIT THE VIEW · WHEEL = ZOOM',
                 'クリック = 選択 · ダブルクリック = 中心移動<br>ドラッグ = 視点回転 · ホイール = 拡大',
@@ -1599,34 +1617,18 @@ const STR = {
              'How thick the links, the wakes and the comet\'s tails are drawn, counted in pixels.',
              'リンクと軌道の跡と彗星の尾の太さ。単位はピクセルです。',
              '链接、轨迹与彗尾的粗细，以像素为单位。'],
-'kd.frs':   ['최근에 손댄 노트를 밝힙니다. 숫자는 밝기가 아니라 "며칠까지가 최근인가"입니다.',
-             'Lights the notes touched lately. The number is not how bright — it is what counts as lately, in days.',
-             '最近触れたノートを灯します。数字は明るさではなく「何日前までを最近とするか」です。',
-             '点亮近期改动过的笔记。数字不是亮度，而是"多少天算近期"。'],
-'kd.trl':   ['천체가 방금 지나온 궤도 위의 자국.',
-             'The wake a body leaves along the path it has just come down.',
-             '天体が今しがた通ってきた軌道上の跡。',
-             '天体刚刚经过的那段轨道上留下的尾迹。'],
-'kd.grv':   ['끌어낸 천체가 제자리로 돌아가는 힘. 0이면 놓은 자리에 그대로 머뭅니다.',
-             'How hard a body you dragged is pulled home. At zero it stays exactly where you dropped it.',
-             '引き出した天体が元へ戻る力。0 なら置いた場所にとどまります。',
-             '被拖出的天体回归原位的力。为零时它就停在你松手的地方。'],
 'kd.spr':   ['한 항성계 안에서 궤도가 얼마나 벌어지는지. 계 사이의 간격은 ORBIT GAP입니다.',
              'How far apart the orbits inside one system sit. The room between systems is ORBIT GAP.',
              '一つの恒星系の中で軌道がどれだけ開くか。系のあいだは ORBIT GAP です。',
              '同一星系内各条轨道之间的疏密。星系之间的间距是 ORBIT GAP。'],
-'kd.tlt':   ['궤도면을 서로 다른 각도로 기울입니다. 겹쳐 보이던 궤도가 갈라집니다.',
-             'Tips the orbital planes away from one another, so orbits that overlapped come apart.',
-             '軌道面を互いに違う角度へ傾けます。重なって見えた軌道が分かれます。',
-             '让各轨道面互相倾斜，原本重叠的轨道就此分开。'],
 'kd.sph':   ['납작한 원반을 구로 엽니다. 1이면 원반, 0이면 껍질.',
              'Opens the flat disc into a sphere. A disc at one, a shell at zero.',
              '平らな円盤を球へ開きます。1 で円盤、0 で殻。',
              '把扁平的圆盘展开成球。为一是盘，为零是壳。'],
-'kd.str':   ['배경 별의 밝기. 이것은 볼트가 아니라 하늘입니다.',
-             'The background stars. This is the sky, not the vault.',
-             '背景の星の明るさ。これはボルトではなく空です。',
-             '背景星辰的亮度。这是天空，不是仓库。'],
+'kd.str':   ['하늘 전체: 배경 별, 성운, 그 뒤의 은하수, 렌즈 앞의 먼지. OFF면 볼트만 남습니다.',
+             'The whole sky: the stars, the gas, the band behind them and the dust near the lens. OFF is the vault alone.',
+             '空のすべて：背景の星、星雲、その奥の天の川、レンズ前の塵。OFF ならボルトだけが残ります。',
+             '整个天空：背景星辰、星云、其后的银河带和镜头前的尘埃。OFF 时只剩仓库。'],
 'kd.zod':   ['항성계 평면에 깔린 먼지가 중심 별빛을 받아 내는 빛. 볼트가 어느 면에 놓였는지를 말합니다.',
              'The dust lying in the system\'s own plane, lit by the star in the middle of it — it says which plane the vault is laid out on.',
              '恒星系の面に横たわる塵が、中心の星の光を受けて返す光。ボルトがどの面に置かれているかを示します。',
@@ -1648,10 +1650,6 @@ const STR = {
              'How large the cited sources are drawn.',
              '引用された出典をどれだけ大きく描くか。',
              '被引用的来源画得多大。'],
-'kd.det':   ['행성 표면 무늬의 밀도. 내리면 가장 싸게 프레임을 벌 수 있습니다.',
-             'How finely the world surfaces are cut. Lowering it is the cheapest frame in here.',
-             '惑星表面の模様の細かさ。下げるのがこの中で一番安いフレームの稼ぎ方です。',
-             '行星表面纹理的精细度。调低它是这里最便宜的一笔帧数。'],
 'kd.briSun':['허브의 밝기 — 그리고 허브가 비추는 모든 것의 밝기. 이 별이 볼트의 광원이기 때문입니다.',
              'The hub\'s brightness, and therefore everything it lights: this star is the vault\'s light source.',
              'ハブの明るさ — そしてハブが照らすすべての明るさ。この星がボルトの光源だからです。',
@@ -1681,6 +1679,10 @@ const STR = {
              'The scattering halo that takes over once the disc stops being a disc. Past halfway the air becomes ice and the halo gains structure.',
              '星が点になったとき代わりに現れる散乱の暈。半ばを越えると空気は氷になり、暈に構造が生まれます。',
              '当星盘不再是盘时接管画面的散射晕。过半之后空气化为冰，晕便有了结构。'],
+'kd.flr':   ['렌즈가 빛에 하는 일: 화면 중심을 지나는 고스트, 헤일로, 가로 스트릭, 번짐의 색분산, 앞 유리의 얼룩.',
+             'What the glass does with a source: ghosts through the centre of the frame, the halo, the horizontal streak, colour separating on the spill, and the smudges on the front element.',
+             'レンズが光にすること：画面中心を通るゴースト、ハロー、横方向のストリーク、にじみの色分散、前玉の汚れ。',
+             '镜头对光做的事：穿过画面中心的鬼影、光晕、横向拉丝、溢光的色散、前镜片的污迹。'],
 'kd.vei':   ['화면 전체에 얇게 깔리는 대기.',
              'A thin air laid over the whole frame.',
              '画面全体に薄く敷かれる大気。',
@@ -1689,47 +1691,15 @@ const STR = {
              'The shoulder that holds the highlights back — the thing a sensor has and eight bits do not.',
              '明部を抑える肩の特性。センサーにはあり、8ビットにはないものです。',
              '压住高光的那道肩部——传感器有而八位没有的东西。'],
-'kd.spl':   ['그림자는 차게, 밝은 쪽은 따뜻하게.',
-             'Cool in the shadows, warm in the highlights.',
-             '影は冷たく、明部は暖かく。',
-             '暗部偏冷，亮部偏暖。'],
-'kd.len':   ['가장자리 감광과 아주 약간의 색수차. 렌즈가 하는 일입니다.',
-             'A vignette and a touch of chromatic aberration — what a lens does.',
-             '周辺光量の落ちと、ごくわずかな色収差。レンズがすることです。',
-             '暗角与一点点色散——镜头会做的事。'],
-'kd.grn':   ['필름 입자.',
-             'Film grain.',
-             'フィルムの粒子。',
-             '胶片颗粒。'],
-'kd.aex':   ['화면이 밝아지면 노출을 내리고 어두워지면 올립니다. 눈이 하는 일입니다.',
-             'Stops down when the frame brightens and opens up when it darkens, the way an eye does.',
-             '画面が明るくなれば露出を絞り、暗くなれば開きます。目がすることです。',
-             '画面变亮就收光，变暗就开光——眼睛就是这么做的。'],
 
 'kd.sVol':  ['전체 음량.',
              'The level of everything.',
              '全体の音量。',
              '全部声音的音量。'],
-'kd.sTune': ['볼트 전체의 조옮김. 반음이 단위입니다.',
-             'Transposes the whole vault, counted in semitones.',
-             'ボルト全体の移調。単位は半音です。',
-             '整个仓库的移调，以半音为单位。'],
 'kd.sScale':['노트가 고를 수 있는 열 개의 음. 그중 어느 음이 되는지는 노트 자신이 정합니다.',
              'The ten notes a note may land on. Which one it lands on is the note\'s own business.',
              'ノートが選べる十の音。そのどれになるかはノート自身が決めます。',
              '一篇笔记可以落在的十个音。落在哪一个由笔记自己决定。'],
-'kd.sRoom': ['소리가 울리는 공간의 크기.',
-             'How big the room the sound rings in is.',
-             '音が響く空間の大きさ。',
-             '声音回响的空间有多大。'],
-'kd.sEcho': ['메아리가 얼마나 오래 남는지.',
-             'How long the echo stays.',
-             'こだまがどれだけ長く残るか。',
-             '回声留存多久。'],
-'kd.sEchoT':['메아리와 메아리 사이의 간격.',
-             'How far apart the repeats fall.',
-             'こだまとこだまの間隔。',
-             '每次回声之间相隔多远。'],
 'kd.sDrone':['아무 일도 일어나지 않을 때 깔려 있는 저음. 꺼진 채로 시작합니다.',
              'The low hum under everything when nothing is happening. It starts off.',
              '何も起きていないときに下に流れる低い音。既定ではオフです。',
@@ -2074,7 +2044,7 @@ const offAt = (v, s) => v < 0.02 ? 'OFF' : s;
 const KNOBS = [
   { k:'spd', g:'cosmos', label:'ORBIT SPEED',   min:0,  max:400, sc:100, def:.10, pin:1, fmt:mult },
   { k:'bri', g:'cosmos', label:'NODE GLOW',     min:10, max:260, sc:100, def:1.11, pin:1, fmt:mult },
-  { k:'lnk', g:'cosmos', label:'LINK GLOW',     min:0,  max:LNK_MAX*100, sc:100, def:.2, pin:1,
+  { k:'lnk', g:'cosmos', label:'LINK GLOW',     min:0,  max:LNK_MAX*100, sc:100, def:.3, pin:1,
     fmt:v => offAt(v, mult(v)) },
   /* ORBIT GAP used to rebuild the cosmos when the handle was let go: the
      number followed the drag, the sky changed in one cut at the end, and the
@@ -2103,7 +2073,7 @@ const KNOBS = [
      not changed and still does not care — the layout is linear in this and
      everything that used to be a fixed size against it now tracks the reach.
      The default is where it always was; this is headroom, not a new look. */
-  { k:'gap', g:'cosmos', label:'ORBIT GAP',     min:50, max:1200, sc:100, def:2.81,pin:1, fmt:mult },
+  { k:'gap', g:'cosmos', label:'ORBIT GAP',     min:50, max:1200, sc:100, def:5.00,pin:1, fmt:mult },
   /* The one knob whose slider is not its value: the step past the ceiling is
      the off position, so "no limit" is a place on the same slider rather than
      a separate control.
@@ -2190,13 +2160,6 @@ const KNOBS = [
      Days, not a multiplier, so the readout is the answer: 14d means the notes
      lit are the ones touched inside a fortnight, brightest this morning and
      gone by the far edge. */
-  { k:'frs', g:'cosmos', label:'RECENT WORK',   min:0,  max:90,  sc:1,   def:14,
-    fmt:v => !freshKnown() ? 'N/A' : v < 0.5 ? 'OFF' : Math.round(v) + 'd',
-    apply: computeFresh },
-  { k:'trl', g:'cosmos', label:'ORBIT TRAILS',  min:0,  max:100, sc:100, def:1,
-    fmt:v => offAt(v, v.toFixed(2)) },
-  { k:'grv', g:'cosmos', label:'NODE GRAVITY',  min:0,  max:300, sc:100, def:1.5,
-    fmt:v => offAt(v, mult(v)) },
   /* ORBIT GAP is the room *between* systems; this is the room inside one.
      Its ceiling was 3.20× and its default was 3.20× — the knob shipped welded
      to its own top, which means every reader who wanted a crowded system
@@ -2225,8 +2188,6 @@ const KNOBS = [
      range the vault actually opens in — which is the question this whole
      instrument exists to answer. The lean is still one drag away for anyone
      who wants the depth back. */
-  { k:'tlt', g:'cosmos', label:'ORBIT TILT',   min:0,  max:200, sc:100, def:0,
-    fmt:v => v < 0.02 ? 'FLAT' : mult(v) },
   /* DISC at zero and SPHERE at one, and neither is an amount of anything —
      they are the two shapes, and the numbers in between are the one opening
      into the other. See orbBasis. */
@@ -2279,8 +2240,6 @@ const KNOBS = [
      What it can never do is change the *shape* of a world — that is the
      whole reason the generated worlds this replaced were taken out, and
      see worldBody for the rule. */
-  { k:'det',   g:'bodies', label:'SURFACE DETAIL', min:20, max:300, sc:100, def:1,
-    fmt:mult },
   /* ---- and how brightly each class burns -------------------------------
      NODE GLOW moves all of them at once and stays: it is the master. These
      are the balance between the four, which is a different question — the
@@ -2291,7 +2250,7 @@ const KNOBS = [
      with no light source in it, so its floor is a dim ember rather than
      nothing. */
   { k:'briSun', g:'bodies', label:'SUN GLOW',    min:15, max:300, sc:100, def:.15, fmt:mult },
-  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:.59,
+  { k:'briSys', g:'bodies', label:'SYSTEM GLOW', min:0,  max:300, sc:100, def:.3,
     fmt:v => offAt(v, mult(v)) },
   /* Planets and moons run to 8x where the sun and the folder stars stop at
      3x, and the asymmetry is the point: those two are light sources and the
@@ -2301,14 +2260,14 @@ const KNOBS = [
     fmt:v => offAt(v, mult(v)) },
   { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:5.08,
     fmt:v => offAt(v, mult(v)) },
-  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:.4,
+  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:0,
     fmt:v => offAt(v, mult(v)), apply: applyStarfield },
   /* The dust in the plane of the system, lit by the star in the middle of
      it. Its own knob rather than a share of STARFIELD, because it is not the
      sky: it belongs to the hub and lies on the layout's plane, and a reader
      who wants the background gone will still want the one thing that says
      which plane the vault is laid out on. See mountZodiac. */
-  { k:'zod', g:'cosmos', label:'ZODIACAL LIGHT', min:0, max:300, sc:100, def:1,
+  { k:'zod', g:'cosmos', label:'ZODIACAL LIGHT', min:0, max:300, sc:100, def:2,
     fmt:v => offAt(v, mult(v)) },
 
   /* Ships lit. The long note at the top of the bloom chain argues that a
@@ -2344,7 +2303,15 @@ const KNOBS = [
      stand in for it. */
   { k:'glare', g:'light', label:'SUN HALO',      min:0,  max:300, sc:100, def:1,
     fmt:v => offAt(v, mult(v)) },
-  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:120, sc:100, def:.2,
+  /* What the glass does with a source: the ghosts a lens throws through
+     the middle of the frame, the halo, the horizontal streak an anamorphic
+     element makes, the colour separating on the widest spill, and the
+     smudges on the front element that catch the spill. All one knob,
+     because they are one object — the lens — and a lens with ghosts and no
+     streak is a lens nobody has looked through. See FLARE_F. */
+  { k:'flr', g:'light', label:'LENS FLARE',    min:0,  max:200, sc:100, def:.55,
+    fmt:v => offAt(v, mult(v)) },
+  { k:'vei', g:'light',  label:'SKY VEIL',      min:0,  max:120, sc:100, def:0,
     fmt:v => offAt(v, mult(v)), apply: applyVeil },
   /* ---- the grade ----
      Four knobs for the four things in the composite's note, and they are
@@ -2367,21 +2334,6 @@ const KNOBS = [
      failure; this is the set where none of them is visible on its own. */
   { k:'cur', g:'light',  label:'FILM CURVE',    min:0,  max:100, sc:100, def:.38,
     fmt:v => offAt(v, mult(v)) },
-  { k:'spl', g:'light',  label:'SPLIT TONE',    min:0,  max:100, sc:100, def:.26,
-    fmt:v => offAt(v, mult(v)) },
-  { k:'len', g:'light',  label:'LENS',          min:0,  max:100, sc:100, def:.30,
-    fmt:v => offAt(v, mult(v)) },
-  { k:'grn', g:'light',  label:'GRAIN',         min:0,  max:100, sc:100, def:.14,
-    fmt:v => offAt(v, mult(v)) },
-  /* The one thing a camera does that none of the four above do: it meters.
-     The grade is fixed, so a frame with the sun in it and a frame of one dim
-     folder out on the rim were exposed identically, and the second was a
-     black rectangle with a few pale points in it. A camera pointed at that
-     folder opens up, and this is that. It can only lift — a frame with a
-     source in it is left exactly as it was — and how far it may lift is
-     what the knob sets. See exposureStep. */
-  { k:'aex', g:'light',  label:'AUTO EXPOSURE', min:0,  max:100, sc:100, def:.5,
-    fmt:v => offAt(v, mult(v)) },
 
   /* ---- sound ----------------------------------------------------------
      Every one of these was a constant buried in audioInit, and every one of
@@ -2391,16 +2343,8 @@ const KNOBS = [
      hard-coded, so switching sound on sounds the way it did.               */
   { k:'sVol',   g:'sound', label:'MASTER',      min:0, max:150, sc:100, def:.55,
     fmt:v => offAt(v, Math.round(v*100) + '%'), apply: audioApply },
-  { k:'sTune',  g:'sound', label:'TUNING',      min:-24, max:24, sc:1, def:0,
-    fmt:v => (v > 0 ? '+' : '') + v + ' st', apply: audioApply },
   { k:'sScale', g:'sound', label:'SCALE',       min:0, max:SCALES.length-1, sc:1, def:0,
     fmt:v => SCALES[clamp(v|0, 0, SCALES.length-1)].n },
-  { k:'sRoom',  g:'sound', label:'ROOM SIZE',   min:5, max:140, sc:10, def:7.5,
-    fmt:v => v.toFixed(1) + ' s', apply: audioApply },
-  { k:'sEcho',  g:'sound', label:'ECHO TAIL',   min:0, max:85, sc:100, def:.36,
-    fmt:v => offAt(v, v.toFixed(2)), apply: audioApply },
-  { k:'sEchoT', g:'sound', label:'ECHO TIME',   min:12, max:170, sc:100, def:.62,
-    fmt:v => v.toFixed(2) + ' s', apply: audioApply },
   /* What DRONE was, under the name it always described. Three near-unison
      voices under a low filter is the bed the whole vault sits on — it is the
      ambience, and calling it by the synthesis technique that makes it was
@@ -2414,7 +2358,7 @@ const KNOBS = [
      question nobody asked — it is the one voice in here that plays without
      anything happening. The chime, the ping and the wave are all reactions
      and all still arrive. This is the only one that has to be sent for. */
-  { k:'sDrone', g:'sound', label:'AMBIENT',     min:0, max:200, sc:100, def:0,
+  { k:'sDrone', g:'sound', label:'AMBIENT',     min:0, max:200, sc:100, def:.35,
     fmt:v => offAt(v, mult(v)), apply: audioApply },
   /* The wave, heard. A ripple crossing the graph sounds each note as the
      front reaches it — see audioChime — and this is how loud that is
@@ -2446,13 +2390,31 @@ const SET_DEF = { mmHop:false, snd:false, coreNote:'', grid:false,
                   tab:'cosmos', deckAt:null, litV1:1,
                   adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
+/* ---- what used to be knobs -----------------------------------------------
+   Eleven controls came off the deck in 1.15.0: the grade's split, lens,
+   grain and meter, which were tuned against each other and had no reason to
+   be moved one at a time; the room, the echo and the tuning under SOUND,
+   which were a mixing desk; and gravity, trails and tilt under COSMOS, which
+   nobody reached for. The code that read them still reads them, at the
+   values the sliders shipped at, and a saved blob that carries one of the
+   old keys is overridden rather than honoured — a knob that no longer exists
+   cannot be the thing somebody meant to keep. */
+const FIXED = { spl: .26, len: .30, grn: .14, aex: .5,
+                sTune: 0, sRoom: 7.5, sEcho: .36, sEchoT: .62,
+                grv: 1.5, trl: 1, tlt: 0,
+                /* and two more: the surface grain, which was a frame-rate
+                   knob nobody needed once the sprites went, and the recent-
+                   work window, a fortnight, which is what the comet and the
+                   fresh glow read */
+                det: 1, frs: 14 };
+Object.assign(SET_DEF, FIXED);
 /* The saved blob is kept, not merged and forgotten. Two questions below can
    only be answered by what was actually written down — whether a key was
    absent or was written as a zero — and merging first makes both of them
    unanswerable, because a default has already filled the hole. */
 let SAVED = {};
 try { SAVED = JSON.parse(localStorage.getItem('orrery2.set') || '{}') || {}; } catch(e){}
-const SET = Object.assign({}, SET_DEF, { pin: PIN_DEF.slice() }, SAVED);
+const SET = Object.assign({}, SET_DEF, { pin: PIN_DEF.slice() }, SAVED, FIXED);
 
 /* Every saved blob predates some knob in the table above, and several of them
    predate a range that has since moved — LINK GLOW has been cut to 1.30× and
@@ -2491,14 +2453,17 @@ SET.maxNodes = Number.isFinite(+SET.maxNodes)
    defaults, and "absent" and "deliberately zero" are the same value there. */
 if (!SAVED.litV1 &&
     !(+SAVED.blm || +SAVED.cur || +SAVED.spl || +SAVED.len || +SAVED.grn))
-  ['blm', 'cur', 'spl', 'len', 'grn'].forEach(k => { SET[k] = KNOB_OF[k].def; });
+  ['blm', 'cur'].forEach(k => { SET[k] = KNOB_OF[k].def; });
 SET.litV1 = 1;
 /* ---- a default that moved -----------------------------------------------
    The same question for two knobs whose defaults changed rather than went
    from off to on. A saved value that is the *old* default to the digit is
    the value nobody chose — it is what the slider was left at — and it moves
    to the new one. A value one step off it was somebody's, and stays. */
-[['lnk', 0.42], ['str', 1.2]].forEach(([k, old]) => {
+/* 1.15.0 moved five more: LINK GLOW .20 to .30, ORBIT GAP 2.81 to 5.00,
+   STARFIELD .40 to OFF, ZODIACAL LIGHT 1.00 to 2.00, AMBIENT OFF to .35 */
+[['lnk', 0.42], ['str', 1.2], ['lnk', 0.2], ['gap', 2.81], ['str', 0.4], ['zod', 1], ['sDrone', 0],
+ ['briSys', 0.59], ['vei', 0.2]].forEach(([k, old]) => {
   if (k in SAVED && Math.abs(+SAVED[k] - old) < 0.005) SET[k] = KNOB_OF[k].def;
 });
 if (typeof SET.coreNote !== 'string') SET.coreNote = '';
@@ -2744,7 +2709,12 @@ function segFor(px, cap) {
   const n = 1 + Math.ceil(1.5 * Math.sqrt(px));
   return n < 2 ? 2 : n > cap ? cap : n;
 }
-const PULSE = 260;                               // travelling data pulses
+const PULSE = 320;                               // travelling data pulses
+/* Each pulse is drawn as a head and three points behind it on the same
+   curve, shrinking and fading, so what travels the link is a streak with a
+   direction and not a dot — light flowing from the note that links to the
+   note that is linked. */
+const PULSE_K = 4;
 /* Orbit trails. Module scope rather than beside the buffers they size, because
    the frame loop and the budget readout both ask about them and buildObjects
    is not somewhere either of those can see. */
@@ -3842,7 +3812,7 @@ const BRIGHT_F = `
 uniform sampler2D tSrc; uniform float uThresh; uniform float uKnee;
 varying vec2 vUv;
 void main(){
-  vec3 c = texture2D(tSrc, vUv).rgb;
+  vec3 c = min(texture2D(tSrc, vUv).rgb, vec3(3.0));
   float l = max(c.r, max(c.g, c.b));
   float k = smoothstep(uThresh, uThresh + uKnee, l);
   /* ---- only the part that is over, not the whole pixel ----
@@ -3932,10 +3902,113 @@ void main(){
    same three lines it used to be. That is deliberate: the identity between
    the bloom path and the plain path at zero bloom was a property worth
    having, and it now extends to the grade. */
+/* ---- the edges, after the composite ----
+   The composite path draws into a render target, and a render target has
+   no multisampling: the moment BLOOM is above zero every link, spike and
+   silhouette is drawn on a fixed grid, and only the still-frame supersample
+   (see ssStep) ever softened them. Temporal AA is off the table here — the
+   scene never stops moving — so this is the spatial one: FXAA, the 2009
+   version, reading the finished frame's luma and blending along the edge
+   it finds. One full-screen pass, nine reads at an edge and five where
+   there is none, and it leaves a pixel alone unless its neighbourhood
+   contrasts. It runs on the composited image, after the grade and the
+   grain, which is where a filter that must not smear light across black
+   has to sit. */
+const FXAA_F = `
+uniform sampler2D tSrc; uniform vec2 uRes;
+varying vec2 vUv;
+float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
+void main(){
+  vec2 px = 1.0 / uRes;
+  vec3 rgbM = texture2D(tSrc, vUv).rgb;
+  float lM  = luma(rgbM);
+  float lNW = luma(texture2D(tSrc, vUv + vec2(-1.0, -1.0) * px).rgb);
+  float lNE = luma(texture2D(tSrc, vUv + vec2( 1.0, -1.0) * px).rgb);
+  float lSW = luma(texture2D(tSrc, vUv + vec2(-1.0,  1.0) * px).rgb);
+  float lSE = luma(texture2D(tSrc, vUv + vec2( 1.0,  1.0) * px).rgb);
+  float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
+  float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+  if (lMax - lMin < max(0.0312, lMax * 0.125)) { gl_FragColor = vec4(rgbM, 1.0); return; }
+  vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), ((lNW + lSW) - (lNE + lSE)));
+  float dirReduce = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
+  float rcp = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+  dir = clamp(dir * rcp, -8.0, 8.0) * px;
+  vec3 rgbA = 0.5 * (texture2D(tSrc, vUv + dir * (1.0 / 3.0 - 0.5)).rgb
+                   + texture2D(tSrc, vUv + dir * (2.0 / 3.0 - 0.5)).rgb);
+  vec3 rgbB = rgbA * 0.5 + 0.25 * (texture2D(tSrc, vUv + dir * -0.5).rgb
+                                 + texture2D(tSrc, vUv + dir *  0.5).rgb);
+  float lB = luma(rgbB);
+  gl_FragColor = vec4((lB < lMin || lB > lMax) ? rgbA : rgbB, 1.0);
+}`;
+/* ---- the lens, as a set of reflections ----
+   A source in front of a real lens is seen more than once. Each air-glass
+   surface reflects a little of it back through the elements, and every one
+   of those reflections lands somewhere on the axis that runs from the
+   source through the middle of the frame — that is the row of coloured
+   discs a photograph of a bright light has, and why it points at the
+   centre. This is the pseudo lens flare of Chapman (2013): the bright
+   buffer flipped through the centre, sampled at four spacings along that
+   axis, weighted down toward the edge of the frame, each with the colour
+   separation the elements put on it, plus one halo — the ring a source
+   throws at a fixed angle off the axis. Half resolution, one pass. */
+const FLARE_F = `
+uniform sampler2D tSrc; uniform vec2 uRes;
+varying vec2 vUv;
+vec3 chroma(vec2 uv, vec2 dir, float amt) {
+  return vec3(texture2D(tSrc, uv + dir * amt).r,
+              texture2D(tSrc, uv).g,
+              texture2D(tSrc, uv - dir * amt).b);
+}
+void main(){
+  vec2 asp = vec2(uRes.x / uRes.y, 1.0);
+  vec2 uv = 1.0 - vUv;
+  vec2 toC = (0.5 - uv);
+  vec2 dir = normalize(toC * asp + 1e-5);
+  vec3 acc = vec3(0.0);
+  vec2 g = uv;
+  const float spacing = 0.30;
+  vec3 tints[4];
+  tints[0] = vec3(0.55, 0.85, 1.00);
+  tints[1] = vec3(0.70, 1.00, 0.75);
+  tints[2] = vec3(1.00, 0.75, 0.55);
+  tints[3] = vec3(0.80, 0.65, 1.00);
+  for (int i = 0; i < 4; i++) {
+    g = uv + toC * spacing * float(i);
+    float w = pow(max(0.0, 1.0 - length((0.5 - g) * asp) / 0.75), 5.0);
+    acc += chroma(g, dir, 0.004 + 0.003 * float(i)) * w * tints[i] * (0.9 - 0.15 * float(i));
+  }
+  /* the halo: the source seen at a fixed angle off the axis, brightest
+     where the ring crosses the frame's own middle distance */
+  vec2 hv = dir * 0.36 / asp;
+  vec2 hp = uv + hv;
+  float hw = pow(max(0.0, 1.0 - abs(length((0.5 - hp) * asp) - 0.36) / 0.09), 3.0);
+  acc += chroma(hp, dir, 0.010) * hw * vec3(0.75, 0.85, 1.0) * 0.9;
+  gl_FragColor = vec4(acc, 1.0);
+}`;
+/* ---- the streak ----
+   An anamorphic element squeezes the image one way and the glare it spills
+   goes the other: the horizontal line across a bright point that every
+   film shot through one has, blue because the coatings that make it are
+   tuned for green and red. Two horizontal blurs of the tight bright stage,
+   one wide and one wider, tinted and thinned. */
+const ANAM_F = `
+uniform sampler2D tSrc; uniform vec2 uDir; uniform vec3 uTint;
+varying vec2 vUv;
+void main(){
+  vec3 s = vec3(0.0);
+  float wsum = 0.0;
+  for (int i = -8; i <= 8; i++) {
+    float w = 1.0 - abs(float(i)) / 9.0;
+    s += texture2D(tSrc, vUv + uDir * float(i)).rgb * w;
+    wsum += w;
+  }
+  gl_FragColor = vec4(s / wsum * uTint, 1.0);
+}`;
 const COMP_F = `
 uniform sampler2D tScene; uniform sampler2D tRay;
 uniform sampler2D tB1; uniform sampler2D tB2; uniform sampler2D tB3;
-uniform float uAmt, uRay;
+uniform sampler2D tFlare; uniform sampler2D tAnam; uniform sampler2D tNoise;
+uniform float uAmt, uRay, uFlare;
 uniform float uCurve, uSplit, uLens, uGrain, uTime, uExpo;
 uniform vec2 uRes;
 varying vec2 vUv;
@@ -3979,10 +4052,24 @@ void main(){
      The weights sum to one, so the total light added is what it always was
      and only its distribution has moved — a hot centre, a soft middle, and a
      spill that reaches across the frame. */
-  c += (texture2D(tB1, vUv).rgb * 0.34
-      + texture2D(tB2, vUv).rgb * 0.30
-      + texture2D(tB3, vUv).rgb * 0.36) * uAmt;
+  /* The widest stage separates by colour toward the corners: the spill
+     that travelled furthest through the glass is the spill the glass has
+     dispersed most, red outside and blue inside, which is what the rim of
+     a real glare looks like. The tight stages stay put. */
+  vec2 rd = d * 0.018 * uFlare;
+  vec3 b3 = vec3(texture2D(tB3, vUv + rd).r, texture2D(tB3, vUv).g, texture2D(tB3, vUv - rd).b);
+  vec3 spill = texture2D(tB1, vUv).rgb * 0.34
+             + texture2D(tB2, vUv).rgb * 0.30
+             + b3 * 0.36;
+  /* the front element is not clean. Two octaves of the sky's own noise,
+     multiplied, so the smudges are sparse and sharp-edged, and they catch
+     the spill and nothing else: a dark frame stays dark. */
+  float dirt = texture2D(tNoise, vUv * vec2(2.6, 1.5) + 0.13).r
+             * texture2D(tNoise, vUv * vec2(0.9, 0.6) + 0.71).g;
+  dirt = smoothstep(0.30, 0.62, dirt);
+  c += spill * uAmt * (1.0 + dirt * uFlare * 2.6);
   c += texture2D(tRay,   vUv).rgb * uRay;
+  c += (texture2D(tFlare, vUv).rgb + texture2D(tAnam, vUv).rgb) * uFlare;
   /* ---- the exposure ----
      Everything that reached the sensor, scaled by how long the shutter was
      open. Before the curve, because the curve is the sensor's shoulder and
@@ -4011,6 +4098,19 @@ void main(){
      It cannot reach 1.0, only approach it, so the clip is gone rather than
      moved: no amount of light coming in produces a flat patch going out. */
   if (uCurve > 0.001) {
+    /* ---- the film ----
+       The shoulder used to be an exponential above a knee, which kept the
+       dark untouched and folded the top. It is the ACES fitted curve now
+       (Narkowicz 2015), the response the film industry standardised on
+       because it is the closest short formula to how a print reacts:
+       a toe that keeps black black, a straight middle, and a shoulder that
+       takes four times over-exposure to a highlight with shape. It is
+       applied to the half-float signal, which is what it was made for, and
+       the knob is still how far toward it the picture goes. */
+    const float A = 2.51, B = 0.03, C = 2.43, D = 0.59, E = 0.14;
+    vec3 x = c * 0.92;
+    vec3 film = clamp((x * (A * x + B)) / (x * (C * x + D) + E), 0.0, 1.0);
+    c = mix(c, film, uCurve);
     vec3 k = vec3(0.72);
     vec3 over = max(c - k, 0.0);
     /* min(c, k) and not k. Below the knee "over" is zero, so the shoulder
@@ -4031,6 +4131,18 @@ void main(){
        was chosen for. */
     vec3 rolled = min(c, k) + (1.0 - k) * (1.0 - exp(-over / (1.0 - k)));
     c = mix(c, rolled, uCurve);
+  }
+  /* ---- the ceiling ----
+     The scene buffer is half float now, so light arrives here above 1.0,
+     and the curve at less than full strength leaves some of that through.
+     A second shoulder, high and always on: nothing under 0.86 is touched,
+     and nothing coming in produces a flat patch going out — a core at four
+     lands under a core at two, which is the point of having the bits. The
+     same exponential as the curve, so the join has slope one. */
+  {
+    vec3 k2 = vec3(0.86);
+    vec3 ov = max(c - k2, 0.0);
+    c = min(c, k2) + (1.0 - k2) * (1.0 - exp(-ov / (1.0 - k2)));
   }
   /* ---- the split ----
      Shadows cold, highlights warm. Every emulsion ever made does this and
@@ -4167,7 +4279,8 @@ function bloomInit() {
   BLOOM.comp = mk(COMP_F);
   BLOOM.comp.uniforms = { tScene:{value:null}, tRay:{value:null},
                           tB1:{value:null}, tB2:{value:null}, tB3:{value:null},
-                          uAmt:{value:0.6}, uRay:{value:0},
+                          tFlare:{value:null}, tAnam:{value:null}, tNoise:{value:null},
+                          uAmt:{value:0.6}, uRay:{value:0}, uFlare:{value:0},
                           uCurve:{value:0}, uSplit:{value:0}, uLens:{value:0},
                           uGrain:{value:0}, uTime:{value:0}, uExpo:{value:1},
                           uRes:{value:new THREE.Vector2(1,1)} };
@@ -4175,6 +4288,13 @@ function bloomInit() {
      of a six-by-six spread of the scene under it, read back to the CPU —
      one kilobyte, and not every frame. Its own tiny target, made once: it
      is never the size of anything else. */
+  BLOOM.flare = mk(FLARE_F);
+  BLOOM.flare.uniforms = { tSrc:{value:null}, uRes:{value:new THREE.Vector2(1,1)} };
+  BLOOM.anam = mk(ANAM_F);
+  BLOOM.anam.uniforms = { tSrc:{value:null}, uDir:{value:new THREE.Vector2()},
+                          uTint:{value:new THREE.Vector3(0.45, 0.68, 1.0)} };
+  BLOOM.fxaa = mk(FXAA_F);
+  BLOOM.fxaa.uniforms = { tSrc:{value:null}, uRes:{value:new THREE.Vector2(1,1)} };
   BLOOM.probe = mk(PROBE_F);
   BLOOM.probe.uniforms = { tSrc:{value:null}, uCell:{value:new THREE.Vector2(1/16, 1/16)} };
   BLOOM.pr = new THREE.WebGLRenderTarget(16, 16, {
@@ -4190,13 +4310,19 @@ function bloomSize(w, h) {
   bloomInit();
   if (BLOOM.w === w && BLOOM.h === h && BLOOM.rt) return;
   [BLOOM.rt, BLOOM.a, BLOOM.a2, BLOOM.a3, BLOOM.b,
-   BLOOM.c].forEach(r => { if (r) r.dispose(); });
+   BLOOM.c, BLOOM.f, BLOOM.g, BLOOM.out].forEach(r => { if (r) r.dispose(); });
+  /* Half float where the context can filter it, which is every WebGL2
+     context. The encoding stays the canvas's own — the bytes in here are
+     still the bytes that would have been on screen, for anything under 1.0
+     — and what the extra bits buy is the ceiling: additive light no longer
+     stops at 1.0. A star's core, the sun's disc and a knot of links used to
+     arrive at the same flat white; they now arrive at four, two and one and
+     a half, the bright pass spills each by its own excess, and the
+     composite's shoulder folds them back under 1.0 with their order kept. */
+  BLOOM.hdr = !!(renderer.capabilities && renderer.capabilities.isWebGL2);
   const opt = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
-                format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false };
-  /* Eight bits, and sRGB — the canvas's own format, which is the point: the
-     bytes in here are the bytes that would have been on screen. Half float
-     would buy precision the plain path never had, and buy it at the price of
-     the identity that makes this safe. */
+                format: THREE.RGBAFormat, depthBuffer: true, stencilBuffer: false,
+                type: BLOOM.hdr ? THREE.HalfFloatType : THREE.UnsignedByteType };
   BLOOM.rt = new THREE.WebGLRenderTarget(w, h, opt);
   BLOOM.rt.texture.encoding = THREE.sRGBEncoding;
   const hw = Math.max(1, w >> 1), hh = Math.max(1, h >> 1);
@@ -4211,6 +4337,13 @@ function bloomSize(w, h) {
      one: the march reads A and the composite reads both, so writing the rays
      into B would be correct only until the day a fourth blur pass is added */
   BLOOM.c = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  /* the lens: the ghosts in one, the streak in the other */
+  BLOOM.f = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  BLOOM.g = new THREE.WebGLRenderTarget(hw, hh, Object.assign({ depthBuffer:false }, opt));
+  /* the finished frame, eight bits, for the edge pass to read */
+  BLOOM.out = new THREE.WebGLRenderTarget(w, h, {
+    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+    format: THREE.RGBAFormat, depthBuffer: false, stencilBuffer: false });
   BLOOM.w = w; BLOOM.h = h;
   BLOOM.ok = true;
   /* A freshly allocated target holds whatever the driver left in it. The
@@ -4218,7 +4351,7 @@ function bloomSize(w, h) {
      zero times undefined memory is still zero — but a target that has never
      been drawn to is also a target three.js has never attached, and clearing
      them here means the first composited frame cannot sample one. */
-  [BLOOM.a, BLOOM.a2, BLOOM.a3, BLOOM.b, BLOOM.c].forEach(r => {
+  [BLOOM.a, BLOOM.a2, BLOOM.a3, BLOOM.b, BLOOM.c, BLOOM.f, BLOOM.g].forEach(r => {
     renderer.setRenderTarget(r); renderer.clear();
   });
   renderer.setRenderTarget(null);
@@ -4321,6 +4454,21 @@ function renderFrame() {
       src = dst[k];
     }
   }
+  /* the lens, from what the blur has already made: the ghosts off the
+     widest stage, the streak off the tightest */
+  const flare = glow && SET.flr > 0.02 ? SET.flr : 0;
+  if (flare > 0) {
+    const hw = BLOOM.a.width, hh = BLOOM.a.height;
+    BLOOM.flare.uniforms.tSrc.value = BLOOM.a3.texture;
+    BLOOM.flare.uniforms.uRes.value.set(hw, hh);
+    bloomPass(BLOOM.flare, BLOOM.f);
+    BLOOM.anam.uniforms.tSrc.value = BLOOM.a.texture;
+    BLOOM.anam.uniforms.uDir.value.set(2.2 / hw, 0);
+    bloomPass(BLOOM.anam, BLOOM.b);
+    BLOOM.anam.uniforms.tSrc.value = BLOOM.b.texture;
+    BLOOM.anam.uniforms.uDir.value.set(7.0 / hw, 0);
+    bloomPass(BLOOM.anam, BLOOM.g);
+  }
   /* the shafts, marched over what the blur has already made */
   if (rayAmt > 0.02) {
     /* the widest of the three: the shafts are made of the light that has
@@ -4339,6 +4487,10 @@ function renderFrame() {
   U.tRay.value   = BLOOM.c.texture;
   U.uAmt.value   = glow ? amt : 0;
   U.uRay.value   = rayAmt > 0.02 ? rayAmt : 0;
+  U.tFlare.value = BLOOM.f.texture;
+  U.tAnam.value  = BLOOM.g.texture;
+  U.tNoise.value = buildNoiseTex();
+  U.uFlare.value = flare;
   U.uCurve.value = SET.cur;
   U.uSplit.value = SET.spl;
   U.uLens.value  = SET.len;
@@ -4350,7 +4502,10 @@ function renderFrame() {
      been running for an hour has no low bits left to be random with */
   U.uTime.value  = (performance.now() * 0.001) % 100;
   U.uRes.value.set(BLOOM.w || 1, BLOOM.h || 1);
-  BLOOM.quad.material = BLOOM.comp;
+  bloomPass(BLOOM.comp, BLOOM.out);
+  BLOOM.fxaa.uniforms.tSrc.value = BLOOM.out.texture;
+  BLOOM.fxaa.uniforms.uRes.value.set(BLOOM.w || 1, BLOOM.h || 1);
+  BLOOM.quad.material = BLOOM.fxaa;
   renderer.setRenderTarget(null);
   renderer.render(BLOOM.scene, BLOOM.cam);
   return true;                      // the ground is already in the composite
@@ -4988,6 +5143,7 @@ function pointsFrom(n, fill, mat) {
    photographs: it is how a bright star reads as bright.                  */
 const SKY_R = 14000;                       // far enough that the camera never
                                            // reaches the background
+let deepSkyObj = null, nearDustObj = null, NOISE_TEX = null;
 let starFieldObj = null, brightStarObj = null, nebulaObj = null,
     milkyObj = null, dustObj = null, coronaObj = null, coronaRay = null, glareObj = null,
     veilObj = null;
@@ -5235,6 +5391,365 @@ function buildDust(outer) {
    them in every photograph is the same red; reflection nebulae are dust lit
    from outside, and scatter blue for the same reason the sky here on Earth
    does. Violet and teal clouds are the invention. */
+/* ---------- the noise the sky is made of ----------
+   One 256-square texture, built once on the CPU, four channels of tileable
+   value noise at different seeds and octave mixes. Everything volumetric
+   below reads it rather than computing a hash per sample: two texture
+   lookups stand in for a 3D noise, which is what keeps a raymarched cloud
+   cheaper than the fourteen hundred sprites it replaced. Tileable, because a
+   volume samples it across a wrap on every axis and a seam in a nebula is a
+   seam across the sky. */
+function buildNoiseTex() {
+  if (NOISE_TEX) return NOISE_TEX;
+  const S = 256;
+  const lat = (seed, n) => {
+    const g = new Float32Array(n * n);
+    let s = seed >>> 0;
+    for (let i = 0; i < n * n; i++) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; g[i] = s / 4294967296; }
+    return g;
+  };
+  const sm = t => t * t * (3 - 2 * t);
+  /* one octave of value noise on an n-cell lattice, tileable by construction */
+  const oct = (seed, n) => {
+    const g = lat(seed, n), out = new Float32Array(S * S), cs = S / n;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const fx = x / cs, fy = y / cs, ix = Math.floor(fx), iy = Math.floor(fy);
+      const tx = sm(fx - ix), ty = sm(fy - iy);
+      const x0 = ix % n, x1 = (ix + 1) % n, y0 = iy % n, y1 = (iy + 1) % n;
+      const a = g[y0 * n + x0], b = g[y0 * n + x1], c = g[y1 * n + x0], d = g[y1 * n + x1];
+      out[y * S + x] = (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty;
+    }
+    return out;
+  };
+  const fbm = (seed, octs) => {
+    const out = new Float32Array(S * S);
+    let amp = 0.5, tot = 0;
+    for (let o = 0; o < octs; o++, amp *= 0.5) {
+      const n = oct(seed + o * 7919, 4 << o);
+      for (let i = 0; i < S * S; i++) out[i] += n[i] * amp;
+      tot += amp;
+    }
+    for (let i = 0; i < S * S; i++) out[i] /= tot;
+    return out;
+  };
+  const ch = [fbm(11, 5), fbm(23, 5), oct(37, 8), fbm(41, 3)];
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const g = cv.getContext('2d'), img = g.createImageData(S, S), d = img.data;
+  for (let i = 0; i < S * S; i++)
+    for (let k = 0; k < 4; k++) d[i * 4 + k] = Math.max(0, Math.min(255, Math.round(ch[k][i] * 255)));
+  g.putImageData(img, 0, 0);
+  NOISE_TEX = new THREE.CanvasTexture(cv);
+  NOISE_TEX.wrapS = NOISE_TEX.wrapT = THREE.RepeatWrapping;
+  NOISE_TEX.minFilter = THREE.LinearFilter;
+  NOISE_TEX.magFilter = THREE.LinearFilter;
+  NOISE_TEX.generateMipmaps = false;
+  return NOISE_TEX;
+}
+/* a 3D noise out of the 2D one: two slices of the texture, offset per
+   integer height by the texture's own third channel, blended across the
+   fraction. Shared by the nebula and the deep sky. */
+const NOISE_GLSL = `
+uniform sampler2D uNoise;
+float n3(vec3 p) {
+  float z = floor(p.z), f = fract(p.z);
+  f = f * f * (3.0 - 2.0 * f);
+  vec2 o1 = texture2D(uNoise, vec2(z * 0.0137, z * 0.0291)).bb * 7.31;
+  vec2 o2 = texture2D(uNoise, vec2((z + 1.0) * 0.0137, (z + 1.0) * 0.0291)).bb * 7.31;
+  float a = texture2D(uNoise, p.xy * 0.25 + o1).r;
+  float b = texture2D(uNoise, p.xy * 0.25 + o2).r;
+  return mix(a, b, f);
+}
+float n3b(vec3 p) {
+  float z = floor(p.z), f = fract(p.z);
+  f = f * f * (3.0 - 2.0 * f);
+  vec2 o1 = texture2D(uNoise, vec2(z * 0.0171, z * 0.0113)).bb * 5.17;
+  vec2 o2 = texture2D(uNoise, vec2((z + 1.0) * 0.0171, (z + 1.0) * 0.0113)).bb * 5.17;
+  float a = texture2D(uNoise, p.xy * 0.25 + o1).g;
+  float b = texture2D(uNoise, p.xy * 0.25 + o2).g;
+  return mix(a, b, f);
+}`;
+
+/* ---------- the nebula, as a volume ----------
+   Fourteen hundred additive sprites drew something continuous from the range
+   the vault opens at and fell apart the moment the camera came inside: the
+   eye resolves a disc at two hundred pixels across, and a nebula that is
+   visibly made of discs is a nebula that is visibly not there. Each cloud is
+   now one quad, and the quad marches a ray through the ellipsoid the cloud
+   occupies and integrates the gas along it. Twelve steps, two texture reads
+   a step, sixteen quads of which two or three cover any given pixel — less
+   than the sprites cost, and it holds up at any range because there is
+   nothing in it to resolve.
+
+   Everything is in view space, where the ray starts at the origin: the
+   cloud's centre and its three axes are carried through modelViewMatrix in
+   the vertex shader, so the object's own spin and scale — the sky drifts,
+   and it breathes with ORBIT GAP — cost nothing in the fragment.
+
+   It absorbs as well as emits. The old sheet could only add, which is why it
+   could never draw a dark lane; the march keeps a transmittance and writes
+   it out as alpha, premultiplied, so a dense strand in front of a star dims
+   the star. Held short of black: nothing behind a cloud should vanish in a
+   picture whose whole point is that every body is a note. */
+const NEB_V = `
+attribute vec3 iCenter; attribute vec3 iE1; attribute vec3 iAxes; attribute vec4 iSeed;
+varying vec3 vPos; varying vec3 vC; varying vec3 vA1; varying vec3 vA2; varying vec3 vA3;
+varying vec3 vS; varying vec4 vSeed;
+void main(){
+  mat3 mv3 = mat3(modelViewMatrix);
+  float sc = length(mv3[0]);
+  vec3 c = (modelViewMatrix * vec4(iCenter, 1.0)).xyz;
+  vec3 e1 = normalize(mv3 * iE1);
+  vec3 e3 = normalize(mv3 * vec3(0.0, 1.0, 0.0));
+  vec3 e2 = normalize(cross(e3, e1));
+  vS = iAxes * sc;
+  float R = max(vS.x, max(vS.y, vS.z)) * 1.06;
+  /* A cloud the eye is inside is faded to nothing in the fragment, and its
+     quad would cover the whole frame — sixteen full-screen marches for
+     sixteen invisible clouds is what made the boot screen take seconds a
+     frame. Collapse the quad here instead, at the same threshold the fade
+     reaches zero. */
+  vec3 b = vec3(dot(c, e1) / vS.x, dot(c, e2) / vS.y, dot(c, e3) / vS.z);
+  if (length(b) < 0.92) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
+  /* a billboard big enough to hold the ellipsoid from any angle */
+  vec3 p = c + vec3(position.xy * R, 0.0);
+  vPos = p; vC = c; vA1 = e1; vA2 = e2; vA3 = e3; vSeed = iSeed;
+  gl_Position = projectionMatrix * vec4(p, 1.0);
+}`;
+const NEB_F = `
+precision highp float;
+uniform float uBright; uniform float uTime;
+uniform vec3 uSunV; uniform vec3 uSunCol; uniform float uSunR;
+varying vec3 vPos; varying vec3 vC; varying vec3 vA1; varying vec3 vA2; varying vec3 vA3;
+varying vec3 vS; varying vec4 vSeed;
+${NOISE_GLSL}
+void main(){
+  vec3 d = normalize(vPos);
+  /* the ellipsoid, as a unit sphere in its own frame: q = M (p - C) */
+  vec3 a = vec3(dot(d, vA1) / vS.x, dot(d, vA2) / vS.y, dot(d, vA3) / vS.z);
+  vec3 b = vec3(dot(vC, vA1) / vS.x, dot(vC, vA2) / vS.y, dot(vC, vA3) / vS.z);
+  float A = dot(a, a), B = dot(a, b), Cc = dot(b, b) - 1.0;
+  float disc = B * B - A * Cc;
+  if (disc <= 0.0) discard;
+  float sq = sqrt(disc);
+  float t0 = max((B - sq) / A, 0.0), t1 = (B + sq) / A;
+  if (t1 <= t0) discard;
+  const int STEPS = 8;
+  float dl = (t1 - t0) / float(STEPS);
+  float jit = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+  float t = t0 + dl * jit;
+  float sMax = max(vS.x, max(vS.y, vS.z));
+  float drift = uTime * 0.004;
+  /* The gas the eye is in is not seen: it is spread across the whole sky
+     and thin in every direction, and drawing it is drawing a tint over the
+     frame. A cloud fades as the camera comes within half a radius of its
+     surface and is gone by the time the camera is inside, so what is seen
+     is always the gas beyond — which is what a nebula looks like from a
+     planet inside one. */
+  float inside = smoothstep(0.9, 1.9, length(b));
+  /* the warp field once per ray, at the middle: it is the slow term and
+     does not need re-reading eight times */
+  vec3 qm = a * (t0 + t1) * 0.5 - b;
+  float wm = n3b(qm * vec3(1.9, 2.4, 2.4) + vec3(vSeed.w * 4.0, vSeed.x, vSeed.w * 1.3) + drift) - 0.5;
+  float ph = vSeed.x, emis = vSeed.y, lit = vSeed.z, seed = vSeed.w;
+  vec3 L = vec3(0.0);
+  float T = 1.0;
+  for (int i = 0; i < STEPS; i++) {
+    vec3 q = a * t - b;
+    float r2 = dot(q, q);
+    if (r2 < 1.0) {
+      /* the envelope, and the gas inside it: a base field warped by a
+         second one, and a ridged term on top so the density runs in strands
+         rather than lumps — the same three filaments per cloud the sprites
+         carried, made out of the field instead of placed by hand */
+      float env = 1.0 - r2;
+      env *= env;
+      vec3 sp = q * vec3(4.2, 5.4, 5.4) + vec3(seed * 9.0, ph, seed * 3.0);
+      float n = n3(sp + wm * 1.3);
+      float ridge = 1.0 - abs(n * 2.0 - 1.0);
+      ridge *= ridge * ridge;
+      float dens = env * max(0.0, 0.42 * n + 0.80 * ridge - 0.40) * 2.0;
+      if (dens > 0.0) {
+        float r = sqrt(r2);
+        /* the ionisation front: teal inside it, red outside, the crossing
+           a few tenths of the cloud; a reflection cloud is blue all through */
+        float iz = smoothstep(0.12, 0.46, r);
+        vec3 emCol = mix(vec3(0.20, 0.62, 0.58), vec3(0.66, 0.11, 0.15), iz);
+        vec3 col = mix(vec3(0.28, 0.47, 0.64), emCol, emis);
+        /* the gas near the star is lit by it — reflection, which is the
+           star's own colour, falling off with the square of the distance
+           and never quite reaching zero */
+        float sd = distance(d * t, uSunV);
+        float lit = uSunR * uSunR / (uSunR * uSunR + sd * sd);
+        col += uSunCol * lit * 1.8;
+        float step_ = dens * dl / sMax;
+        L += T * col * step_ * 2.4;
+        T *= exp(-step_ * 0.85);
+      }
+    }
+    t += dl;
+  }
+  float gain = uBright * lit * inside * 1.0;
+  vec3 rgb = L * gain;
+  /* absorption held short of black, and scaled with the knob so turning
+     the sky down takes the lanes with the light */
+  float alpha = (1.0 - T) * 0.16 * inside * clamp(uBright * 1.4, 0.0, 1.0);
+  gl_FragColor = vec4(rgb, alpha);
+}`;
+function nebulaMat() {
+  const m = new THREE.ShaderMaterial({
+    uniforms: { uNoise: { value: buildNoiseTex() }, uBright: { value: 1 }, uTime: { value: 0 },
+                uSunV: { value: new THREE.Vector3(0, 0, -1e9) }, uSunCol: { value: new THREE.Color(1, .85, .6) },
+                uSunR: { value: 900 } },
+    vertexShader: NEB_V, fragmentShader: NEB_F,
+    transparent: true, depthWrite: false, depthTest: true, fog: false,
+    blending: THREE.CustomBlending,
+    blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+    blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneMinusSrcAlphaFactor,
+  });
+  return m;
+}
+
+/* ---------- the deep sky ----------
+   Behind the stars, the band and the veil: the continuum. The Milky Way's
+   points are its star clouds; this is the unresolved light between them, a
+   bulge toward the centre, the Great Rift cut through one side, and a
+   handful of galaxies far enough away to be smudges. A dome shader was
+   rejected once on cost — sixty sines a pixel — and this is not that: three
+   texture reads a pixel and a few dot products, on a sphere nothing else
+   has to wait for. Additive, so it can only put light where there was
+   none. */
+const DEEP_V = `
+varying vec3 vDir;
+void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const DEEP_F = `
+precision highp float;
+uniform float uBright; uniform vec3 uN; uniform vec3 uX; uniform vec3 uY;
+uniform vec4 uGal[6]; uniform vec4 uGalU[6];
+varying vec3 vDir;
+${NOISE_GLSL}
+void main(){
+  vec3 d = normalize(vDir);
+  float b = dot(d, uN);                       // sine of galactic latitude
+  float x = dot(d, uX), y = dot(d, uY);
+  float lon = atan(y, x);
+  /* the band: a gaussian in latitude, narrower toward the anticentre, and
+     lumpy along its length */
+  float wid = 0.13 + 0.07 * (0.5 + 0.5 * x);
+  float band = exp(-b * b / (2.0 * wid * wid)) + 0.25 * exp(-b * b / (2.0 * 0.32 * 0.32));
+  float lump = n3(vec3(lon * 2.2, b * 9.0, 1.7));
+  float lump2 = n3b(vec3(lon * 5.0, b * 18.0, 4.1));
+  band *= 0.45 + 0.55 * lump + 0.25 * lump2;
+  /* the bulge toward the centre */
+  float bulge = pow(max(x, 0.0), 6.0) * exp(-b * b / (2.0 * 0.20 * 0.20)) * 0.55;
+  /* the rift: one side only, wandering, and it takes the light away */
+  float rw = 0.038 + 0.030 * n3(vec3(lon * 3.0, 2.3, 8.8));
+  float rift = exp(-pow((b - 0.015 * (lump2 - 0.5) * 2.0) / rw, 2.0)) * smoothstep(-0.2, 0.6, y);
+  float light = (band + bulge) * (1.0 - 0.55 * rift);
+  vec3 col = vec3(0.58, 0.54, 0.50) * light * 0.34;
+  /* a few galaxies: an elliptical gaussian on each one's tangent plane, a
+     warm core in a cool disc */
+  for (int i = 0; i < 6; i++) {
+    vec3 g = uGal[i].xyz; float s = uGal[i].w;
+    float dd = dot(d, g);
+    if (dd > 0.9) {
+      vec3 off = d - g * dd;
+      vec3 u = uGalU[i].xyz; vec3 v = cross(g, u);
+      float px = dot(off, u) / s, py = dot(off, v) / (s * uGalU[i].w);
+      float r2 = px * px + py * py;
+      float disc = exp(-r2 * 2.6);
+      float core = exp(-r2 * 26.0);
+      col += vec3(0.50, 0.58, 0.82) * disc * 0.22 + vec3(1.0, 0.86, 0.66) * core * 0.55;
+    }
+  }
+  gl_FragColor = vec4(col * uBright * 1.4, 1.0);
+}`;
+function buildDeepSky() {
+  dropGlow(deepSkyObj);
+  const gal = [], galU = [];
+  for (let i = 0; i < 6; i++) {
+    const g = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1).normalize();
+    /* off the band, where a real one would be seen */
+    g.addScaledVector(MW_N, -g.dot(MW_N) * 0.6).normalize();
+    const u = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
+    u.addScaledVector(g, -u.dot(g)).normalize();
+    gal.push(new THREE.Vector4(g.x, g.y, g.z, 0.010 + Math.random() * 0.016));
+    galU.push(new THREE.Vector4(u.x, u.y, u.z, 0.28 + Math.random() * 0.55));
+  }
+  const X = new THREE.Vector3(0, 1, 0);
+  if (Math.abs(MW_N.y) > 0.9) X.set(1, 0, 0);
+  X.addScaledVector(MW_N, -X.dot(MW_N)).normalize();
+  const Y = new THREE.Vector3().crossVectors(MW_N, X).normalize();
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uNoise: { value: buildNoiseTex() }, uBright: { value: 1 },
+                uN: { value: MW_N.clone() }, uX: { value: X }, uY: { value: Y },
+                uGal: { value: gal }, uGalU: { value: galU } },
+    vertexShader: DEEP_V, fragmentShader: DEEP_F,
+    side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: false, fog: false,
+    blending: THREE.AdditiveBlending });
+  deepSkyObj = new THREE.Mesh(new THREE.SphereGeometry(SKY_R * 1.08, 48, 24), mat);
+  deepSkyObj.frustumCulled = false;
+  deepSkyObj.renderOrder = -20;
+  scene.add(deepSkyObj);
+}
+
+/* ---------- the dust the camera moves through ----------
+   Nothing was ever near the eye. The stars are fourteen thousand units out,
+   the gas is a map-range thing, and between the two the camera travelled
+   through nothing at all — which is why pulling back never felt like
+   pulling back. A few hundred motes live in a box that follows the camera,
+   wrapped through it as it moves, so there is always something a few units
+   from the lens to slide against the rest. Tiny, faint, and biggest when
+   nearest, which is the whole of what parallax needs. */
+const NDUST_V = `
+attribute float aSize; attribute float aPhase;
+uniform vec3 uCam; uniform float uTime; uniform float uBox;
+varying float vA;
+void main(){
+  vec3 drift = vec3(sin(aPhase * 6.28 + uTime * 0.11), cos(aPhase * 4.1 + uTime * 0.07), sin(aPhase * 2.7 - uTime * 0.09)) * 4.0;
+  vec3 p = mod(position + drift - uCam + uBox * 0.5, uBox) - uBox * 0.5 + uCam;
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  float z = -mv.z;
+  float px = aSize * 220.0 / max(1.0, z);
+  gl_PointSize = clamp(px, 0.7, 3.2);
+  /* fade at the near plane and at the far wall of the box, so nothing pops */
+  vA = smoothstep(1.5, 18.0, z) * smoothstep(uBox * 0.55, uBox * 0.22, length(p - uCam)) * clamp(px / 1.6, 0.35, 1.0);
+  gl_Position = projectionMatrix * mv;
+}`;
+const NDUST_F = `
+uniform float uBright;
+varying float vA;
+void main(){
+  vec2 d = gl_PointCoord - 0.5;
+  float r = length(d) * 2.0;
+  if (r > 1.0) discard;
+  float a = (1.0 - r * r) * vA * uBright;
+  gl_FragColor = vec4(vec3(0.72, 0.80, 0.92) * a, a);
+}`;
+function buildNearDust() {
+  dropGlow(nearDustObj);
+  const n = 720, box = 340;
+  const pos = new Float32Array(n * 3), sz = new Float32Array(n), ph = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    pos[i*3] = (Math.random() - .5) * box; pos[i*3+1] = (Math.random() - .5) * box; pos[i*3+2] = (Math.random() - .5) * box;
+    sz[i] = 0.6 + Math.random() * 1.6;
+    ph[i] = Math.random();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aSize', new THREE.BufferAttribute(sz, 1));
+  g.setAttribute('aPhase', new THREE.BufferAttribute(ph, 1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { uCam: { value: new THREE.Vector3() }, uTime: { value: 0 }, uBox: { value: box }, uBright: { value: 0.5 } },
+    vertexShader: NDUST_V, fragmentShader: NDUST_F,
+    transparent: true, depthWrite: false, depthTest: true, fog: false,
+    blending: THREE.AdditiveBlending });
+  nearDustObj = new THREE.Points(g, mat);
+  nearDustObj.frustumCulled = false;
+  nearDustObj.renderOrder = 6;
+  scene.add(nearDustObj);
+}
+
 function buildNebula(outer) {
   dropGlow(nebulaObj);
   const R = Math.max(900, outer * 1.15);
@@ -5259,9 +5774,14 @@ function buildNebula(outer) {
        down that axis. */
     const ax = Math.random()*TAU;
     seeds.push({
-      x: Math.cos(a)*r, y: (Math.random()-.5)*(R*0.04 + r*0.07), z: Math.sin(a)*r,
-      /* a cloud is wider than it is thick, lying in the disk it condensed out of */
-      w: R*(0.06 + Math.random()*0.13), h: R*(0.02 + Math.random()*0.05),
+      /* Out of the plane as well as in it. As sprites the clouds lay in a
+         sheet through the camera's own height, which put every one of them
+         on the horizon and none in the opening frame; a volume can be
+         above and below, and the eye looking down at the vault looks
+         through it. */
+      x: Math.cos(a)*r, y: (Math.random()-.5)*R*0.34, z: Math.sin(a)*r,
+      /* wider than it is thick, but thick enough to be a body of gas */
+      w: R*(0.08 + Math.random()*0.16), h: R*(0.08 + Math.random()*0.10),
       /* the long axis, in the plane, and the one across it */
       e1x: Math.cos(ax), e1z: Math.sin(ax),
       e2x: -Math.sin(ax), e2z: Math.cos(ax),
@@ -5296,51 +5816,34 @@ function buildNebula(outer) {
      What is still avoided is a cloud that is teal *all over*, or violet at
      all. Those are the invention. This is a core inside a red cloud, which
      is the arrangement the sky actually has. */
-  nebulaObj = pointsFrom(CLOUDS * PER, (i, pos, sz, cl, al) => {
-    const c = seeds[(i / PER) | 0];
-    const k = i % PER;
-    const g = () => (Math.random()+Math.random()+Math.random()-1.5) * 0.75;
-    let u, v, wv;
-    if (k < 72) {
-      /* on a strand: three per cloud, each running the length of it and
-         bending on its own phase, with the points bunched toward the middle
-         where the gas is densest */
-      const fil = (k / 24) | 0, t = ((k % 24) + 0.5) / 24;
-      const s = (t - 0.5) * 2;
-      u = s * c.el * 0.62;
-      v = Math.sin(s * 2.6 + c.ph + fil * 2.1) * 0.42 + (fil - 1) * 0.30;
-      wv = Math.cos(s * 1.9 + c.ph * 1.7 + fil) * 0.22;
-      /* the strand has width, and it is not a wire */
-      u += g() * 0.26; v += g() * 0.20; wv += g() * 0.20;
-    } else {
-      /* and the envelope the strands are lit inside */
-      u = g() * c.el * 0.66; v = g() * 0.86; wv = g() * 0.80;
-    }
-    pos[i*3]   = c.x + (u * c.e1x + v * c.e2x) * c.w;
-    pos[i*3+1] = c.y + wv * c.h;
-    pos[i*3+2] = c.z + (u * c.e1z + v * c.e2z) * c.w;
-    /* how far out of the cloud this point is, measured in the cloud's own
-       stretched frame so an elongated cloud is not brightest at its waist */
-    const d = Math.min(1, Math.hypot(u / Math.max(0.4, c.el), v, wv) / 1.05);
-    sz[i] = (70 + Math.random()*150) * (1 - d*0.55) * (R/1600);
-    al[i] = (.009 + Math.random()*.018) * c.lit * (1 - d*0.7);
-    if (c.emission) {
-      /* the ionisation front: teal inside it, red outside, and the crossing
-         is a few tenths of the cloud rather than a line, because the front
-         is a surface seen through a great deal of gas */
-      const iz = d < 0.12 ? 0 : d > 0.46 ? 1 : (d - 0.12) / 0.34;
-      const ion = 1 - iz * iz * (3 - 2 * iz);
-      /* Blended in RGB and not round the hue wheel: red to teal the long
-         way passes through violet, and a violet nebula is the one thing this
-         file has always refused. Through RGB it passes through a washed-out
-         pink instead, which is what the transition zone actually looks like
-         where the two emissions overlap. */
-      hsl(352 + Math.random()*14, .52, .40)
-        .lerp(hsl(174 + Math.random()*10, .46, .46), ion).toArray(cl, i*3);
-    } else {
-      hsl(212 + Math.random()*16, .32, .46).toArray(cl, i*3);
-    }
-  }, glowMat(700, 0, 0, true));
+  /* One quad per cloud, and the cloud is what the quad's shader marches
+     through — see NEB_F. The seeds above are carried across as instance
+     attributes: where it is, which way its long axis runs, how big it is on
+     each axis, and what kind of gas it is. PER is no longer a count of
+     anything drawn; the strands the sprites were placed along are the
+     ridged term in the density field now. */
+  const geo = new THREE.InstancedBufferGeometry();
+  const quad = new THREE.PlaneGeometry(2, 2);
+  geo.setAttribute('position', quad.getAttribute('position'));
+  geo.setAttribute('uv', quad.getAttribute('uv'));
+  geo.setIndex(quad.getIndex());
+  const cen = new Float32Array(CLOUDS * 3), e1 = new Float32Array(CLOUDS * 3),
+        ax = new Float32Array(CLOUDS * 3), sd = new Float32Array(CLOUDS * 4);
+  seeds.forEach((c, k) => {
+    cen[k*3] = c.x; cen[k*3+1] = c.y; cen[k*3+2] = c.z;
+    e1[k*3] = c.e1x; e1[k*3+1] = 0; e1[k*3+2] = c.e1z;
+    ax[k*3] = c.w * c.el * 0.85; ax[k*3+1] = c.w * 0.95; ax[k*3+2] = c.h * 1.15;
+    sd[k*4] = c.ph; sd[k*4+1] = c.emission ? 1 : 0; sd[k*4+2] = c.lit; sd[k*4+3] = Math.random();
+  });
+  geo.setAttribute('iCenter', new THREE.InstancedBufferAttribute(cen, 3));
+  geo.setAttribute('iE1',     new THREE.InstancedBufferAttribute(e1, 3));
+  geo.setAttribute('iAxes',   new THREE.InstancedBufferAttribute(ax, 3));
+  geo.setAttribute('iSeed',   new THREE.InstancedBufferAttribute(sd, 4));
+  geo.instanceCount = CLOUDS;
+  nebulaObj = new THREE.Mesh(geo, nebulaMat());
+  nebulaObj.frustumCulled = false;
+  nebulaObj.renderOrder = -2;
+  scene.add(nebulaObj);
 }
 /* ---------- the celestial veil ----------
    The sky had depth and it had no *grandeur*. Stars, a band, arms and gas all
@@ -5515,6 +6018,8 @@ function applyVeil() {
 buildDust(1600);
 buildNebula(1600);
 buildVeil();
+buildDeepSky();
+buildNearDust();
 
 /* ========================================================= BODY SURFACES
    Every body in the cosmos wears the same machined shell.
@@ -7394,6 +7899,7 @@ if (cats.length) {
        disc gives out in a higher, cooler layer. */
     const uT = Math.log(1 + (c.n | 0)) / Math.log(1 + starNMax);
     const cT = 3400 + uT * uT * 3600;
+    c.temp = cT;
     starSeed[i] = ((hashStr(c.key || String(i)) & 4095) / 4096);
     const bbC = blackbodyLin(cT), bbE = blackbodyLin(cT * 0.762);
     starCoreC[i*3] = bbC[0]; starCoreC[i*3+1] = bbC[1]; starCoreC[i*3+2] = bbC[2];
@@ -8218,16 +8724,16 @@ pulseIdx = new Int32Array(PULSE); pulseT = new Float32Array(PULSE);
 pulseSp = new Float32Array(PULSE);
 for (let i=0;i<PULSE;i++){
   pulseIdx[i] = Math.floor(Math.random()*Math.max(1,EN));
-  pulseT[i] = Math.random(); pulseSp[i] = .0018 + Math.random()*.0042;
+  pulseT[i] = Math.random(); pulseSp[i] = .0024 + Math.random()*.0050;
 }
-pPos = new Float32Array(PULSE*3); pSz = new Float32Array(PULSE);
-pCl = new Float32Array(PULSE*3); pAl = new Float32Array(PULSE);
+pPos = new Float32Array(PULSE*PULSE_K*3); pSz = new Float32Array(PULSE*PULSE_K);
+pCl = new Float32Array(PULSE*PULSE_K*3); pAl = new Float32Array(PULSE*PULSE_K);
 pulseGeo = new THREE.BufferGeometry();
 pulseGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
 pulseGeo.setAttribute('aSize', new THREE.BufferAttribute(pSz,1));
 pulseGeo.setAttribute('aColor', new THREE.BufferAttribute(pCl,3));
 pulseGeo.setAttribute('aAlpha', new THREE.BufferAttribute(pAl,1));
-addPhase(pulseGeo, PULSE);
+addPhase(pulseGeo, PULSE*PULSE_K);
 pulses = new THREE.Points(pulseGeo, glowMat(600));
 pulses.frustumCulled = false;
 pulses.visible = EN > 0;
@@ -8894,7 +9400,9 @@ function refreshHUD() {
     const d = document.createElement('div');
     d.className = 'lrow';
     d.innerHTML = '<span class="dot" style="color:#' + c.color.getHexString() + '"></span>' +
-                  '<em>' + esc(catLabel(c)) + '</em><i>' + c.n + '</i>';
+                  '<em>' + esc(catLabel(c)) + '</em><i>' +
+                  (c.temp ? spectralOf(c.temp) + ' · ' : '') + c.n + '</i>';
+    if (c.temp) d.title = T('cls.star', { s: spectralOf(c.temp), t: Math.round(c.temp / 100) * 100 });
     d.onclick = () => { c.on = !c.on; d.classList.toggle('off', !c.on); };
     legBody.appendChild(d);
     c.el = d;
@@ -8998,6 +9506,9 @@ function renderInspector() {
      is asked in: not "the 14th of March" but "have I been near this lately". */
   $('i-path').textContent = nd.p + '   ·   ' + nd.w + ' words   ·   ←' + nd.inb +
                             (nd.mt ? '   ·   ' + T('insp.touched', { t: sinceStr(nd.mt) }) : '');
+  /* and what it is: the kind of world the shader drew, and the star it is
+     lit by — see bodyClassStr */
+  { const cls = bodyClassStr(selected); if (cls) $('i-path').textContent += '   ·   ' + cls; }
 
   /* the counts the whole redesign is about: how many bodies this note is
      tied to, how many satellites orbit it, how many orbit its neighbours */
@@ -9326,6 +9837,9 @@ function genSet(on) {
   $('b-gen').classList.toggle('am', GEN.on);
   if (GEN.on) {
     GEN.u = 0; GEN.play = true; GEN.stage = -1;
+    /* the void, struck: the replay opens on the low boom the supernova
+       ends on, from where the sun is about to be */
+    if (AUD.on && sunObj) audioBoom(sunObj.position.x, sunObj.position.y, sunObj.position.z);
     buildGenMarks();
     /* the formation is a wide shot */
     select(-1);
@@ -9683,6 +10197,11 @@ const COMET_STRIDE = COMET_SAMP * 2;
 const _cq = new Float32Array(COMET_SAMP * 3);
 let comet = null, cometHead = null, cometTailObj = null,
     cometTailPos = null, cometTailCol = null, cometNext = 14;
+/* the comets with somewhere to be — vault paths, resolved when they fly, so
+   a rebuild between the queueing and the flight cannot hand one a stale
+   index — and the beat held between one and the next */
+let cometQueue = [], cometHold = 0;
+const _ct = new THREE.Vector3();
 
 function cometBuild() {
   if (cometHead) return;
@@ -9708,17 +10227,36 @@ function cometBuild() {
   }
 }
 
-function cometSpawn() {
+function cometSpawn(target) {
   cometBuild();
   const R = Math.max(900, (SHELL_R || 1200) * 1.55);
-  const a = Math.random() * TAU, el = (Math.random() - 0.5) * 0.8;
-  const pos = new THREE.Vector3(Math.cos(a) * R, Math.sin(el) * R * 0.55, Math.sin(a) * R);
-  /* aim near the core but deliberately off it — the miss distance is the
-     whole reason it swings round instead of falling straight in */
-  const aim = new THREE.Vector3(Math.random() - .5, (Math.random() - .5) * .5, Math.random() - .5)
-                .multiplyScalar(R * (0.10 + Math.random() * 0.20));
-  const vel = aim.clone().sub(pos).normalize().multiplyScalar(R * 0.052);
-  comet = { pos, vel, life: 0, R,
+  const t = target >= 0 && target < N ? target : -1;
+  let pos, vel;
+  if (t >= 0) {
+    /* A comet with a note to land on comes in from beyond it, off the line
+       from the hub by a swing of up to forty degrees, so it crosses the
+       vault on its way down rather than dropping in vertically. The speed is
+       set by the trip — about seven seconds from the rim to the note — on
+       its own clock rather than the orbital one, because it is an event and
+       not a body. See EVENTS for where these come from. */
+    const tx = P[t*3], ty = P[t*3+1], tz = P[t*3+2];
+    const a = Math.atan2(tz, tx) + (Math.random() - .5) * 1.4;
+    /* from inside the opening frame rather than from the comet shell, so
+       the whole approach is in the picture rather than the last third: the
+       fitted radius is what the frame was sized to hold */
+    const R0 = clamp(fitRadius() * 0.85, 400, R);
+    pos = new THREE.Vector3(Math.cos(a) * R0, ty * 0.4 + (Math.random() - .5) * R0 * 0.30, Math.sin(a) * R0);
+    vel = new THREE.Vector3(tx, ty, tz).sub(pos).multiplyScalar(1 / 6.0);
+  } else {
+    const a = Math.random() * TAU, el = (Math.random() - 0.5) * 0.8;
+    pos = new THREE.Vector3(Math.cos(a) * R, Math.sin(el) * R * 0.55, Math.sin(a) * R);
+    /* aim near the core but deliberately off it — the miss distance is the
+       whole reason it swings round instead of falling straight in */
+    const aim = new THREE.Vector3(Math.random() - .5, (Math.random() - .5) * .5, Math.random() - .5)
+                  .multiplyScalar(R * (0.10 + Math.random() * 0.20));
+    vel = aim.clone().sub(pos).normalize().multiplyScalar(R * 0.052);
+  }
+  comet = { pos, vel, life: 0, R, target: t,
             /* How dusty this one is. Comets genuinely differ: Hale-Bopp threw
                off so much dust that its dust tail dominated, and plenty of
                others are gas-rich and show almost nothing but the blue. One
@@ -9739,25 +10277,48 @@ function cometEnd() {
 function cometStep(dt) {
   if (!N) return;
   if (!comet) {
+    /* a comet with somewhere to be goes first, after a beat; the wandering
+       one keeps its own slow cadence underneath */
+    if (cometHold > 0) cometHold -= dt;
+    else if (cometQueue.length) {
+      const i = nodeByPath(cometQueue.shift());
+      if (i >= 0) { cometSpawn(i); return; }
+    }
     cometNext -= dt * Math.max(0.15, SET.spd);
-    if (cometNext <= 0) cometSpawn();
+    if (cometNext <= 0) cometSpawn(-1);
     return;
   }
-  /* the orbital clock owns this too, so ORBIT SPEED 0 stops the sky entirely */
-  const h = Math.min(0.05, dt) * Math.max(0, SET.spd);
+  const tgt = comet.target;
+  if (tgt >= N) { cometEnd(); return; }
+  /* the orbital clock owns the wandering comet, so ORBIT SPEED 0 stops the
+     sky entirely; a comet with a note to reach is an event and keeps its
+     own time */
+  const h = tgt >= 0 ? Math.min(0.05, dt) : Math.min(0.05, dt) * Math.max(0, SET.spd);
   comet.life += dt;
   if (h > 0) {
     const p = comet.pos;
     const r = Math.max(comet.R * 0.05, p.length());
-    /* one attractor at the origin; GM chosen so a pass takes a few seconds */
+    /* one attractor at the origin; GM chosen so a pass takes a few seconds.
+       The homing comet feels a twelfth of it: enough to bow the path, not
+       enough to pull it off the note. */
     const GM = comet.R * comet.R * 0.30;
-    comet.vel.addScaledVector(p, -GM / (r*r*r) * h);
+    comet.vel.addScaledVector(p, -GM / (r*r*r) * h * (tgt >= 0 ? 0.08 : 1));
+    if (tgt >= 0) {
+      /* the velocity is eased toward the line to the note, which bends the
+         path in rather than snapping it; arrival is the head coming inside
+         a few radii of the body, with this step's travel allowed for */
+      _ct.set(P[tgt*3], P[tgt*3+1], P[tgt*3+2]);
+      const d = _ct.distanceTo(p), spd = comet.vel.length();
+      if (d < Math.max((RAD[tgt] || 2) * 3.5, 10) + spd * h * 1.5) { cometArrive(tgt); return; }
+      _ct.sub(p).normalize().multiplyScalar(spd);
+      comet.vel.lerp(_ct, 1 - Math.pow(0.30, h));
+    }
     p.addScaledVector(comet.vel, h);
     comet.trail.unshift(p.clone());
     if (comet.trail.length > COMET_TAIL + 1) comet.trail.length = COMET_TAIL + 1;
   }
-  if (comet.life > 6 && comet.pos.length() > comet.R * 2.1) { cometEnd(); return; }
-  if (comet.life > 150) { cometEnd(); return; }
+  if (tgt < 0 && comet.life > 6 && comet.pos.length() > comet.R * 2.1) { cometEnd(); return; }
+  if (comet.life > (tgt >= 0 ? 30 : 150)) { cometEnd(); return; }
 
   const hp = cometHead.geometry.attributes.position.array;
   for (let i=0;i<3;i++){ hp[i*3]=comet.pos.x; hp[i*3+1]=comet.pos.y; hp[i*3+2]=comet.pos.z; }
@@ -9887,6 +10448,231 @@ function cometStep(dt) {
 }
 const _ionA = [0,0,0];
 
+/* =============================================================== EVENTS
+   Two things now happen in the sky, and each one is the vault doing
+   something. Neither is decoration: a comet without a note under it or a
+   supernova with nothing destroyed would each be a picture of nothing,
+   which is what the sky was careful never to be.
+
+     the comet        lands on the note that was just touched. The host
+                      re-derives the cosmos every time a file is written, and
+                      the difference between the cosmos before and after is a
+                      list of notes whose file time moved — each one gets a
+                      comet that falls in from outside and comes down on it,
+                      and the strike sends the ripple out along its links.
+                      The first load sends one to the most recently touched
+                      note, so a vault opens with the place you were last
+                      working on being pointed at.
+     the supernova    is a note deleted while the view was open. A body that
+                      was in the previous cosmos and is not in this one goes
+                      out as a flash and a shell, at the place it was, and
+                      says its name once. A rename is not a death — the file
+                      keeps its creation time across one, and a new body
+                      carrying a vanished body's ctime is the same note.
+
+   Both live in the scene rather than in the world group, because they are
+   about the difference between two worlds and have to survive the swap.
+   There was a black hole for a folder's dead links as well, for one build;
+   it was a thing on the map that was not a note, and it went. */
+
+/* ---- what the previous cosmos was, for the diff -------------------- */
+function bodySnapshot() {
+  const m = new Map();
+  if (!N || !P) return m;
+  for (let i = 0; i < N; i++) {
+    const nd = nodes[i];
+    m.set(nd.fp || nd.p, { x: P[i*3], y: P[i*3+1], z: P[i*3+2], r: RAD[i] || 2,
+      cr: COL[i*3], cg: COL[i*3+1], cb: COL[i*3+2],
+      mt: +nd.mt || 0, ct: +nd.ct || 0, n: nd.n });
+  }
+  return m;
+}
+/* Files written or created since the last cosmos get a comet; files gone
+   get a supernova. The ctime is what tells a rename from a delete-and-
+   create: a new path whose creation time matches a vanished one is the same
+   file under a new name, and nothing happened to it worth a flash. */
+const NOVA_MAX = 6;
+function bodyDiff(prev) {
+  if (!prev || !N) return;
+  const seen = new Set(), born = new Map();
+  for (let i = 0; i < N; i++) {
+    const nd = nodes[i], key = nd.fp || nd.p;
+    seen.add(key);
+    const was = prev.get(key), mt = +nd.mt || 0;
+    if (!was) { if (nd.ct) born.set(+nd.ct, key); if (mt) cometQueue.push(key); }
+    else if (mt && was.mt && mt > was.mt + 500) cometQueue.push(key);
+  }
+  let fired = 0;
+  prev.forEach((b, key) => {
+    if (seen.has(key)) return;
+    if (b.ct && born.has(b.ct)) return;                 // renamed, not gone
+    if (fired++ < NOVA_MAX) novaSpawn(b, 'nova');
+  });
+  if (cometQueue.length > 6) cometQueue.length = 6;
+  return fired;
+}
+/* the opening comet: the note you were last working on, if the vault knows
+   when that was and it was recent enough to mean anything */
+function cometPrime() {
+  if (!N || !freshHas || !touchAt) return;
+  let best = -1, bt = 0;
+  for (let i = 0; i < N; i++) if (touchAt[i] > bt) { bt = touchAt[i]; best = i; }
+  if (best < 0 || Date.now() - bt > 14 * 86400000) return;
+  cometQueue.push(hostPath(best));
+  cometHold = 2.5;
+}
+function cometArrive(t) {
+  const nd = nodes[t];
+  novaSpawn({ x: P[t*3], y: P[t*3+1], z: P[t*3+2], r: RAD[t] || 2,
+              cr: 0.80, cg: 0.95, cb: 1.0, n: nd ? nd.n : '' }, 'strike');
+  if (!GEN.on) rippleFrom(t, 0.9);
+  audioChime(t, 1.3);
+  if (nd) toast(T('ev.comet', { n: nd.n }));
+  cometEnd();
+  cometHold = 1.4;
+}
+
+/* ---- supernovae, and the comet's own strike ------------------------ */
+let novae = [], novaPts = null, novaShells = [];
+function novaBuild() {
+  if (novaPts) return;
+  novaPts = pointsFrom(NOVA_MAX, (i, pos, sz, cl, al) => {
+    sz[i] = 0; al[i] = 0; cl[i*3] = cl[i*3+1] = cl[i*3+2] = 1;
+  }, glowMat(900, 0, 1, false));
+  novaPts.renderOrder = 4;
+  const geo = new THREE.RingGeometry(0.80, 1.0, 72, 1);
+  for (let i = 0; i < NOVA_MAX; i++) {
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0, fog: false,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    m.visible = false; m.frustumCulled = false; m.renderOrder = 4;
+    scene.add(m);
+    novaShells.push(m);
+  }
+}
+function novaSpawn(b, kind) {
+  novaBuild();
+  if (novae.length >= NOVA_MAX) novae.shift();
+  const nova = kind === 'nova';
+  novae.push({ x: b.x, y: b.y, z: b.z, r: Math.max(1.5, b.r), t: 0,
+               life: nova ? 4.6 : 1.5,
+               size: nova ? clamp(b.r * 34, 110, 460) : clamp(b.r * 16, 50, 200),
+               reach: nova ? 34 : 9,
+               cr: b.cr, cg: b.cg, cb: b.cb });
+  if (nova) {
+    if (b.n) toast(T('ev.nova', { n: b.n }));
+    audioBoom(b.x, b.y, b.z);
+  }
+}
+const _nv = new THREE.Vector3();
+function novaStep(dt) {
+  if (!novaPts) return;
+  const pos = novaPts.geometry.attributes.position.array,
+        sz  = novaPts.geometry.attributes.aSize.array,
+        cl  = novaPts.geometry.attributes.aColor.array,
+        al  = novaPts.geometry.attributes.aAlpha.array;
+  for (let k = 0; k < NOVA_MAX; k++) {
+    const v = novae[k], sh = novaShells[k];
+    if (!v) { al[k] = 0; sz[k] = 0; sh.visible = false; continue; }
+    v.t += dt;
+    if (v.t >= v.life) { novae.splice(k, 1); k--; continue; }
+    const u = v.t / v.life;
+    /* the flash: up in a fifth of a second, then a long exponential out,
+       white at the peak and the body's own colour as it cools */
+    const rise = Math.min(1, v.t / 0.16);
+    const a = rise * Math.exp(-Math.max(0, v.t - 0.16) * (5.1 / v.life));
+    const w = 1 - rise * 0.55;
+    pos[k*3] = v.x; pos[k*3+1] = v.y; pos[k*3+2] = v.z;
+    sz[k] = v.size * (0.55 + 0.45 * rise);
+    al[k] = a * 1.4;
+    cl[k*3]   = lerp(v.cr, 1, w); cl[k*3+1] = lerp(v.cg, 1, w); cl[k*3+2] = lerp(v.cb, 1, w);
+    /* the shell: out fast and slowing, thinning as it goes, the way a
+       remnant does */
+    const e = 1 - Math.pow(1 - u, 2.2);
+    const R = v.r * (2 + v.reach * e);
+    sh.visible = true;
+    sh.position.set(v.x, v.y, v.z);
+    sh.scale.set(R, R, R);
+    sh.lookAt(camera.position);
+    sh.material.opacity = Math.pow(1 - u, 1.7) * 0.85;
+    sh.material.color.setRGB(lerp(v.cr, 1, .45), lerp(v.cg, 1, .45), lerp(v.cb, 1, .45));
+  }
+  novaPts.geometry.attributes.position.needsUpdate = true;
+  novaPts.geometry.attributes.aSize.needsUpdate = true;
+  novaPts.geometry.attributes.aColor.needsUpdate = true;
+  novaPts.geometry.attributes.aAlpha.needsUpdate = true;
+}
+/* a supernova, heard: a low body and a burst of filtered noise that closes
+   down as it dies, panned to where it was. Under the RIPPLE level, because
+   it is the same kind of thing — the vault answering — at a larger size. */
+function audioBoom(x, y, z) {
+  if (!AUD.on || !AUD.ctx || SET.sRip < 0.02) return;
+  const ctx = AUD.ctx, t = ctx.currentTime;
+  const lvl = clamp(0.32 * SET.sRip, 0.001, 0.5);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(lvl, t + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.0003, t + 2.4);
+  let out = g;
+  try {
+    if (ctx.createStereoPanner) {
+      const pn = ctx.createStereoPanner();
+      _nv.set(x, y, z).project(camera);
+      pn.pan.value = (_nv.z < 1 && Number.isFinite(_nv.x)) ? clamp(_nv.x, -1, 1) * 0.72 : 0;
+      g.connect(pn); out = pn;
+    }
+  } catch (e) { out = g; }
+  out.connect(AUD.bus || AUD.master);
+  if (AUD.echo) out.connect(AUD.echo);
+  const o = ctx.createOscillator();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(96, t);
+  o.frequency.exponentialRampToValueAtTime(34, t + 1.8);
+  o.connect(g); o.start(t); o.stop(t + 2.5);
+  const n = ctx.createBufferSource(), len = Math.floor(ctx.sampleRate * 1.6);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  n.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(900, t);
+  lp.frequency.exponentialRampToValueAtTime(70, t + 1.6);
+  const ng = ctx.createGain(); ng.gain.value = 0.55;
+  n.connect(lp); lp.connect(ng); ng.connect(g);
+  n.start(t); n.stop(t + 1.7);
+}
+
+function eventsStep(dt) {
+  novaStep(dt);
+}
+
+/* ---- what a body is, said in words ---------------------------------
+   The shader has decided for a long time whether a note is a giant, a
+   terrestrial or a rock, and the star's temperature has decided its colour;
+   the inspector said none of it. The mass here is worldSeed's own formula,
+   and it has to stay that, or the inspector describes a different world from
+   the one drawn. */
+function worldClassOf(i) {
+  const nd = nodes[i], k = orb && orb[i] ? orb[i].kind : 'wiki';
+  if (k === 'core') return null;
+  if (k === 'moon' || k === 'spiral' || k === 'shell') return 'cls.rock';
+  const mass = Math.log(1 + (nd.inb | 0)) * 1.55 + Math.log(1 + (nd.w || 0) / 120) * 0.7;
+  return mass >= 3.6 ? 'cls.giant' : 'cls.terr';
+}
+/* the main-sequence letters over the range the folder stars actually span */
+function spectralOf(temp) {
+  return temp >= 6000 ? 'F' : temp >= 5200 ? 'G' : temp >= 3700 ? 'K' : 'M';
+}
+function bodyClassStr(i) {
+  const parts = [];
+  const wk = worldClassOf(i);
+  if (wk) parts.push(T(wk));
+  if (ringIdx && ringIdx.indexOf(i) >= 0) parts.push(T('cls.ringed'));
+  const c = catOf && catOf[i];
+  if (c && c.temp) parts.push(T('cls.star', { s: spectralOf(c.temp), t: Math.round(c.temp / 100) * 100 }));
+  return parts.join('   ·   ');
+}
+
 /* ================================================================ POSTER
    The renderer has no preserveDrawingBuffer — reading the canvas is only
    valid in the same tick as the draw — so this renders and copies back to
@@ -9969,12 +10755,38 @@ $('b-post').onclick = savePoster;
    change what the room sounds like, it was to stop that being one person's
    decision about everybody's room. */
 const AUD = { on:false, ctx:null, master:null,
+              wind:null, move:null, holo:null,
               bus:null, echo:null, wetIn:null,
               dry:null, wet:null, wetLP:null, conv:null,
               dl:null, dlLP:null, fb:null,
               droneFilt:null, drone:[], irSecs:0 };
 /* the three near-unison voices, before tuning */
-const DRONE_HZ = [55, 82.4, 110.6];
+/* ---- the bed ----
+   Three near-unison sines under one filter was a hum. This is a place: a
+   sub an octave under everything, a triangle on the root, two sawtooths a
+   fifth up detuned either side of each other so they beat slowly, a
+   triangle an octave above that, and one sine four octaves up at almost
+   nothing — the shimmer, the one thing in the bed that reads as far away.
+   Every voice breathes on its own clock so the sum never lines up with
+   itself. E, because the fifth stack sits where a speaker can carry it. */
+const DRONE_HZ = [
+  { f: 41.2,  w: 'sine',     lvl: 0.42, swing: 0.10, lf: 0.021 },
+  { f: 55.0,  w: 'triangle', lvl: 0.30, swing: 0.12, lf: 0.031 },
+  { f: 82.4,  w: 'sawtooth', lvl: 0.10, swing: 0.05, lf: 0.043, det: -6 },
+  { f: 82.4,  w: 'sawtooth', lvl: 0.10, swing: 0.05, lf: 0.037, det: 7 },
+  { f: 164.8, w: 'triangle', lvl: 0.09, swing: 0.05, lf: 0.027, det: 4 },
+  { f: 659.3, w: 'sine',     lvl: 0.030, swing: 0.028, lf: 0.019 },
+];
+/* a few seconds of noise, looped: the wind and the travel are both made of
+   it, and a loop of four seconds through a filter that never sits still
+   has no audible seam */
+function audioNoise(ctx, secs) {
+  const len = Math.floor(ctx.sampleRate * secs);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  let b = 0;
+  for (let i = 0; i < len; i++) { b = b * 0.985 + (Math.random() * 2 - 1) * 0.12; d[i] = b; }
+  return buf;
+}
 
 /* ---------- the room ----------
    A reverb is not an effect laid over this, it is the subject of it. What
@@ -10070,29 +10882,75 @@ function audioInit() {
        roughly what a very large room sounds like */
     const filt = ctx.createBiquadFilter();
     filt.type = 'lowpass'; filt.frequency.value = S_DRONE_HZ; filt.Q.value = 0.7;
-    filt.connect(bus);
+    /* nothing under thirty-four hertz: a sub that reaches the speaker's own
+       resonance is a rattle, not a note */
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 34; hp.Q.value = 0.5;
+    filt.connect(hp); hp.connect(bus);
+    /* the breath: the pad's filter opens and closes over most of a minute */
+    const bl = ctx.createOscillator(); bl.frequency.value = 0.023;
+    const blg = ctx.createGain(); blg.gain.value = 90;
+    bl.connect(blg); blg.connect(filt.frequency); bl.start();
     AUD.drone.length = 0;
-    DRONE_HZ.forEach((f, k) => {
+    DRONE_HZ.forEach((v, k) => {
+      const f = v.f;
       const o = ctx.createOscillator();
-      o.type = k === 2 ? 'triangle' : 'sine';
+      o.type = v.w;
       o.frequency.value = f;
+      if (v.det) o.detune.value = v.det;
       const g = ctx.createGain();
-      g.gain.value = k === 0 ? 0.5 : 0.2;
+      g.gain.value = v.lvl;
       /* each voice breathes on its own slow cycle, so the drone never sits
          perfectly still and never lines up with itself */
       const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.031 + k * 0.019;
+      lfo.frequency.value = v.lf;
       const lg = ctx.createGain();
-      lg.gain.value = k === 0 ? 0.16 : 0.09;
+      lg.gain.value = v.swing;
       lfo.connect(lg); lg.connect(g.gain); lfo.start();
       o.connect(g); g.connect(filt); o.start();
       /* the LFO adds to g.gain rather than scaling it, so turning the drone
          down has to take the breath down with it — an offset of zero with a
          swing of 0.16 either side is not silence, it is the same voice at a
          sixth of the level, wandering in and out of phase inversion */
-      AUD.drone.push({ o, g, lg, base: f, lvl: k === 0 ? 0.5 : 0.2,
-                       swing: k === 0 ? 0.16 : 0.09 });
+      AUD.drone.push({ o, g, lg, base: f, lvl: v.lvl, swing: v.swing });
     });
+    /* ---- the wind ----
+       Noise through a band that wanders and a level that swells over
+       twenty seconds: the sound a large empty space makes when nothing in
+       it is making one. Under AMBIENT with the bed. */
+    const noise = audioNoise(ctx, 4);
+    const wn = ctx.createBufferSource(); wn.buffer = noise; wn.loop = true;
+    const wbp = ctx.createBiquadFilter();
+    wbp.type = 'bandpass'; wbp.frequency.value = 420; wbp.Q.value = 0.9;
+    const wl = ctx.createOscillator(); wl.frequency.value = 0.017;
+    const wlg = ctx.createGain(); wlg.gain.value = 260;
+    wl.connect(wlg); wlg.connect(wbp.frequency); wl.start();
+    const wg = ctx.createGain(); wg.gain.value = 0;
+    const wa = ctx.createOscillator(); wa.frequency.value = 0.045;
+    const wag = ctx.createGain(); wag.gain.value = 0;
+    wa.connect(wag); wag.connect(wg.gain); wa.start();
+    wn.connect(wbp); wbp.connect(wg); wg.connect(bus); wn.start();
+    AUD.wind = { g: wg, lg: wag, lvl: 0.10 };
+    /* ---- travel ----
+       The same noise, darker, whose level is the camera's own speed: moving
+       through the vault is heard as moving, and stopping is heard as the
+       sound going. Driven from audioStep. */
+    const mv = ctx.createBufferSource(); mv.buffer = noise; mv.loop = true;
+    const mlp = ctx.createBiquadFilter();
+    mlp.type = 'lowpass'; mlp.frequency.value = 260; mlp.Q.value = 0.6;
+    const mg = ctx.createGain(); mg.gain.value = 0;
+    mv.connect(mlp); mlp.connect(mg); mg.connect(bus); mv.start();
+    AUD.move = { g: mg, lp: mlp };
+    /* ---- the instrument's hum ----
+       A sine four octaves over the note in the middle of the mind map, with
+       a slow tremolo, at almost nothing: the plate is on. Pitched on entry. */
+    const ho = ctx.createOscillator(); ho.type = 'sine'; ho.frequency.value = 1318.5;
+    const hg = ctx.createGain(); hg.gain.value = 0;
+    const ht = ctx.createOscillator(); ht.frequency.value = 5.3;
+    const htg = ctx.createGain(); htg.gain.value = 0.004;
+    ht.connect(htg); htg.connect(hg.gain); ht.start();
+    ho.connect(hg); hg.connect(bus); ho.start();
+    AUD.holo = { o: ho, g: hg };
     AUD.ctx = ctx; AUD.master = master;
     AUD.bus = bus; AUD.echo = echo; AUD.wetIn = pre;
     AUD.dry = dry; AUD.wet = wet; AUD.wetLP = wetLP; AUD.conv = conv;
@@ -10139,11 +10997,17 @@ function audioApply() {
 
   A.droneFilt.frequency.setTargetAtTime(S_DRONE_HZ, t, 0.12);
   const tune = Math.pow(2, SET.sTune / 12);
+  /* over a second and a half rather than a fifth of one: a bed that is
+     suddenly there is a switch, and one that comes up is a place arriving */
   A.drone.forEach(v => {
     v.o.frequency.setTargetAtTime(v.base * tune, t, 0.30);
-    to(v.g.gain,  v.lvl   * SET.sDrone, 0.20);
-    to(v.lg.gain, v.swing * SET.sDrone, 0.20);
+    to(v.g.gain,  v.lvl   * SET.sDrone, 1.4);
+    to(v.lg.gain, v.swing * SET.sDrone, 1.4);
   });
+  if (A.wind) {
+    to(A.wind.g.gain,  A.wind.lvl * SET.sDrone, 1.4);
+    to(A.wind.lg.gain, A.wind.lvl * 0.45 * SET.sDrone, 1.4);
+  }
   audioRoom();
 }
 /* Rebuilding the impulse is a few million samples of arithmetic on the same
@@ -10229,10 +11093,19 @@ function audioTone(i, t, lvl, dec) {
   /* the octave and the fifth above, both quiet: partials, not a chord. In a
      dry signal they are barely audible; through seven seconds of tail they
      are what the tail is made of. */
-  [[f, 1], [f * 2.004, 0.30], [f * 2.998, 0.11]].forEach(([fr, l]) => {
+  /* A bell's partials rather than a sine's harmonics: the octave, then the
+     inharmonic modes a struck bell has at about 2.76 and 5.4 times the
+     note, with a fourth between them, each dying faster than the one below
+     it. A second fundamental a few cents off gives the note width without
+     giving it a chorus. It is still the same voice at every level, from a
+     selection to a walk. */
+  [[f, 1, 1], [f * 1.0035, 0.45, 1], [f * 2.0, 0.26, 0.8],
+   [f * 2.76, 0.12, 0.55], [f * 3.98, 0.07, 0.4], [f * 5.4, 0.04, 0.3]].forEach(([fr, l, dm]) => {
     const o = ctx.createOscillator();
     o.type = 'sine'; o.frequency.value = fr;
-    const og = ctx.createGain(); og.gain.value = l;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(l, t);
+    og.gain.exponentialRampToValueAtTime(l * 0.02 + 1e-5, t + Math.max(0.15, dec * dm));
     o.connect(og); og.connect(g);
     /* stopped a fraction after the envelope reaches its floor, whatever the
        decay was set to — an oscillator left running past its own silence is
@@ -10357,6 +11230,40 @@ function audioStep() {
   AUD.droneFilt.frequency.setTargetAtTime(S_DRONE_HZ * (1.25 - 0.60 * eased), t, 0.35);
   AUD.wet.gain.setTargetAtTime(S_WET * (0.82 + 0.34 * eased), t, 0.35);
   AUD.dry.gain.setTargetAtTime(0.52 * (1.12 - 0.30 * eased), t, 0.35);
+  /* travel: how far the eye moved this frame against how far away it is,
+     so a slow drift at map range and a fast one in among the planets are
+     the same amount of motion */
+  if (AUD.move) {
+    const moved = camera.position.distanceTo(_acam);
+    _acam.copy(camera.position);
+    const rel = clamp(moved / Math.max(30, rig.dist * 0.02), 0, 1);
+    AUD.move.g.gain.setTargetAtTime(rel * 0.14 * (0.45 + 0.55 * SET.sDrone), t, 0.18);
+    AUD.move.lp.frequency.setTargetAtTime(200 + rel * 520, t, 0.25);
+  }
+  if (AUD.holo) AUD.holo.g.gain.setTargetAtTime(mindOpen ? 0.011 : 0, t, 0.7);
+}
+const _acam = new THREE.Vector3();
+/* ---- the plate going up, and coming down ----
+   A band of noise sweeping up through the room and a note an octave over
+   the one in the middle; closing is the sweep the other way. */
+function audioWhoosh(up, i) {
+  if (!AUD.on || !AUD.ctx) return;
+  const ctx = AUD.ctx, t = ctx.currentTime;
+  const src = ctx.createBufferSource(); src.buffer = audioNoise(ctx, 1.2);
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(up ? 260 : 2400, t);
+  bp.frequency.exponentialRampToValueAtTime(up ? 2400 : 260, t + 0.7);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.13, t + 0.12);
+  g.gain.exponentialRampToValueAtTime(0.0003, t + 0.85);
+  src.connect(bp); bp.connect(g); g.connect(AUD.bus);
+  if (AUD.echo) g.connect(AUD.echo);
+  src.start(t); src.stop(t + 1.0);
+  if (up && i >= 0 && i < N) {
+    audioTone(i, t + 0.10, 0.07, 3.2);
+    AUD.holo.o.frequency.setTargetAtTime(noteHz(i) * 4, t, 0.3);
+  }
 }
 $('b-snd').onclick = () => audioSet(!AUD.on);
 /* A saved preference cannot start a context on its own — the first real
@@ -10421,7 +11328,12 @@ const MM = {
   cnt: [0, 0, 0],               // how many sit on each hop
   rr:  [0, 0, 0],               // and how far out that hop's lane has to be
   anchor: new THREE.Vector3(),  // where the system stands, fixed on entry
-  guide: null                   // the drawn orbits
+  guide: null,                  // the drawn orbits
+  sect: null,                   // the folder arcs round the first lane
+  star: null,                   // the note in the middle, as a star
+  holo: null,                   // the plate, the ticks, the sweep, the dust
+  retic: null,                  // one ring per first-hop neighbour
+  pRoot: [], pCross: []         // the plate's edges, for the pulses
 };
 const MM_MAX  = 26;             // first hop; past this the wheel stops counting
 const MM_HOP2 = 34;             // second hop, when it is asked for
@@ -10549,13 +11461,23 @@ function mmGuide() {
   return g;
 }
 function mmGuideStep() {
+  mmHoloStep(1 / 60);
   if (!MM.guide) return;
-  MM.guide.visible = mindOpen;
+  /* the plate draws the lanes itself now, firmer and graduated */
+  MM.guide.visible = false;
   if (!mindOpen) return;
   MM.guide.position.copy(MM.anchor);
   MM.guide.children[0].scale.setScalar(MM.rr[1]);
   MM.guide.children[1].scale.setScalar(MM.rr[2]);
   MM.guide.children[1].visible = MM.cnt[2] > 0;
+  if (MM.sect) { MM.sect.visible = true; MM.sect.position.copy(MM.anchor); MM.sect.scale.setScalar(MM.rr[1] * 1.13); }
+  if (MM.star) {
+    MM.star.visible = true;
+    MM.star.position.copy(MM.anchor);
+    const t = performance.now() * 0.001;
+    MM.star.userData.surfMat.uniforms.uTime.value = t;
+    MM.star.userData.rimMat.uniforms.uTime.value = t;
+  }
 }
 
 /* ---- the cosmos's own furniture ----
@@ -10622,6 +11544,264 @@ function mmFrame(enter) {
    first hop agrees on, placed facing the neighbours that pulled it in. What
    is new is only what those rules are allowed to decide — a bearing and a
    lane, and nothing about how big anything is drawn. */
+/* ---- the folder arcs ----
+   The first lane is laid out folder by folder, and each folder's run of
+   neighbours gets an arc of its own colour just outside the lane — the
+   legend's colour, so nothing new to learn. What the arcs say is the one
+   thing a wheel of equal planets cannot: this note lives in three folders'
+   worth of neighbours, and most of them are over here. */
+function mmSectors(sectors) {
+  if (MM.sect) { scene.remove(MM.sect); MM.sect.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+  const g = MM.sect = new THREE.Group();
+  g.renderOrder = 1;
+  const u = MM_U[1], v = MM_V[1];
+  sectors.forEach(sc => {
+    const span = sc.a1 - sc.a0;
+    const SEGS = Math.max(6, Math.ceil(span / TAU * 160));
+    const pos = new Float32Array((SEGS + 1) * 3);
+    /* a little in from each end, so two arcs never touch */
+    const pad = Math.min(0.06, span * 0.18);
+    for (let k = 0; k <= SEGS; k++) {
+      const a = sc.a0 + pad + (span - pad * 2) * (k / SEGS), c = Math.cos(a), si = Math.sin(a);
+      pos[k*3] = c*u[0] + si*v[0]; pos[k*3+1] = c*u[1] + si*v[1]; pos[k*3+2] = c*u[2] + si*v[2];
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.add(new THREE.Line(geo, new THREE.LineBasicMaterial({
+      color: sc.c.color, transparent: true, opacity: 0.42,
+      depthWrite: false, blending: THREE.AdditiveBlending })));
+  });
+  scene.add(g);
+}
+/* ---- the note in the middle, as a star ----
+   The plate is a system — every body on it is lit from the centre already —
+   and a system has a star in the middle, not a larger planet with a ring
+   round it. The same photosphere the folder stars and the hub wear, at the
+   temperature of the folder the note is filed in, so the map's sun is the
+   colour of the sky it came from. Rebuilt on every walk, because the folder
+   changes with the note. */
+function mmStarBuild(root) {
+  if (MM.star) { scene.remove(MM.star); MM.star.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); MM.star = null; }
+  const c = catOf && catOf[root];
+  const cT = (c && c.temp) || 6300;
+  const R = MM_RAD[0] * SET.szPl * 1.03;
+  const g = MM.star = new THREE.Group();
+  const surfMat = new THREE.ShaderMaterial({
+    vertexShader: SUN_V, fragmentShader: SUN_F,
+    uniforms: { uTime: { value: 0 }, uBright: { value: 1 },
+                uCore: { value: new THREE.Color().fromArray(blackbodyLin(cT)) },
+                uEdge: { value: new THREE.Color().fromArray(blackbodyLin(cT * 0.762)) } } });
+  g.add(new THREE.Mesh(new THREE.IcosahedronGeometry(R, 4), surfMat));
+  const rimMat = new THREE.ShaderMaterial({
+    vertexShader: SUN_V, fragmentShader: RIM_F,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { uCol: { value: new THREE.Color().fromArray(blackbodyLin(cT * 0.7)) },
+                uAmt: { value: 0.8 }, uTime: { value: 0 } } });
+  g.add(new THREE.Mesh(new THREE.IcosahedronGeometry(R * 1.04, 3), rimMat));
+  g.userData = { surfMat, rimMat };
+  g.renderOrder = 2;
+  scene.add(g);
+}
+/* the plate's edges, split into spokes and cross links, for the pulses */
+function mmEdges(root) {
+  MM.pRoot = []; MM.pCross = [];
+  if (!edges) return;
+  for (let e = 0; e < EN; e++) {
+    const a = edges[e][0], b = edges[e][1];
+    if (!MM.has.has(a) || !MM.has.has(b)) continue;
+    (a === root || b === root ? MM.pRoot : MM.pCross).push(e);
+  }
+}
+/* ---- the plate as an instrument ----
+   A wheel of planets on two hairline circles is a diagram. What makes the
+   same wheel read as a thing being *looked at* is the furniture an
+   instrument has: a graduated plate under it, a sweep going round it, a
+   reticle on each thing it is tracking, and light where the light is. All
+   of it in the HUD's own cyan, so the plate and the panels read as one
+   machine, and all of it additive, so it can only add light to the dark.
+
+   Built once at unit size in its own XY plane and stood on the first lane's
+   basis, then scaled every frame to the lanes as they breathe. */
+const PLATE_V = `
+varying vec2 vP;
+void main(){ vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+const PLATE_F = `
+precision highp float;
+uniform float uSweep; uniform float uBright; uniform float uLane1; uniform float uLane2;
+varying vec2 vP;
+void main(){
+  float r = length(vP);
+  if (r > 1.0) discard;
+  float ang = atan(vP.y, vP.x);
+  /* the graduations: rings at a tenth of the plate, radials every fifteen
+     degrees, both hairlines that fade with the plate toward its rim */
+  /* Hairlines, and few of them. Rings at a fifth of the plate, radials
+     every thirty degrees, both thin and both dim: the graduations of an
+     instrument are read, not looked at, and a plate that glows is a toy.
+     The two lanes are the only firm lines on it. */
+  float rg = abs(fract(r * 5.0 + 0.5) - 0.5);
+  float ring = smoothstep(0.018, 0.0, rg) * 0.22;
+  float ag = abs(fract(ang / 6.2831853 * 12.0 + 0.5) - 0.5);
+  float radial = smoothstep(0.03, 0.0, ag / max(r * 6.0, 0.35)) * 0.16;
+  float lane = smoothstep(0.008, 0.0, abs(r - uLane1)) * 0.7
+             + smoothstep(0.007, 0.0, abs(r - uLane2)) * 0.45;
+  /* the sweep is a slow, faint brightening of the graduations as it passes
+     — not a radar's beam, a scan the eye notices only when it is looking */
+  float d = mod(uSweep - ang, 6.2831853);
+  float sweep = exp(-d * 1.6) * 0.30;
+  /* the plate itself, barely, gone at the rim and gone at the star */
+  float plate = 0.045 * (1.0 - r) * smoothstep(0.03, 0.12, r);
+  float a = (plate + ring + radial + lane + sweep * (0.6 * ring + 0.5 * radial))
+          * pow(1.0 - r, 0.6) * uBright;
+  gl_FragColor = vec4(vec3(0.62, 0.82, 0.94) * a, a);
+}`;
+function mmHoloBuild() {
+  if (MM.holo) return MM.holo;
+  const g = MM.holo = new THREE.Group();
+  /* stood on the first lane's plane: x along u, y along v, z the normal */
+  const u = new THREE.Vector3().fromArray(MM_U[1]), v = new THREE.Vector3().fromArray(MM_V[1]);
+  const nrm = new THREE.Vector3().crossVectors(u, v).normalize();
+  g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(u, v, nrm));
+  MM.holoN = nrm; MM.holoQ = g.quaternion.clone();
+  /* the plate */
+  const plate = new THREE.Mesh(new THREE.CircleGeometry(1, 96), new THREE.ShaderMaterial({
+    vertexShader: PLATE_V, fragmentShader: PLATE_F,
+    uniforms: { uSweep: { value: 0 }, uBright: { value: 1 }, uLane1: { value: .4 }, uLane2: { value: .8 } },
+    transparent: true, depthWrite: false, depthTest: true, fog: false,
+    blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  plate.renderOrder = 0;
+  g.add(plate);
+  /* the ticks on each lane: seventy-two short radials, every fifth longer */
+  const tickMat = new THREE.LineBasicMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.22,
+    depthWrite: false, blending: THREE.AdditiveBlending });
+  const ticks = [];
+  for (let h = 0; h < 2; h++) {
+    const T = 36, pos = new Float32Array(T * 6);
+    for (let k = 0; k < T; k++) {
+      const a = k / T * TAU, c = Math.cos(a), si = Math.sin(a);
+      const len = k % 3 === 0 ? 0.028 : 0.012;
+      pos[k*6] = c * (1 - len); pos[k*6+1] = si * (1 - len); pos[k*6+2] = 0;
+      pos[k*6+3] = c * (1 + len); pos[k*6+4] = si * (1 + len); pos[k*6+5] = 0;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const m = new THREE.LineSegments(geo, tickMat);
+    m.renderOrder = 1;
+    g.add(m); ticks.push(m);
+  }
+  /* the segmented ring that turns against the sweep: three arcs of forty
+     degrees, just inside the first lane */
+  const seg = new THREE.Group();
+  for (let k = 0; k < 3; k++) {
+    const S = 40, pos = new Float32Array((S + 1) * 3);
+    for (let j = 0; j <= S; j++) {
+      const a = k * TAU / 3 + (j / S) * (TAU / 9);
+      pos[j*3] = Math.cos(a) * 0.92; pos[j*3+1] = Math.sin(a) * 0.92; pos[j*3+2] = 0;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    seg.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x9fe8ff, transparent: true,
+      opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending })));
+  }
+  seg.renderOrder = 1;
+  seg.visible = false;
+  g.add(seg);
+  /* the dust in the plate's plane: what the system is made of, drifting */
+  const D = 300;
+  const dust = pointsFrom(D, (i, pos, sz, cl, al) => {
+    const r = Math.sqrt(Math.random()) * 1.05, a = Math.random() * TAU;
+    pos[i*3] = Math.cos(a) * r; pos[i*3+1] = Math.sin(a) * r; pos[i*3+2] = (Math.random() - .5) * 0.02;
+    sz[i] = 0.8 + Math.random() * 1.4;
+    al[i] = 0.05 + Math.random() * 0.12;
+    cl[i*3] = 0.70; cl[i*3+1] = 0.82; cl[i*3+2] = 0.92;
+  }, glowMat(600, 0.3, 0, false));
+  scene.remove(dust);
+  dust.renderOrder = 1;
+  g.add(dust);
+  /* the star's flare and corona: two sprites at the centre, the first with
+     the lens's own spikes on it */
+  const flare = pointsFrom(2, (i, pos, sz, cl, al) => {
+    pos[i*3] = pos[i*3+1] = pos[i*3+2] = 0;
+    sz[i] = i === 0 ? 110 : 300;
+    al[i] = i === 0 ? 0.38 : 0.06;
+    cl[i*3] = 1.0; cl[i*3+1] = 0.93; cl[i*3+2] = 0.80;
+  }, glowMat(900, 0.15, 1, false));
+  scene.remove(flare);
+  flare.renderOrder = 3;
+  g.userData = { plate, ticks, seg, dust, flare };
+  scene.add(g);
+  scene.add(flare);
+  return g;
+}
+/* one ring per first-hop neighbour, in its folder's colour, with a gap
+   that turns — the mark an instrument puts on a thing it is tracking */
+function mmReticles(list) {
+  if (MM.retic) { scene.remove(MM.retic); MM.retic.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) o.material.dispose(); }); }
+  const g = MM.retic = new THREE.Group();
+  const u = new THREE.Vector3().fromArray(MM_U[1]), v = new THREE.Vector3().fromArray(MM_V[1]);
+  const q = new THREE.Quaternion().setFromRotationMatrix(
+    new THREE.Matrix4().makeBasis(u, v, new THREE.Vector3().crossVectors(u, v).normalize()));
+  /* a closed hairline, not a gapped one that turns: the mark says "this
+     one is tracked", and nothing more is being said */
+  const S = 64, pos = new Float32Array((S + 1) * 3);
+  for (let j = 0; j <= S; j++) {
+    const a = (j / S) * TAU;
+    pos[j*3] = Math.cos(a); pos[j*3+1] = Math.sin(a); pos[j*3+2] = 0;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  list.forEach(e => {
+    if (e.hop !== 1) return;
+    const c = catOf && catOf[e.i];
+    const ring = new THREE.Line(geo, new THREE.LineBasicMaterial({
+      color: c ? c.color : 0x5cd8ff, transparent: true, opacity: 0.34,
+      depthWrite: false, blending: THREE.AdditiveBlending }));
+    ring.quaternion.copy(q);
+    ring.userData = { i: e.i, spin: Math.random() * TAU, dir: Math.random() < .5 ? 1 : -1 };
+    ring.renderOrder = 2;
+    g.add(ring);
+  });
+  scene.add(g);
+}
+const _mmQ = new THREE.Quaternion(), _mmA = new THREE.Vector3(0, 0, 1);
+function mmHoloStep(dt) {
+  const g = MM.holo;
+  if (!g) return;
+  const on = mindOpen && MM.list.length > 0;
+  g.visible = on;
+  g.userData.flare.visible = on;
+  if (MM.retic) MM.retic.visible = on;
+  if (!on) return;
+  const t = performance.now() * 0.001;
+  const R = (MM.cnt[2] > 0 ? MM.rr[2] : MM.rr[1] * 1.6) * 1.12;
+  g.position.copy(MM.anchor);
+  g.scale.setScalar(R);
+  const U = g.userData;
+  U.plate.material.uniforms.uLane1.value = MM.rr[1] / R;
+  U.plate.material.uniforms.uLane2.value = MM.cnt[2] > 0 ? MM.rr[2] / R : -1;
+  U.plate.material.uniforms.uSweep.value = t * 0.18;
+  U.ticks[0].scale.setScalar(MM.rr[1] / R);
+  U.ticks[1].scale.setScalar(MM.rr[2] / R);
+  U.ticks[1].visible = MM.cnt[2] > 0;
+  U.seg.scale.setScalar(MM.rr[1] / R);
+  U.seg.rotation.z = -t * 0.12;
+  U.dust.rotation.z = t * 0.02;
+  U.flare.position.copy(MM.anchor);
+  if (MM.star) {
+    const c = MM.star.userData.surfMat.uniforms.uCore.value;
+    const cl = U.flare.geometry.attributes.aColor.array;
+    for (let k = 0; k < 2; k++) { cl[k*3] = c.r; cl[k*3+1] = c.g; cl[k*3+2] = c.b; }
+    U.flare.geometry.attributes.aColor.needsUpdate = true;
+  }
+  if (MM.retic) MM.retic.children.forEach(ring => {
+    const i = ring.userData.i;
+    ring.position.set(P[i*3], P[i*3+1], P[i*3+2]);
+    ring.scale.setScalar((RAD[i] || 8) * 1.7);
+    ring.userData.spin += 0.0;
+    _mmQ.setFromAxisAngle(_mmA, ring.userData.spin);
+    ring.quaternion.copy(MM.holoQ).multiply(_mmQ);
+  });
+}
 function buildMind(root, opts) {
   if (root < 0 || root >= N) return;
   const push = !opts || opts.push !== false;
@@ -10641,12 +11821,31 @@ function buildMind(root, opts) {
   nb = nb.slice(0, MM_MAX);
 
   /* Bearings first, because the second hop is placed by where its parents
-     are. One lane, so the angle is the whole of the placement. */
+     are. One lane, so the angle is the whole of the placement — and the
+     order round it is by folder: the neighbours from one folder sit
+     together, the biggest folder first, so the lane reads as sectors
+     rather than as a wheel of unrelated planets. See mmSectors. */
+  const byCat = new Map();
+  nb.forEach(j => {
+    const c = catOf && catOf[j];
+    const key = c ? c.key : '';
+    if (!byCat.has(key)) byCat.set(key, { c, list: [] });
+    byCat.get(key).list.push(j);
+  });
+  const groups = [...byCat.values()].sort((a, b) => b.list.length - a.list.length);
   const angOf = new Map();
-  const slot = nb.map((j, k) => {
-    const a = (k / Math.max(1, nb.length)) * TAU;
-    angOf.set(j, a);
-    return { j, a };
+  const slot = [], sectors = [];
+  let k = 0;
+  groups.forEach(gp => {
+    const a0 = (k / Math.max(1, nb.length)) * TAU;
+    gp.list.forEach(j => {
+      const a = (k / Math.max(1, nb.length)) * TAU;
+      angOf.set(j, a);
+      slot.push({ j, a });
+      k++;
+    });
+    const a1 = (k / Math.max(1, nb.length)) * TAU;
+    if (gp.c && gp.list.length) sectors.push({ c: gp.c, a0, a1 });
   });
 
   let h2 = [], hop2total = 0;
@@ -10688,7 +11887,20 @@ function buildMind(root, opts) {
   };
   add(root, 0, 0);
   slot.forEach(s => add(s.j, 1, s.a));
-  h2.forEach((c, k) => add(c.i, 2, ((k + 0.5) / h2.length) * TAU));
+  /* Sorted by bearing already; the angle is the bearing pulled part of the
+     way toward an even slot, which keeps every one of them near the
+     neighbours that brought it in and stops a popular corner piling up.
+     The bearings are unwrapped first so a run across the seam at pi stays
+     a run. */
+  {
+    let prev = -Infinity;
+    const unwrapped = h2.map(c => { let a = c.a; while (a < prev) a += TAU; prev = a; return a; });
+    const base = unwrapped.length ? unwrapped[0] : 0;
+    h2.forEach((c, k) => {
+      const even = base + (k + 0.5) / h2.length * TAU;
+      add(c.i, 2, 0.55 * unwrapped[k] + 0.45 * even);
+    });
+  }
 
   /* the caption is rebuilt on every language switch, so the counts it quotes
      have to be kept rather than baked into the string */
@@ -10699,6 +11911,11 @@ function buildMind(root, opts) {
      drawn radii before either */
   mmRadii();
   applySizes();
+  mmSectors(sectors);
+  mmStarBuild(root);
+  mmEdges(root);
+  mmHoloBuild();
+  mmReticles(MM.list);
   mmFrame(false);
   mmCrumbs();
   /* quiet: a walk is not the same gesture as picking a note out of the sky,
@@ -10816,13 +12033,20 @@ function openMind(i) {
   MM.trail = [];
   buildMind(t);
   mmFrame(true);
+  audioWhoosh(true, t);
 }
 function closeMind() {
   if (!mindOpen) return;
   mindOpen = false;
+  audioWhoosh(false, -1);
   $('mind').classList.remove('on');
   mindGuides(false);
   if (MM.guide) MM.guide.visible = false;
+  if (MM.sect)  MM.sect.visible  = false;
+  if (MM.star)  MM.star.visible  = false;
+  if (MM.holo)  { MM.holo.visible = false; MM.holo.userData.flare.visible = false; }
+  if (MM.retic) MM.retic.visible = false;
+  MM.pRoot = []; MM.pCross = [];
   MM.list.length = 0; MM.has.clear();
   MM.cnt[0] = MM.cnt[1] = MM.cnt[2] = 0;
   /* the drawn sizes were this mode's; they go back to the knobs */
@@ -10970,9 +12194,33 @@ function tapNode(i, e) {
   select(i);
 }
 canvas.addEventListener('contextmenu', e => e.preventDefault());
+/* ---- the wheel, toward the cursor ----
+   Zooming used to close on the middle of the frame whatever the cursor was
+   over, so getting closer to a planet at the edge meant zoom, pan, zoom,
+   pan. The target now slides toward the point under the cursor by the same
+   fraction the range shrinks, which is the arithmetic that keeps that point
+   still on screen while everything else closes in on it. Zooming out leaves
+   the target alone — pulling back is about the whole, not about a point —
+   and so does a view locked on a body or the mind map, where the target is
+   the subject. */
+const _zv = new THREE.Vector3(), _zf = new THREE.Vector3(), _zp = new THREE.Vector3();
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  zoomBy(Math.exp(e.deltaY * 0.0011));
+  const f = Math.exp(e.deltaY * 0.0011);
+  if (f < 1 && rig.follow < 0 && !mindOpen) {
+    const nx = (e.clientX/innerWidth)*2-1, ny = -(e.clientY/innerHeight)*2+1;
+    _zv.set(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
+    _zf.set(0, 0, -1).applyQuaternion(camera.quaternion);
+    const along = _zv.dot(_zf);
+    if (along > 0.2) {
+      /* where the cursor's ray crosses the plane through the target that
+         faces the camera: the same depth, so the range stays what it was */
+      const depth = camera.position.distanceTo(rig.tgtD);
+      _zp.copy(camera.position).addScaledVector(_zv, depth / along);
+      rig.tgtD.lerp(_zp, 1 - f);
+    }
+  }
+  zoomBy(f);
 }, { passive:false });
 
 /* hold a body on the ray under the cursor, at the depth it already has */
@@ -11082,6 +12330,8 @@ addEventListener('keydown', e => {
   else if (k === 'h') {
     const off = $('hud').style.display !== 'none';
     $('hud').style.display = off ? 'none' : '';
+    /* the panels that would have said so are the thing that just went */
+    if (off) toast(T('hud.off'), 2600);
   }
   else if (k === 'escape') {
     /* one Escape at a time, outermost thing first. The route sits above the
@@ -12345,6 +13595,12 @@ function writeLinks() {
        weaker two come up. Not to parity: a written link is still the firmer
        fact, and should still read as one. */
     let str = (aa < ab ? aa : ab) * (ty===0 ? .55 : .40) * lnk;
+    /* On the plate a link is one of two things: a spoke to the centre,
+       which is what the map is of, or a link between two neighbours, which
+       is the shape of the neighbourhood. The spokes come up and the cross
+       links go down to a trace, so the second reads as structure under the
+       first rather than as more of the same. */
+    if (mindOpen) str *= (ia === MM.root || ib === MM.root) ? 1.7 : 0.30;
     if (rtOn) str *= routeEdges.has(e) ? 4.2 : .05;
     else if (sel >= 0) str *= (ia===sel || ib===sel) ? 3.4 : .22;
     /* the wave is *on the link*, which is the point of it — a hop lights as
@@ -12832,24 +14088,42 @@ function writePulses(dt) {
     pulseT[i] += pulseSp[i] * dt * 60 * Math.max(.15, SET.spd);
     if (pulseT[i] > 1) {
       pulseT[i] = 0;
-      pulseIdx[i] = Math.floor(Math.random()*EN);
+      /* On the plate the pulses run the plate's edges and nothing else,
+         four in five of them on the spokes — a streak leaving the centre is
+         an outbound link and one arriving is a backlink, which is the one
+         thing about a link the lines cannot say. */
+      if (mindOpen && (MM.pRoot.length || MM.pCross.length)) {
+        const src = (Math.random() < 0.8 && MM.pRoot.length) || !MM.pCross.length ? MM.pRoot : MM.pCross;
+        pulseIdx[i] = src[Math.floor(Math.random() * src.length)];
+      } else pulseIdx[i] = Math.floor(Math.random()*EN);
     }
     const ec = edgeCache[pulseIdx[i]];
-    if (!ec || ec.str < .03 || ec.c1x === undefined) { pAl[i] = 0; continue; }
+    if (!ec || ec.str < .03 || ec.c1x === undefined) {
+      for (let k = 0; k < PULSE_K; k++) pAl[i*PULSE_K + k] = 0;
+      continue;
+    }
     /* The same cubic the ribbon was built from, evaluated at the pulse's own
        parameter. It used to be the quadratic, which was the curve at the
        time; a pulse left running on the old formula after the links were
        routed would travel beside its link instead of along it, and that is
        the kind of wrong that looks like a second effect rather than a bug. */
-    const u = pulseT[i] * (ec.prog === undefined ? 1 : ec.prog), iu = 1-u;
-    const w0 = iu*iu*iu, w1 = 3*iu*iu*u, w2 = 3*iu*u*u, w3 = u*u*u;
-    pPos[i*3]   = w0*ec.ax + w1*ec.c1x + w2*ec.c2x + w3*ec.bx;
-    pPos[i*3+1] = w0*ec.ay + w1*ec.c1y + w2*ec.c2y + w3*ec.by;
-    pPos[i*3+2] = w0*ec.az + w1*ec.c1z + w2*ec.c2z + w3*ec.bz;
-    pSz[i] = 2.4 + ec.str*5;
+    const prog = ec.prog === undefined ? 1 : ec.prog;
     const c = EDGE_TINT[ec.ty];
-    pCl[i*3]=c.r; pCl[i*3+1]=c.g; pCl[i*3+2]=c.b;
-    pAl[i] = Math.min(1, ec.str*2.4) * Math.sin(u*Math.PI);
+    const head = Math.min(1, ec.str*2.4);
+    for (let k = 0; k < PULSE_K; k++) {
+      const j = i*PULSE_K + k;
+      /* the trail sits behind the head along the same curve, a little
+         further back for each point, and never before the link's start */
+      const u = Math.max(0, pulseT[i] - k * 0.022) * prog, iu = 1-u;
+      const w0 = iu*iu*iu, w1 = 3*iu*iu*u, w2 = 3*iu*u*u, w3 = u*u*u;
+      pPos[j*3]   = w0*ec.ax + w1*ec.c1x + w2*ec.c2x + w3*ec.bx;
+      pPos[j*3+1] = w0*ec.ay + w1*ec.c1y + w2*ec.c2y + w3*ec.by;
+      pPos[j*3+2] = w0*ec.az + w1*ec.c1z + w2*ec.c2z + w3*ec.bz;
+      const tail = 1 - k / PULSE_K;
+      pSz[j] = (2.4 + ec.str*5) * (0.55 + 0.45 * tail);
+      pCl[j*3]=c.r; pCl[j*3+1]=c.g; pCl[j*3+2]=c.b;
+      pAl[j] = head * Math.sin(u*Math.PI) * tail * tail;
+    }
   }
   pulseGeo.attributes.position.needsUpdate = true;
   pulseGeo.attributes.aSize.needsUpdate = true;
@@ -13231,6 +14505,7 @@ function frameLoop(now) {
   gapStep(dt);
   updatePositions(dtms);
   if (!mindOpen) cometStep(dt);
+  eventsStep(dt);
   updateVisibility(dt);
   heroStep(dt);
   const _p1 = perfNow();
@@ -13501,7 +14776,20 @@ function frameLoop(now) {
                       dustObj.material.uniforms.uBright.value = SET.str * skyGap; }
   if (nebulaObj)    { nebulaObj.rotation.y      = -t * 0.0000042;
                       nebulaObj.scale.setScalar(gapSys);
-                      nebulaObj.material.uniforms.uBright.value = SET.str * skyGap; }
+                      nebulaObj.material.uniforms.uBright.value = SET.str * skyGap;
+                      nebulaObj.material.uniforms.uTime.value = t * 0.001;
+                      /* where the sun is from the eye, for the gas it lights */
+                      const nu = nebulaObj.material.uniforms;
+                      if (sunObj && N) {
+                        nu.uSunV.value.copy(sunObj.position).applyMatrix4(camera.matrixWorldInverse);
+                        nu.uSunR.value = Math.max(400, (RAD[coreIdx] || 17) * 40);
+                        if (sunObj.userData.surfMat) nu.uSunCol.value.copy(sunObj.userData.surfMat.uniforms.uCore.value);
+                      } else nu.uSunV.value.set(0, 0, -1e9); }
+  if (deepSkyObj)     deepSkyObj.material.uniforms.uBright.value = SET.str;
+  if (nearDustObj)  { const u = nearDustObj.material.uniforms;
+                      u.uCam.value.copy(camera.position);
+                      u.uTime.value = t * 0.001;
+                      u.uBright.value = SET.str * 0.55; }
   if (starFieldObj)   starFieldObj.rotation.y   = t * 0.0000011;
   if (brightStarObj)  brightStarObj.rotation.y  = t * 0.0000011;
   if (milkyObj)       milkyObj.rotation.y       = t * 0.0000008;
@@ -13521,6 +14809,7 @@ function frameLoop(now) {
     if (milkyObj)      milkyObj.position.copy(cp);
     if (nebulaObj)     nebulaObj.position.copy(cp);
     if (veilObj)       veilObj.position.copy(cp);
+    if (deepSkyObj)    deepSkyObj.position.copy(cp);
   }
 
   writeHUD(now);
@@ -14777,7 +16066,7 @@ function swapVault(data, keep) {
   /* everything that holds a node index from the old vault has to let go
      before the indices mean something else */
   heroDrop();
-  rippleClear(); visited.clear(); cometEnd(); genSet(false);
+  rippleClear(); visited.clear(); cometEnd(); cometQueue.length = 0; cometHold = 0; genSet(false);
   selected = -1; hovered = -1; filterTxt = ''; filterBroken = false; neighbours.clear();
   routeFrom = -1; routeNodes = new Set(); routeEdges = new Set();
   disposeWorld();
@@ -14857,14 +16146,21 @@ async function ingest(list, vaultName, opts) {
      vault yields to the frame loop between files, and the camera keeps
      moving while it does. */
   const keep = quiet ? viewMark() : null;
+  /* what was here before, so the new cosmos can say what changed — see
+     bodyDiff under EVENTS. There is nothing to compare against on the first
+     vault, which gets the opening comet instead. */
+  const prev = quiet && before ? bodySnapshot() : null;
   try { swapVault(data, keep); }
   catch (err) { console.error(err); toast(T('load.render')); swapVault(EMPTY); }
+  const gone = prev ? bodyDiff(prev) : 0;
+  if (!prev && !before) cometPrime();
   if (!quiet) { setLoad(1); await gap(); showLoad(false); }
   loading = false;
   if (quiet) {
     /* one line, and only when the vault gained or lost a note — a save that
-       changed a link says nothing at all */
-    if (N !== before) toast(T('sync.done', { n: N }));
+       changed a link says nothing at all. A note that went out as a
+       supernova has already been named, which is the better line. */
+    if (N !== before && !gone) toast(T('sync.done', { n: N }));
     return;
   }
   toast(data.meta.vault + ' · ' + data.meta.files + ' NOTES · ' + data.meta.edges + ' LINKS');
@@ -15047,7 +16343,8 @@ const GUIDE = [
   ['guide.s.read', [
     ['L',              'guide.layer'],
     ['X',              'guide.grid'],
-    ['SPACE',          'guide.ripple'] ]],
+    ['SPACE',          'guide.ripple'],
+    ['SKY',            'guide.sky'] ]],
   ['guide.s.mode', [
     ['M · DBL-CLICK',  'guide.mind'],
     ['G',              'guide.gen'],

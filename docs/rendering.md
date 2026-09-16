@@ -4,22 +4,60 @@ Part of the [Vault Orrery](../README.md) documentation.
 
 ## How it is lit
 
-The picture ships lit: BLOOM and the grade knobs under LIGHT are on at
-the defaults, chosen against each other rather than one at a time — the curve
-is what stops the bloom clipping to flat white, the split is what stops the
-curve reading as grey, the lens is what stops the split reading as a colour
-cast, and the grain is what stops the whole thing banding in the dark. Every
-one of them goes to OFF, and with all of them off the renderer takes the plain
-path and the composite never runs.
+The picture ships lit: BLOOM and FILM CURVE under LIGHT are on at the
+defaults, and the rest of the grade — the split, the lens, the grain and the
+meter — is fixed, chosen against the two of them rather than one at a time:
+the curve is what stops the bloom clipping to flat white, the split is what
+stops the curve reading as grey, the lens is what stops the split reading as
+a colour cast, and the grain is what stops the whole thing banding in the
+dark. They were knobs once and came off the deck in 1.15.0, because a set of
+values that only makes sense together is not four settings.
 
-**AUTO EXPOSURE** is the one thing a camera does that the grade does not: it
+**The meter** is the one thing a camera does that the grade does not: it
 meters. The frame used to be exposed for the sun whatever was in it, so a
 folder out on the rim with nothing bright near it was a black rectangle with
 some pale points in it. Now the frame is metered off its brightest point, and
 opens up when that point is dim — over about a second, the way an iris does.
 It can only lift: with a source in frame the gain is one and the picture is
-the byte-for-byte one it was, and the knob is how far it may open when there
-is none.
+the byte-for-byte one it was.
+
+**The nebula is a volume, not a sheet.** Each of the sixteen clouds is one
+quad, and the quad's shader marches a ray through the ellipsoid the cloud
+occupies — eight steps, a tileable noise texture read twice a step — and
+integrates the gas along it, emitting and absorbing. That is why a strand in
+front of a star dims the star, why the clouds hold up from inside as well as
+from the map range, and why there is nothing in them to resolve however
+close the camera comes. A cloud the eye is inside fades to nothing rather
+than tinting the frame: what is seen is always the gas beyond, which is what
+a nebula looks like from a planet inside one. The ionisation structure is
+the one the sprites carried — teal inside the front, Hα red outside — and
+the strands are a ridged term in the density field rather than points laid
+along a line.
+
+**Behind the stars is the continuum**, a dome with the Milky Way's
+unresolved light on it: the band, narrower toward the anticentre and lumpy
+along its length, the bulge, the rift down one side, and six galaxies far
+enough away to be smudges. Additive, so it can only put light where there
+was none. **And in front of everything is dust** — a few hundred motes in a
+box that follows the camera and wraps through it, biggest when nearest, so
+that moving the camera moves something a few units from the lens against
+everything else. Both under STARFIELD, and both gone at zero.
+
+**The last pass is FXAA.** A render target has no multisampling, so the
+composite path drew every link and spike on a fixed grid whenever the camera
+moved, and only the still-frame supersample softened them. One pass on the
+finished frame, after the grade and the grain, reading luma and blending
+along the edge it finds; a pixel whose neighbourhood does not contrast is
+left alone.
+
+**The composite works in half float.** The scene used to be drawn into an
+eight-bit buffer, so every additive light stopped at 1.0 before the bloom
+saw it, and a star's core, the sun's disc and a knot of links all arrived at
+the same flat white. On WebGL2 the buffer keeps the excess: the bright pass
+spills each source by its own excess, and a second shoulder in the composite
+— high and always on, with slope one where it joins — folds it back under
+1.0 with the order kept. Nothing under 0.86 is touched, so the plain path
+and the composite still agree on everything that was never bright.
 
 Each folder's system sits in a faint, drawn-out cloud of its own colour, the
 size of its orbits. It is a map-range thing — it is what a system looks like
@@ -47,6 +85,11 @@ single scale, so this is the one at the middle of the frame, which is what
 
 Underneath, the grade is the same four things a camera does:
 
+- **the lens flare** is the reflections between the elements: four ghosts and
+  a halo on the axis from the source through the middle of the frame, the
+  anamorphic streak across it, colour separating on the widest spill, and
+  smudges on the front element that catch the spill. LENS FLARE is all of
+  it, because a lens is one object.
 - **the bloom** is veiling glare. It spills only the light *in excess* of what
   the frame could hold, so a star's core throws light across the picture and
   the Milky Way behind it does not.
@@ -217,9 +260,9 @@ the title bar — or press RESET — to hand it back to the automatic layout. It
 height is always its contents, which is why the corners set width alone.
 
 **ORBIT SHELL** opens each system from a disc into a sphere. Every orbit in the
-layout is tilted about the same axis, so a system is a flat ring however far
-ORBIT TILT leans it over; turn this up and each body takes an orbit plane of
-its own, spread evenly over every direction. DISC at zero, SPHERE at one, and
+layout is tilted about the same axis, so a system is a flat ring; turn this
+up and each body takes an orbit plane of its own, spread evenly over every
+direction. DISC at zero, SPHERE at one, and
 the numbers in between are one opening into the other.
 
 **`X`** draws a reference plane: a polar grid on the plane the systems are

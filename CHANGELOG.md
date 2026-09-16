@@ -4,6 +4,176 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.15.0
+
+- **The nebula is a volume.** Fourteen hundred additive sprites drew
+  something continuous from the range the vault opens at and fell apart the
+  moment the camera came inside — the eye resolves a disc at two hundred
+  pixels across. Each cloud is now one quad whose shader marches a ray
+  through the ellipsoid the cloud occupies and integrates the gas along it:
+  eight steps, a tileable noise texture read twice a step in place of a
+  hash, one draw call for the sixteen clouds. It absorbs as well as emits,
+  so a dense strand in front of a star dims the star, which an additive
+  sheet could never do; held short of black. The clouds sit above and below
+  the plane as well as in it, so the opening frame looks through them, and
+  a cloud the eye is inside fades out rather than tinting the frame. The
+  ionisation structure is kept — teal inside the front, Hα red outside,
+  reflection clouds blue.
+
+- **There is something near the lens and something behind the stars.** A
+  few hundred motes live in a box that follows the camera and wrap through
+  it, tiny, faint and biggest when nearest, so pulling back finally feels
+  like pulling back. Behind the starfield a dome carries the Milky Way's
+  unresolved continuum — a band that narrows toward the anticentre, a bulge
+  toward the centre, the rift cut through one side — and six galaxies far
+  enough away to be smudges. Three texture reads a pixel; the dome shader
+  that was rejected once cost sixty sines.
+
+- **The mind map is a system with a star in it.** The note in the middle
+  is drawn as a star — the same photosphere the folder stars wear, at the
+  temperature of the folder it is filed in — rather than as a larger planet
+  with a ring round it, and every body on the plate was already lit from
+  there. The first lane is laid out folder by folder, biggest folder first,
+  with an arc of each folder's colour just outside it, so the wheel reads
+  as sectors. The second hop sits near the neighbours that brought it in
+  instead of evenly round the outside. The spokes to the centre come up and
+  the links between neighbours go down to a trace, and the pulses run the
+  plate's own edges — four in five on the spokes, so a streak leaving the
+  centre is an outbound link and one arriving is a backlink.
+
+  And the plate is an instrument, drawn the way an instrument is: in
+  hairlines. A graduated disc under the wheel — rings at a fifth, radials
+  every thirty degrees, the two lanes the only firm lines on it — with a
+  slow, faint scan passing over the graduations; thirty-six ticks on each
+  lane; a closed hairline in its folder's colour round every first-hop
+  neighbour; a little dust drifting in the plate's plane; and the star's
+  own flare in the middle. Cool white rather than cyan, all of it additive,
+  and none of it turning for its own sake.
+
+- **The sound is a place.** The bed under AMBIENT was three near-unison
+  sines under a filter; it is a sub, a root, two detuned fifths that beat,
+  an octave above them and one sine four octaves up at almost nothing —
+  the shimmer, the thing in it that reads as far away — each breathing on
+  its own clock, the filter opening and closing over most of a minute, and
+  under all of it a band of noise that wanders and swells: the wind. It
+  comes up over a second and a half rather than switching on, and it ships
+  at 0.35× rather than OFF, because the vault answering when touched was
+  never the whole of what a cosmos sounds like. Moving the camera is heard
+  as moving — a darker band of the same noise whose level is the eye's own
+  speed against its range — and stopping is heard as the sound going. The
+  ping is a bell now, with the inharmonic modes a struck bell has and a
+  second fundamental a few cents off for width. The mind map goes up on a
+  sweep and a note an octave over the one in the middle, hums faintly while
+  it is up, and comes down on the sweep reversed. Genesis opens on the low
+  boom the supernova ends on.
+
+- **The lens is in the picture.** A source in front of a real lens is seen
+  more than once: the reflections between the elements land on the axis
+  from the source through the middle of the frame, which is the row of
+  coloured discs every photograph of a bright light has. LENS FLARE draws
+  them from the bright buffer — four ghosts and a halo, each with the colour
+  separation the glass puts on it — plus the horizontal streak an
+  anamorphic element spills, blue because the coatings are tuned for the
+  other two. The widest bloom stage now disperses by colour toward the
+  corners, red outside and blue inside, and the front element carries
+  smudges that catch the spill and nothing else. One knob, under LIGHT,
+  shipped at 0.55×.
+
+- **The film curve is ACES.** The exponential shoulder is the ACES fitted
+  curve now: a toe that keeps black black, a straight middle, and a shoulder
+  that takes four times over-exposure to a highlight with shape. Applied to
+  the half-float signal, which is what it was made for; FILM CURVE is still
+  how far toward it the picture goes.
+
+- **The gas near the sun is lit by it.** The nebula's clouds pick up the
+  hub's own colour, falling off with the square of the distance, so the
+  gas the vault sits in reads as lit from where the light is.
+
+- **The edges are filtered.** The composite path draws into a render
+  target and a render target has no multisampling, so with BLOOM above zero
+  every link and spike was on a fixed grid whenever the camera moved. One
+  FXAA pass now runs on the finished frame — after the grade and the grain,
+  where a filter that must not smear light across black has to sit.
+
+- **Light flows along the links.** The pulses that travelled the links as
+  dots are streaks: a head and three points behind it on the same curve,
+  shrinking and fading, so the direction — from the note that links to the
+  note that is linked — can be read off the motion. Three hundred and
+  twenty of them, a quarter faster.
+
+- **The wheel zooms toward the cursor.** The target slides toward the point
+  under the cursor by the fraction the range shrinks, so that point stays
+  where it is while the rest closes in — no more zoom, pan, zoom, pan to
+  reach a planet at the edge. Zooming out, a view locked on a body and the
+  mind map leave the target alone.
+
+- **The mind map's keys are on the mind map.** Step, centre, back, hops,
+  frame, go to and close were seven keys the popup answered to and nowhere
+  named. They are on its footer now, in all four languages.
+
+- **Hiding the HUD says how to get it back**, in a toast, since the panel
+  that would have said so is the thing that just went.
+
+- **Two legends promised a third kind of link.** TAG RESONANCE has not been
+  drawn since the latent links went, and the mind map's key still listed
+  it. It lists the two that exist. STARFIELD's help line now says what the
+  knob covers — the whole sky, gas and band and dust included — since OFF
+  takes all of it.
+
+- **Thirteen knobs came off the deck.** SPLIT TONE, LENS, GRAIN and AUTO
+  EXPOSURE were tuned against each other and had no reason to move one at a
+  time; TUNING, ROOM SIZE, ECHO TAIL and ECHO TIME were a mixing desk; NODE
+  GRAVITY, ORBIT TRAILS and ORBIT TILT were never reached for; SURFACE
+  DETAIL was a frame-rate knob nobody needed once the sprites went, and
+  RECENT WORK is a fortnight. All thirteen are fixed at the values they
+  shipped at, and a saved value for any of them is no longer honoured.
+  ADVANCED is twenty-five controls now, not thirty-nine.
+
+- **Six defaults moved.** STARFIELD ships at OFF, ORBIT GAP at 5.00×, LINK
+  GLOW at 0.30×, ZODIACAL LIGHT at 2.00×, SYSTEM GLOW at 0.30× and SKY VEIL
+  at OFF. Every old value is still on the slider, and a saved value that is
+  the old default to the digit moves to the new one — it is the value
+  nobody chose.
+
+- **The scene buffer is half float.** Additive light used to stop at 1.0 in
+  the composite path, so a star's core, the sun's disc and a knot of links
+  arrived at the same flat white. On WebGL2 the buffer holds the excess, the
+  bright pass spills each source by its own excess, and a second shoulder in
+  the composite — high, always on, slope one at the join — folds it back
+  under 1.0 with the order kept. Nothing under 0.86 is touched. The
+  granulation on the sun's disc is visible up close for the first time.
+
+- **Things happen in the sky, and each one is the vault doing something.**
+  The comet used to wander in at random and mean nothing. Now a comet lands
+  on the note you just touched: the host re-derives the cosmos every time a
+  file is written, the difference between the cosmos before and after is the
+  list of notes whose file time moved, and each one gets a comet that falls
+  in from the edge of the frame and comes down on it, with the ripple sent
+  out along its links as it strikes. The first load sends one to the most
+  recently touched note, so a vault opens with the place you were last
+  working on being pointed at. The wandering comet is still there
+  underneath, on its own slow clock.
+
+- **A note deleted while you watch goes out as a supernova.** A body that was
+  in the previous cosmos and is not in this one flashes white at the place it
+  was, throws off a shell that thins as it spreads, is named once in the
+  toast, and — with sound on — lands as a low boom panned to where it stood.
+  A rename is not a death: the file keeps its creation time across one, and
+  a new body carrying a vanished body's ctime is the same note.
+
+- **The inspector says what a body is.** The shader has decided for a long
+  time whether a note is a gas giant, a terrestrial or a rock, and the star's
+  temperature has decided its colour; the inspector said none of it. The
+  path line now ends with the world's kind, whether it is ringed, and the
+  spectral type and temperature of the star it orbits — *F-type star ·
+  7000 K*. The STAR SYSTEMS panel carries the letter beside each count, in
+  all four languages, and the guide has a line on the three events under
+  SKY.
+
+- **The demo has file times and three dead links**, because the sample was
+  generated text with neither, and RECENT WORK, the opening comet and the
+  black holes all had nothing to show on it.
+
 ## 1.14.1
 
 - **The code that had stopped being reachable is gone.** Nothing on screen

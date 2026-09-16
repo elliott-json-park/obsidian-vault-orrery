@@ -78,6 +78,11 @@
       }
       take(same, 1 + ((rnd() * 3) | 0));
       take(other, rnd() < 0.55 ? 1 : 0);
+      /* Three links to notes that were never written, because a notebook
+         has those, and because they are what the black holes are made of. */
+      if (n.title === 'Precession') picks.push('Nutation');
+      if (n.title === 'Apsis') picks.push('Titius-Bode law');
+      if (n.title === 'Airy disc') picks.push('Rayleigh criterion');
 
       var body = '---\ndate: ' + date + '\ntags: [' +
         n.folder.toLowerCase().replace(/ /g, '-') + ']\n---\n\n' +
@@ -85,9 +90,17 @@
         n.title + ', written up while working through it rather than afterwards.\n\n' +
         picks.map(function (p) { return '- [[' + p + ']]'; }).join('\n') + '\n';
 
+      /* File times, which a dropped folder has and generated text does not:
+         created on the note's own date, touched some weeks after, and the
+         last three touched in the past few days — so RECENT WORK has
+         something to light and the opening comet has somewhere to land. */
+      var ct = when.getTime();
+      var mt = i >= all.length - 3 ? Date.now() - rnd() * 4 * 86400000
+                                   : ct + rnd() * 30 * 86400000;
       return {
         path: n.folder + '/' + n.title + '.md',
-        file: { text: function () { return Promise.resolve(body); } }
+        file: { text: function () { return Promise.resolve(body); } },
+        meta: { mtime: mt, ctime: ct }
       };
     });
   }
