@@ -3,7 +3,7 @@
   "name": "Vault Orrery",
   "version": "1.14.1",
   "minAppVersion": "1.7.2",
-  "description": "Folders become stars, notes orbit them, and a Genesis timeline replays how your vault grew. Open any note with one click. Runs entirely offline.",
+  "description": "A 3D graph where folders are stars and notes orbit them. Replay how your vault grew. Works offline.",
   "author": "Elliott Park",
   "authorUrl": "https://github.com/elliott-json-park",
   "fundingUrl": "https://github.com/sponsors/elliott-json-park",

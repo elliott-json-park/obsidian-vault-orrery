@@ -1,0 +1,59 @@
+# Publishes the browsable demo — vault-orrery-v2.html, served rather than
+# downloaded — to GitHub Pages on every push to main.
+#
+# The demo is the same file the plugin is generated from, so it cannot drift
+# from what people install: there is no second copy to keep in step. It is
+# rebuilt here rather than committed because the one thing it needs besides the
+# page is three.js, which this repository deliberately does not carry — see
+# scripts/vendor.mjs and THIRD-PARTY-NOTICES.md.
+
+name: Demo
+
+on:
+  push:
+    branches: [main]
+  # So the demo can be republished without an empty commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and a newer push wins. `cancel-in-progress: false`
+# would queue a deploy of a commit that has already been superseded.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # Fills vendor/ from node_modules at the pinned version, then lays the
+      # page and the library out the way a static host serves them.
+      - run: npm run vendor
+      - run: npm run demo
+
+      # The same gate the release runs. A demo is a page on the open web, which
+      # is the one place a remote script would quietly start working.
+      - run: node scripts/check-no-remote.mjs
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo
+      - id: deploy
+        uses: actions/deploy-pages@v4

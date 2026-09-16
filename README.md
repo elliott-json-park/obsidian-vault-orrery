@@ -1,10 +1,18 @@
 # Vault Orrery
 
-**Your vault as a star system.** Folders become stars, notes orbit them, and a
-Genesis timeline replays how the whole thing grew. Every body on screen is a
-note you can be reading a second later. Runs entirely offline.
+**A 3D graph where folders are stars and notes orbit them. Replay how your
+vault grew. Works offline.** Every body on screen is a note you can be reading
+a second later.
 
 ![A 263-note vault drawn as a star system: twelve lit folder-stars — MENUS, PRINCIPLES, SERVICE-NOTES, BAKERY — with their notes in orbit and the links drawn between them](docs/screenshots/hero.jpg)
+
+### [▶ Try it in your browser — no install](https://elliott-json-park.github.io/obsidian-vault-orrery/)
+
+The same engine the plugin is built from, served as a page. Drop a folder of
+markdown on it and it draws your own vault. Nothing is uploaded: the folder is
+read in the browser, and the page makes no network requests of any kind.
+
+Or install **Vault Orrery** from Settings → Community plugins.
 
 ---
 

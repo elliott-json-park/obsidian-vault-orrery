@@ -6,6 +6,10 @@ src/engine.generated.js
 # stylesheet, scoped and concatenated by scripts/build-engine.mjs.
 styles.css
 
+# the browsable demo, assembled by scripts/build-demo.mjs from the page and
+# vendor/. Published to GitHub Pages by .github/workflows/pages.yml.
+demo/
+
 # bundled third-party libraries — see THIRD-PARTY-NOTICES.md for how to
 # populate this directory. Not committed: large binaries, and their licences
 # require shipping them intact rather than as a fork.
