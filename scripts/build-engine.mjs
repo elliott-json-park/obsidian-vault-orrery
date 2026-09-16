@@ -344,20 +344,22 @@ notes.push(`     1  generated module parses`);
 
    A crude scan, deliberately: this file declares its functions at the top
    level, so "called but never declared and not a known global" is a real
-   finding, and the allowlist below is short enough to read. */
+   finding, and the allowlist below is short enough to read.
+
+   The allowlist holds what the engine actually reaches for and nothing else.
+   A name in here the engine never uses is a name this check has agreed never
+   to question again, and it grew the other way once: the clip capture was
+   removed and its MediaRecorder entry stayed behind, with a comment pointing
+   at a vidMime() that no longer existed. Adding a global back is one line,
+   and the failure that asks for it names the identifier it wants. */
 const GLOBALS = new Set([
-  'Array','Boolean','Date','Error','Float32Array','Float64Array','Function','Image',
+  'Array','Boolean','Date','Error','Float32Array','Float64Array',
   'Int16Array','Int32Array',
-  'JSON','Map','Math','Number','Object','Promise','RegExp','Set','String','Symbol',
-  'THREE','Uint8Array','Uint16Array','Uint32Array','WeakMap','WeakSet',
-  'alert','atob','Blob','btoa','cancelAnimationFrame','clearInterval','clearTimeout',
-  'confirm','decodeURIComponent','encodeURIComponent','fetch','getComputedStyle',
-  /* clip capture. MediaRecorder is feature-detected at the call site rather
-     than assumed — see vidMime() — because Obsidian ships an Electron whose
-     codec set is its own business, not Chrome's. */
-  'MediaRecorder',
-  'isFinite','isNaN','parseFloat','parseInt','performance','prompt',
-  'requestAnimationFrame','setInterval','setTimeout','structuredClone',
+  'JSON','Map','Math','Number','Object','Promise','RegExp','Set','String',
+  'THREE','Uint8Array','Uint16Array','Uint32Array',
+  'cancelAnimationFrame','clearInterval','clearTimeout','decodeURIComponent',
+  'isFinite','parseInt','performance',
+  'requestAnimationFrame','setInterval','setTimeout',
   /* the bridge the generator itself supplies */
   'VW','VH','ndcX','ndcY','onWin','onDoc','offWin',
   /* keywords and syntax that look like calls */

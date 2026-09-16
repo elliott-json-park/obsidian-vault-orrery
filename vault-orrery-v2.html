@@ -6,7 +6,7 @@
 <title>VAULT ORRERY II</title>
 <style>
 :root{
-  --cy:#5ce1ff; --cy-d:#1b6f8c; --am:#ffb648; --am-d:#8a5a12;
+  --cy:#5ce1ff; --cy-d:#1b6f8c; --am:#ffb648;
   --vi:#a78bfa; --bg:#02040a; --ink:#dff6ff;
   --mono:ui-monospace,"SFMono-Regular","Consolas","DejaVu Sans Mono",monospace;
   --kr:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
@@ -862,7 +862,7 @@ body.dragdeck #hud{cursor:grabbing}
            bar at the bottom of the frame is the same number drawn -->
       <div class="row"><span>SCALE</span><span id="s-scale">—</span></div>
       <div class="row"><span>FPS</span><span id="s-fps" title="click for frame budget">—</span></div>
-      <div class="bar"><i id="s-load" style="width:100%"></i></div>
+      <div class="bar"><i style="width:100%"></i></div>
       <!-- opened by clicking FPS; see the PERF block for what fills it -->
       <div id="perf">
         <div class="hd">FRAME BUDGET · MS</div>
@@ -940,7 +940,7 @@ body.dragdeck #hud{cursor:grabbing}
 
   <div class="pane glass" id="insp">
     <div class="ttl"><b>NODE INSPECTOR</b><span id="i-kind">—</span></div>
-    <div class="bd" id="i-body">
+    <div class="bd">
       <div id="i-empty" data-i18n="insp.empty">대상을 지정하십시오<br><span style="opacity:.6">노드를 클릭</span></div>
       <div id="i-real" style="display:none">
         <div id="i-name"></div>
@@ -951,7 +951,7 @@ body.dragdeck #hud{cursor:grabbing}
           <div><u id="c-mo2">0</u><s data-i18n="cnt.far">연결 위성</s></div>
         </div>
         <!-- the orbit this body is actually on — see orbitReadout() -->
-        <div class="cbox orb" id="i-orb">
+        <div class="cbox orb">
           <div><u id="o-a">—</u><s data-i18n="orb.a">장반경</s></div>
           <div><u id="o-e">—</u><s data-i18n="orb.e">이심률</s></div>
           <div><u id="o-p">—</u><s data-i18n="orb.p">공전 주기</s></div>
@@ -1293,10 +1293,7 @@ const STR = {
 'mm.open':     ['↗ 옵시디언에서 열기','↗ OPEN IN OBSIDIAN','↗ Obsidianで開く','↗ 在 Obsidian 中打开'],
 'open.none':   ['먼저 노트를 선택하십시오','Select a note first','先にノートを選択してください','请先选择一篇笔记'],
 'open.fail':   ['그 노트를 열지 못했습니다','Could not open that note','そのノートを開けませんでした','无法打开该笔记'],
-'reveal.miss': ['그 노트는 지금 그려진 우주에 없습니다','That note is not in the cosmos on screen',
-                'そのノートは現在の宇宙にありません','该笔记不在当前绘制的宇宙中'],
 'sync.done':   ['볼트 갱신 · 노트 {n}개','Vault updated · {n} notes','ボルト更新 · ノート {n} 件','仓库已更新 · {n} 篇笔记'],
-'active.here': ['지금 편집 중인 노트','THE NOTE YOU ARE EDITING','編集中のノート','正在编辑的笔记'],
 'go.travel':   ['','◎ GO TO {n}','◎ {n} へ移動','◎ 前往 {n}'],
 
 /* ---- genesis ----------------------------------------------------------- */
@@ -1431,8 +1428,6 @@ const STR = {
                 'Loaded {n} of {total} notes · raise the MAX NODES limit to see more',
                 '{total} 件中 {n} 件のみ読み込みました · 最大ノード数の設定で変更できます',
                 '仅载入 {total} 篇中的 {n} 篇 · 可在最大节点数设置中调整'],
-'cap.warn':    ['노트 {n}개 — 이 규모는 느려질 수 있습니다','{n} notes — this size may run slowly',
-                'ノート {n} 件 — この規模では動作が重くなることがあります','{n} 篇笔记 — 此规模可能运行缓慢'],
 'excl.some':   ['제외 설정으로 {n}개 제외됨','{n} excluded by your filters','除外設定により {n} 件を除外','根据排除设置已排除 {n} 项'],
 'excl.all':    ['제외 설정이 모든 노트를 걸러냈습니다','Your exclusion filters removed every note',
                 '除外設定によりすべてのノートが除かれました','排除设置过滤掉了全部笔记'],
@@ -5548,22 +5543,7 @@ function hashStr(s) {
   for (let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   return h >>> 0;
 }
-/* A shuffled permutation table rather than an integer hash computed per
-   lookup. This is the hot path of the whole file — a single 512x256 world is
-   about fifteen million lattice lookups — and three typed-array reads beat
-   four multiplies, three xors and a divide by enough to matter. */
-function mkHash3(seed) {
-  const perm = new Uint8Array(512), grad = new Float32Array(256);
-  let s = (seed >>> 0) || 1;
-  const rnd = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296;
-  for (let i=0;i<256;i++) perm[i] = i;
-  for (let i=255;i>0;i--){ const j = (rnd()*(i+1))|0; const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
-  for (let i=0;i<256;i++){ perm[i+256] = perm[i]; grad[i] = rnd(); }
-  return (x, y, z) => grad[perm[(perm[(perm[x & 255] + y) & 255] + z) & 255]];
-}
 const sstep = t => t*t*(3-2*t);
-
-function surfSeed(i) { return hashStr((nodes[i] ? nodes[i].p : '') + '|' + i); }
 
 /* A category either has a name the vault gave it, or one this app made up
    and can therefore re-say in another language. */
@@ -15297,7 +15277,6 @@ window.vaultOrrery = {
     f();
     return true;
   },
-  clear() { swapVault(EMPTY); },
   destroy() {
     RUN.host = false; runPause();
     [BLOOM.rt, BLOOM.a, BLOOM.b].forEach(r => { if (r) { try { r.dispose(); } catch(e){} } });

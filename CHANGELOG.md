@@ -4,6 +4,27 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## Unreleased
+
+- **The code that had stopped being reachable is gone.** Nothing on screen
+  changes; there is simply less of it shipped and less of it to read. The
+  permutation-hash generator and the per-body seed were what generated a
+  world's texture on the CPU, and worlds became a function the fragment
+  shader compiles — the call sites went and the two functions stayed. Three
+  sentences in the dictionary, translated four times each, were never asked
+  for by any line of code or any `data-i18n` attribute. A colour variable
+  nothing read, three element ids nothing looked up, and `clear()` on the
+  host API, which no host, harness or test has ever called — the page's own
+  CLEAR button empties the cosmos without going through it.
+
+- **The build's own guard had stopped agreeing with itself.** Every call the
+  engine makes is checked against the names it declares plus a list of the
+  globals it is allowed to reach for, and eighteen entries on that list were
+  names the engine does not mention anywhere — `MediaRecorder` among them,
+  still carrying a comment about a `vidMime()` that was deleted along with
+  the clip capture. A name on that list is a name the check has agreed never
+  to question again, so the list is now exactly what the engine uses.
+
 ## 1.14.0
 
 - **The ripple sounds like drops on glass.** It borrowed the selection ping

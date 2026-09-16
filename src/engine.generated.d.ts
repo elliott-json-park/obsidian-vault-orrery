@@ -106,7 +106,6 @@ export interface OrreryApi {
       path, and shows neither the loading curtain nor the summary. */
   load(files: OrreryFile[], vaultName?: string,
        opts?: { quiet?: boolean }): Promise<void>;
-  clear(): void;
   /** Hand the engine the things only a host can do. */
   setHostHooks(hooks: OrreryHostHooks): void;
   /** Put the camera on the note at this path. False if that note is not in

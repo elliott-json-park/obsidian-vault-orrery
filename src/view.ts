@@ -202,8 +202,6 @@ export class OrreryView extends ItemView {
     await this.loadVault(true);
   }
 
-  cancelSync() { this.scheduleSync.cancel(); }
-
   async onClose() {
     this.scheduleSync.cancel();
     this.io?.disconnect(); this.io = null;
