@@ -4,7 +4,7 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
-## Unreleased
+## 1.14.1
 
 - **The code that had stopped being reachable is gone.** Nothing on screen
   changes; there is simply less of it shipped and less of it to read. The
