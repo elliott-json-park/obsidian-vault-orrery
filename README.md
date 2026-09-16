@@ -32,9 +32,7 @@ void and condenses forward to today, note by note, in the order you actually
 wrote them. Nothing else here does this, and it is not an animation of the
 finished graph — it is the vault's own history, scrubbable.
 
-<!-- GENESIS GIF — drop the file in and delete this comment:
-![Genesis replays the vault's formation](docs/screenshots/genesis.gif)
--->
+![Genesis replaying a 66-note vault: the cosmos starts empty, then folder-stars light and their notes settle into orbit as the date runs from 2023 to 2026](docs/screenshots/genesis.gif)
 
 **It is wired into the editor.** Ctrl/Cmd-click a planet and the note opens
 *beside* the orrery. The note you are editing carries its own beacon. *Show in
