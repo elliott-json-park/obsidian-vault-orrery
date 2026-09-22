@@ -1,7 +1,7 @@
 {
   "id": "vault-orrery",
   "name": "Vault Orrery",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "minAppVersion": "1.7.2",
   "description": "A 3D graph where folders are stars and notes orbit them. Replay how your vault grew. Works offline.",
   "author": "Elliott Park",

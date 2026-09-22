@@ -4,6 +4,14 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.15.1
+
+- **Nothing on screen changes.** A maintenance release of the same code as
+  1.15.0, rebuilt and re-attested by the release workflow. The build, the
+  policy gates and the smoke test pass, and the demo was driven through
+  every mode and through quiet reloads that add and remove notes without
+  an error.
+
 ## 1.15.0
 
 - **The nebula is a volume.** Fourteen hundred additive sprites drew
