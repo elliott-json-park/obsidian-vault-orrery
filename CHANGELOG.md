@@ -4,7 +4,7 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
-## Unreleased
+## 1.16.0
 
 - **The HUD can be read without leaning in.** Pane text starts at 9.5px
   instead of 7, with the widest tracking brought in so the larger letters
