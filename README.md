@@ -1,77 +1,86 @@
 # Vault Orrery
 
-**A 3D graph where folders are stars and notes orbit them. Replay how your
-vault grew. Works offline.** Every body on screen is a note you can be reading
-a second later.
+**See your Obsidian vault as a living star system — and replay how it grew.**
+Folders are stars, notes are the planets orbiting them, and every body on
+screen is a note you can be reading a second later. Works offline.
 
-![A 263-note vault drawn as a star system: twelve lit folder-stars — MENUS, PRINCIPLES, SERVICE-NOTES, BAKERY — with their notes in orbit and the links drawn between them](docs/screenshots/hero.jpg)
+![A sample vault drawn as a star system: folder-stars — INSTRUMENTS, MECHANICS, NOTATION, WORKBENCH — with their notes in orbit, the links drawn between them, and the HUD around the edge](docs/screenshots/hero.jpg)
 
-### [▶ Try it in your browser — no install](https://elliott-json-park.github.io/obsidian-vault-orrery/)
+<p align="center">
+  <a href="https://elliott-json-park.github.io/obsidian-vault-orrery/"><b>▶ Try it in your browser — no install, nothing uploaded</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://obsidian.md/plugins?id=vault-orrery"><b>Install in Obsidian</b></a>
+</p>
 
-The same engine the plugin is built from, served as a page. Drop a folder of
-markdown on it and it draws your own vault. Nothing is uploaded: the folder is
-read in the browser, and the page makes no network requests of any kind.
-
-Or install **Vault Orrery** from Settings → Community plugins.
+The demo is the same engine the plugin is built from. It opens on a sample
+vault; drop a folder of markdown on it and it draws yours instead. The folder
+is read in the browser and the page makes no network requests of any kind.
 
 ---
 
-## Not another galaxy graph
+## What makes it different
 
-Several plugins draw your vault as a starfield. If a prettier graph is all you
-want, those are lighter and you should use one of them. This one is an
-*orrery*, and three things follow from that:
-
-**Folders are star systems, not another colour of dot.** Each folder is a lit
-system sitting in its own gas, with its notes in orbit round its star. The
-shape of the vault is the shape of the picture, so a crowded folder looks
-crowded and an orphaned one sits out on its own.
-
-**Genesis plays the vault's formation.** Press `G` and the cosmos rewinds to
-void and condenses forward to today, note by note, in the order you actually
-wrote them. Nothing else here does this, and it is not an animation of the
-finished graph — it is the vault's own history, scrubbable.
+**1 · Genesis replays your vault's history.** Press `G` and the cosmos rewinds
+to empty space, then condenses forward to today, note by note, in the order you
+actually wrote them. It is not an animation of the finished graph — it is the
+vault's own history, and you can scrub it.
 
 ![Genesis replaying a 66-note vault: the cosmos starts empty, then folder-stars light and their notes settle into orbit as the date runs from 2023 to 2026](docs/screenshots/genesis.gif)
 
-**It is wired into the editor.** Ctrl/Cmd-click a planet and the note opens
-*beside* the orrery. The note you are editing carries its own beacon. *Show in
-Vault Orrery* is on every note's context menu, and every mode is a command you
-can bind a key to.
+**2 · Folders are star systems, not another colour of dot.** Each folder is a
+lit system with its notes in orbit round its star, so the shape of the vault is
+the shape of the picture: a crowded folder looks crowded, and an orphaned note
+sits out on its own.
 
-![One note selected inside the FAILURES system: the inspector shows its path, word count, outbound links and backlinks, and the buttons to open it, map it or ripple from it](docs/screenshots/inspector.jpg)
+**3 · It is wired into the editor.** Click a planet and its note is in the
+inspector — properties, tags, an excerpt, every link and backlink — with the
+buttons to open it, map it or trace a route from it right under its name.
+Ctrl/Cmd-click opens the note *beside* the orrery, the note you are editing
+carries its own beacon, and *Show in Vault Orrery* is on every note's context
+menu.
+
+![The vault's hub selected: the inspector shows its path, its actions, its link counts, an excerpt and its backlinks, with its links drawn out across the cosmos](docs/screenshots/inspector.jpg)
+
+---
+
+## Getting started
+
+1. **Install** — Settings → Community plugins → Browse → *Vault Orrery*.
+2. **Open it** — the orbit icon in the ribbon, or *Vault Orrery: Open* in the
+   command palette. A card names the four moves that are enough to get going.
+3. **Explore** — drag to orbit, scroll to zoom, click a planet to read it,
+   double-click for its mind map, and press `G` to watch the vault form.
+
+If a large vault feels slow, press **FAST** at the top of the control deck.
+The first time a big vault opens on a machine that is struggling, the orrery
+does that for you and says so.
 
 ---
 
 ## What it does
 
-- **Folders are stars, notes are planets, cited sources are moons.** Orbits
-  open from a flat disc into a sphere on one knob.
-- **Genesis** — `G` — plays the vault from void to present, with a scrubber.
-- **Mind map** — `M` — one note's neighbourhood, two hops out, in place.
-- **Search** — `/` — notes, controls and actions in one box.
-- **Ripple** — `SPACE` — a wave along the links from the selected note.
-- **Poster** — `P` — a high-resolution PNG of the cosmos with no HUD.
-- **Ambient sound** — `U` — every note has a pitch; off until you ask.
+- **Mind map** — `M` or double-click — one note's neighbourhood, two hops out,
+  in place, with a reading rail beside it.
+- **Search** — `/` — notes, controls and actions in one box. Front-matter
+  properties are searchable, so `status: blocked` is a thing you can look for.
+- **Route** — pick two notes and the shortest way between them lights up.
 - **Broken links**, counted in the status panel and named in the inspector.
   Click the count to keep only the notes carrying them.
-- **Properties** — a note's front matter is on the inspector and in the search
-  box, so `status: blocked` is a thing you can look for.
-- **Route** — pick two notes and the shortest way between them lights up,
-  with the rest of the vault held down to a trace.
-- **The sky has events, and each one is the vault doing something.** A
-  comet lands on the note you just touched. A note deleted while you watch
-  goes out as a supernova, and says its name.
+- **Ripple** — `SPACE` — a wave along the links from the selected note.
+- **Poster** — `P` — a high-resolution PNG of the cosmos with no HUD.
+- **Quality presets** — CINEMA · BALANCED · FAST — the eight light effects in
+  one click, and every knob still there under ADVANCED.
+- **The sky has events.** A comet lands on the note you just touched; a note
+  deleted while you watch goes out as a supernova and says its name.
+- **Ambient sound** — `U` — every note has a pitch; off until you ask.
 - **한국어 · English · 日本語 · 中文**, switchable without reloading.
 
-![Mind map of one note: `index` at the centre with its neighbours — Sourdough programme, Collagen and gelatin, Bread basket — laid out in a ring around it](docs/screenshots/mind-map.jpg)
+![Mind map of one note: Inclination at the centre with its eight neighbours — Roche limit, Synodic period, Tidal locking, Sidereal day — laid out in a ring, and the reading rail on the right](docs/screenshots/mind-map.jpg)
 
 **The graph is Obsidian's own.** Links, backlinks and tags come from the index
 Obsidian already keeps, so a link written through an alias resolves rather than
 counting as broken, an embed counts as a link, and a `#tag` in a paragraph
 counts alongside the ones in the front matter.
-
-![The most-linked note selected, with its seventy outbound links drawn as lines reaching out across the cosmos](docs/screenshots/link-web.jpg)
 
 **The vault stays current.** Notes written, created, renamed or deleted while
 the view is open re-derive the cosmos — camera and selection left where they
@@ -121,11 +130,16 @@ patterns are applied first, so a note you have hidden is never opened at all.
 
 ## Large vaults
 
+If a big vault runs slowly, press **FAST** at the head of the control deck:
+it turns the bloom, the lens, the halo and the sky's light off in one go, and
+**CINEMA** puts them back. The first time a vault of 600 notes or more opens,
+the orrery watches the frame rate for a few seconds and switches to FAST on its
+own if the machine is plainly struggling — once, and with a line saying so.
+
 The **MAX NODES** ceiling ships **off**: a cap that silently drops half a vault
-is worse than a slow first minute, and the slider is right there. If a big
-vault runs slowly, turn **BLOOM** and the four **LIGHT** knobs off first, then
-lower **LINK GLOW** and **STARFIELD**. Rendering stops entirely when you are
-not looking at the view, so an orrery in a background tab costs nothing.
+is worse than a slow first minute, and the slider is right there. Rendering
+stops entirely when you are not looking at the view, so an orrery in a
+background tab costs nothing.
 
 → [Performance in detail](docs/performance.md)
 

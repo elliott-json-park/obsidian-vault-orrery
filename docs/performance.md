@@ -36,9 +36,14 @@ can never do is change the *shape* of a world: a body has to look the same
 from four pixels away as from four hundred, which is the rule the whole
 surface design is built on.
 
-If a large vault still runs slowly, the first thing to try is turning
-**BLOOM** and the grade knobs under LIGHT to OFF, which puts the renderer
-back on the path it takes when nothing has been asked for. After that, the
+If a large vault still runs slowly, the first thing to try is the **FAST**
+preset at the head of the control deck. It sets BLOOM, SUN RAYS, LENS FLARE,
+SUN HALO, FILM CURVE, ZODIACAL LIGHT, STARFIELD and SKY VEIL to OFF in one
+click, which puts the renderer back on the path it takes when nothing has been
+asked for; **BALANCED** keeps a little of the glow, and **CINEMA** is the
+shipped look. The first time a vault of 600 notes or more opens, the frame rate
+is sampled for four seconds once it has settled, and if it averages under 26
+the orrery applies FAST itself — once, ever, with a line saying so. After that, the
 cheapest wins are lowering **LINK GLOW**, turning **STARFIELD** down, and
 reducing **MAX NODES**.
 

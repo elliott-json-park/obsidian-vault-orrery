@@ -69,7 +69,10 @@ canvas{display:block}
   opacity:.72;text-align:center;pointer-events:none;display:none}
 #sbar i{display:block;height:5px;border:1px solid var(--cy);border-top:none;
   margin:0 auto 3px;box-shadow:0 0 8px rgba(92,225,255,.25)}
-.glass{background:linear-gradient(180deg,rgba(6,20,32,.72),rgba(3,10,18,.62));
+/* Dense enough that a bright body drifting behind a pane does not show
+   through the text on it: at .62 a planet passing under the shortcut list
+   put a lit disc in the middle of a row. The blur still says it is glass. */
+.glass{background:linear-gradient(180deg,rgba(6,20,32,.86),rgba(3,10,18,.8));
   border:1px solid rgba(92,225,255,.22);
   box-shadow:0 0 0 1px rgba(0,0,0,.5) inset,0 0 24px rgba(92,225,255,.07);
   backdrop-filter:blur(6px)}
