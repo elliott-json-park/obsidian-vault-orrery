@@ -132,15 +132,34 @@
     var el = document.createElement('div');
     el.id = 'demo-note';
     el.style.cssText = 'margin:10px auto 0;max-width:46em;line-height:1.5;opacity:.72;' +
-                       'font-size:.86em;color:#9fd8ee';
+                       'font-size:13px;color:#9fd8ee;font-family:var(--kr);letter-spacing:.01em;' +
+                       'text-transform:none;text-align:center';
     el.textContent = NOTE[lang()];
     pick.parentNode.insertBefore(el, pick.nextSibling);
+
+    /* With a sample behind the boot screen, START is not "begin in empty
+       space" any more — it is the fastest way to see the thing working, so it
+       becomes the lit button and says what it does. Opening your own folder
+       stays one click away as the second choice. */
+    var go = document.getElementById('b-go'), folder = document.getElementById('b-folder');
+    var GO = { en: '▶ EXPLORE THE SAMPLE', ko: '▶ 샘플 둘러보기', ja: '▶ サンプルを見る', zh: '▶ 浏览示例' };
+    function relabel() { if (go) go.textContent = GO[lang()]; }
+    /* The engine's own footnote is about starting in empty space, which this
+       page no longer does; the sample line above already says the privacy
+       half of it. */
+    var bnote = document.getElementById('bnote');
+    if (bnote) bnote.style.display = 'none';
+    if (go && folder) {
+      go.classList.remove('alt'); folder.classList.add('alt');
+      go.parentNode.insertBefore(go, folder);
+      relabel();
+    }
 
     /* The language chips retranslate the page; this line is not part of that
        sweep, so it follows them itself. */
     var sel = document.getElementById('blangsel');
     if (sel) sel.addEventListener('click', function () {
-      setTimeout(function () { el.textContent = NOTE[lang()]; }, 0);
+      setTimeout(function () { el.textContent = NOTE[lang()]; relabel(); }, 0);
     });
   }
 
