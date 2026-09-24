@@ -381,6 +381,11 @@ body.dragdeck #hud{cursor:grabbing}
 .langsel u:hover{opacity:.85;background:rgba(92,225,255,.14)}
 .langsel u.on{opacity:1;color:var(--am);background:rgba(255,182,72,.13);
   text-shadow:0 0 10px rgba(255,182,72,.4)}
+/* three cells rather than four, so each takes a third and the words fit */
+#qrow{display:flex;align-items:center;gap:10px}
+#qrow>b{font-size:10.5px;letter-spacing:.1em;opacity:.55;font-weight:400;flex:0 0 auto}
+.qsel{flex:1 1 auto}
+.qsel u{min-width:0;letter-spacing:.06em;padding:5px 2px}
 .mini.am{color:var(--am);border-color:rgba(255,182,72,.34);background:rgba(255,182,72,.06)}
 .mini.am:hover{background:rgba(255,182,72,.18);box-shadow:0 0 14px rgba(255,182,72,.2)}
 /* The one action that leaves the orrery and lands in the editor. It is
@@ -924,6 +929,12 @@ body.dragdeck #hud{cursor:grabbing}
            and — the reason it changed — which shelf a knob sits on is the
            reader's to decide and cannot be a fact about the document. -->
       <div id="ctlknobs">
+        <!-- Above the knobs because it is the knobs: eight of them at once. -->
+        <div id="qrow" data-i18n-title="q.t"><b>QUALITY</b>
+          <div class="langsel qsel" id="qsel">
+            <u data-q="cinematic">CINEMA</u><u data-q="balanced">BALANCED</u><u data-q="fast">FAST</u>
+          </div>
+        </div>
         <div id="ctlgrid"></div>
         <div id="advtog">▸ ADVANCED</div>
         <div id="ctladv"></div>
@@ -1418,6 +1429,18 @@ const STR = {
                 'ノート・設定・機能を検索 …','搜索笔记 · 设置 · 功能 …'],
 'insp.more':   ['+ {n}개 더 보기','+ {n} more','+ 他 {n} 件','+ 还有 {n} 项'],
 'find.knob':   ['설정','SETTING','設定','设置'],
+/* ---- quality presets ---- */
+'q.t':         ['화질 — 빛 효과 여덟 개를 한 번에 맞춥니다. 슬라이더를 직접 움직이면 선택이 풀립니다.',
+                'Quality — sets the eight light effects at once. Moving one of them by hand leaves the preset.',
+                '画質 — 光の効果8つを一度に設定します。個別に動かすとプリセットから外れます。',
+                '画质 — 一次设置八项光效。手动调整任意一项即脱离预设。'],
+'q.cinematic': ['화질: 시네마틱','QUALITY · CINEMATIC','画質: シネマティック','画质：电影'],
+'q.balanced':  ['화질: 균형','QUALITY · BALANCED','画質: バランス','画质：均衡'],
+'q.fast':      ['화질: 빠르게','QUALITY · FAST','画質: 高速','画质：流畅'],
+'q.auto':      ['큰 볼트라 빛 효과를 줄였습니다 — 컨트롤의 CINEMA로 되돌릴 수 있습니다',
+                'A big vault, so the light effects are turned down — CINEMA in the controls brings them back',
+                '大きなボルトなので光の効果を下げました — コントロールの CINEMA で戻せます',
+                '仓库较大，已降低光效 — 可在控制面板点 CINEMA 恢复'],
 'find.act':    ['기능','ACTION','機能','功能'],
 'load.notes':  ['{n}개 노트','{n} notes','ノート {n} 件','{n} 篇笔记'],
 'load.graph':  ['링크 · 태그 그래프 구성','Building the link and tag graph','リンク · タグのグラフを構成','构建链接与标签图谱'],
@@ -2401,6 +2424,44 @@ const KNOBS = [
   { k:'sRip',   g:'sound', label:'RIPPLE',      min:0, max:150, sc:100, def:.5,
     fmt:v => offAt(v, mult(v)) },
 ];
+/* ---- quality presets ----
+   The deck has thirty knobs and the ones that decide whether a big vault runs
+   smoothly are eight of them, spread over two tabs of the drawer. README's
+   advice for a slow vault was a list of knob names to go and find. These are
+   that list as three buttons.
+
+   A preset is a set of values, not a mode: pressing one writes the eight
+   knobs and nothing else remembers it. Which button is lit is read back off
+   the knobs every time the deck syncs, so dragging BLOOM by hand simply
+   leaves every button dark — there is no state to fall out of step with the
+   sliders. CINEMATIC is the shipped defaults, whatever they are. */
+const Q_KEYS = ['blm', 'ray', 'flr', 'glare', 'cur', 'zod', 'str', 'vei'];
+const QUALITY = {
+  cinematic: null,
+  balanced:  { blm:.3, ray:.25, flr:.2, glare:.25, zod:1 },
+  fast:      { blm:0, ray:0, flr:0, glare:0, cur:0, zod:0, str:0, vei:0 },
+};
+function qualityVal(q, k) {
+  const p = QUALITY[q];
+  return p && p[k] !== undefined ? p[k] : KNOB_OF[k].def;
+}
+function qualityNow() {
+  for (const q in QUALITY)
+    if (Q_KEYS.every(k => Math.abs(SET[k] - qualityVal(q, k)) < 0.006)) return q;
+  return '';
+}
+function applyQuality(q, quiet) {
+  const ran = new Set();
+  Q_KEYS.forEach(k => { SET[k] = qualityVal(q, k); });
+  Q_KEYS.forEach(k => {
+    const a = KNOB_OF[k].apply;
+    if (!a || ran.has(a)) return;
+    ran.add(a);
+    try { a(); } catch (e) { console.error('vault-orrery: quality ' + k, e); }
+  });
+  syncControls(); saveSet();
+  if (!quiet) toast(T('q.' + q));
+}
 const KNOB_OF = {};
 KNOBS.forEach(kn => { KNOB_OF[kn.k] = kn; });
 const GROUPS = [['cosmos','grp.cosmos'], ['bodies','grp.bodies'],
@@ -8871,7 +8932,30 @@ applyDepth();
    vault opened with the size knobs already off 1.00x would otherwise come up
    at its layout sizes and only correct itself when somebody touched one. */
 applySizes();
+AUTOQ.at = performance.now(); AUTOQ.n = 0; AUTOQ.sum = 0;
 }   /* ---- end buildObjects ---- */
+
+/* ---- the first minute on a big vault ----
+   The deck ships cinematic, and on a vault of a few thousand notes on a
+   laptop that is a first impression measured in frames per second. So the
+   first time a large vault is opened — once, ever — the frame rate is
+   watched for a few seconds after it settles, and if it is plainly
+   struggling the FAST preset goes on, with a line saying so and how to undo
+   it. Never again after that first look: from then on what the deck is set
+   to is the reader's answer, not a guess about their machine. */
+const AUTOQ = { at: 0, n: 0, sum: 0 };
+function autoQuality(now) {
+  if (SET.qAuto || !AUTOQ.at || N < 600 || GEN.on) return;
+  const dt = now - AUTOQ.at;
+  if (dt < 3000) return;                  // the adaptive sampler settles first
+  AUTOQ.sum += fps; AUTOQ.n++;
+  if (dt < 7000) return;
+  SET.qAuto = 1;
+  if (AUTOQ.sum / AUTOQ.n < 26 && qualityNow() !== 'fast') {
+    applyQuality('fast', true);
+    toast(T('q.auto'), 6000);
+  } else saveSet();
+}
 
 /* ---------------------------------------------------------------- LABELS
    A name over a body was the least finished thing on screen, and it was
@@ -14560,6 +14644,7 @@ function frameLoop(now) {
   const dtms = Math.min(64, now - last); last = now;
   const dt = dtms/1000;
   fps = fps*0.92 + (1000/Math.max(1,dtms))*0.08;
+  autoQuality(now);
   frame++;
   if (!world) { renderFrame(); return; }                    /* mid-rebuild */
 
@@ -15237,7 +15322,10 @@ function syncControls() {
   writeHint();
   applyStarfield();
   applyVeil();
+  const qn = qualityNow();
+  document.querySelectorAll('#qsel u').forEach(u => u.classList.toggle('on', u.dataset.q === qn));
 }
+document.querySelectorAll('#qsel u').forEach(u => { u.onclick = () => applyQuality(u.dataset.q); });
 
 /* The FPS number is the natural place to ask for more of the same, so it is
    the handle rather than a keystroke nobody would find. Opening it starts the
@@ -15957,6 +16045,20 @@ function buildGraph(files, vaultName) {
 
   /* --- categories = star systems --------------------------------------- */
   const catMap = new Map();
+  /* ---- the name on the star, not the name in the file browser ----
+     Folders are very often named to sort: _templates, 00 Inbox, 1. Projects,
+     02-Areas. The prefix is an instruction to a file list and it is noise on
+     a star — _CATERING read as a typo, and a PARA vault's four systems all
+     began with a digit. Only a leading run of punctuation and an ordinal that
+     is plainly one (a leading zero, or a number with its own separator) are
+     taken off, so "100 Days" and "3D Models" keep their names. Display only:
+     the key is still the path, so two folders that clean to the same word
+     stay two systems. */
+  const cleanSeg = seg => {
+    const c = seg.replace(/^[\s_~.\-+=!#@]+/, '')
+                 .replace(/^(?:0\d{0,2}|\d{1,2}\s*[-_.)])[\s_\-.]*(?=\S)/, '');
+    return c || seg;
+  };
   /* A folder name is the vault's own word and stays as it is; only the labels
      this app invents — the undated archive, the unnamed root — carry a key,
      so switching language renames those and leaves the vault's names alone. */
@@ -15972,8 +16074,10 @@ function buildGraph(files, vaultName) {
       const dir = r.dir.replace(/^wiki(\/|$)/i, '');
       key = 'wiki:' + dir; dom = 'wiki';
       const seg = dir.split('/').filter(Boolean).pop();
-      if (seg) label = seg; else { lkey = 'cat.hub'; label = T(lkey); }
-      code  = seg ? (/^[\x20-\x7E]+$/.test(seg) ? seg.toUpperCase() : seg).slice(0,14) : 'HELM';
+      const nm = seg ? cleanSeg(seg) : '';
+      if (seg) label = nm; else { lkey = 'cat.hub'; label = T(lkey); }
+      const cd = seg ? (/^[\x20-\x7E]+$/.test(nm) ? nm.toUpperCase() : nm) : 'HELM';
+      code  = cd.length > 20 ? cd.slice(0, 19) + '…' : cd;
     }
     if (!catMap.has(key)) catMap.set(key, { key, dom, code, label, lkey, larg, n:0 });
     catMap.get(key).n++;

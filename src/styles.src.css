@@ -27,3 +27,15 @@
 .vault-orrery-exclusions textarea {
   width: 100%;
 }
+
+/* Inside Obsidian the prose face is Obsidian's own. The engine's stack is
+   what a bare browser page has to guess at; here there is an answer, and it
+   is whatever the reader has set their interface to — so the inspector and
+   the guide read like the rest of the app instead of like a page embedded in
+   it. English only: the other three stacks exist to pick CJK glyph forms,
+   which an interface font chosen for Latin text says nothing about. Three
+   classes deep so it outranks the engine's own .vo-root[lang] rule, which
+   comes later in the file. */
+.vault-orrery-host .vo-root[lang="en"] {
+  --kr: var(--font-interface, "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif);
+}
