@@ -587,7 +587,7 @@ body.dragdeck #hud{cursor:grabbing}
   justify-content:center;background:rgba(2,5,11,.55);backdrop-filter:blur(2px)}
 #intro.on{display:flex;animation:introIn .35s ease both}
 @keyframes introIn{from{opacity:0}to{opacity:1}}
-#introcard{width:min(430px,86vw);pointer-events:auto}
+#introcard{width:min(490px,90vw);pointer-events:auto}
 #introcard .ttl b{letter-spacing:.17em}
 #introcard #introx{cursor:pointer;color:rgba(223,246,255,.45);letter-spacing:.05em}
 #introcard #introx:hover{color:var(--cy)}
@@ -596,12 +596,13 @@ body.dragdeck #hud{cursor:grabbing}
   font-size:12.5px;line-height:1.75;color:rgba(223,246,255,.62)}
 #introfoot{font-size:11.5px;opacity:.5;margin-top:11px}
 .introrow{display:flex;align-items:baseline;gap:11px;margin-top:9px}
-.introrow u{text-decoration:none;flex:0 0 88px;text-align:center;color:var(--cy);
+.introrow u{text-decoration:none;flex:0 0 118px;text-align:center;color:var(--cy);
   font-size:11px;letter-spacing:.10em;padding:4px 0;
   border:1px solid rgba(92,225,255,.28);background:rgba(92,225,255,.07)}
 .introrow b{font-weight:400;font-family:var(--kr);font-size:12.5px;letter-spacing:.01em;
   text-transform:none;color:rgba(223,246,255,.8)}
-#introgo{margin-top:14px;text-align:center;padding:10px 0}
+#introbtns{display:flex;gap:8px;margin-top:14px}
+#introbtns .btn{flex:1 1 0;text-align:center;padding:10px 0}
 
 /* ---------- the guide ----------
    FIRST FLIGHT is four moves and a way out; this is the rest of them, with a
@@ -1127,11 +1128,19 @@ body.dragdeck #hud{cursor:grabbing}
     <div class="bd">
       <p id="introlede" data-i18n="intro.lede">폴더는 항성, 노트는 행성입니다. 아래 넷이면 충분히 날 수 있습니다.</p>
       <div class="introrow"><u data-i18n="intro.k1">끌기 · 휠</u><b data-i18n="intro.d1">둘러보기 — 궤도 회전과 확대</b></div>
-      <div class="introrow"><u>/</u><b data-i18n="intro.d2">노트 이름으로 찾아가기</b></div>
-      <div class="introrow"><u>M</u><b data-i18n="intro.d3">노트 하나의 이웃을 마인드맵으로 펼치기</b></div>
-      <div class="introrow" id="introopen"><u>O</u><b data-i18n="intro.d4">고른 노트를 옵시디언에서 열기</b></div>
+      <!-- Click before M: the mind map is something you do to a note, so the
+           card first has to say how a note is picked. G is on the card because
+           it is the one thing here nothing else does, and a reader who never
+           presses it has not seen the orrery. / is one [ ? ] away. -->
+      <div class="introrow"><u data-i18n="intro.k5">클릭</u><b data-i18n="intro.d5">노트 읽기 — 속성·링크·발췌가 오른쪽에 뜹니다</b></div>
+      <div class="introrow"><u data-i18n="intro.k3">M · 더블클릭</u><b data-i18n="intro.d3">노트 하나의 이웃을 마인드맵으로 펼치기</b></div>
+      <div class="introrow"><u>G</u><b data-i18n="intro.d6">볼트가 생겨난 순서대로 다시 재생하기</b></div>
+      <div class="introrow" id="introopen" style="display:none"><u>O</u><b data-i18n="intro.d4">고른 노트를 옵시디언에서 열기</b></div>
       <p id="introfoot" data-i18n="intro.foot">나머지는 왼쪽 아래 SHORTCUTS 목록에 있습니다. [ ? ] 를 누르면 이 안내가 다시 열립니다.</p>
-      <div class="btn" id="introgo" data-i18n="intro.go">▶ 둘러보기</div>
+      <div id="introbtns">
+        <div class="btn" id="introgen" data-i18n="intro.gen">◌ 제네시스 보기</div>
+        <div class="btn alt" id="introgo" data-i18n="intro.go">▶ 둘러보기</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1524,10 +1533,17 @@ const STR = {
                 '除外設定によりすべてのノートが除かれました','排除设置过滤掉了全部笔记'],
 
 /* ---- first flight ------------------------------------------------------ */
-'intro.lede':  ['폴더는 항성, 노트는 행성입니다. 아래 넷이면 충분히 날 수 있습니다.',
-                'Folders are stars, notes are planets. These four are enough to fly.',
-                'フォルダは恒星、ノートは惑星です。この四つで十分に飛べます。',
-                '文件夹是恒星，笔记是行星。掌握以下四项即可起飞。'],
+'intro.lede':  ['폴더는 항성, 노트는 행성입니다. 이것만 알면 충분히 날 수 있습니다.',
+                'Folders are stars, notes are planets. This much is enough to fly.',
+                'フォルダは恒星、ノートは惑星です。これだけで十分に飛べます。',
+                '文件夹是恒星，笔记是行星。掌握这些即可起飞。'],
+'intro.k5':    ['클릭','CLICK','クリック','单击'],
+'intro.d5':    ['노트 읽기 — 속성·링크·발췌가 오른쪽에 뜹니다','Read a note — its properties, links and excerpt appear on the right',
+                'ノートを読む — プロパティ・リンク・抜粋が右に出ます','阅读笔记 — 属性、链接和摘录显示在右侧'],
+'intro.k3':    ['M · 더블클릭','M · DBL-CLICK','M · ダブルクリック','M · 双击'],
+'intro.d6':    ['볼트가 생겨난 순서대로 다시 재생하기','Replay the vault forming, in the order you wrote it',
+                'ボルトができた順に再生する','按写作顺序重放仓库的形成'],
+'intro.gen':   ['◌ 제네시스 보기','◌ WATCH GENESIS','◌ ジェネシスを見る','◌ 观看创世'],
 'intro.k1':    ['끌기 · 휠','DRAG · WHEEL','ドラッグ · ホイール','拖动 · 滚轮'],
 'intro.d1':    ['둘러보기 — 궤도 회전과 확대','Look around — orbit and zoom',
                 '見回す — 軌道回転とズーム','环视 — 轨道旋转与缩放'],
@@ -10027,6 +10043,25 @@ function buildGenMarks() {
     box.appendChild(el);
   });
   GEN.marksFor = GEN_PHASE;
+  fitGenMarks();
+}
+/* The early phases are close together on the schedule — IGNITION at 4.5%,
+   CONDENSATION at 13% — and on a bar a few hundred pixels wide their names
+   ran into one word. Walked from the right, because the later phases are the
+   longer stretches and the earliest is already named in the stage line
+   while it is happening; a name that would touch the one after it stands
+   down. Measured, since how much fits is the bar's width and the font's. */
+function fitGenMarks() {
+  const box = $('genmarks');
+  if (!box || !box.offsetWidth) return;
+  const els = [...box.querySelectorAll('i')].reverse();
+  let edge = Infinity;
+  els.forEach(el => {
+    el.style.visibility = '';
+    const l = el.offsetLeft - el.offsetWidth / 2, r = l + el.offsetWidth;
+    if (r + 8 > edge) { el.style.visibility = 'hidden'; return; }
+    edge = l;
+  });
 }
 /* What the readout says. The count and the date both come off the same walk
    over the schedule, so they can never drift apart. */
@@ -15756,6 +15791,7 @@ function layoutHUD() {
   gen.style.width = Math.min(660, bFree) + 'px';
   gen.style.left  = Math.round(left + bFree / 2) + 'px';
   $('genmarks').style.display = bFree < 380 ? 'none' : '';
+  fitGenMarks();
 }
 
 /* ========================================================== VAULT PARSER
@@ -16627,6 +16663,8 @@ function maybeIntro() {
   setTimeout(showIntro, 900);
 }
 $('introgo').onclick = hideIntro;
+/* The card's other way out goes straight to the thing worth seeing first. */
+$('introgen').onclick = () => { hideIntro(); if (!GEN.on) toggleGenesis(); };
 $('gen-x').onclick = () => genSet(false);
 $('introx').onclick = hideIntro;
 /* the backdrop, but not the card itself */
