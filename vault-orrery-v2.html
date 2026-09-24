@@ -9713,6 +9713,8 @@ function renderInspector() {
   const isCore = selected === coreIdx;
   core.textContent = T(isCore && SET.coreNote ? 'insp.core.on' : 'insp.core');
   core.style.display = isCore && !SET.coreNote ? 'none' : '';
+  /* alone on its row, ROUTE takes the whole of it rather than half and an ellipsis */
+  $('i-route').style.gridColumn = core.style.display === 'none' ? '1 / -1' : '';
 }
 /* ---- the orbital elements, read back ----
    Kepler's equation has been solved for every body every frame since the
