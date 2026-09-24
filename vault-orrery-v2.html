@@ -709,8 +709,20 @@ body.dragdeck #hud{cursor:grabbing}
   pointer-events:none;font-size:10.5px;letter-spacing:.11em;opacity:.55}
 #mmlegend b{display:flex;align-items:center;gap:5px;font-weight:400}
 #mmlegend u{text-decoration:none;width:13px;height:2px;display:block;border-radius:2px}
-#mmhint{font-size:10.5px;letter-spacing:.11em;
-  opacity:.34;pointer-events:none;line-height:1.8}
+#mmhint{font-size:10.5px;letter-spacing:.04em;
+  opacity:.5;pointer-events:none;line-height:1.8}
+/* The key line said the same thing as the hint beneath it, in a single row
+   too long for the rail, so it ran off the edge. The hint carries both the
+   mouse and the keys; ESC is on the close button. */
+#mmkeys{display:none}
+/* The map is one note's neighbourhood laid out across the frame, and the
+   left column — the vault's totals, the legend of every system, the key
+   list — is about the whole cosmos and stood over the map's own left rim.
+   It steps out while the map is up and comes back when it closes, and so
+   do the deck and the inspector, which the rail stands in front of and
+   whose corners showed round its edge. */
+#hud.mindon #idp,#hud.mindon #leg,#hud.mindon #keys,#hud.mindon #ctl,#hud.mindon #insp{opacity:0;pointer-events:none;
+  transition:opacity .4s ease}
 #mmhint b{font-weight:400;color:var(--cy);opacity:.9;padding:0 3px;
   border:1px solid rgba(92,225,255,.3);border-radius:2px;margin:0 1px}
 #mmview{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
@@ -12151,6 +12163,7 @@ function openMind(i) {
   cometEnd();
   hovered = -1; dragging = 0;
   $('mind').classList.add('on');
+  $('hud').classList.add('mindon');
   MM.trail = [];
   buildMind(t);
   mmFrame(true);
@@ -12161,6 +12174,7 @@ function closeMind() {
   mindOpen = false;
   audioWhoosh(false, -1);
   $('mind').classList.remove('on');
+  $('hud').classList.remove('mindon');
   mindGuides(false);
   if (MM.guide) MM.guide.visible = false;
   if (MM.sect)  MM.sect.visible  = false;
@@ -14276,9 +14290,12 @@ function readPanes() {
   PANES.n = 0;
   const hud = $('hud');
   if (!hud || hud.style.display === 'none') return;
+  const mind = hud.classList.contains('mindon');
   for (const id of PANE_IDS) {
     const el = $(id);
     if (!el || !el.offsetWidth || el.style.display === 'none') continue;
+    /* stepped out for the mind map — see #hud.mindon */
+    if (mind && id !== 'gen') continue;
     const k = PANES.n++;
     /* six pixels of air: a name touching the pane's edge reads as caught
        in it */
@@ -14322,7 +14339,13 @@ function writeLabels() {
       const nd = nodes[L.idx];
       op = clamp((L.far - d) / L.far, 0, 1) *
            (alpha[L.idx] < .05 ? 0 : alpha[L.idx] > .5 ? 1 : 0.12);
-      op *= L.idx === selected ? 1.4 : (nd.inb > 12 ? 1 : .55);
+      op *= L.idx === selected ? 1.4 : (nd.inb > 12 ? 1 : .72);
+      /* Inside the mind map every body on the plate is one of the handful
+         the map is about, and reading their names is the whole of what the
+         map is for. The range fade and the citation discount were written
+         for a cosmos of hundreds and left the neighbours at a quarter
+         strength — a ring of planets with their names ghosted out. */
+      if (mindOpen && alpha[L.idx] > .5) op = Math.max(op, .96);
       /* ---- what outranks what ----
          Citation count is the ordinary answer — the note the vault points at
          most is the one worth naming when only one name fits — and the three
