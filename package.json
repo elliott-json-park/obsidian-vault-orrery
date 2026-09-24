@@ -1,7 +1,7 @@
 {
   "name": "vault-orrery",
   "version": "1.15.1",
-  "description": "A 3D graph where folders are stars and notes orbit them. Replay how your vault grew. Works offline.",
+  "description": "A 3D graph view where folders are stars and notes orbit them. Replay how your vault grew, map any note's links, and fly it all offline.",
   "main": "main.js",
   "//": "No \"type\": \"module\" — Obsidian loads main.js as CommonJS, and declaring the package as ESM makes Node treat the built bundle as a module too. Build scripts use .mjs instead.",
   "scripts": {

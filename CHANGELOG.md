@@ -4,6 +4,40 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## Unreleased
+
+- **The HUD can be read without leaning in.** Pane text starts at 9.5px
+  instead of 7, with the widest tracking brought in so the larger letters
+  still fit. The camera readings — RANGE, SCALE, FPS — fold behind a
+  `[ ⋯ ]` on the identity pane, and the leftover MOUSE tag and
+  KNOWLEDGE COSMOS · V2 subtitle give way to what the view is. The panes are
+  denser glass, the deck opens wide enough for whole knob names, and names
+  in the sky no longer land underneath a pane.
+
+- **Quality presets.** CINEMA · BALANCED · FAST at the head of the control
+  deck set the eight light effects at once. The first time a vault of 600
+  notes or more opens on a machine that is plainly struggling, FAST goes on
+  by itself, once, with a line saying how to undo it.
+
+- **The inspector leads with what you can do.** Open, travel, mind map,
+  ripple, route and hub sit straight under the note's name instead of below
+  every backlink, and the hub no longer shows an orbit box of dashes.
+
+- **The first-flight card shows Genesis.** Click and G join the four moves,
+  and WATCH GENESIS starts the replay straight from the card.
+
+- **The mind map can be read.** Its neighbours' names are at full strength,
+  and the rest of the HUD steps out of the frame while it is up.
+
+- **The sun is round.** Framed dead centre the hub wore a rounded white
+  square — the lens ghosts stacked on an on-axis source. SUN HALO ships at
+  half, and toasts sit at the top edge on a dark ground, clear of the glare.
+
+- **Folder names lose their sorting prefixes** on the star and in the legend:
+  _CATERING, 00 Inbox and 1. Projects read CATERING, Inbox and Projects.
+
+- **Inside Obsidian, English prose uses your interface font.**
+
 ## 1.15.1
 
 - **Nothing on screen changes.** A maintenance release of the same code as

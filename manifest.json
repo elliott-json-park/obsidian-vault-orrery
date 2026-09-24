@@ -3,7 +3,7 @@
   "name": "Vault Orrery",
   "version": "1.15.1",
   "minAppVersion": "1.7.2",
-  "description": "A 3D graph where folders are stars and notes orbit them. Replay how your vault grew. Works offline.",
+  "description": "A 3D graph view where folders are stars and notes orbit them. Replay how your vault grew, map any note's links, and fly it all offline.",
   "author": "Elliott Park",
   "authorUrl": "https://github.com/elliott-json-park",
   "fundingUrl": "https://github.com/sponsors/elliott-json-park",
