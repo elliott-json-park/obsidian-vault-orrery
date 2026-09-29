@@ -4,7 +4,7 @@
 Folders are stars, notes are the planets orbiting them, and every body on
 screen is a note you can be reading a second later. Works offline.
 
-![A sample vault drawn as a star system: folder-stars — INSTRUMENTS, MECHANICS, NOTATION, WORKBENCH — with their notes in orbit, the links drawn between them, and the HUD around the edge](docs/screenshots/hero.jpg)
+![A 329-note vault drawn as a star system: folder-stars — WRITINGS, INVESTMENTS, BOOKS, 논픽션, 소설 — round a bright hub, with 655 links arcing between their notes and the HUD around the edge](docs/screenshots/hero.jpg)
 
 <p align="center">
   <a href="https://elliott-json-park.github.io/obsidian-vault-orrery/"><b>▶ Try it in your browser — no install, nothing uploaded</b></a>
@@ -39,7 +39,7 @@ Ctrl/Cmd-click opens the note *beside* the orrery, the note you are editing
 carries its own beacon, and *Show in Vault Orrery* is on every note's context
 menu.
 
-![The vault's hub selected: the inspector shows its path, its actions, its link counts, an excerpt and its backlinks, with its links drawn out across the cosmos](docs/screenshots/inspector.jpg)
+![One note selected: the inspector shows its path, its actions, its link counts, its properties and an excerpt, with its links drawn out across the cosmos and its moons in orbit round it](docs/screenshots/inspector.jpg)
 
 ---
 
@@ -75,7 +75,7 @@ does that for you and says so.
 - **Ambient sound** — `U` — every note has a pitch; off until you ask.
 - **한국어 · English · 日本語 · 中文**, switchable without reloading.
 
-![Mind map of one note: Inclination at the centre with its eight neighbours — Roche limit, Synodic period, Tidal locking, Sidereal day — laid out in a ring, and the reading rail on the right](docs/screenshots/mind-map.jpg)
+![Mind map of a vault's index note: the note at the centre with its twenty-four neighbours laid out in a ring, and the reading rail on the right with its excerpt and outbound links](docs/screenshots/mind-map.jpg)
 
 **The graph is Obsidian's own.** Links, backlinks and tags come from the index
 Obsidian already keeps, so a link written through an alias resolves rather than
