@@ -213,8 +213,8 @@ publish a version that has no section.
   SKY.
 
 - **The demo has file times and three dead links**, because the sample was
-  generated text with neither, and RECENT WORK, the opening comet and the
-  black holes all had nothing to show on it.
+  generated text with neither, and RECENT WORK and the opening comet both
+  had nothing to show on it.
 
 ## 1.14.1
 

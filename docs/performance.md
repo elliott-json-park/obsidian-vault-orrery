@@ -44,8 +44,7 @@ asked for; **BALANCED** keeps a little of the glow, and **CINEMA** is the
 shipped look. The first time a vault of 600 notes or more opens, the frame rate
 is sampled for four seconds once it has settled, and if it averages under 26
 the orrery applies FAST itself — once, ever, with a line saying so. After that, the
-cheapest wins are lowering **LINK GLOW**, turning **STARFIELD** down, and
-reducing **MAX NODES**.
+cheapest wins are lowering **LINK GLOW** and reducing **MAX NODES**.
 
 Keeping up with the vault re-reads every note each time it rebuilds, debounced
 so that writing a note costs one rebuild rather than one per save. On a vault
