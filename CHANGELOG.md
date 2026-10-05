@@ -4,6 +4,28 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 1.17.0
+
+- **Writing a note no longer rebuilds the cosmos.** Every save used to read
+  every note in the vault again and tear the whole sky down and build it
+  back, a couple of seconds after each pause in typing — and close the mind
+  map, the route and the search on the way. Now an update reads only the
+  notes whose file changed, and when a save leaves the vault the same shape
+  (the same notes, links, tags and folders, a few more words) the bodies on
+  screen take the new numbers in place. Whatever you had open stays open,
+  and the note you just wrote still gets its comet. A new link, note or
+  rename rebuilds as before.
+
+- **A MAX NODES ceiling keeps the notes that matter.** It used to keep the
+  first N in whatever order the file list came in, which could leave out the
+  note open in the editor or the hub half the vault points at. It now keeps
+  the open note and the hub you chose, then the most linked-to notes, then
+  the most recently written.
+
+- **LINK ROUTING ships at 0.75**, up from 0.62, so links between two folders
+  braid into a clearer strand. A saved value still at the old default moves
+  with it; one you set yourself stays.
+
 ## 1.16.0
 
 - **The HUD can be read without leaning in.** Pane text starts at 9.5px
