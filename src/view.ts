@@ -25,6 +25,11 @@ export class OrreryView extends ItemView {
   private ro: ResizeObserver | null = null;
   /** Set while a sync is waiting on a load that is already running. */
   private syncPending = false;
+  /** Each note's text as last read, against the file time it was read at.
+      A rebuild after a save used to read every note in the vault again to
+      learn that one of them had changed; the file time says which one
+      without opening any. */
+  private texts = new Map<string, { mtime: number; size: number; text: string }>();
 
   constructor(leaf: WorkspaceLeaf, private plugin: VaultOrreryPlugin) { super(leaf); }
 
@@ -208,6 +213,7 @@ export class OrreryView extends ItemView {
     this.ro?.disconnect(); this.ro = null;
     this.api?.destroy();
     this.api = null;
+    this.texts.clear();
     this.contentEl.empty();
   }
 
@@ -266,12 +272,24 @@ export class OrreryView extends ItemView {
       if (!quiet) new Notice('Vault Orrery: no markdown files in this vault.');
       return;
     }
+    /* Entries for notes that are gone are dropped here, so the cache is never
+       larger than the vault it describes. */
+    const live = new Set(files.map(f => f.path));
+    for (const p of this.texts.keys()) if (!live.has(p)) this.texts.delete(p);
     const list: OrreryFile[] = files.map(f => ({
       path: f.path,
-      file: { text: () => this.app.vault.cachedRead(f) },
+      file: { text: () => this.readText(f) },
       meta: this.metaFor(f),
     }));
     await this.api.load(list, this.app.vault.getName(), { quiet });
+  }
+
+  private async readText(f: TFile): Promise<string> {
+    const hit = this.texts.get(f.path);
+    if (hit && hit.mtime === f.stat.mtime && hit.size === f.stat.size) return hit.text;
+    const text = await this.app.vault.cachedRead(f);
+    this.texts.set(f.path, { mtime: f.stat.mtime, size: f.stat.size, text });
+    return text;
   }
 
   /** What Obsidian already knows about a note, in the shape the engine reads.

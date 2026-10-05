@@ -2227,7 +2227,7 @@ const KNOBS = [
      A link is also only routed as far out of its way as it is long — see
      writeLinks — so a moon reaching its own planet stays the short straight
      thing it is instead of looping out to a star a thousand units away. */
-  { k:'bnd', g:'cosmos', label:'LINK ROUTING', min:0, max:100, sc:100, def:.62,
+  { k:'bnd', g:'cosmos', label:'LINK ROUTING', min:0, max:100, sc:100, def:.75,
     fmt:v => offAt(v, v.toFixed(2)) },
   /* ---- how thick the structure is drawn --------------------------------
      In pixels, because that is the unit the answer is actually in: a line's
@@ -2592,9 +2592,10 @@ SET.litV1 = 1;
    the value nobody chose — it is what the slider was left at — and it moves
    to the new one. A value one step off it was somebody's, and stays. */
 /* 1.15.0 moved five more: LINK GLOW .20 to .30, ORBIT GAP 2.81 to 5.00,
-   STARFIELD .40 to OFF, ZODIACAL LIGHT 1.00 to 2.00, AMBIENT OFF to .35 */
+   STARFIELD .40 to OFF, ZODIACAL LIGHT 1.00 to 2.00, AMBIENT OFF to .35;
+   1.17.0 one: LINK ROUTING .62 to .75 */
 [['lnk', 0.42], ['str', 1.2], ['lnk', 0.2], ['gap', 2.81], ['str', 0.4], ['zod', 1], ['sDrone', 0],
- ['briSys', 0.59], ['vei', 0.2]].forEach(([k, old]) => {
+ ['briSys', 0.59], ['vei', 0.2], ['bnd', 0.62]].forEach(([k, old]) => {
   if (k in SAVED && Math.abs(+SAVED[k] - old) < 0.005) SET[k] = KNOB_OF[k].def;
 });
 if (typeof SET.coreNote !== 'string') SET.coreNote = '';
@@ -3239,6 +3240,27 @@ function stepDisplacement(dt) {
 
 /* Pure geometry: a vault JSON in, orbits and radii and colours out. Touches
    no scene object, so it is safe to re-run against a different vault. */
+/* Which note the vault is centred on — the order of answers is set out where
+   buildLayout calls this. */
+const INDEX_RE = /(^|\/)(index|readme|home|moc|인덱스|목차)\.md$/i;
+function coreOf(list) {
+  const n = list.length;
+  if (!n) return -1;
+  if (SET.coreNote) {
+    const c = list.findIndex(nd => nd.p === SET.coreNote);
+    if (c >= 0) return c;
+  }
+  const weight = nd => (nd.inb|0) * 40 + (nd.w|0) - depthOf(nd.p) * 500;
+  let best = -1;
+  for (let i=0;i<n;i++){
+    if (!INDEX_RE.test(list[i].p)) continue;
+    if (best < 0 || weight(list[i]) > weight(list[best])) best = i;
+  }
+  if (best >= 0) return best;
+  let b0 = 0;
+  for (let i=1;i<n;i++) if ((list[i].inb|0) > (list[b0].inb|0)) b0 = i;
+  return b0;
+}
 function buildLayout(data) {
 DATA = data;
 nodes = data.nodes;
@@ -3308,24 +3330,10 @@ edges.forEach(([a,b]) => { if (a !== b) { adj[a].add(b); adj[b].add(a); } });
         the root, or 인덱스.md, got the fallback and never knew why. Any note
         *named* like an index counts, and the largest of them wins, because a
         vault with six folder-level index files means the one at the top.
-     3. the most cited note, which is where this always ended up anyway. */
-const INDEX_RE = /(^|\/)(index|readme|home|moc|인덱스|목차)\.md$/i;
-const coreWeight = i => (nodes[i].inb|0) * 40 + (nodes[i].w|0) - depthOf(nodes[i].p) * 500;
-coreIdx = -1;
-if (SET.coreNote) coreIdx = nodes.findIndex(n => n.p === SET.coreNote);
-if (coreIdx < 0 && N) {
-  let best = -1;
-  for (let i=0;i<N;i++){
-    if (!INDEX_RE.test(nodes[i].p)) continue;
-    if (best < 0 || coreWeight(i) > coreWeight(best)) best = i;
-  }
-  coreIdx = best;
-}
-if (coreIdx < 0 && N) {
-  let b0 = 0;
-  for (let i=1;i<N;i++) if ((nodes[i].inb|0) > (nodes[b0].inb|0)) b0 = i;
-  coreIdx = b0;
-}
+     3. the most cited note, which is where this always ended up anyway.
+   The rules live in coreOf, because a save has to be able to ask the same
+   question of the graph it is about to show — see sameShape. */
+coreIdx = coreOf(nodes);
 
 /* how many curated planets each system has to find room for */
 const planetsIn = {};
@@ -16361,6 +16369,121 @@ function swapVault(data, keep) {
   setActivePath(activePath);
 }
 
+/* ---- a save that changed nothing the sky is built from -----------------
+   Inside Obsidian most rebuilds are a note being written: the same notes,
+   the same links, the same folders, a few more words in one of them and a
+   newer file time. swapVault for that tears the whole world down and builds
+   it again — every buffer, every orbit — and closes whatever the reader had
+   open on the way, the mind map and the route and the search, every couple
+   of seconds while they type in the pane beside it.
+
+   So a quiet reload first asks whether the new graph has the same shape as
+   the one on screen. If it has, the few fields a write moves are copied onto
+   the bodies already there and nothing is rebuilt. What counts as shape is
+   everything the layout reads, with two allowances:
+
+     · the word count only through the size it draws. A planet's radius goes
+       with log(1 + words), so a sentence added to a long note moves it by a
+       small fraction of a unit; it is compared in steps of a twentieth of
+       that logarithm — under four hundredths of a unit of radius — and
+       a note that grows enough to look bigger still gets rebuilt.
+     · the centre, which also reads the word count, is compared directly:
+       the same note has to win on both sides.
+
+   The file time is not shape. It is what the comet and the fresh glow read,
+   and both read it from the arrays this patches. */
+const PATCH_KEYS = ['x', 'sz', 'w', 'mt', 'ct'];
+const sizeStep = w => Math.round(Math.log(1 + (w|0) / 90) * 20);
+function sameVal(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!sameVal(a[i], b[i])) return false;
+    return true;
+  }
+  return false;
+}
+function sameShape(a, b) {
+  if (!a || !b || a === EMPTY || b === EMPTY) return false;
+  const an = a.nodes, bn = b.nodes, ae = a.edges, be = b.edges;
+  if (an.length !== bn.length || ae.length !== be.length || a.cats.length !== b.cats.length) return false;
+  if (a.meta.vault !== b.meta.vault || a.meta.broken !== b.meta.broken) return false;
+  for (let i = 0; i < ae.length; i++) {
+    const x = ae[i], y = be[i];
+    if (x[0] !== y[0] || x[1] !== y[1] || x[2] !== y[2]) return false;
+  }
+  for (let i = 0; i < a.cats.length; i++) {
+    const x = a.cats[i], y = b.cats[i];
+    if (x.key !== y.key || x.n !== y.n || x.label !== y.label || x.code !== y.code) return false;
+  }
+  for (let i = 0; i < an.length; i++) {
+    const x = an[i], y = bn[i];
+    for (const k in y) {
+      if (PATCH_KEYS.indexOf(k) >= 0) continue;
+      if (!sameVal(x[k], y[k])) return false;
+    }
+    for (const k in x) if (!(k in y)) return false;
+    if (sizeStep(x.w) !== sizeStep(y.w)) return false;
+  }
+  return coreOf(an) === coreOf(bn);
+}
+/* Copies the fields a write moves onto the bodies on screen. The node objects
+   are the ones lastData holds, so a later rebuild from lastData — choosing a
+   new centre — builds from what is current. */
+function patchVault(data) {
+  for (let i = 0; i < N; i++) {
+    const nd = nodes[i], nx = data.nodes[i];
+    for (const k of PATCH_KEYS) nd[k] = nx[k];
+    touchAt[i] = +nd.mt || 0;
+    if (touchAt[i]) freshHas = true;
+  }
+  computeFresh();
+  renderInspector();
+}
+
+/* ---- which notes a ceiling keeps ----------------------------------------
+   The ceiling used to keep the first N in whatever order the host listed the
+   files, which is an order nobody chose: the note open in the editor, or the
+   hub half the vault points at, could be the one left out. What it keeps now
+   is decided, in this order:
+
+     · the note being worked on and the chosen centre, always;
+     · then the most cited — a note the vault points at a lot is part of its
+       skeleton, and the links into it are only drawn if it is there;
+     · then the most recently written;
+     · then the host's own order, so the same vault always keeps the same set.
+
+   Citations are counted from the host's resolved links where there are any.
+   The standalone page has none before the graph is built and falls through to
+   the file times, then the order, as it always did. The kept set goes back in
+   the original order, because the layout reads order and a ceiling should
+   change what is shown, not where the rest of it sits. */
+function capPick(kept, cap) {
+  const n = kept.length;
+  const inb = new Map();
+  for (let i = 0; i < n; i++) {
+    const links = kept[i].meta && kept[i].meta.links;
+    if (!links) continue;
+    for (const p in links) {
+      const key = String(p).replace(/\\/g, '/').toLowerCase();
+      inb.set(key, (inb.get(key) || 0) + Math.max(1, links[p] | 0));
+    }
+  }
+  /* the centre is saved as the path the cosmos shows, which drops a folder
+     every note shares, so it is matched on the end of the host's path */
+  const pins = [activePath, SET.coreNote].filter(Boolean).map(p => p.toLowerCase());
+  const pinned = key => pins.some(p => key === p || key.endsWith('/' + p));
+  const rank = kept.map((f, i) => {
+    const key = String(f.path).replace(/\\/g, '/').toLowerCase();
+    return { i, pin: pinned(key) ? 1 : 0, inb: inb.get(key) || 0,
+             mt: (f.meta && +f.meta.mtime) || 0 };
+  });
+  rank.sort((a, b) => (b.pin - a.pin) || (b.inb - a.inb) || (b.mt - a.mt) || (a.i - b.i));
+  const keep = new Uint8Array(n);
+  for (let j = 0; j < cap && j < n; j++) keep[rank[j].i] = 1;
+  return kept.filter((f, i) => keep[i]);
+}
+
 let loading = false;
 /* opts.quiet — a rebuild the user did not ask for. Inside Obsidian the vault
    changes under this view constantly: every note saved, created or renamed
@@ -16389,7 +16512,7 @@ async function ingest(list, vaultName, opts) {
 
   const cap = SET.maxNodes | 0;
   const total = kept.length;
-  const md = (cap > 0 && total > cap) ? kept.slice(0, cap) : kept;
+  const md = (cap > 0 && total > cap) ? capPick(kept, cap) : kept;
   const capped = total - md.length;
 
   loading = true;
@@ -16411,6 +16534,16 @@ async function ingest(list, vaultName, opts) {
   try { data = buildGraph(files, vaultName); }
   catch (err) { console.error(err); toast(T('load.failed')); showLoad(false); loading = false; return; }
   if (!data.nodes.length) { toast(T('load.empty')); showLoad(false); loading = false; return; }
+  /* same notes, same links, same folders: copy the write onto the sky that is
+     already there — see sameShape. The diff still runs, so the note just
+     written still gets its comet. */
+  if (quiet && before && sameShape(lastData, data)) {
+    const prev = bodySnapshot();
+    patchVault(data);
+    bodyDiff(prev);
+    loading = false;
+    return;
+  }
   if (!quiet) setLoad(.9, T('load.orbit'));
   await gap();
   /* The framing is taken here rather than at the top of the call: reading the

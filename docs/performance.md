@@ -14,7 +14,9 @@ the vault turns out to be too big for the machine.
 
 When a ceiling you have set truncates a vault, it says so — "Loaded 3000 of
 7412 notes" — rather than presenting a partial cosmos as if it were the whole
-thing.
+thing. What it keeps is chosen, not whatever came first in the file list: the
+note open in the editor and the hub you picked always stay, then the notes the
+vault links to most, then the most recently written.
 
 **Rendering stops when you are not looking at it.** The render loop, the physics
 clock and the audio context are all suspended when the view's leaf is hidden or
@@ -46,7 +48,13 @@ is sampled for four seconds once it has settled, and if it averages under 26
 the orrery applies FAST itself — once, ever, with a line saying so. After that, the
 cheapest wins are lowering **LINK GLOW** and reducing **MAX NODES**.
 
-Keeping up with the vault re-reads every note each time it rebuilds, debounced
-so that writing a note costs one rebuild rather than one per save. On a vault
-large enough for that to be felt, turn **Keep up with the vault** off in
-settings; the *Reload vault* command then does it when you ask.
+Keeping up with the vault is debounced, so writing a note costs one update
+rather than one per save, and an update only reads the notes whose file has
+changed since the last one. When a save leaves the shape of the vault as it
+was — the same notes, links, tags and folders, a few more words — the bodies
+already on screen take the new numbers in place and nothing is rebuilt, so a
+mind map, a route or a search you have open stays open while you write in the
+pane beside it. A new link, a new note or a renamed one rebuilds the cosmos,
+keeping the camera where it was. On a vault large enough for even that to be
+felt, turn **Keep up with the vault** off in settings; the *Reload vault*
+command then does it when you ask.

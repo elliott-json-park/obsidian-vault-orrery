@@ -123,11 +123,14 @@ window.__run = async () => {
     await api.load(FILES, 'demo-vault');
     await new Promise(r => setTimeout(r, 1200));
     if (card.classList.contains('on')) throw new Error('it came back on the next load');
+    /* [ ? ] opens the full guide now, not the card — the card is the first
+       minute and the guide is everything else */
+    const guide = root.querySelector('#guide');
     root.querySelector('#keyshelp').click();
-    if (!card.classList.contains('on')) throw new Error('[ ? ] did not reopen it');
+    if (!guide.classList.contains('on')) throw new Error('[ ? ] did not open the guide');
     if (root.querySelector('#keys').classList.contains('fold'))
       throw new Error('[ ? ] folded the pane it sits in');
-    root.querySelector('#introx').click();
+    root.querySelector('#guidex').click();
   });
 
   const opened = [];
@@ -237,6 +240,45 @@ window.__run = async () => {
     log.push('   range before ' + cam + ' after ' + root.querySelector('#s-dist').textContent);
   });
 
+  /* ---- a save that changes no shape is not a rebuild ----
+     The mind map is the witness: swapVault closes it, so a quiet load that
+     leaves it open is one that patched the sky in place. A few more words in
+     a note is the ordinary save; a new link is a different graph and has to
+     rebuild. */
+  const edit = (path, extra) => FILES.map(f => f.path !== path ? f : {
+    path, meta: f.meta, file: { text: async () => (await f.file.text()) + extra } });
+  await step('a save that keeps the shape is patched, not rebuilt', async () => {
+    api.revealPath('notes/daily.md');
+    api.command('mindmap');
+    if (!api.debug().mind) throw new Error('the mind map did not open');
+    await api.load(edit('notes/daily.md', '\nthree more words'), 'demo-vault', { quiet: true });
+    if (!api.debug().mind) throw new Error('a save with the same shape closed the mind map');
+    log.push('   inspector reads ' + root.querySelector('#i-path').textContent);
+  });
+  await step('a new link still rebuilds', async () => {
+    await api.load(edit('notes/daily.md', '\n[[notes/reading]]'), 'demo-vault', { quiet: true });
+    if (api.debug().mind) throw new Error('a new link was patched instead of rebuilt');
+    await api.load(FILES, 'demo-vault', { quiet: true });
+  });
+
+  /* ---- what a ceiling keeps ----
+     Three slots: the note being worked on first, then the most cited by the
+     host's links (optics and daily, one each), never simply the first three
+     the host listed. */
+  await step('the ceiling keeps the active note and the cited ones', async () => {
+    api.setActivePath('archive/old.md');
+    api.setMaxNodes(3);
+    await api.load(FILES, 'demo-vault');
+    const has = p => api.revealPath(p);
+    const got = ['archive/old.md', 'research/optics.md', 'notes/daily.md'].filter(has);
+    const leak = ['research/quantum.md', 'notes/touched.md'].filter(has);
+    api.setMaxNodes(3000);
+    api.setActivePath('notes/daily.md');
+    await api.load(FILES, 'demo-vault');
+    if (got.length !== 3) throw new Error('kept ' + got.join(', '));
+    if (leak.length) throw new Error('kept by list order: ' + leak.join(', '));
+  });
+
   /* ---- the grade, and the black it must not lift ----
      The grade shipped switched off for a release, and turning it on found a
      sign error in the film curve that had been sitting in the composite the
@@ -288,9 +330,10 @@ window.__run = async () => {
     if (sky > 12)
       throw new Error('the defaults lifted the corner of the sky to ' + sky +
                       ' — the composite is adding a pedestal to the blacks');
-    /* and the two defaults this release pinned are what RESET lands on */
+    /* and the shipped defaults are what RESET lands on — LINK GLOW 0.30 and
+       STARFIELD off since 1.15.0 */
     const set = JSON.parse(localStorage.getItem('harness:orrery2.set') || '{}');
-    if (Math.abs(set.lnk - 0.15) > 0.001 || Math.abs(set.str - 0.4) > 0.001)
+    if (Math.abs(set.lnk - 0.30) > 0.001 || Math.abs(set.str - 0) > 0.001)
       throw new Error('RESET landed on lnk ' + set.lnk + ' / str ' + set.str);
     log.push('   dark end of the sky ' + sky + ' · lnk ' + set.lnk + ' · str ' + set.str);
   });
