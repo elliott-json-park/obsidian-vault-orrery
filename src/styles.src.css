@@ -13,7 +13,8 @@
 }
 
 /* The view fills its leaf edge to edge; the engine draws its own frame. */
-.workspace-leaf-content[data-type='vault-orrery-view'] .view-content {
+.workspace-leaf-content[data-type='vault-orrery-view'] .view-content,
+.workspace-leaf-content[data-type='vault-orrery-mini'] .view-content {
   padding: 0;
   overflow: hidden;
 }
@@ -39,3 +40,24 @@
 .vault-orrery-host .vo-root[lang="en"] {
   --kr: var(--font-interface, "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif);
 }
+
+/* The mini orrery's one control: the way to the full view. Quiet until the
+   pointer is over the sidebar, because the cosmos is the point of the pane. */
+.vault-orrery-host { position: relative; }
+.vo-mini-expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  display: flex;
+  padding: 4px;
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  background: rgba(2, 4, 10, 0.55);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.vault-orrery-host:hover .vo-mini-expand { opacity: 0.8; }
+.vo-mini-expand:hover { opacity: 1; color: var(--text-normal); }
+.vo-mini-expand svg { width: 14px; height: 14px; }

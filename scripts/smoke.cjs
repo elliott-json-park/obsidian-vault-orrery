@@ -40,7 +40,10 @@ const P = require(path.resolve(__dirname, '..', 'main.js')).default;
 const ok = (c, m) => { console.log((c ? '  ok  ' : 'FAIL  ') + m); if (!c) process.exitCode = 1; };
 const mkApp = vault => ({
   vault,
-  workspace: { on() {}, getLeavesOfType: () => [], getActiveFile: () => null },
+  workspace: { on() {}, getLeavesOfType: () => [], getActiveFile: () => null,
+               /* run at once: the stub has no layout to wait for, and the
+                  first-run sidebar placement is what it is there to check */
+               onLayoutReady: f => f(), getRightLeaf: () => null },
   metadataCache: { on() {}, resolvedLinks: {}, unresolvedLinks: {}, getFileCache: () => null },
 });
 
@@ -49,12 +52,15 @@ const mkApp = vault => ({
                   { dir: '.obsidian/plugins/vault-orrery' });
   await p.onload();
   ok(calls.includes('registerView:vault-orrery-view'), 'registers the orrery view');
+  ok(calls.includes('registerView:vault-orrery-mini'), 'registers the sidebar mini orrery');
+  ok(calls.includes('command:open-mini'), 'the mini orrery can be opened from the palette');
+  ok(p.settings.miniOffered === true, 'the mini is offered once, and the offer is remembered');
   ok(calls.some(c => c.startsWith('command:')), 'registers commands');
   ok(calls.includes('settingTab'), 'registers the settings tab');
   /* Every mode the engine answers to has to be reachable from the palette, or
      it exists only for someone who already knows the single-letter key. */
   const modes = ['open','search','mindmap','genesis',
-                 'ripple','poster','layer','grid','sound','reset','hud','help'];
+                 'ripple','poster','card','layer','grid','sound','reset','hud','help'];
   const missing = modes.filter(m => !calls.includes('command:mode-' + m));
   ok(missing.length === 0, 'every engine mode is a command -> ' +
      (missing.length ? 'missing ' + missing.join(', ') : modes.length + ' of them'));
@@ -90,7 +96,7 @@ const mkApp = vault => ({
   const defs = flatten(tab.getSettingDefinitions());
   const keys = defs.filter(d => d.control).map(d => d.control.key).sort();
   ok(JSON.stringify(keys) === '["extraIgnoreFilters","followActiveNote","followExcludedFiles",' +
-                             '"language","liveSync","maxNodes"]',
+                             '"language","liveSync","maxNodes","showMini"]',
      'every setting is declared for search -> ' + JSON.stringify(keys));
   ok(defs.every(d => d.name), 'every declared setting has a name to be found by');
 

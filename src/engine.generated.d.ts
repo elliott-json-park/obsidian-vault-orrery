@@ -69,7 +69,7 @@ export interface OrreryFileMeta {
     this is only the list, so a host can offer them in its own palette. */
 export type OrreryCommand =
   | 'search' | 'mindmap' | 'genesis'
-  | 'ripple' | 'poster' | 'layer' | 'grid' | 'sound' | 'reset' | 'hud'
+  | 'ripple' | 'poster' | 'card' | 'layer' | 'grid' | 'sound' | 'reset' | 'hud'
   | 'open' | 'help';
 
 /** What the host can do that a web page cannot. Every hook is optional, and an
@@ -125,4 +125,12 @@ export interface OrreryApi {
   readonly root: HTMLElement;
 }
 
-export declare function createOrrery(root: HTMLElement, store?: OrreryStore): OrreryApi;
+/** Decided at creation, because the engine reads it before anything else. */
+export interface OrreryBoot {
+  /** The sidebar's mini orrery: no panels, no keys, no events, no sound,
+      the light effects off and the frame rate paced to twenty. */
+  mini?: boolean;
+}
+
+export declare function createOrrery(root: HTMLElement, store?: OrreryStore,
+                                     boot?: OrreryBoot): OrreryApi;

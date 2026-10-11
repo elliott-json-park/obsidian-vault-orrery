@@ -1,9 +1,11 @@
-import { ItemView, WorkspaceLeaf, Notice, TFile, debounce, getAllTags } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Notice, TFile, debounce, getAllTags, setIcon } from 'obsidian';
 import { createOrrery, ENGINE_HTML } from './engine.generated.js';
 import type { OrreryApi, OrreryFile, OrreryFileMeta } from './engine.generated.js';
 import type VaultOrreryPlugin from './main';
 
 export const VIEW_TYPE_ORRERY = 'vault-orrery-view';
+/** The same cosmos, small and quiet, kept in a sidebar. */
+export const VIEW_TYPE_MINI = 'vault-orrery-mini';
 
 /** How long the vault has to be quiet before the cosmos is re-derived. Typing
     in a note fires `modify` on Obsidian's own save cadence, so a rebuild per
@@ -25,17 +27,16 @@ export class OrreryView extends ItemView {
   private ro: ResizeObserver | null = null;
   /** Set while a sync is waiting on a load that is already running. */
   private syncPending = false;
-  /** Each note's text as last read, against the file time it was read at.
-      A rebuild after a save used to read every note in the vault again to
-      learn that one of them had changed; the file time says which one
-      without opening any. */
-  private texts = new Map<string, { mtime: number; size: number; text: string }>();
+  /** The sidebar's mini orrery rather than the full view. Set by the
+      subclass before onOpen, because the engine has to be told at birth. */
+  protected readonly mini: boolean = false;
 
-  constructor(leaf: WorkspaceLeaf, private plugin: VaultOrreryPlugin) { super(leaf); }
+  constructor(leaf: WorkspaceLeaf, protected plugin: VaultOrreryPlugin) { super(leaf); }
 
   getViewType() { return VIEW_TYPE_ORRERY; }
   getDisplayText() { return 'Vault Orrery'; }
   getIcon() { return 'orbit'; }
+  isMini() { return this.mini; }
 
   async onOpen() {
     const host = this.contentEl;
@@ -51,7 +52,12 @@ export class OrreryView extends ItemView {
     while (doc.body.firstChild) root.appendChild(doc.body.firstChild);
 
     try {
-      this.api = createOrrery(root, this.plugin.engineStore());
+      /* The mini reads the full view's preferences and writes none of them:
+         its quality is forced down and its panels never move, and either of
+         those written back would change the full view's picture. */
+      this.api = createOrrery(root,
+        this.mini ? this.plugin.engineStoreReadOnly() : this.plugin.engineStore(),
+        { mini: this.mini });
     } catch (e) {
       console.error('Vault Orrery: engine failed to start', e);
       host.empty();
@@ -71,6 +77,14 @@ export class OrreryView extends ItemView {
       hover: (path, event, el) => this.hoverNote(path, event, el),
     });
     this.plugin.applySettingsTo(this.api);
+
+    /* The way from the sidebar to the full view. The engine draws no panels
+       in the mini, so this one control is the host's. */
+    if (this.mini) {
+      const exp = host.createDiv({ cls: 'vo-mini-expand', attr: { 'aria-label': 'Open the full orrery' } });
+      setIcon(exp, 'maximize-2');
+      exp.addEventListener('click', () => { void this.plugin.activateView(); });
+    }
 
     /* Visibility, asked of the browser rather than inferred from workspace
        events. An IntersectionObserver answers the question that actually
@@ -176,7 +190,9 @@ export class OrreryView extends ItemView {
     if (!this.api) return;
     const path = file && file.extension === 'md' ? file.path : '';
     this.api.setActivePath(path);
-    if (path && this.plugin.settings.followActiveNote) this.api.revealPath(path);
+    /* The mini marks the note and keeps drifting: following would stop the
+       one thing it is for every time a note is opened. */
+    if (path && !this.mini && this.plugin.settings.followActiveNote) this.api.revealPath(path);
   }
 
   /** Put the camera on a note, and say so if it is not in the cosmos. `quiet`
@@ -213,8 +229,8 @@ export class OrreryView extends ItemView {
     this.ro?.disconnect(); this.ro = null;
     this.api?.destroy();
     this.api = null;
-    this.texts.clear();
     this.contentEl.empty();
+    this.plugin.releaseTexts();
   }
 
   onResize() { this.api?.resize(); }
@@ -272,24 +288,13 @@ export class OrreryView extends ItemView {
       if (!quiet) new Notice('Vault Orrery: no markdown files in this vault.');
       return;
     }
-    /* Entries for notes that are gone are dropped here, so the cache is never
-       larger than the vault it describes. */
-    const live = new Set(files.map(f => f.path));
-    for (const p of this.texts.keys()) if (!live.has(p)) this.texts.delete(p);
+    this.plugin.pruneTexts(files);
     const list: OrreryFile[] = files.map(f => ({
       path: f.path,
-      file: { text: () => this.readText(f) },
+      file: { text: () => this.plugin.readText(f) },
       meta: this.metaFor(f),
     }));
     await this.api.load(list, this.app.vault.getName(), { quiet });
-  }
-
-  private async readText(f: TFile): Promise<string> {
-    const hit = this.texts.get(f.path);
-    if (hit && hit.mtime === f.stat.mtime && hit.size === f.stat.size) return hit.text;
-    const text = await this.app.vault.cachedRead(f);
-    this.texts.set(f.path, { mtime: f.stat.mtime, size: f.stat.size, text });
-    return text;
   }
 
   /** What Obsidian already knows about a note, in the shape the engine reads.
@@ -373,6 +378,14 @@ export class OrreryView extends ItemView {
       ctime: f.stat.ctime,
     };
   }
+}
+
+/** The mini orrery: the same view, born small. Everything it does
+    differently is either the engine's MINI mode or a `this.mini` above. */
+export class MiniOrreryView extends OrreryView {
+  protected readonly mini = true;
+  getViewType() { return VIEW_TYPE_MINI; }
+  getDisplayText() { return 'Vault Orrery mini'; }
 }
 
 /** Named once. It is what Obsidian shows the user in Settings → Core plugins →

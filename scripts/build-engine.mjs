@@ -182,7 +182,7 @@ js = subRx(js, /\binnerWidth\b/g,  'VW()', 8, 'innerWidth -> VW()');
 js = subRx(js, /\binnerHeight\b/g, 'VH()', 8, 'innerHeight -> VH()');
 
 /* 4. mode flags live on the root, not on <body> */
-js = subRx(js, /document\.body\.classList/g, 'root.classList', 2, 'body.classList -> root.classList');
+js = subRx(js, /document\.body\.classList/g, 'root.classList', 5, 'body.classList -> root.classList');
 
 /* 5. the i18n sweep and the language chips must not reach outside this view */
 js = subRx(js, /document\.querySelectorAll/g, 'root.querySelectorAll', 5, 'querySelectorAll scoped');
@@ -265,7 +265,10 @@ import * as THREE from 'three';
 
 export const ENGINE_HTML = ${JSON.stringify(markup)};
 
-export function createOrrery(root, store) {
+export function createOrrery(root, store, boot) {
+/* What the host decides before the engine reads anything: today only
+   whether this is the sidebar's mini orrery. See MINI in the engine. */
+const VO_BOOT = boot || null;
 ${preamble}
 ${js}
 ${epilogue}
@@ -359,6 +362,8 @@ const GLOBALS = new Set([
   'THREE','Uint8Array','Uint16Array','Uint32Array',
   'cancelAnimationFrame','clearInterval','clearTimeout','decodeURIComponent',
   'isFinite','parseInt','performance',
+  /* the photo card: its fonts, its recorder and the file it hands over */
+  'getComputedStyle','MediaRecorder','Blob',
   'requestAnimationFrame','setInterval','setTimeout',
   /* the bridge the generator itself supplies */
   'VW','VH','ndcX','ndcY','onWin','onDoc','offWin',

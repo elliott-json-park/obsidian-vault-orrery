@@ -20,6 +20,8 @@ export interface OrrerySettings {
   followExcludedFiles: boolean;
   /** Extra patterns, same syntax as Obsidian's: a prefix, or /regex/. */
   extraIgnoreFilters: string[];
+  /** Whether the mini orrery has been put in the sidebar once (2.0.0). */
+  miniOffered: boolean;
   /** The engine's own preferences — panel sizes, radar size, its language
       chip. The standalone page keeps these in localStorage; inside a plugin
       they belong in the plugin's data file, so they live in the vault and
@@ -45,13 +47,14 @@ export const DEFAULT_SETTINGS: OrrerySettings = {
   followActiveNote: false,
   followExcludedFiles: true,
   extraIgnoreFilters: [],
+  miniOffered: false,
   engineStore: {},
 };
 
 /** The settings this tab edits. The engine's own store is not among them: it is
     written by the engine, not by a human, and has no place in settings search. */
 type Key = 'language' | 'maxNodes' | 'liveSync' | 'followActiveNote'
-         | 'followExcludedFiles' | 'extraIgnoreFilters';
+         | 'followExcludedFiles' | 'extraIgnoreFilters' | 'showMini';
 
 /* This tab is English-only, deliberately, even though the engine itself speaks
    four languages. Obsidian gives plugins no i18n facility for settings, and the
@@ -101,6 +104,20 @@ export class OrrerySettingTab extends PluginSettingTab {
         type: 'group',
         heading: 'The editor',
         items: [
+          {
+            name: 'Mini orrery in the sidebar',
+            desc: 'Keep a small, quiet copy of the cosmos in the right sidebar. It drifts ' +
+                  'on its own, marks the note you are editing, and opens a note when you ' +
+                  'click its planet. It draws at a third of the full view\'s frame rate ' +
+                  'with the light effects off, and stops entirely while the sidebar is ' +
+                  'closed.',
+            aliases: ['sidebar', 'mini', 'ambient', 'background', 'widget'],
+            control: {
+              type: 'toggle',
+              key: 'showMini',
+              defaultValue: true,
+            },
+          },
           {
             name: 'Keep up with the vault',
             desc: 'Re-derive the cosmos when notes are written, created, renamed or ' +
@@ -193,6 +210,8 @@ export class OrrerySettingTab extends PluginSettingTab {
       case 'followActiveNote': return s.followActiveNote;
       case 'followExcludedFiles': return s.followExcludedFiles;
       case 'extraIgnoreFilters': return s.extraIgnoreFilters.join('\n');
+      /* Not stored: the workspace is the record of whether it is open. */
+      case 'showMini': return this.plugin.miniOpen();
       default: return undefined;
     }
   }
@@ -224,6 +243,10 @@ export class OrrerySettingTab extends PluginSettingTab {
       case 'extraIgnoreFilters':
         s.extraIgnoreFilters = String(value).split('\n').map(p => p.trim()).filter(Boolean);
         break;
+      case 'showMini':
+        if (value) await this.plugin.openMini(true);
+        else this.plugin.closeMini();
+        return;
       default:
         return;
     }

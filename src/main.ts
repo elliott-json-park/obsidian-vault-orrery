@@ -1,6 +1,6 @@
 import { Plugin, WorkspaceLeaf, Notice, TFile, Menu, addIcon, debounce, moment } from 'obsidian';
 import type { OrreryApi, OrreryCommand, OrreryStore } from './engine.generated.js';
-import { OrreryView, VIEW_TYPE_ORRERY, HOVER_SOURCE } from './view';
+import { OrreryView, MiniOrreryView, VIEW_TYPE_ORRERY, VIEW_TYPE_MINI, HOVER_SOURCE } from './view';
 import { OrrerySettingTab, DEFAULT_SETTINGS, type OrrerySettings, type Lang } from './settings';
 
 const ORBIT_ICON = `<circle cx="50" cy="50" r="12" fill="currentColor"/>` +
@@ -22,6 +22,7 @@ const MODE_COMMANDS: ReadonlyArray<[OrreryCommand, string]> = [
   ['genesis', 'Genesis — play the vault\'s formation'],
   ['ripple',  'Ripple from the selected note'],
   ['poster',  'Save a poster'],
+  ['card',    'Make a photo card (9:16 image or 15-second clip)'],
   ['layer',   'Cycle the link layer'],
   ['grid',    'Show or hide the reference plane'],
   ['sound',   'Ambient sound'],
@@ -49,9 +50,27 @@ export default class VaultOrreryPlugin extends Plugin {
        Obsidian loads that file itself. */
 
     this.registerView(VIEW_TYPE_ORRERY, leaf => new OrreryView(leaf, this));
+    this.registerView(VIEW_TYPE_MINI, leaf => new MiniOrreryView(leaf, this));
 
     this.addRibbonIcon('orbit', 'Open Vault Orrery', () => this.activateView());
     this.addCommand({ id: 'open', name: 'Open', callback: () => this.activateView() });
+    this.addCommand({
+      id: 'open-mini',
+      name: 'Open the mini orrery in the sidebar',
+      callback: () => this.openMini(true),
+    });
+
+    /* 2.0.0 put the cosmos in the sidebar, and a feature that lives in a
+       sidebar nobody opens is a feature nobody finds — a collapsed right
+       sidebar is the default. So it is put there and shown once, without
+       taking the keyboard from the note being edited, and from then on the
+       workspace remembers it or forgets it like any other pane. */
+    this.app.workspace.onLayoutReady(() => {
+      if (this.settings.miniOffered) return;
+      this.settings.miniOffered = true;
+      void this.saveSettings();
+      void this.openMini(true);
+    });
     this.addCommand({
       id: 'reload-vault',
       name: 'Reload vault',
@@ -140,10 +159,69 @@ export default class VaultOrreryPlugin extends Plugin {
        engine's own listeners and audio context are released. */
   }
 
+  /** The full views. The mini is left out on purpose: every command that
+      asks for "the view" means the one you fly, not the one in the sidebar. */
   private views(): OrreryView[] {
     return this.app.workspace.getLeavesOfType(VIEW_TYPE_ORRERY)
       .map(l => l.view)
       .filter((v): v is OrreryView => v instanceof OrreryView);
+  }
+  private allViews(): OrreryView[] {
+    return [VIEW_TYPE_ORRERY, VIEW_TYPE_MINI]
+      .flatMap(t => this.app.workspace.getLeavesOfType(t))
+      .map(l => l.view)
+      .filter((v): v is OrreryView => v instanceof OrreryView);
+  }
+
+  miniOpen(): boolean {
+    return this.app.workspace.getLeavesOfType(VIEW_TYPE_MINI).length > 0;
+  }
+
+  /** Put the mini orrery in the right sidebar, and with `reveal`, show it:
+      expand the sidebar and bring its tab forward. Focus stays where it was
+      either way, so a note being typed into keeps the caret. */
+  async openMini(reveal: boolean) {
+    const ws = this.app.workspace;
+    let leaf = ws.getLeavesOfType(VIEW_TYPE_MINI)[0];
+    if (!leaf) {
+      const right = ws.getRightLeaf(false);
+      if (!right) return;
+      leaf = right;
+      await leaf.setViewState({ type: VIEW_TYPE_MINI, active: false });
+    }
+    if (reveal) await ws.revealLeaf(leaf);
+  }
+
+  closeMini() {
+    this.app.workspace.getLeavesOfType(VIEW_TYPE_MINI).forEach(l => l.detach());
+  }
+
+  /* ---- note text, shared by every view ----------------------------------
+     Each note's text as last read, against the file time it was read at. A
+     rebuild after a save used to read every note in the vault again to learn
+     that one of them had changed; the file time says which one without
+     opening any. Held here rather than per view since the sidebar arrived,
+     so the mini and the full view read the vault once between them. */
+  private texts = new Map<string, { mtime: number; size: number; text: string }>();
+
+  async readText(f: TFile): Promise<string> {
+    const hit = this.texts.get(f.path);
+    if (hit && hit.mtime === f.stat.mtime && hit.size === f.stat.size) return hit.text;
+    const text = await this.app.vault.cachedRead(f);
+    this.texts.set(f.path, { mtime: f.stat.mtime, size: f.stat.size, text });
+    return text;
+  }
+  /** Entries for notes that are gone are dropped, so the cache is never
+      larger than the vault it describes. */
+  pruneTexts(files: TFile[]) {
+    const live = new Set(files.map(f => f.path));
+    for (const p of this.texts.keys()) if (!live.has(p)) this.texts.delete(p);
+  }
+  /** Called as a view closes. The last one out empties the cache. */
+  releaseTexts() {
+    /* the closing view's leaf still holds it at this point, so "one left"
+       is the view that is going */
+    if (this.allViews().length <= 1) this.texts.clear();
   }
 
   /** Open the orrery if it is not open, then put the camera on this note. */
@@ -184,6 +262,11 @@ export default class VaultOrreryPlugin extends Plugin {
   }
   async saveSettings() { await this.saveData(this.settings); }
 
+  /** The same store with the writes dropped, for the mini orrery. */
+  engineStoreReadOnly(): OrreryStore {
+    return { get: (k: string) => this.settings.engineStore[k] ?? null, set: () => {} };
+  }
+
   /** The engine's own preferences, in the shape it reads them: a synchronous
       store, hydrated from the plugin's data file before the engine starts. */
   engineStore(): OrreryStore {
@@ -197,7 +280,7 @@ export default class VaultOrreryPlugin extends Plugin {
   }
 
   pushSettingsToViews() {
-    this.views().forEach(v => { const api = v.getApi(); if (api) this.applySettingsTo(api); });
+    this.allViews().forEach(v => { const api = v.getApi(); if (api) this.applySettingsTo(api); });
   }
 
   /* What has already been pushed into each live engine.

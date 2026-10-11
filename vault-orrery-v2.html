@@ -862,6 +862,80 @@ body.dragdeck #hud{cursor:grabbing}
    fitted to the gap by layoutHUD(), and the column only drops something when
    the window is genuinely too short to stack it (which layoutHUD decides by
    measuring, not by guessing at a breakpoint). */
+
+/* The mini orrery is the sky and nothing else. The hover name (#tgt) stays:
+   it is how a planet says which note a click will open. Last in the sheet so
+   it outranks each pane's own .on state at equal specificity. */
+body.mini #hud, body.mini #hint, body.mini #intro, body.mini #guide,
+body.mini #toast, body.mini #load, body.mini #srch, body.mini #mind,
+body.mini #drop, body.mini #boot{display:none}
+body.mini #gl{cursor:grab}
+body.mini #gl:active{cursor:grabbing}
+
+/* ---------- the rail ----------
+   One thin column at the left edge, where the host's own ribbon is — so it
+   reads as the cosmos's half of that strip rather than as a fifth pane. At
+   the top, level with the drawers it opens: centred, it sat a third of the
+   leaf away from the panel its button had just put up. Its buttons are the panes' names, and a lit one is a drawer that is
+   open. It fades with the rest of the HUD when nothing is being touched. */
+#dock{position:absolute;left:10px;top:12px;display:flex;
+  flex-direction:column;align-items:center;gap:2px;padding:6px 4px;pointer-events:auto}
+#dock u{display:flex;align-items:center;justify-content:center;width:30px;height:30px;
+  text-decoration:none;font-size:15px;line-height:1;color:rgba(223,246,255,.55);
+  cursor:pointer;border:1px solid transparent;user-select:none;
+  transition:color .15s,background .15s,border-color .15s}
+#dock u:hover{color:var(--cy);background:rgba(92,225,255,.08)}
+#dock u.on{color:var(--cy);border-color:rgba(92,225,255,.35);
+  background:rgba(92,225,255,.1);box-shadow:0 0 12px rgba(92,225,255,.15)}
+#dock u.lit{color:var(--am);border-color:rgba(255,182,72,.35)}
+#dock i{display:block;width:18px;height:1px;margin:4px 0;background:rgba(92,225,255,.18)}
+/* A drawer's title bar ends in PIN and close, where the fold used to be:
+   open and closed is the rail's business now, so folding went. */
+.dkb{display:flex;gap:9px;margin-left:auto;font-size:10.5px}
+.dkb i{font-style:normal;cursor:pointer;pointer-events:auto}
+.dkb i:hover{color:var(--cy)}
+.dkb i.on{color:var(--am)}
+#legfold,#keysfold,#ctlfold{display:none}
+#ctl .ttl,#ctl .ttl:active{cursor:default}
+#ctl .ctlgrip.nw,#ctl .ctlgrip.sw{display:none}
+#idp,#keys{overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(92,225,255,.28) transparent}
+
+/* ---------- the photo card ---------- */
+#card{position:absolute;inset:0;z-index:15;display:none;pointer-events:none}
+body.card #card{display:block}
+body.card #hud,body.card #tgt{display:none}
+/* everything outside the frame is dimmed by the frame's own shadow, so the
+   frame needs no backdrop of its own and the sky shows through its middle */
+#card-frame{position:absolute;box-shadow:0 0 0 9999px rgba(1,3,8,.8);
+  outline:1px solid rgba(92,225,255,.22)}
+#card-bands{position:absolute;left:0;top:0}
+#card-cd{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font:600 96px var(--mono);color:var(--am);text-shadow:0 0 30px rgba(255,182,72,.6)}
+#card-recbar{position:absolute;left:0;right:0;top:0;height:24px;display:none;align-items:center;
+  justify-content:flex-end;padding-right:9px;font:600 11px var(--mono);letter-spacing:.12em;
+  color:var(--am)}
+#card-recbar i{position:absolute;left:0;top:0;height:2px;width:0;background:var(--am);
+  box-shadow:0 0 10px var(--am)}
+#card.rec #card-recbar{display:flex}
+#card-pnl{position:absolute;pointer-events:auto;display:flex;flex-direction:column}
+#card-pnl .bd{overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(92,225,255,.28) transparent}
+#card.rec #card-pnl,#card.arm #card-pnl{opacity:.3;pointer-events:none}
+#card-x{cursor:pointer}
+#card-x:hover{color:var(--cy)}
+#card-hint{font-family:var(--kr);font-size:11.5px;opacity:.6;line-height:1.55;margin-bottom:6px}
+.cgh{font-size:10px;letter-spacing:.16em;color:var(--cy);opacity:.7;margin:10px 0 3px}
+.crow{display:flex;justify-content:space-between;gap:10px;font-size:11px;line-height:1.95;
+  cursor:pointer;padding:0 6px;border-left:2px solid transparent;white-space:nowrap}
+.crow span{opacity:.55;overflow:hidden;text-overflow:ellipsis}
+.crow i{font-style:normal;color:rgba(223,246,255,.55);overflow:hidden;text-overflow:ellipsis;
+  max-width:52%;font-family:var(--kr)}
+.crow:hover{background:rgba(92,225,255,.06)}
+.crow.on{border-left-color:var(--cy);background:rgba(92,225,255,.08)}
+.crow.on span{opacity:1;color:var(--cy)}
+.crow.on i{color:#eaf9ff}
+.crow.na{opacity:.3;cursor:default}
+#card-acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+#card-acts .mini{text-align:center;letter-spacing:.03em;padding-left:4px;padding-right:4px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -872,6 +946,20 @@ body.dragdeck #hud{cursor:grabbing}
 
   <!-- the scale bar, sized by writeHUD to a round number of units -->
   <div id="sbar"><i></i><span id="sbar-t">—</span></div>
+
+  <!-- The rail. Every pane that used to hold a corner of the frame opens from
+       here instead, so the cosmos is the whole picture until a tool is asked
+       for. The glyphs are the ones the buttons already used. See DOCK. -->
+  <div class="glass" id="dock">
+    <u id="dk-search" data-i18n-title="dock.search">&#x2315;</u>
+    <u id="dk-idp" data-i18n-title="dock.idp">&#x25CE;</u>
+    <u id="dk-leg" data-i18n-title="dock.leg">&#x2726;</u>
+    <u id="dk-ctl" data-i18n-title="dock.ctl">&#x2699;&#xFE0E;</u>
+    <u id="dk-keys" data-i18n-title="dock.keys">?</u>
+    <i></i>
+    <u id="dk-gen" data-i18n-title="dock.gen">&#x25CC;</u>
+    <u id="dk-card" data-i18n-title="dock.card">&#x25CF;</u>
+  </div>
 
   <div class="pane glass" id="idp">
     <div class="ttl"><b>VAULT ORRERY</b><i class="fx" id="instog" data-i18n-title="hud.inst.t">[ ⋯ ]</i></div>
@@ -980,6 +1068,7 @@ body.dragdeck #hud{cursor:grabbing}
       <div class="row"><span>MIND MAP</span><span>M · DBL-CLICK</span></div>
       <div class="row"><span>GENESIS</span><span>G</span></div>
       <div class="row"><span>RIPPLE · POSTER</span><span>SPACE · P</span></div>
+      <div class="row"><span>PHOTO CARD</span><span>C</span></div>
       <div class="row"><span>LINK LAYER</span><span>L</span></div>
       <div class="row"><span>REFERENCE PLANE</span><span>X</span></div>
       <div class="row"><span>RESET · HIDE HUD</span><span>R · H</span></div>
@@ -1049,6 +1138,30 @@ body.dragdeck #hud{cursor:grabbing}
 
 
 <div id="tgt"></div>
+
+<!-- The photo card: a 9:16 frame over the cosmos, the stats chosen beside
+     it. The canvas itself is moved into the frame's middle while this is up,
+     so what is on screen is the picture that is saved. See PHOTO CARD. -->
+<div id="card">
+  <div id="card-frame">
+    <canvas id="card-bands"></canvas>
+    <div id="card-cd"></div>
+    <div id="card-recbar"><i id="card-bar"></i><span id="card-t"></span></div>
+  </div>
+  <div class="glass" id="card-pnl">
+    <div class="ttl"><b data-i18n="card.ttl">포토카드</b>
+      <span class="tr"><i id="card-n">0 / 6</i><i class="fx" id="card-x" data-i18n-title="dock.close">&#x2715;</i></span>
+    </div>
+    <div class="bd">
+      <div id="card-hint" data-i18n="card.hint"></div>
+      <div id="card-opts"></div>
+      <div id="card-acts">
+        <div class="mini" id="card-png" data-i18n="card.png">⤓ 이미지</div>
+        <div class="mini am" id="card-mp4" data-i18n="card.mp4">● 15초 녹화</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="glass" id="srch">
   <input id="sin" data-i18n-ph="search.ph" placeholder="노트 검색 …" autocomplete="off" spellcheck="false">
@@ -1216,6 +1329,41 @@ const $ = id => document.getElementById(id);
 const TAU = Math.PI * 2;
 const clamp = (v,a,b) => v<a?a:(v>b?b:v);
 const lerp  = (a,b,t) => a+(b-a)*t;
+/* ---- the mini orrery -----------------------------------------------------
+   The same cosmos, kept in a sidebar all day instead of opened on purpose.
+   That is a different job from the full view, and the difference is mostly
+   what it must not do: it must not cost anything worth noticing while it sits
+   beside the editor, it must not answer keys meant for the full view, it must
+   not write its preferences over the ones the full view keeps, and it must
+   not make events — a comet and a toast are things to watch, and nobody is
+   watching a sidebar.
+
+   Decided before anything else is read, because the saved settings, the
+   quality, the audio arming and the intro card all ask it on the way in. The
+   host passes it at creation (VO_BOOT, from createOrrery's third argument);
+   the standalone page takes ?mini=1, which is how the harness draws one. */
+const MINI = {
+  on: !!((typeof VO_BOOT !== 'undefined' && VO_BOOT && VO_BOOT.mini) ||
+         /[?&]mini=1\b/.test(location.search)),
+  /* twenty frames a second is enough for a slow drift and a third of the
+     work of the full view's sixty; see PACE for where it is spent */
+  step: 1000 / 20,
+};
+/* How closely a view on screen is drawn — see the PACE notes by frameLoop.
+   Declared up here with MINI because the build calls paceTouch() long before
+   the frame loop's own section is reached. */
+const PACE = { last: 0, touch: performance.now(), idleMs: 20000, idleStep: 1000 / 30, on: false };
+function paceTouch() { PACE.touch = performance.now(); }
+if (MINI.on) document.body.classList.add('mini');
+/* Which of the rail's drawers are open, and which are pinned open. See DOCK
+   beside layoutHUD; declared up here because layoutHUD runs during start-up,
+   long before that section is reached. */
+const DOCK = { open: new Set(), pin: new Set() };
+const DOCK_PANES = ['idp', 'leg', 'ctl', 'keys'];
+/* The photo card — see PHOTO CARD. Up here for the same reason: resize()
+   and the frame loop both ask whether it is open. */
+const CARD = { on: false, frame: null, hole: null, shot: false, rec: null, cd: 0,
+               sel: [], vals: null, bands: null, out: null };
 /* Note names, folder names and tags come out of somebody's vault, and several
    panels build their rows as markup. This is what stands between the two.
 
@@ -1495,6 +1643,71 @@ const STR = {
 'ripple':      ['파문 · {n}','RIPPLE · {n}','波紋 · {n}','涟漪 · {n}'],
 'poster.fail': ['포스터 저장 실패','Poster export failed','ポスターの保存に失敗','海报保存失败'],
 'poster.ok':   ['포스터 저장 · {w}×{h}','POSTER SAVED · {w}×{h}','ポスター保存 · {w}×{h}','海报已保存 · {w}×{h}'],
+/* the rail — each title is the drawer's name and then what is in it */
+'dock.search': ['검색 · 노트와 조절기 [ / ]','SEARCH · notes and controls [ / ]',
+                '検索 · ノートとつまみ [ / ]','搜索 · 笔记与控件 [ / ]'],
+'dock.idp':    ['볼트 · 노드 · 링크 · 끊어진 링크','VAULT · nodes, links, broken links',
+                'ボルト · ノード・リンク・切れたリンク','仓库 · 节点、链接、断链'],
+'dock.leg':    ['항성계 · 폴더마다 켜고 끄기','STAR SYSTEMS · show or hide each folder',
+                '恒星系 · フォルダごとに表示を切替','星系 · 按文件夹显示或隐藏'],
+'dock.ctl':    ['조절기 · 품질 · 빛 · 궤도','CONTROLS · quality, light, orbits',
+                'つまみ · 画質・光・軌道','控件 · 画质、光效、轨道'],
+'dock.keys':   ['단축키 · 그리고 전체 안내','SHORTCUTS · and the full guide',
+                'ショートカット · と全体ガイド','快捷键 · 以及完整指南'],
+'dock.gen':    ['제네시스 · 볼트가 생겨난 순서대로 [ G ]','GENESIS · replay how the vault grew [ G ]',
+                'ジェネシス · ボルトができた順に再生 [ G ]','创世 · 按仓库形成的顺序回放 [ G ]'],
+'dock.pin':    ['고정 · 다른 서랍을 열어도 닫히지 않습니다','PIN · stays open beside the next drawer',
+                '固定 · 他の引き出しを開いても閉じません','固定 · 打开其他抽屉时也不会关闭'],
+'dock.close':  ['닫기 [ Esc ]','CLOSE [ Esc ]','閉じる [ Esc ]','关闭 [ Esc ]'],
+'dock.card':   ['포토카드 · 9:16 이미지와 15초 영상 [ C ]','PHOTO CARD · a 9:16 image or a 15-second clip [ C ]',
+                'フォトカード · 9:16 の画像と15秒の動画 [ C ]','照片卡 · 9:16 图片与 15 秒视频 [ C ]'],
+/* the photo card */
+'card.ttl':    ['포토카드','PHOTO CARD','フォトカード','照片卡'],
+'card.hint':   ['프레임 안에서 돌리고 확대하세요. 보이는 그대로 저장됩니다. 녹화는 누른 뒤 15초 동안의 조작을 담습니다.',
+                'Turn and zoom inside the frame — it is saved exactly as you see it. A recording keeps whatever you do for the fifteen seconds after you press it.',
+                'フレームの中で回して拡大してください。見たまま保存されます。録画は押してから15秒間の操作をそのまま残します。',
+                '在框内旋转、缩放——所见即所存。录制会记下按下后 15 秒内的所有操作。'],
+'card.g.basic':['기본 규모','SCALE','基本の規模','基本规模'],
+'card.g.best': ['최고 기록','RECORDS','記録','之最'],
+'card.g.act':  ['활동 기록','ACTIVITY','活動','活动'],
+'card.g.fun':  ['재미 수치','JUST FOR FUN','おまけ','趣味'],
+'card.png':    ['⤓ 이미지','⤓ IMAGE','⤓ 画像','⤓ 图片'],
+'card.mp4':    ['● 15초 녹화','● RECORD 15s','● 15秒録画','● 录制 15 秒'],
+'card.stop':   ['Esc · 지금 멈추고 저장','Esc · stop and save now','Esc · 今すぐ止めて保存','Esc · 立即停止并保存'],
+'card.full':   ['수치는 6개까지 넣을 수 있습니다','Six stats at most','数値は6つまでです','最多放入六项数据'],
+'card.saved':  ['카드 저장 · {f}','CARD SAVED · {f}','カード保存 · {f}','照片卡已保存 · {f}'],
+'card.webm':   ['카드 저장 · {f} — 이 환경은 MP4 녹화를 지원하지 않아 WebM으로 저장했습니다',
+                'CARD SAVED · {f} — this setup cannot record MP4, so it is WebM',
+                'カード保存 · {f} — この環境は MP4 録画に対応していないため WebM で保存しました',
+                '照片卡已保存 · {f} — 此环境不支持录制 MP4，已存为 WebM'],
+'card.fail':   ['카드 저장 실패','Card export failed','カードの保存に失敗','照片卡保存失败'],
+'card.norec':  ['이 환경에서는 녹화를 할 수 없습니다','Recording is not available here',
+                'この環境では録画できません','此环境无法录制'],
+'card.mark':   ['MADE WITH VAULT ORRERY · OBSIDIAN','MADE WITH VAULT ORRERY · OBSIDIAN',
+                'MADE WITH VAULT ORRERY · OBSIDIAN','MADE WITH VAULT ORRERY · OBSIDIAN'],
+'cs.age':      ['볼트 나이','VAULT AGE','ボルトの年齢','仓库年龄'],
+'cs.notes':    ['행성 · 노트','PLANETS · NOTES','惑星 · ノート','行星 · 笔记'],
+'cs.links':    ['링크','LINKS','リンク','链接'],
+'cs.systems':  ['항성계 · 폴더','STAR SYSTEMS','恒星系 · フォルダ','星系 · 文件夹'],
+'cs.bigsys':   ['가장 큰 항성계','BIGGEST SYSTEM','最大の恒星系','最大的星系'],
+'cs.cited':    ['가장 많이 인용된 노트','MOST CITED','最も引用されたノート','被引用最多'],
+'cs.longest':  ['가장 긴 노트','LONGEST NOTE','最も長いノート','最长的笔记'],
+'cs.year':     ['올해 쓴 노트','NOTES THIS YEAR','今年のノート','今年的笔记'],
+'cs.words':    ['총 단어','WORDS','総単語数','总词数'],
+'cs.month':    ['가장 많이 쓴 달','BUSIEST MONTH','最も書いた月','写得最多的月份'],
+'cs.streak':   ['최장 연속 작성','LONGEST STREAK','最長連続','最长连续'],
+'cs.ly':       ['링크를 한 줄로 이으면','LINKS END TO END','リンクを一列につなぐと','链接首尾相连'],
+'cs.rogue':    ['떠돌이 행성 · 링크 없음','ROGUE PLANETS','はぐれ惑星 · リンクなし','流浪行星 · 无链接'],
+'cs.const':    ['볼트 별자리','CONSTELLATION','ボルトの星座','仓库星座'],
+'cu.days':     ['{n}일','{n} DAYS','{n}日','{n} 天'],
+'cu.notes':    ['노트 {n}','{n} NOTES','{n} ノート','{n} 篇'],
+'cu.words':    ['{n}단어','{n} WORDS','{n} 語','{n} 词'],
+'cu.ly':       ['{n} 광년','{n} LY','{n} 光年','{n} 光年'],
+'cu.cites':    ['인용 {n}','CITED {n}','引用 {n}','被引 {n}'],
+'guide.card':  ['9:16 포토카드. 프레임 안 우주와 고른 수치를 이미지 한 장이나 15초 영상으로 저장합니다.',
+                'A 9:16 photo card: the cosmos inside the frame and the stats you pick, as one image or a fifteen-second clip.',
+                '9:16 のフォトカード。フレーム内の宇宙と選んだ数値を、画像一枚か15秒の動画で保存します。',
+                '9:16 照片卡：框内的星图与所选数据，保存为一张图片或 15 秒视频。'],
 'audio.no':    ['오디오를 사용할 수 없습니다','Audio is unavailable','オーディオを使用できません','音频不可用'],
 'audio.on':    ['앰비언트 사운드 ON','AMBIENT SOUND ON','アンビエントサウンド ON','环境音效 开'],
 'audio.off':   ['앰비언트 사운드 OFF','AMBIENT SOUND OFF','アンビエントサウンド OFF','环境音效 关'],
@@ -1557,10 +1770,10 @@ const STR = {
                 'ノート一つの隣人をマインドマップで開く','把一篇笔记的邻居展开为思维导图'],
 'intro.d4':    ['고른 노트를 옵시디언에서 열기','Open the selected note in Obsidian',
                 '選んだノートをObsidianで開く','在 Obsidian 中打开所选笔记'],
-'intro.foot':  ['나머지는 왼쪽 아래 SHORTCUTS 목록에 있습니다. 제목줄의 [ ? ] 를 누르면 하나하나 설명이 붙은 전체 안내가 열립니다.',
-                'The rest are in the SHORTCUTS list, lower left. The [ ? ] in its title bar opens the full guide, with a line on each of them.',
-                '残りは左下の SHORTCUTS 一覧にあります。見出しの [ ? ] を押すと、一つずつ説明のついた全体ガイドが開きます。',
-                '其余内容见左下角 SHORTCUTS 列表。点击标题栏的 [ ? ] 会打开逐条说明的完整指南。'],
+'intro.foot':  ['나머지는 왼쪽 레일에 있습니다. ? 를 누르면 단축키 목록이, 그 제목줄의 [ ? ] 를 누르면 하나하나 설명이 붙은 전체 안내가 열립니다.',
+                'The rest are on the rail at the left. Its ? opens the shortcut list, and the [ ? ] in that list\'s title bar opens the full guide, with a line on each of them.',
+                '残りは左のレールにあります。? でショートカット一覧が、その見出しの [ ? ] で一つずつ説明のついた全体ガイドが開きます。',
+                '其余内容在左侧的竖栏里。点 ? 打开快捷键列表，再点它标题栏的 [ ? ] 会打开逐条说明的完整指南。'],
 'intro.go':    ['▶ 둘러보기','▶ START LOOKING','▶ 見てまわる','▶ 开始浏览'],
 'intro.reopen':['첫 비행 안내 다시 보기','Show the first-flight guide again',
                 'はじめての飛行の案内を再表示','重新显示首次飞行指引'],
@@ -1649,14 +1862,14 @@ const STR = {
                 'Hides every panel. The cosmos keeps turning behind it.',
                 'パネルをすべて隠します。宇宙はそのまま回り続けます。',
                 '隐藏全部面板。星图照旧运转。'],
-'guide.help':  ['이 안내입니다. 왼쪽 아래 SHORTCUTS 제목줄의 [ ? ] 도 같은 것을 엽니다.',
-                'This card. So does the [ ? ] in the SHORTCUTS title bar, lower left.',
-                'この案内です。左下 SHORTCUTS の見出しにある [ ? ] も同じものを開きます。',
-                '就是这张卡片。左下角 SHORTCUTS 标题栏里的 [ ? ] 打开的也是它。'],
-'guide.foot':  ['조절기는 오른쪽 위 서랍 안에 있고, 검색 상자에서 이름으로 바로 부를 수도 있습니다. · ',
-                'Every control lives in the drawer, upper right, and the search box will call one up by name. · ',
-                'つまみは右上の引き出しの中にあり、検索ボックスから名前で呼び出すこともできます。 · ',
-                '所有控件都在右上角的抽屉里，也可以在搜索框中按名称直接调出。 · '],
+'guide.help':  ['이 안내입니다. 왼쪽 레일 ? 를 눌러 여는 SHORTCUTS 제목줄의 [ ? ] 도 같은 것을 엽니다.',
+                'This card. So does the [ ? ] in the title bar of SHORTCUTS, which the ? on the left rail opens.',
+                'この案内です。左のレールの ? で開く SHORTCUTS の見出しにある [ ? ] も同じものを開きます。',
+                '就是这张卡片。左侧竖栏 ? 打开的 SHORTCUTS 标题栏里的 [ ? ] 打开的也是它。'],
+'guide.foot':  ['조절기는 왼쪽 레일의 ⚙ 서랍 안에 있고, 검색 상자에서 이름으로 바로 부를 수도 있습니다. · ',
+                'Every control lives in the ⚙ drawer on the left rail, and the search box will call one up by name. · ',
+                'つまみは左のレールの ⚙ の引き出しの中にあり、検索ボックスから名前で呼び出すこともできます。 · ',
+                '所有控件都在左侧竖栏 ⚙ 的抽屉里，也可以在搜索框中按名称直接调出。 · '],
 
 /* ---- what each knob is for --------------------------------------------
    A deck of forty-three sliders with nothing but a name on each is a cockpit
@@ -2000,8 +2213,19 @@ function revealPath(p, opts) {
    your place while you fly somewhere else. */
 let activePath = '', activeIdx = -1;
 function setActivePath(p) {
+  const was = activeIdx;
   activePath = p ? String(p).replace(/\\/g, '/') : '';
   activeIdx = activePath ? nodeByPath(activePath) : -1;
+  /* The mini frames the whole vault and never follows, so the note being
+     edited could sit outside its frame — and the light on that note is the
+     one thing the sidebar is for. So it turns about that note instead of the
+     hub: the same distance, the same whole vault, with the note you are
+     writing at its middle. Halfway was tried first and left the light at
+     the edge of the frame, where a drifting sky carried it straight out. */
+  if (MINI.on && activeIdx >= 0 && activeIdx < N && activeIdx !== was) {
+    rig.follow = -1;
+    rig.tgtD.set(P[activeIdx*3], P[activeIdx*3+1], P[activeIdx*3+2]);
+  }
 }
 
 /* three.js is a hard dependency and its absence used to be a blank screen with
@@ -2519,7 +2743,7 @@ const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
    left to offer afterwards. */
 const SET_DEF = { mmHop:false, snd:false, coreNote:'', grid:false,
                   tab:'cosmos', deckAt:null, litV1:1,
-                  adv:false, legFold:false, keysFold:false, pin:PIN_DEF };
+                  adv:false, legFold:false, keysFold:false, pin:PIN_DEF, dock:[], card:null };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
 /* ---- what used to be knobs -----------------------------------------------
    Eleven controls came off the deck in 1.15.0: the grade's split, lens,
@@ -2614,8 +2838,31 @@ if (SET.deckAt && !(Number.isFinite(+SET.deckAt.x) && Number.isFinite(+SET.deckA
 SET.pin = Array.isArray(SET.pin)
   ? KNOBS.filter(kn => SET.pin.indexOf(kn.k) >= 0).map(kn => kn.k)
   : PIN_DEF.slice();
+/* A drawer pinned open stays open across sessions; one merely opened does
+   not, because coming back to a sky with a panel already over it is the
+   thing the rail exists to stop. */
+SET.dock = Array.isArray(SET.dock) ? SET.dock.filter(id => DOCK_PANES.indexOf(id) >= 0) : [];
+SET.dock.forEach(id => { DOCK.pin.add(id); DOCK.open.add(id); });
+/* The mini orrery reads the full view's choices — colours, spacing, link
+   layer, the hub — so the two look like one cosmos at two sizes. What it
+   overrides is what a sidebar cannot afford: the eight light effects go to
+   BALANCED, the frame-rate sampler that would otherwise pick a preset for the
+   machine is told it has already run, and sound stays off. None of it is
+   written back (see saveSet), so the full view keeps its own picture.
 
-function saveSet(){ try { localStorage.setItem('orrery2.set', JSON.stringify(SET)); } catch(e){} }
+   BALANCED rather than FAST because what an effect costs is per pixel, and a
+   sidebar has a tenth of the full view's pixels at a third of its frame rate.
+   FAST there saved almost nothing and left a grey sky. */
+if (MINI.on) {
+  Q_KEYS.forEach(k => { SET[k] = qualityVal('balanced', k); });
+  SET.qAuto = 1;
+  SET.snd = false;
+}
+
+function saveSet(){
+  if (MINI.on) return;
+  try { localStorage.setItem('orrery2.set', JSON.stringify(SET)); } catch(e){}
+}
 
 let toastT = 0;
 /* The duration is a parameter now because one caller genuinely needs a
@@ -8989,6 +9236,7 @@ applyDepth();
    at its layout sizes and only correct itself when somebody touched one. */
 applySizes();
 AUTOQ.at = performance.now(); AUTOQ.n = 0; AUTOQ.sum = 0;
+  paceTouch();
 }   /* ---- end buildObjects ---- */
 
 /* ---- the first minute on a big vault ----
@@ -9222,7 +9470,11 @@ function applyCam(dt) {
   /* left alone long enough the sky turns on its own — a still frame of space
      should never look like a paused video */
   rig.idle += dt;
-  if (rig.idle > 7) rig.thD -= dt * 0.019 * clamp((rig.idle - 7) / 4, 0, 1);
+  /* The sidebar is always left alone — that is what it is for — so it starts
+     turning almost at once, a little faster, and comes back to it soon after
+     a drag lets go. */
+  const idleAt = MINI.on ? 2 : 7, idleRate = MINI.on ? 0.03 : 0.019;
+  if (rig.idle > idleAt) rig.thD -= dt * idleRate * clamp((rig.idle - idleAt) / 4, 0, 1);
 
   const k = 1 - Math.pow(0.0012, dt);
   rig.dist = lerp(rig.dist, rig.distD, k);
@@ -9341,7 +9593,19 @@ function fitView() {
   /* 1.25 of the fitted radius, down from 1.7. The percentile fit already
      drops the scatter; what was left was a frame with the vault in its
      middle third and black round it, and the black was most of the frame. */
-  rig.distD = N ? clamp(m * 1.25 + 120, 200, 22000) : 1250;
+  /* The field of view is vertical, so a frame narrower than it is tall cuts
+     the vault off at the sides — which is the sidebar's mini orrery and any
+     leaf split down the middle. Back off by however much narrower it is; a
+     wide frame is untouched. */
+  const vw = CARD.on ? CARD.hole.w : innerWidth, vh = CARD.on ? CARD.hole.h : innerHeight;
+  const tall = Math.max(1, Math.min(2.6, vh / Math.max(1, vw)));
+  /* The mini is the exception, and goes the other way. A whole vault fitted
+     into a sidebar is a scatter of four-pixel dots; closer in, the hub, the
+     links and the nearer systems read, and the drift brings the rest round. */
+  /* the photo card the same way, less so: it is a portrait, and a portrait
+     can lose the outermost scatter to have the systems read */
+  const fit = MINI.on ? 0.6 : CARD.on ? 0.8 * tall : tall;
+  rig.distD = N ? clamp((m * 1.25 + 120) * fit, 200, 22000) : 1250;
   rig.dist  = rig.distD * 1.35;                // ease in from further out
   rig.tgt.set(0,0,0);
   /* remember this framing as the vault's home, so the reset gesture has
@@ -9667,6 +9931,7 @@ function wireLinkGroups(box, pick) {
 }
 
 function renderInspector() {
+  $('insp').style.display = inspShown() ? '' : 'none';
   if (selected < 0 || selected >= N) {
     $('i-empty').style.display = ''; $('i-real').style.display = 'none';
     $('i-kind').textContent = '—'; return;
@@ -10014,6 +10279,7 @@ function genSet(on) {
   if (!GEN.on) { GEN.play = false; GEN.u = 1; }
   $('gen').classList.toggle('on', GEN.on);
   $('b-gen').classList.toggle('am', GEN.on);
+  $('dk-gen').classList.toggle('lit', GEN.on);
   if (GEN.on) {
     GEN.u = 0; GEN.play = true; GEN.stage = -1;
     /* the void, struck: the replay opens on the low boom the supernova
@@ -10691,7 +10957,8 @@ function bodySnapshot() {
    file under a new name, and nothing happened to it worth a flash. */
 const NOVA_MAX = 6;
 function bodyDiff(prev) {
-  if (!prev || !N) return;
+  /* the sidebar has no events: see MINI */
+  if (MINI.on || !prev || !N) return;
   const seen = new Set(), born = new Map();
   for (let i = 0; i < N; i++) {
     const nd = nodes[i], key = nd.fp || nd.p;
@@ -10712,7 +10979,7 @@ function bodyDiff(prev) {
 /* the opening comet: the note you were last working on, if the vault knows
    when that was and it was recent enough to mean anything */
 function cometPrime() {
-  if (!N || !freshHas || !touchAt) return;
+  if (MINI.on || !N || !freshHas || !touchAt) return;
   let best = -1, bt = 0;
   for (let i = 0; i < N; i++) if (touchAt[i] > bt) { bt = touchAt[i]; best = i; }
   if (best < 0 || Date.now() - bt > 14 * 86400000) return;
@@ -10934,11 +11201,429 @@ function savePoster() {
     toast(T('poster.fail'));
   } finally {
     renderer.setPixelRatio(pr0);
-    hud.style.display = keep[0]; xh.style.display = keep[1];
+    /* `keep` is the HUD's display string. This used to restore keep[0] and
+       then a second element that no longer existed, which threw — so the HUD
+       stayed hidden after every poster and the resize below never ran. */
+    hud.style.display = keep;
     resize();                                   // puts uScale and the size back
   }
 }
 $('b-post').onclick = savePoster;
+
+/* ============================================================ PHOTO CARD
+   The poster is a picture of the cosmos. This is the thing people actually
+   post: a 9:16 card for a story, the vault's own sky in the middle and its
+   numbers above and below, as one image or as fifteen seconds of whatever
+   the reader does with the camera after pressing record.
+
+   What is on screen is what is saved, exactly. While the card is up the
+   canvas is moved into the frame's middle and its resolution set so that
+   middle is 1080 pixels wide, which is the card's width — so the framing is
+   the reader's, and the renderer draws no pixel the card will not use. The
+   two bands are drawn by one function into a canvas laid over the frame and
+   into the 1080 x 1920 copy the export composites, so the preview and the
+   file cannot disagree about a single word.
+
+   The recording is the composite canvas, captured as a stream. MP4 when the
+   runtime can encode it, WebM when it cannot, and the toast says which.
+   Nothing is uploaded: the file is handed to the browser's own download. */
+const CARD_W = 1080, CARD_H = 1920, CARD_TOP = 300, CARD_BOT = 440;
+const CARD_MID = CARD_H - CARD_TOP - CARD_BOT;
+const CARD_MAX = 6, CARD_SECS = 15;
+const CARD_STATS = [
+  ['basic', 'age'], ['basic', 'notes'], ['basic', 'links'], ['basic', 'systems'],
+  ['best', 'bigsys'], ['best', 'cited'], ['best', 'longest'],
+  ['act', 'year'], ['act', 'words'], ['act', 'month'], ['act', 'streak'],
+  ['fun', 'ly'], ['fun', 'rogue'], ['fun', 'const'],
+];
+const CARD_KEYS = CARD_STATS.map(st => st[1]);
+const CARD_DEF = ['age', 'notes', 'links', 'systems', 'cited', 'const'];
+
+/* When a note was written: the earlier of the date it carries and the
+   file's own birth. Either alone is wrong somewhere — a vault that was
+   copied or synced has every file born the day it arrived, and a note
+   without a date says nothing at all. Zero when neither says. */
+function cardBorn(nd) {
+  const a = nd.d ? Date.parse(nd.d) : 0, b = +nd.ct || 0;
+  const t = a > 0 && b > 0 ? Math.min(a, b) : (a > 0 ? a : b);
+  return Number.isFinite(t) && t > 0 ? t : 0;
+}
+/* A name for the vault's sky, the same every time for the same vault. */
+function cardConstellation(name) {
+  let h = 2166136261;
+  for (let i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); }
+  h >>>= 0;
+  const A = ['Lyra', 'Cygnus', 'Draco', 'Aquila', 'Carina', 'Vela',
+             'Corona', 'Orion', 'Lacerta', 'Pyxis', 'Columba', 'Ursa'];
+  const B = ['Memoriae', 'Scriptorum', 'Notarum', 'Ideae', 'Libri',
+             'Mentis', 'Verbi', 'Somnii', 'Studii', 'Lucis'];
+  return A[h % A.length] + ' ' + B[(h >>> 8) % B.length];
+}
+/* Every stat, worked out once when the card opens. A stat the vault cannot
+   answer — no dates at all, no links at all — is null and greyed out in the
+   list rather than printed as a zero that would be a claim. */
+function cardValues() {
+  const fmt = n => Math.round(n).toLocaleString('en-US');
+  const out = {};
+  const yr = new Date().getFullYear();
+  const months = new Map(), days = new Set(), deg = new Uint32Array(N);
+  let first = Infinity, words = 0, thisYear = 0;
+  for (let i = 0; i < N; i++) {
+    const nd = nodes[i], t = cardBorn(nd);
+    words += nd.w || 0;
+    if (!t) continue;
+    if (t < first) first = t;
+    const d = new Date(t);
+    if (d.getFullYear() === yr) thisYear++;
+    const m = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0');
+    months.set(m, (months.get(m) || 0) + 1);
+    days.add(Math.floor((t - d.getTimezoneOffset() * 60000) / 86400000));
+  }
+  for (let e = 0; e < edges.length; e++) {
+    const a = edges[e][0], b = edges[e][1];
+    if (a < N) deg[a]++;
+    if (b < N) deg[b]++;
+  }
+  const most = f => { let bi = -1, bv = 0; for (let i = 0; i < N; i++) { const v = f(nodes[i]); if (v > bv) { bv = v; bi = i; } } return bi; };
+
+  out.age = first < Infinity ? { v: T('cu.days', { n: fmt((Date.now() - first) / 86400000) }) } : null;
+  out.notes = { v: fmt(N) };
+  out.links = (DATA.meta.edges | 0) ? { v: fmt(DATA.meta.edges | 0) } : null;
+  out.systems = { v: fmt(cats.length) };
+  let big = null;
+  cats.forEach(c => { if (!big || c.n > big.n) big = c; });
+  out.bigsys = big ? { v: catLabel(big), name: true, u: T('cu.notes', { n: fmt(big.n) }) } : null;
+  const ci = most(nd => nd.inb | 0);
+  out.cited = ci >= 0 ? { v: nodes[ci].n, name: true, u: T('cu.cites', { n: fmt(nodes[ci].inb) }) } : null;
+  const li = most(nd => nd.w | 0);
+  out.longest = li >= 0 ? { v: nodes[li].n, name: true, u: T('cu.words', { n: fmt(nodes[li].w) }) } : null;
+  out.year = first < Infinity ? { v: fmt(thisYear) } : null;
+  out.words = words ? { v: fmt(words) } : null;
+  let bm = '', bmn = 0;
+  months.forEach((n, m) => { if (n > bmn) { bmn = n; bm = m; } });
+  out.month = bm ? { v: bm, u: T('cu.notes', { n: fmt(bmn) }) } : null;
+  const ds = [...days].sort((a, b) => a - b);
+  let run = 0, best = 0, prev = NaN;
+  ds.forEach(d => { run = d === prev + 1 ? run + 1 : 1; prev = d; if (run > best) best = run; });
+  out.streak = best ? { v: T('cu.days', { n: fmt(best) }) } : null;
+  /* the layout's own unit, a hundred to the light-year — the scale bar
+     already speaks in U, and this is the same ruler laid along every link */
+  let span = 0;
+  for (let e = 0; e < edges.length; e++) {
+    const a = edges[e][0], b = edges[e][1];
+    if (a >= N || b >= N) continue;
+    span += Math.hypot(P[a*3] - P[b*3], P[a*3+1] - P[b*3+1], P[a*3+2] - P[b*3+2]);
+  }
+  out.ly = span ? { v: T('cu.ly', { n: fmt(span / 100) }) } : null;
+  let rogue = 0;
+  for (let i = 0; i < N; i++) if (!deg[i]) rogue++;
+  out.rogue = { v: fmt(rogue) };
+  out.const = { v: cardConstellation(String(DATA.meta.vault || '')), name: true };
+  return out;
+}
+
+/* Where the frame, the panel and the canvas go. The frame is as tall as the
+   leaf allows at 9:16, the panel beside it, the pair centred; on a leaf too
+   narrow for both the frame gives way first. */
+function cardPlace() {
+  const W = innerWidth, H = innerHeight, M = 20, GAP = 16;
+  const pw = Math.round(clamp(W * 0.3, 210, 268));
+  let fh = H - 2 * M, fw = fh * 9 / 16;
+  const room = W - 2 * M - pw - GAP;
+  if (fw > room) { fw = Math.max(90, room); fh = fw * 16 / 9; }
+  fw = Math.round(fw); fh = Math.round(fh);
+  const fx = Math.round(Math.max(M, (W - fw - GAP - pw) / 2)), fy = Math.round((H - fh) / 2);
+  const sc = fw / CARD_W;
+  CARD.frame = { x: fx, y: fy, w: fw, h: fh };
+  CARD.hole = { x: fx, y: Math.round(fy + CARD_TOP * sc), w: fw,
+                h: Math.max(1, Math.round(CARD_MID * sc)) };
+  const fr = $('card-frame');
+  fr.style.left = fx + 'px'; fr.style.top = fy + 'px';
+  fr.style.width = fw + 'px'; fr.style.height = fh + 'px';
+  const pn = $('card-pnl');
+  pn.style.left = (fx + fw + GAP) + 'px'; pn.style.top = fy + 'px';
+  pn.style.width = pw + 'px'; pn.style.maxHeight = fh + 'px';
+  canvas.style.left = CARD.hole.x + 'px'; canvas.style.top = CARD.hole.y + 'px';
+  canvas.style.width = CARD.hole.w + 'px'; canvas.style.height = CARD.hole.h + 'px';
+  canvas.style.right = 'auto'; canvas.style.bottom = 'auto';
+  renderer.setPixelRatio(CARD_W / CARD.hole.w);
+  cardPreview();
+}
+
+function cardFonts() {
+  const cs = getComputedStyle($('hud'));
+  return { mono: cs.getPropertyValue('--mono').trim() || 'monospace',
+           kr: cs.getPropertyValue('--kr').trim() || 'sans-serif' };
+}
+function cardDate() {
+  const d = new Date(), z = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '.' + z(d.getMonth() + 1) + '.' + z(d.getDate());
+}
+/* One line of text, centred, shrunk to fit and then cut with an ellipsis if
+   even that is not enough — a note title can be any length. */
+function cardText(x, str, cx, y, maxW, size, family, weight, track) {
+  let sz = size;
+  const set = () => {
+    x.font = weight + ' ' + sz + 'px ' + family;
+    if ('letterSpacing' in x) x.letterSpacing = (track * sz).toFixed(1) + 'px';
+  };
+  set();
+  while (x.measureText(str).width > maxW && sz > size * 0.62) { sz -= 2; set(); }
+  let t = str;
+  if (x.measureText(t).width > maxW) {
+    while (t.length > 1 && x.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+    t += '…';
+  }
+  x.fillText(t, cx, y);
+  if ('letterSpacing' in x) x.letterSpacing = '0px';
+}
+/* The two bands, in card pixels (1080 x 1920). The middle is left alone:
+   on screen the live canvas shows through it, in the file it is drawn
+   there first. Each band fades into the sky over its inner edge rather
+   than stopping at a line. */
+function cardDrawBands(x) {
+  const F = cardFonts(), sky = '#02040a', FADE = 110;
+  let g = x.createLinearGradient(0, 0, 0, CARD_TOP + FADE);
+  g.addColorStop(0, sky); g.addColorStop(CARD_TOP / (CARD_TOP + FADE), sky);
+  g.addColorStop(1, 'rgba(2,4,10,0)');
+  x.fillStyle = g; x.fillRect(0, 0, CARD_W, CARD_TOP + FADE);
+  g = x.createLinearGradient(0, CARD_H - CARD_BOT - FADE, 0, CARD_H);
+  g.addColorStop(0, 'rgba(2,4,10,0)'); g.addColorStop(FADE / (CARD_BOT + FADE), sky);
+  g.addColorStop(1, sky);
+  x.fillStyle = g; x.fillRect(0, CARD_H - CARD_BOT - FADE, CARD_W, CARD_BOT + FADE);
+
+  /* the HUD's own corner marks, top left and bottom right */
+  x.strokeStyle = 'rgba(92,225,255,.7)'; x.lineWidth = 2;
+  const b = 40, L = 34;
+  x.beginPath();
+  x.moveTo(b, b + L); x.lineTo(b, b); x.lineTo(b + L, b);
+  x.moveTo(CARD_W - b, CARD_H - b - L); x.lineTo(CARD_W - b, CARD_H - b); x.lineTo(CARD_W - b - L, CARD_H - b);
+  x.stroke();
+
+  x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+  x.fillStyle = '#eaf9ff';
+  x.shadowColor = 'rgba(92,225,255,.55)'; x.shadowBlur = 26;
+  cardText(x, String(DATA.meta.vault || 'VAULT').toUpperCase(), CARD_W / 2, 162, 920, 74, F.kr, '600', 0.2);
+  x.shadowBlur = 0;
+  x.fillStyle = 'rgba(92,225,255,.6)';
+  cardText(x, '—  ' + cardDate() + '  —', CARD_W / 2, 220, 900, 24, F.mono, '500', 0.3);
+
+  const sel = CARD.sel.filter(k => CARD.vals && CARD.vals[k]);
+  const n = sel.length;
+  if (n) {
+    const rows = n <= 3 ? [sel] : n === 4 ? [sel.slice(0, 2), sel.slice(2)] : [sel.slice(0, 3), sel.slice(3)];
+    const ys = rows.length === 1 ? [1668] : [1584, 1758];
+    rows.forEach((row, r) => {
+      const cw = 960 / row.length;
+      row.forEach((k, c) => {
+        const cx = 60 + cw * (c + 0.5), v = CARD.vals[k];
+        x.fillStyle = v.name ? '#eaf9ff' : '#5ce1ff';
+        cardText(x, v.v, cx, ys[r], cw - 34, v.name ? 44 : 66, v.name ? F.kr : F.mono, '600', v.name ? 0 : 0.02);
+        /* big enough to read on a phone held at arm's length, which is the
+           only place this card is ever looked at */
+        x.fillStyle = 'rgba(223,246,255,.58)';
+        cardText(x, T('cs.' + k) + (v.u ? '  ·  ' + v.u : ''), cx, ys[r] + 48, cw - 16, 27, F.kr, '500', 0.04);
+      });
+    });
+  }
+  x.fillStyle = 'rgba(223,246,255,.3)';
+  cardText(x, T('card.mark'), CARD_W / 2, CARD_H - 54, 900, 22, F.mono, '500', 0.22);
+}
+/* Redraw both copies of the bands: the one over the frame, at the screen's
+   resolution, and the one the export composites, at the card's. */
+function cardPreview() {
+  if (!CARD.on || !CARD.frame) return;
+  const c = $('card-bands'), f = CARD.frame, dpr = devicePixelRatio || 1;
+  c.width = Math.round(f.w * dpr); c.height = Math.round(f.h * dpr);
+  c.style.width = f.w + 'px'; c.style.height = f.h + 'px';
+  const x = c.getContext('2d');
+  x.setTransform(c.width / CARD_W, 0, 0, c.height / CARD_H, 0, 0);
+  x.clearRect(0, 0, CARD_W, CARD_H);
+  cardDrawBands(x);
+  if (!CARD.bands) {
+    CARD.bands = document.createElement('canvas');
+    CARD.bands.width = CARD_W; CARD.bands.height = CARD_H;
+  }
+  const y = CARD.bands.getContext('2d');
+  y.setTransform(1, 0, 0, 1, 0, 0);
+  y.clearRect(0, 0, CARD_W, CARD_H);
+  cardDrawBands(y);
+}
+function cardCompose() {
+  if (!CARD.out) {
+    CARD.out = document.createElement('canvas');
+    CARD.out.width = CARD_W; CARD.out.height = CARD_H;
+  }
+  const x = CARD.out.getContext('2d');
+  x.fillStyle = '#02040a'; x.fillRect(0, 0, CARD_W, CARD_H);
+  x.drawImage(canvas, 0, CARD_TOP, CARD_W, CARD_MID);
+  x.drawImage(CARD.bands, 0, 0);
+  return CARD.out;
+}
+
+/* ---- the list beside the frame ---- */
+function cardBuildOpts() {
+  const box = $('card-opts');
+  box.replaceChildren();
+  ['basic', 'best', 'act', 'fun'].forEach(g => {
+    const h = document.createElement('div');
+    h.className = 'cgh'; h.textContent = T('card.g.' + g);
+    box.appendChild(h);
+    CARD_STATS.filter(st => st[0] === g).forEach(st => {
+      const k = st[1], v = CARD.vals[k];
+      const row = document.createElement('div');
+      row.className = 'crow';
+      row.classList.toggle('on', CARD.sel.indexOf(k) >= 0);
+      row.classList.toggle('na', !v);
+      const a = document.createElement('span'); a.textContent = T('cs.' + k);
+      const b = document.createElement('i'); b.textContent = v ? v.v : '—';
+      row.appendChild(a); row.appendChild(b);
+      row.onclick = () => cardToggle(k);
+      box.appendChild(row);
+    });
+  });
+  $('card-n').textContent = CARD.sel.length + ' / ' + CARD_MAX;
+}
+function cardToggle(k) {
+  if (!CARD.vals[k] || CARD.rec || CARD.cd) return;
+  const i = CARD.sel.indexOf(k);
+  if (i >= 0) CARD.sel.splice(i, 1);
+  else if (CARD.sel.length < CARD_MAX) CARD.sel.push(k);
+  else { toast(T('card.full')); return; }
+  /* in the list's order, not the order of clicking, so the card reads the
+     way the panel does */
+  CARD.sel.sort((a, b) => CARD_KEYS.indexOf(a) - CARD_KEYS.indexOf(b));
+  SET.card = CARD.sel.slice(); saveSet();
+  cardBuildOpts(); cardPreview();
+}
+
+/* ---- in and out ---- */
+function cardOpen() {
+  if (MINI.on || CARD.on) return;
+  if (!N) { toast(T('need.vault')); return; }
+  if (mindOpen) closeMind();
+  dockDismiss();
+  select(-1); hovered = -1;
+  CARD.vals = cardValues();
+  const saved = Array.isArray(SET.card) ? SET.card.filter(k => CARD_KEYS.indexOf(k) >= 0) : CARD_DEF;
+  CARD.sel = saved.filter(k => CARD.vals[k]).slice(0, CARD_MAX);
+  CARD.on = true;
+  document.body.classList.add('card');
+  cardBuildOpts();
+  resize();
+  /* the card is a portrait of the whole vault, so it opens on the whole
+     vault, fitted to the frame's own shape */
+  fitView();
+}
+function cardClose() {
+  if (!CARD.on) return;
+  if (CARD.rec) cardStop();
+  cardCancel();
+  CARD.on = false;
+  document.body.classList.remove('card');
+  ['left', 'top', 'width', 'height', 'right', 'bottom'].forEach(k => { canvas.style[k] = ''; });
+  renderer.setPixelRatio(SS.base * SS.now);
+  resize();
+}
+
+/* ---- saving ---- */
+function cardFileBase() {
+  return (DATA.meta.vault || 'vault').replace(/[^\w가-힣ぁ-んァ-ヶー一-龥.-]+/g, '_') + '-orrery-card';
+}
+function cardSave(blob, ext, msg) {
+  if (!blob || !blob.size) { toast(T('card.fail')); return; }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = cardFileBase() + '.' + ext;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+  toast(T(msg || 'card.saved', { f: a.download }), 5000);
+}
+function cardShot() { if (CARD.on && !CARD.rec && !CARD.cd) CARD.shot = true; }
+function cardMime() {
+  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+  const want = ['video/mp4;codecs=avc1.640028', 'video/mp4;codecs=avc1.42E01F', 'video/mp4',
+                'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+  for (let i = 0; i < want.length; i++) if (MediaRecorder.isTypeSupported(want[i])) return want[i];
+  return '';
+}
+/* Three, two, one — long enough to get a hand back on the mouse. */
+let cardCdT = 0;
+function cardRecord() {
+  if (!CARD.on || CARD.rec || CARD.cd) return;
+  const mime = cardMime();
+  if (!mime || !(CARD.bands && 'captureStream' in CARD.bands)) { toast(T('card.norec')); return; }
+  let n = 3;
+  CARD.cd = 1;
+  $('card').classList.add('arm');
+  const tick = () => {
+    if (!CARD.cd) return;
+    if (n > 0) { $('card-cd').textContent = n; n--; cardCdT = setTimeout(tick, 800); return; }
+    $('card-cd').textContent = '';
+    CARD.cd = 0;
+    cardStart(mime);
+  };
+  tick();
+}
+function cardCancel() {
+  clearTimeout(cardCdT);
+  CARD.cd = 0;
+  $('card-cd').textContent = '';
+  $('card').classList.remove('arm');
+}
+function cardStart(mime) {
+  const out = cardCompose();
+  let stream, rec;
+  try {
+    stream = out.captureStream(30);
+    rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12000000 });
+  } catch (e) {
+    console.error('vault-orrery: card recorder', e);
+    toast(T('card.norec')); $('card').classList.remove('arm');
+    return;
+  }
+  const chunks = [];
+  rec.ondataavailable = ev => { if (ev.data && ev.data.size) chunks.push(ev.data); };
+  rec.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    const mp4 = mime.indexOf('mp4') >= 0;
+    cardSave(new Blob(chunks, { type: mime.split(';')[0] }), mp4 ? 'mp4' : 'webm',
+             mp4 ? 'card.saved' : 'card.webm');
+  };
+  CARD.rec = { rec, live: true, t0: performance.now() };
+  $('card').classList.remove('arm');
+  $('card').classList.add('rec');
+  $('card-bar').style.width = '0%';
+  $('card-t').textContent = T('card.stop');
+  rec.start(500);
+}
+function cardStop() {
+  const r = CARD.rec;
+  if (!r) return;
+  r.live = false;
+  CARD.rec = null;
+  $('card').classList.remove('rec');
+  try { r.rec.stop(); } catch (e) { console.error('vault-orrery: card recorder', e); }
+}
+/* Called by the frame loop straight after the draw, which is the only time
+   the canvas can be read. */
+function cardAfterRender() {
+  if (CARD.shot) {
+    CARD.shot = false;
+    cardCompose().toBlob(b => cardSave(b, 'png'), 'image/png');
+  }
+  if (CARD.rec && CARD.rec.live) {
+    cardCompose();
+    const el = (performance.now() - CARD.rec.t0) / 1000;
+    $('card-bar').style.width = Math.min(100, el / CARD_SECS * 100) + '%';
+    if (el >= CARD_SECS) cardStop();
+  }
+}
+$('dk-card').onclick = cardOpen;
+$('card-x').onclick = cardClose;
+$('card-png').onclick = cardShot;
+$('card-mp4').onclick = cardRecord;
 
 /* ================================================================= SOUND
    Off by default, and deliberately so: v1 chose "소리 없는 정적" as one of
@@ -12314,7 +12999,7 @@ canvas.addEventListener('pointerdown', e => {
      one, which made turning the camera a lottery: in a dense system almost
      every pixel is a node. Moving bodies is now behind Shift, so a plain drag
      always turns the view. */
-  if (dragging === 1 && e.shiftKey) {
+  if (dragging === 1 && e.shiftKey && !CARD.on) {
     const i = pickAt(mouseNDC.x, mouseNDC.y, hovered);
     if (i >= 0) { dragNodeIdx = i; grabbed = i; dispActive.add(i); }
   }
@@ -12356,7 +13041,11 @@ addEventListener('pointerup', e => {
     grabbed = -1;
     if (isClick) tapNode(dragNodeIdx, e);
     dragNodeIdx = -1;
+  } else if (dragging === 1 && isClick && CARD.on) {
+    /* the card is for framing; a click on it selects nothing, because the
+       canvas is not where the pointer arithmetic thinks it is */
   } else if (dragging === 1 && isClick) {
+    dockDismiss();
     /* Re-pick where the button came up, against the positions the frame on
        screen was drawn from. The cached hover is only consulted as the tie
        break, so a body that drifted during the press cannot be selected in
@@ -12370,6 +13059,9 @@ addEventListener('pointerup', e => {
 /* the double-click that opens the mind map has to survive the drag handler,
    so it is timed here rather than left to the browser's dblclick event */
 function tapNode(i, e) {
+  /* In the sidebar a planet is a link: there is no inspector to fill and no
+     mind map to open, and selecting would lock the drifting view onto it. */
+  if (MINI.on) { if (canOpen()) openNote(i, e); return; }
   /* Ctrl/Cmd-click is "open this" everywhere in Obsidian, including on every
      link inside every note. Honouring it here costs one line and means the
      gesture a user already has works on a planet too. */
@@ -12407,7 +13099,7 @@ const _zv = new THREE.Vector3(), _zf = new THREE.Vector3(), _zp = new THREE.Vect
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
   const f = Math.exp(e.deltaY * 0.0011);
-  if (f < 1 && rig.follow < 0 && !mindOpen) {
+  if (f < 1 && rig.follow < 0 && !mindOpen && !CARD.on) {
     const nx = (e.clientX/innerWidth)*2-1, ny = -(e.clientY/innerHeight)*2+1;
     _zv.set(nx, ny, 0.5).unproject(camera).sub(camera.position).normalize();
     _zf.set(0, 0, -1).applyQuaternion(camera.quaternion);
@@ -12456,6 +13148,10 @@ function typingTarget(t){
 }
 
 addEventListener('keydown', e => {
+  /* The listener is on the window, and a mini orrery shares that window with
+     the full one: G pressed over the full view would otherwise start Genesis
+     in the sidebar as well. The mini has no keys at all. */
+  if (MINI.on) return;
   if (searchOpen) return;
   /* Every listener here is on the window, and the window belongs to the host
      as much as to us: an orrery open in a background tab still sees the keys
@@ -12465,6 +13161,7 @@ addEventListener('keydown', e => {
      the sentence being typed. Ask what the element is for, not what it is
      called: an editing surface is anything focus can put text into. */
   if (typingTarget(e.target)) return;
+  paceTouch();
   const k = e.key.toLowerCase();
 
   /* The card is over everything, so it takes the keyboard with it: a mode key
@@ -12477,6 +13174,19 @@ addEventListener('keydown', e => {
   if (guideOpen()) {
     e.preventDefault();
     if (k === 'escape' || e.key === '?') hideGuide();
+    return;
+  }
+  /* The card keeps three keys: Escape to stop or leave, and the two that are
+     worth recording — Genesis and the ripple. */
+  if (CARD.on) {
+    if (k === 'escape') {
+      e.preventDefault();
+      if (CARD.rec) cardStop();
+      else if (CARD.cd) cardCancel();
+      else cardClose();
+    }
+    else if (k === 'g') { e.preventDefault(); toggleGenesis(); }
+    else if (k === ' ') { e.preventDefault(); if (!e.repeat) rippleHere(); }
     return;
   }
   /* shift-/ — the ? that means "what are the keys" everywhere else. Ahead of
@@ -12526,6 +13236,7 @@ addEventListener('keydown', e => {
   else if (k === 'g') { e.preventDefault(); toggleGenesis(); }
   else if (k === ' ') { e.preventDefault(); if (!e.repeat) rippleHere(); }
   else if (k === 'p') { e.preventDefault(); savePoster(); }
+  else if (k === 'c' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); cardOpen(); }
   else if (k === 'u') { e.preventDefault(); audioSet(!AUD.on); }
   else if (k === 'h') {
     const off = $('hud').style.display !== 'none';
@@ -12534,6 +13245,7 @@ addEventListener('keydown', e => {
     if (off) toast(T('hud.off'), 2600);
   }
   else if (k === 'escape') {
+    if (dockDismiss()) return;
     /* one Escape at a time, outermost thing first. The route sits above the
        selection because it is the thing that took the whole frame, and below
        the replay and the wave because both of those are still running. */
@@ -12722,6 +13434,15 @@ function ssTarget() {
   return SS.still < 1.1 ? Math.min(1.45, SS.ceil) : SS.ceil;
 }
 function ssStep(dt) {
+  /* a sidebar drifts for ever, so it would never be still enough to promote,
+     and it is the one view that should not try */
+  /* the card sets its own resolution, to the pixel the saved image needs */
+  if (MINI.on || CARD.on) return;
+  /* A paced frame rate is not a slow machine. The guard below reads thirty
+     frames as a reason to give up the extra resolution for the rest of the
+     session; while the view is idling it is not asked, and its clock starts
+     again from the touch that wakes it. */
+  if (PACE.on) { SS.hold = 0; return; }
   /* ---- has the view moved ----
      Asked in pixels, and it has to be. The obvious test is whether the
      camera's numbers changed since the last frame, and the answer to that is
@@ -12798,7 +13519,11 @@ function ssApply() {
 }
 
 function resize() {
-  const w = innerWidth, h = innerHeight;
+  /* While the photo card is up the canvas is the card's middle, not the
+     leaf: cardPlace moves it there and sets the resolution, and everything
+     below sizes itself to that box instead. */
+  if (CARD.on) cardPlace();
+  const w = CARD.on ? CARD.hole.w : innerWidth, h = CARD.on ? CARD.hole.h : innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w/h; camera.updateProjectionMatrix();
   /* gl_PointSize is in device pixels and this is in CSS ones, so growing the
@@ -14629,6 +15354,42 @@ function writeHUD(now) {
    means the black rectangle has an explanation attached to it.               */
 const RUN = { host: true, running: false, raf: 0, lost: false };
 
+/* ---- pacing ----
+   The gate above answers "is anyone looking". This answers "how closely".
+   A view on screen drew sixty frames a second for as long as it was open,
+   and the commonest way to have it open is beside a note being written, with
+   nobody touching it: the orbits turn, the idle drift turns, and a laptop fan
+   spins up over a picture that would look the same at half the rate. That
+   was the "Obsidian feels slower with this open" that sent people away.
+
+   So a view that has not been touched for a while draws thirty frames a
+   second, and the first touch puts it straight back to sixty. Genesis is
+   exempt: it is something being watched even when the hands are still. The
+   mini orrery is paced all the time, at its own rate (see MINI).
+
+   "Touched" is this view's own canvas, panels and keys — not the window's,
+   which would count every keystroke typed into the editor beside it. */
+['pointerdown', 'pointermove', 'wheel'].forEach(t => {
+  canvas.addEventListener(t, paceTouch, { passive: true });
+  $('hud').addEventListener(t, paceTouch, { passive: true });
+});
+function paceStep(now) {
+  /* A recording is paced to an even thirty, which is what it is encoded
+     at; a card being composed is drawn at full rate, however still the
+     hands are, because somebody is looking at it to decide. */
+  const step = MINI.on ? MINI.step
+             : CARD.rec ? 1000 / 30
+             : CARD.on ? 0
+             : (now - PACE.touch > PACE.idleMs && !GEN.on) ? PACE.idleStep : 0;
+  PACE.on = step > 0;
+  if (!step) { PACE.last = now; return false; }
+  /* four milliseconds of slack, or a 60 Hz display's own jitter would turn a
+     thirty-frame step into an occasional twenty */
+  if (now - PACE.last < step - 4) return true;
+  PACE.last = now;
+  return false;
+}
+
 
 /* ==================================================== FRAME BUDGET
    Half the comments in this file argue about milliseconds — the link writer
@@ -14729,6 +15490,7 @@ canvas.addEventListener('webglcontextrestored', () => {
 
 function frameLoop(now) {
   RUN.raf = requestAnimationFrame(frameLoop);
+  if (paceStep(now)) return;
   const dtms = Math.min(64, now - last); last = now;
   const dt = dtms/1000;
   fps = fps*0.92 + (1000/Math.max(1,dtms))*0.08;
@@ -14759,7 +15521,7 @@ function frameLoop(now) {
   const _p1 = perfNow();
   /* Now that this frame's positions are final, answer the pointer — every
      frame, not only when the mouse moves, because the bodies move too. */
-  if (pointerIn && !dragging)
+  if (pointerIn && !dragging && !CARD.on)
     hovered = pickAt(mouseNDC.x, mouseNDC.y, hovered);
   const _p2 = perfNow();
   stepLinkLayers(dt);
@@ -14802,7 +15564,12 @@ function frameLoop(now) {
     if (actRig.visible) {
       actRig.position.set(P[activeIdx*3], P[activeIdx*3+1], P[activeIdx*3+2]);
       const br = 0.5 + 0.5 * Math.sin(t * 0.0031);
-      const r = RAD[activeIdx] * (3.6 + br * 0.5);
+      /* Sized to the body, which in the sidebar's whole-vault frame makes a
+         small note's ring a few pixels across. There it has a floor instead,
+         a share of the range, so the light on the note being written is
+         always a ring you can see. */
+      const r = Math.max(RAD[activeIdx] * (3.6 + br * 0.5),
+        MINI.on ? camera.position.distanceTo(actRig.position) * 0.016 * (1 + br * 0.14) : 0);
       actRing.scale.setScalar(r);
       actRing.quaternion.copy(camera.quaternion);
       actRing.material.opacity = (0.45 + br * 0.42) * vis;
@@ -15071,6 +15838,8 @@ function frameLoop(now) {
      path drew it already, which it has to, or the one surface in frame would
      be the one thing light did not spill onto */
   const composited = renderFrame();
+  /* read back in the same tick as the draw — there is no preserved buffer */
+  if (CARD.on) cardAfterRender();
   if (PERF.on) {
     const _p7 = performance.now();
     perfMix('sim',  _p1-_p0);
@@ -15111,22 +15880,12 @@ function syncAdv() {
    negotiation with `deckTouched` is its own thing — these two are only ever
    folded because somebody folded them. */
 const FOLDERS = [['leg', 'legFold', 'legfold'], ['keys', 'keysFold', 'keysfold']];
+/* Folding went with the corners: a drawer is open or it is not, and the rail
+   is the fold. Still called by RESET and at start-up, and still worth having
+   for that — a pane folded under an older version has to open unfolded. */
 function syncFolds() {
-  FOLDERS.forEach(([pane, key, mark]) => {
-    const on = !!SET[key];
-    $(pane).classList.toggle('fold', on);
-    $(mark).textContent = on ? '[ + ]' : '[ − ]';
-  });
+  FOLDERS.forEach(([pane]) => $(pane).classList.remove('fold'));
 }
-FOLDERS.forEach(([pane, key]) => {
-  $(pane).firstElementChild.onclick = () => {
-    SET[key] = !SET[key];
-    syncFolds(); saveSet();
-    /* the pane below now has more or less room to be given, and layoutHUD is
-       what hands it over */
-    layoutHUD();
-  };
-});
 /* ---------------------------------------------------------- the knobs
    Built once from KNOBS, then only ever moved between the two shelves.
 
@@ -15636,20 +16395,14 @@ const DECK_CORNERS = [
     document.body.classList.add('dragdeck');
     e.preventDefault();
   };
-  tl.addEventListener('pointerdown', e => {
-    if (e.target === $('ctlfold')) return;      // that one still folds
-    start(e, 1);
-  });
+  /* The title bar used to move the deck and fold it. The rail places it and
+     opens and closes it now, so the bar is only a title; the corners on the
+     right still pull its width. */
   /* A title bar that both moves the deck and folds it has to tell the two
      apart, and the only thing that separates them is whether the pointer
      travelled. Four pixels is under the accidental movement in a click and
      well under a deliberate drag. */
-  tl.onclick = () => {
-    if (moved > 4) { moved = 0; return; }
-    deckTouched = true;
-    const folded = ctl.classList.toggle('fold');
-    $('ctlfold').textContent = folded ? '[ + ]' : '[ − ]';
-  };
+
   /* Double-clicking the title hands the deck back to the automatic layout.
      Somewhere has to, or a deck dragged half off a screen that has since
      been resized smaller is a deck with no way home. */
@@ -15673,140 +16426,138 @@ function layoutHUD() {
   /* Everything is measured with offsetLeft/Top, not getBoundingClientRect.
      The panes are absolutely positioned inside #hud, so their offsets are
      already relative to the HUD's own box — which is the viewport on this
-     page and the leaf inside the plugin. A client rect would be relative to
-     the window in both cases, and mixing that with a width that means "the
-     leaf" put the control deck off by the leaf's own left edge. */
-  const idp = $('idp'), leg = $('leg'), keys = $('keys'), insp = $('insp');
+     page and the leaf inside the plugin. */
+  const insp = $('insp'), dock = $('dock');
   const W = innerWidth, H = innerHeight;
+  const x0 = dock.offsetLeft + dock.offsetWidth + 10;
 
-  const legTop = idp.offsetTop + idp.offsetHeight + 12;
-  leg.style.top = legTop + 'px';
+  /* ---- the drawers ----
+     Whichever are open, side by side in the rail's own order, each at the
+     top and as tall as it needs up to the bottom of the leaf. Two at once is
+     the pinned one and the one being looked at; the rail keeps it to that. */
+  let x = x0;
+  DOCK_PANES.forEach(id => {
+    const p = $(id), on = DOCK.open.has(id);
+    $('dk-' + id).classList.toggle('on', on);
+    p.style.display = on ? '' : 'none';
+    if (!on) return;
+    p.classList.remove('fold');
+    p.style.left = x + 'px'; p.style.top = '12px';
+    p.style.right = 'auto'; p.style.bottom = 'auto'; p.style.transform = 'none';
+    p.style.maxHeight = Math.max(90, H - 24) + 'px';
+    if (id === 'ctl') {
+      /* the width a corner was pulled to is still honoured; where the deck
+         was dragged to is not, because the rail decides that now */
+      const want = SET.deckAt && +SET.deckAt.w > 0 ? +SET.deckAt.w : DECK_OPEN_W;
+      const w = clamp(want, DECK_MIN_W, Math.max(DECK_MIN_W, W - x - 16));
+      p.style.width = w + 'px';
+      p.classList.toggle('tight', w < 430);
+      const bd = p.querySelector('.bd');
+      if (bd) bd.style.maxHeight = Math.max(90, H - 24 - 46) + 'px';
+      /* whether a label fits is a question about the width just settled */
+      deckScan();
+    }
+    x += p.offsetWidth + 10;
+  });
+  DOCK_PANES.forEach(id => {
+    const pin = $(id).querySelector('.dkb .dkpin');
+    if (pin) pin.classList.toggle('on', DOCK.pin.has(id));
+  });
 
-  /* What is left of the left column after the identity pane and the shortcut
-     list. When there is not enough for a usable legend, the shortcut list
-     goes first: it is reference, and the legend is a control — clicking a row
-     filters that star system out of the cosmos. */
-  keys.style.display = '';
-  let room = H - legTop - 34 - (keys.offsetHeight || 130);
-  /* A folded legend is a title bar and needs a title bar's worth of room, not
-     a list's. Without this the pane a reader deliberately folded to make space
-     would still be judged against the height it no longer has, and hidden
-     outright on the leaf where folding it was the point. */
-  const legMin = leg.classList.contains('fold') ? 30 : 74;
-  if (room < legMin) {
-    keys.style.display = 'none';
-    room = H - legTop - 34;
-  }
-  leg.style.display = room < legMin ? 'none' : '';
-  leg.style.maxHeight = Math.max(legMin, room) + 'px';
-
-  const left = idp.offsetLeft + idp.offsetWidth + 14;
-
-  /* The deck gets the whole gap between the columns — never a slice of the
-     window that happens to reach past the panes on either side. The inspector
-     used to narrow it, but the inspector is anchored to the bottom and the
-     deck to the top, so height is what actually separates them. */
-  const ctl = $('ctl');
-  /* The floor is low enough to still fit beside the identity pane on a narrow
-     leaf — a wider minimum only pushed the deck off the right edge, which is
-     not a better answer than a cramped deck. */
-  const free = Math.max(180, W - 32 - left);
-  let w;
-  if (SET.deckAt) {
-    /* Placed by hand. The automatic fit stops deciding, exactly the way it
-       stops deciding the fold once the title bar has been clicked — but the
-       clamp stays, because a window that has been made much smaller since
-       must not be able to strand the deck off its own edge. */
-    w = clamp(SET.deckAt.w, DECK_MIN_W, Math.max(DECK_MIN_W, W - 24));
-    ctl.style.width = w + 'px';
-    ctl.style.left  = Math.round(clamp(SET.deckAt.x, 8, Math.max(8, W - w - 8))) + 'px';
-    ctl.style.top   = Math.round(clamp(SET.deckAt.y, 8, Math.max(8, H - 46))) + 'px';
-    ctl.style.transform = 'none';
-  } else {
-    /* ---- where the deck opens ----
-       Centred at the top and eight hundred and eighty wide, which put a
-       thirty-control instrument across the whole head of the frame before
-       anybody had asked for one. A deck is a tool and a cosmos is the work;
-       the tool should start out of the way and be pulled out when it is
-       wanted.
-
-       So: the top right corner, at the floor width, which is the smallest
-       the auto-fit grid still lays out as a grid. Nothing else is up there —
-       the identity pane and the shortcuts hold the left column and the
-       inspector is anchored bottom right — so it costs the view a strip two
-       hundred and forty wide and nothing in the middle.
-
-       It is still only a default. The title bar picks the deck up and the
-       corners pull it out, and the moment either is used SET.deckAt takes
-       over and this stops deciding — which is the same bargain the fold
-       already makes with deckTouched. */
-    w = clamp(DECK_OPEN_W, 180, Math.max(180, W - left - 32));
-    ctl.style.width = w + 'px';
-    ctl.style.left  = Math.round(Math.max(8, W - w - 16)) + 'px';
-    ctl.style.top   = '16px';
-    ctl.style.transform = 'none';
-  }
-  /* past this the sliders and the buttons cannot sit side by side */
-  ctl.classList.toggle('tight', w < 430);
-
-  /* Height is read after the width is set, and only after: tight mode stacks
-     the sliders and makes the deck half again as tall, which is precisely the
-     case where its height matters. Measuring first read the old layout and
-     the correction was always one resize behind. */
-  /* The ceiling on the body, which is what stops the deck needing to fold
-     itself. Just under two thirds of the leaf, measured from where the deck
-     actually is rather than from the top, so a deck dragged halfway down does
-     not run off the bottom. Below the floor there is no useful deck at any
-     height and the fold takes over instead. */
-  const bd = ctl.querySelector('.bd');
-  if (bd) {
-    const top = SET.deckAt ? clamp(SET.deckAt.y, 8, Math.max(8, H - 46)) : 16;
-    bd.style.maxHeight = Math.max(90, Math.min(H * 0.62, H - top - 46)) + 'px';
-  }
-
-  if (!deckTouched) {
-    /* Folding is the last resort now rather than the usual one. It used to
-       fire whenever the unfolded deck was taller than two thirds of the leaf,
-       which was right while the deck was eight hundred wide and short — and
-       wrong the moment it opened narrow, because then almost any drawer is
-       taller than that and opening ADVANCED collapsed the panel it had just
-       been asked to add to.
-
-       The body scrolls, so height is no longer a reason to hide anything.
-       What is left is a leaf too short to show a deck at all: below about
-       two hundred and forty there is no room for a title bar, a tab strip
-       and a row, and a title bar alone is the honest thing to offer. */
-    ctl.classList.toggle('fold', H < 240);
-    $('ctlfold').textContent = ctl.classList.contains('fold') ? '[ + ]' : '[ − ]';
-  }
-
-  /* the deck's width has just been settled, and whether a label fits is a
-     question about that width */
-  deckScan();
-
-  /* Below this the identity pane and the inspector cannot sit side by side at
-     any width they are willing to take, and the inspector is the one that can
-     go: it is empty until something is selected, and selecting needs a cosmos
-     big enough to aim at, which a leaf this narrow does not have either. */
-  insp.style.display = W < 620 ? 'none' : '';
-
-  /* What is left under the deck is the inspector's ceiling. That way round on
-     purpose: an inspector that scrolls is fine, an inspector sitting on top of
-     the controls is not. 64vh stays the cap on a roomy leaf. */
+  /* The inspector is content, not a tool, so it is not on the rail: it is
+     there while a note is selected and gone when none is. Below 620 it does
+     not fit beside anything and goes regardless. */
+  insp.style.display = inspShown() ? '' : 'none';
+  /* On a leaf too narrow for the drawers and the inspector side by side,
+     the inspector stops short of the lowest drawer it would otherwise sit
+     on. An inspector that scrolls is fine; one covering the panel somebody
+     has just opened is not. */
+  const iw = insp.offsetWidth || 352;
+  let under = 0;
+  DOCK.open.forEach(id => {
+    const p = $(id);
+    if (p.offsetLeft + p.offsetWidth > W - 16 - iw - 10)
+      under = Math.max(under, p.offsetTop + p.offsetHeight);
+  });
   insp.style.maxHeight =
-    Math.max(96, Math.min(H * 0.64, H - (16 + ctl.offsetHeight) - 26)) + 'px';
+    Math.max(96, Math.min(H * 0.64, H - 32, under ? H - under - 16 - 12 : H)) + 'px';
 
-  /* The genesis bar runs along the bottom, which is where the inspector always
-     is, so it always gives way to it. No floor worth speaking of: it shrinks
-     to what is left rather than keeping a comfortable width and sliding
-     underneath. Below about 380px the year ticks stop being readable and go. */
-  const bFree = Math.max(120, (W - 16 - (insp.offsetWidth || 312) - 14) - left);
+  /* The genesis bar runs along the bottom between the rail and the
+     inspector. No floor worth speaking of: it shrinks to what is left rather
+     than sliding underneath. Below about 380px the year ticks go. */
+  const bFree = Math.max(120, W - 16 - (inspShown() ? (insp.offsetWidth || 352) + 14 : 0) - x0);
   const gen = $('gen');
   gen.style.width = Math.min(660, bFree) + 'px';
-  gen.style.left  = Math.round(left + bFree / 2) + 'px';
+  gen.style.left  = Math.round(x0 + bFree / 2) + 'px';
   $('genmarks').style.display = bFree < 380 ? 'none' : '';
   fitGenMarks();
 }
+function inspShown() { return selected >= 0 && selected < N && innerWidth >= 620; }
+
+/* ================================================================== DOCK
+   The HUD was five panes in four corners, there from the first frame: the
+   vault's numbers top left, the star systems under them, the deck top right,
+   the shortcuts bottom left and the inspector bottom right. Every one of them
+   was worth having and together they framed the cosmos in instruments, which
+   is the opposite of a picture you leave open beside your work.
+
+   So the four tools moved onto a rail and open as drawers, one at a time, and
+   the frame belongs to the sky until one is asked for. Nothing was removed:
+   each pane is the pane it was, opened from a different place.
+
+     click a rail button      open that drawer, closing any unpinned one
+     click it again, or ✕     close it
+     PIN                      keep it open; the next drawer opens beside it
+     a click on the sky, Esc  close the unpinned ones
+
+   A click on the sky closes them, a drag does not: turning the cosmos to see
+   what a slider just did is the main thing the deck is open for. */
+function dockOpen(id) {
+  DOCK.open.forEach(o => { if (!DOCK.pin.has(o)) DOCK.open.delete(o); });
+  DOCK.open.add(id);
+  layoutHUD();
+}
+function dockClose(id) {
+  DOCK.open.delete(id);
+  if (DOCK.pin.delete(id)) dockSave();
+  layoutHUD();
+}
+function dockToggle(id) { DOCK.open.has(id) ? dockClose(id) : dockOpen(id); }
+function dockPin(id) {
+  if (DOCK.pin.has(id)) DOCK.pin.delete(id); else { DOCK.pin.add(id); DOCK.open.add(id); }
+  dockSave();
+  layoutHUD();
+}
+function dockSave() { SET.dock = [...DOCK.pin]; saveSet(); }
+/* True if it closed anything, so Escape can stop there. */
+function dockDismiss() {
+  let any = false;
+  DOCK.open.forEach(o => { if (!DOCK.pin.has(o)) { DOCK.open.delete(o); any = true; } });
+  if (any) layoutHUD();
+  return any;
+}
+DOCK_PANES.forEach(id => {
+  $('dk-' + id).onclick = () => dockToggle(id);
+  /* pin and close, built here rather than written into four title bars */
+  const box = document.createElement('span');
+  box.className = 'dkb';
+  const pin = document.createElement('i');
+  pin.className = 'fx dkpin'; pin.textContent = 'PIN';
+  pin.setAttribute('data-i18n-title', 'dock.pin');
+  /* the language sweep has already run by the time these exist */
+  pin.title = T('dock.pin');
+  pin.onclick = e => { e.stopPropagation(); dockPin(id); };
+  const x = document.createElement('i');
+  x.className = 'fx dkx'; x.textContent = '✕';
+  x.setAttribute('data-i18n-title', 'dock.close');
+  x.title = T('dock.close');
+  x.onclick = e => { e.stopPropagation(); dockClose(id); };
+  box.appendChild(pin); box.appendChild(x);
+  $(id).firstElementChild.appendChild(box);
+});
+$('dk-search').onclick = () => openSearch();
+$('dk-gen').onclick = () => toggleGenesis();
+
 
 /* ========================================================== VAULT PARSER
    A folder is read in the browser into exactly the shape the original build
@@ -16752,7 +17503,8 @@ const GUIDE = [
   ['guide.s.mode', [
     ['M · DBL-CLICK',  'guide.mind'],
     ['G',              'guide.gen'],
-    ['P',              'guide.poster'] ]],
+    ['P',              'guide.poster'],
+    ['C',              'guide.card'] ]],
   ['guide.s.rest', [
     ['QUALITY',        'guide.quality'],
     ['U',              'guide.sound'],
@@ -16799,7 +17551,7 @@ function introOpen() { return $('intro').classList.contains('on'); }
 /* Queued behind the load summary rather than racing it: the toast is the
    answer to "did it work", and it should not be read through a card. */
 function maybeIntro() {
-  if (introSeen) return;
+  if (introSeen || MINI.on) return;
   setTimeout(showIntro, 900);
 }
 $('introgo').onclick = hideIntro;
@@ -16878,6 +17630,7 @@ const CMD = {
   genesis: toggleGenesis,
   ripple:  rippleHere,
   poster:  savePoster,
+  card:    cardOpen,
   layer:   cycleLayer,
   grid:    toggleGrid,
   sound:   () => audioSet(!AUD.on),
