@@ -18,6 +18,15 @@ thing. What it keeps is chosen, not whatever came first in the file list: the
 note open in the editor and the hub you picked always stay, then the notes the
 vault links to most, then the most recently written.
 
+**A view nobody is touching draws at half rate.** Twenty seconds without a
+pointer or a key on the view — typing in the note beside it does not count —
+and it draws thirty frames a second instead of sixty; the first touch puts it
+straight back. Genesis is exempt, because it is being watched even when the
+hands are still. The sidebar's **mini orrery** is paced all the time, at
+twenty, with BALANCED light, no panels, no sound and no sky events — its
+canvas is a tenth of the full view's pixels, so it costs a small fraction of
+it.
+
 **Rendering stops when you are not looking at it.** The render loop, the physics
 clock and the audio context are all suspended when the view's leaf is hidden or
 the window is in the background, and resume where they left off. An orrery in a
@@ -39,7 +48,7 @@ from four pixels away as from four hundred, which is the rule the whole
 surface design is built on.
 
 If a large vault still runs slowly, the first thing to try is the **FAST**
-preset at the head of the control deck. It sets BLOOM, SUN RAYS, LENS FLARE,
+preset at the head of the controls drawer (⚙ on the rail). It sets BLOOM, SUN RAYS, LENS FLARE,
 SUN HALO, FILM CURVE, ZODIACAL LIGHT, STARFIELD and SKY VEIL to OFF in one
 click, which puts the renderer back on the path it takes when nothing has been
 asked for; **BALANCED** keeps a little of the glow, and **CINEMA** is the

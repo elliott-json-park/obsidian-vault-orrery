@@ -252,12 +252,12 @@ All of it needs distance. It ramps off how small the star's disc has become
 in pixels, so it cannot appear on a star you are standing next to, and it
 hands back to the corona and then to the photosphere as you approach.
 
-**The control deck can be moved.** Drag its title bar to put it anywhere in
-the pane, pull any of the four corners to set its width, and the sliders
-reflow into whatever width you leave them. Each corner holds the edge
-opposite it, so a left-hand one keeps the right edge where it is. Double-click
-the title bar — or press RESET — to hand it back to the automatic layout. Its
-height is always its contents, which is why the corners set width alone.
+**The controls open from the rail.** ⚙ at the left edge opens them as a
+drawer beside the rail; PIN keeps it open while you open another. Pull either
+right-hand corner to set its width, and the sliders reflow into whatever width
+you leave them. Double-click the title bar — or press RESET — to hand the
+width back. Its height is always its contents, which is why the corners set
+width alone.
 
 **ORBIT SHELL** opens each system from a disc into a sphere. Every orbit in the
 layout is tilted about the same axis, so a system is a flat ring; turn this

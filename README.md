@@ -2,9 +2,11 @@
 
 **See your Obsidian vault as a living star system — and replay how it grew.**
 Folders are stars, notes are the planets orbiting them, and every body on
-screen is a note you can be reading a second later. Works offline.
+screen is a note you can be reading a second later. Keep a small one turning
+in your sidebar while you write, and share yours as a photo card. Works
+offline.
 
-![A 329-note vault drawn as a star system: folder-stars — WRITINGS, INVESTMENTS, BOOKS, 논픽션, 소설 — round a bright hub, with 655 links arcing between their notes and the HUD around the edge](docs/screenshots/hero.jpg)
+![A vault drawn as a star system in Obsidian: folder-stars — ASTRONOMY, FIELD NOTES, SOLAR SYSTEM — round a bright hub, the rail of tools at the left edge with the controls drawer open, and the mini orrery turning in the right sidebar](docs/screenshots/rail.jpg)
 
 <p align="center">
   <a href="https://elliott-json-park.github.io/obsidian-vault-orrery/"><b>▶ Try it in your browser — no install, nothing uploaded</b></a>
@@ -41,6 +43,24 @@ menu.
 
 ![One note selected: the inspector shows its path, its actions, its link counts, its properties and an excerpt, with its links drawn out across the cosmos and its moons in orbit round it](docs/screenshots/inspector.jpg)
 
+**4 · It stays open beside your work.** A mini orrery lives in the right
+sidebar: the whole vault, turning slowly about the note you are editing, with
+a ring of light on that note. Click a planet to open it. It draws twenty
+frames a second with no panels and no sound, and stops while the sidebar is
+closed — and the full view drops to thirty frames a second whenever you leave
+it alone, so neither one is something you have to remember to close.
+
+![A note open in the editor, with the mini orrery in the right sidebar turning about it and a ring of light on the note being edited](docs/screenshots/sidebar.jpg)
+
+**5 · It makes something worth posting.** Press `C` for a 9:16 photo card:
+your vault's own sky in the frame, its name above, and up to six numbers
+below — how old the vault is, how many notes and links, its biggest system,
+its most cited note, its longest streak, a constellation name of its own.
+Turn and zoom inside the frame, then save a 1080 × 1920 image or record
+fifteen seconds of whatever you do with the camera as an MP4.
+
+<p align="center"><img src="docs/screenshots/card.jpg" width="320" alt="A 9:16 photo card: the vault's name and date across the top, the cosmos in the middle, and six stats along the bottom — vault age, notes, links, star systems, the most cited note and the vault's constellation"></p>
+
 ---
 
 ## Getting started
@@ -48,10 +68,12 @@ menu.
 1. **Install** — Settings → Community plugins → Browse → *Vault Orrery*.
 2. **Open it** — the orbit icon in the ribbon, or *Vault Orrery: Open* in the
    command palette. A card names the four moves that are enough to get going.
+   The mini orrery is already in your right sidebar.
 3. **Explore** — drag to orbit, scroll to zoom, click a planet to read it,
    double-click for its mind map, and press `G` to watch the vault form.
 
-If a large vault feels slow, press **FAST** at the top of the control deck.
+If a large vault feels slow, press **FAST** at the top of the controls (⚙ on
+the rail).
 The first time a big vault opens on a machine that is struggling, the orrery
 does that for you and says so.
 
@@ -59,6 +81,16 @@ does that for you and says so.
 
 ## What it does
 
+The tools sit on a thin rail at the left edge and open as drawers, so the
+frame is all sky until you ask for one: ⌕ search, ◎ the vault's numbers,
+✦ star systems, ⚙ controls, ? shortcuts, ◌ Genesis and ● the photo card.
+**PIN** keeps a drawer open beside the next; a click on the sky closes the
+rest. The inspector appears when you select a note.
+
+- **Mini orrery** — the same cosmos in the right sidebar, centred on the note
+  you are editing. *Open the mini orrery in the sidebar* brings it back.
+- **Photo card** — `C` — a 9:16 image or a fifteen-second MP4 of your vault,
+  with the stats you choose.
 - **Mind map** — `M` or double-click — one note's neighbourhood, two hops out,
   in place, with a reading rail beside it.
 - **Search** — `/` — notes, controls and actions in one box. Front-matter
@@ -67,7 +99,7 @@ does that for you and says so.
 - **Broken links**, counted in the status panel and named in the inspector.
   Click the count to keep only the notes carrying them.
 - **Ripple** — `SPACE` — a wave along the links from the selected note.
-- **Poster** — `P` — a high-resolution PNG of the cosmos with no HUD.
+- **Poster** — `P` — a high-resolution PNG of the whole frame with no HUD.
 - **Quality presets** — CINEMA · BALANCED · FAST — the eight light effects in
   one click, and every knob still there under ADVANCED.
 - **The sky has events.** A comet lands on the note you just touched; a note
@@ -98,6 +130,7 @@ were, and no loading curtain over a view you are using.
 | `G` | Genesis — play the vault's formation |
 | `SPACE` | ripple from the selected note |
 | `P` | save a poster (high-resolution PNG, no HUD) |
+| `C` | photo card — 9:16 image or 15-second clip |
 | `L` | cycle the link layer — ALL · WIKI · SOURCE · BRIDGE · OFF |
 | `X` | the reference plane on the layout's own plane |
 | `U` | ambient sound |
@@ -107,10 +140,11 @@ were, and no loading curtain over a view you are using.
 | right-drag · shift-drag | pan · move a node |
 
 The first time a vault loads, a card names the four moves that are enough to
-get going. Any key dismisses it. `?` — or the `[ ? ]` in the SHORTCUTS title
-bar — opens the full guide, which explains each of the above and the three
-things that have no key: the broken-link filter, the route, and BRIDGE. The
-four-move card is one click away at the bottom of it.
+get going. Any key dismisses it. `?` — or the `[ ? ]` in the title bar of the
+SHORTCUTS drawer — opens the full guide, which explains each of the above and
+the three things that have no key: the broken-link filter, the route, and
+BRIDGE. The four-move card is one click away at the bottom of it. Escape
+closes an open drawer before anything else.
 
 ---
 
@@ -130,7 +164,7 @@ patterns are applied first, so a note you have hidden is never opened at all.
 
 ## Large vaults
 
-If a big vault runs slowly, press **FAST** at the head of the control deck:
+If a big vault runs slowly, press **FAST** at the head of the controls drawer:
 it turns the bloom, the lens, the halo and the sky's light off in one go, and
 **CINEMA** puts them back. The first time a vault of 600 notes or more opens,
 the orrery watches the frame rate for a few seconds and switches to FAST on its
@@ -139,7 +173,9 @@ own if the machine is plainly struggling — once, and with a line saying so.
 The **MAX NODES** ceiling ships **off**: a cap that silently drops half a vault
 is worse than a slow first minute, and the slider is right there. Rendering
 stops entirely when you are not looking at the view, so an orrery in a
-background tab costs nothing.
+background tab costs nothing; a view on screen that nobody has touched for
+twenty seconds draws at half rate, and the sidebar's mini orrery always draws
+at a third.
 
 → [Performance in detail](docs/performance.md)
 

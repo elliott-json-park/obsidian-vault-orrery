@@ -4,6 +4,54 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.0.0
+
+The orrery was something you opened to look at. This release makes it
+something you can leave on beside your work, and something you can show
+people.
+
+- **A mini orrery in the sidebar.** The same cosmos, small and quiet, in the
+  right sidebar: the whole vault turning slowly about the note you are
+  editing, with a ring of light on that note, and a click on a planet opens
+  it. The ⤢ in its corner opens the full
+  view. It draws twenty frames a second with no panels, no sound and no sky
+  events, never writes over the full view's settings, and stops entirely
+  while the sidebar is closed. It is put in the sidebar once, on the first
+  start of 2.0.0; after that the workspace remembers it like any other pane,
+  and *Open the mini orrery in the sidebar* or the setting brings it back.
+
+- **The full view rests when you do.** Left untouched for twenty seconds —
+  typing in the note beside it does not count as touching it — the view
+  draws thirty frames a second instead of sixty, and the first touch puts it
+  straight back. Genesis is exempt.
+
+- **The panels moved onto a rail.** The five panes that framed the cosmos
+  from the first frame now open as drawers from a thin rail at the left
+  edge: ⌕ search, ◎ vault, ✦ star systems, ⚙ controls, ? shortcuts, then
+  ◌ Genesis and ● the photo card. One drawer at a time; **PIN** keeps one
+  open, and the next opens beside it; a click on the sky or Escape closes
+  the rest, while dragging the sky does not. The inspector is no longer a
+  drawer at all: it appears when you select a note and goes when you don't.
+  Every pane is the pane it was — nothing was taken out — and a pinned
+  drawer is still open next time.
+
+- **Photo cards.** `C`, or ● on the rail, puts a 9:16 frame over the cosmos
+  with your vault's name above it and up to six numbers below — its age, its
+  notes and links, its biggest system, its most cited note, its longest
+  streak, a constellation name of its own and more. Turn and zoom inside the
+  frame and save it as a 1080 × 1920 image, or press record and whatever you
+  do in the next fifteen seconds becomes the clip — MP4, or WebM where the
+  runtime cannot encode MP4. What is on screen is exactly what is saved.
+
+- **Fixed: saving a poster hid the HUD.** Restoring the panels after a
+  poster referred to something that no longer existed, so the HUD stayed
+  hidden and the view was not resized back until the leaf next changed size.
+  This had been there since 1.0.0.
+
+- **A leaf narrower than it is tall frames the whole vault.** Fitting the
+  view looked only at the height, so a tall, narrow leaf cut the vault off
+  at both sides.
+
 ## 1.17.0
 
 - **Writing a note no longer rebuilds the cosmos.** Every save used to read
