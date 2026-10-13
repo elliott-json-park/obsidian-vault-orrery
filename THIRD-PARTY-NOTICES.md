@@ -1,10 +1,11 @@
 # Third-Party Notices
 
 Vault Orrery bundles one piece of third-party software. Nothing is fetched from
-a remote host at runtime — the file listed here ships with the plugin and is
-loaded from disk.
+a remote host at runtime — the library listed here ships inside the plugin's
+`main.js` and is loaded from disk.
 
-It lives under `vendor/`, which is **not** checked into this repository.
+The standalone page and the browser demo load it from `vendor/` instead, which
+is **not** checked into this repository.
 See [Populating `vendor/`](#populating-vendor) below.
 
 ---
@@ -15,8 +16,12 @@ See [Populating `vendor/`](#populating-vendor) below.
 - **Homepage:** https://threejs.org
 - **Source:** https://github.com/mrdoob/three.js
 - **License:** MIT
-- **Bundled as:** `vendor/three.min.js`
-- **Modified:** No. Used verbatim.
+- **Bundled as:** in the plugin, the parts of three.js the engine uses, built
+  into `main.js` from three's own source files (`three/src/`). In the
+  standalone page and the browser demo, `vendor/three.min.js`.
+- **Modified:** No. The code is three's own; the plugin build leaves out the
+  modules it does not use and strips comments from the shader sources, as
+  three's own release build does. `vendor/three.min.js` is used verbatim.
 
 ```
 The MIT License

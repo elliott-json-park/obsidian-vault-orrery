@@ -29,6 +29,13 @@ You can verify all of this. The engine is a single readable HTML/JS file, and
 what it does and does not reach for. `npm run check` is the same test,
 automated and run over the built bundle.
 
+The same search over the released `main.js` comes back empty too: no `fetch`,
+no `XMLHttpRequest`, no `WebSocket`, no `atob`. Until 2.0.1 it did not, because
+three.js came bundled whole and its loaders — code for downloading textures
+and models, which the orrery never uses — carried those calls in with them.
+Since 2.0.1 only the parts of three.js the engine uses are bundled, and
+`npm run check` fails the build if any of those calls returns.
+
 ---
 
 ## Respecting your excluded files

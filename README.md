@@ -152,8 +152,9 @@ closes an open drawer before anything else.
 
 **No network access at runtime. At all.** No server, no telemetry, no
 analytics, no update check, no remote font, no CDN — the plugin makes zero
-outbound requests, and `npm run check` is that claim automated over the built
-bundle. It reads every markdown file in the vault, because the shape of the
+outbound requests. The shipped `main.js` has no `fetch`, `XMLHttpRequest`,
+`WebSocket` or `atob` in it at all, and `npm run check` fails the build if one
+ever appears. It reads every markdown file in the vault, because the shape of the
 vault *is* what is being drawn and a graph of a subset is a different vault's
 picture. Reading goes through Obsidian's own cache, and your excluded-files
 patterns are applied first, so a note you have hidden is never opened at all.
@@ -188,8 +189,8 @@ at a third.
 
 **Manually:** copy `main.js`, `manifest.json` and `styles.css` from the release
 into `<vault>/.obsidian/plugins/vault-orrery/`, then enable it in Settings.
-Those three files are the whole plugin — three.js is bundled into `main.js`, so
-nothing is fetched at runtime.
+Those three files are the whole plugin — the parts of three.js it uses are
+bundled into `main.js`, so nothing is fetched at runtime.
 
 Desktop only: the renderer needs WebGL.
 

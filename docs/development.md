@@ -42,7 +42,16 @@ exact version and verifies the result. See
 [THIRD-PARTY-NOTICES.md](../THIRD-PARTY-NOTICES.md).
 
 `npm run check` is the policy gate: it greps the built bundle for anything that
-could execute from a remote host and fails if it finds one.
+could execute from a remote host, and the shipped `main.js` for any call that
+could make a request or decode base64 (`fetch`, `XMLHttpRequest`, `WebSocket`,
+`EventSource`, `sendBeacon`, `atob`, `btoa`), and fails if it finds one.
+
+three.js reaches the bundle as the names the engine actually uses, imported
+from three's per-class source files rather than the whole library —
+`scripts/build-engine.mjs` reads them off the engine on every build. The
+library's loaders, which carry the calls above, are never imported, and
+`esbuild.config.mjs` strips the comments from three's shader sources as three's
+own build does.
 
 ## Third-party software
 
