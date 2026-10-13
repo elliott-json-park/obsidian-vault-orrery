@@ -6,7 +6,7 @@ screen is a note you can be reading a second later. Keep a small one turning
 in your sidebar while you write, and share yours as a photo card. Works
 offline.
 
-![A vault drawn as a star system in Obsidian: folder-stars — ASTRONOMY, FIELD NOTES, SOLAR SYSTEM — round a bright hub, the rail of tools at the left edge with the controls drawer open, and the mini orrery turning in the right sidebar](docs/screenshots/rail.jpg)
+![A 329-note vault drawn as a star system in Obsidian: a bright hub with folder-stars round it — WRITINGS, ARCHIVE-2026, HELM — links arcing between their planets, and the rail of tools at the left edge](docs/screenshots/rail.jpg)
 
 <p align="center">
   <a href="https://elliott-json-park.github.io/obsidian-vault-orrery/"><b>▶ Try it in your browser — no install, nothing uploaded</b></a>
@@ -59,7 +59,7 @@ its most cited note, its longest streak, a constellation name of its own.
 Turn and zoom inside the frame, then save a 1080 × 1920 image or record
 fifteen seconds of whatever you do with the camera as an MP4.
 
-<p align="center"><img src="docs/screenshots/card.jpg" width="320" alt="A 9:16 photo card: the vault's name and date across the top, the cosmos in the middle, and six stats along the bottom — vault age, notes, links, star systems, the most cited note and the vault's constellation"></p>
+<p align="center"><img src="docs/screenshots/card.jpg" width="320" alt="A 9:16 photo card in Korean for a vault called PERSONAL-WIKI: the name and date across the top, the cosmos in the middle, and six stats along the bottom — vault age, notes, links, star systems, the most cited note and the vault's constellation">&nbsp;&nbsp;<img src="docs/screenshots/card-work.jpg" width="320" alt="A 9:16 photo card in English for a vault called AI-WORK-WIKI: the name and date across the top, the cosmos in the middle, and six stats along the bottom — vault age, notes, links, star systems, words and links end to end in light-years"></p>
 
 ---
 
