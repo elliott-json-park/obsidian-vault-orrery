@@ -4,6 +4,25 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.0.1
+
+Nothing you will see changes. This release is about what is in the file.
+
+- **No network or base64 call sites left in `main.js`.** three.js was
+  bundled whole, and with it its loaders — code that fetches textures and
+  models with `fetch`, `XMLHttpRequest` and `atob`. Nothing in the orrery
+  ever constructed one; every texture is drawn on a canvas in process. But a
+  scan of the release cannot tell code that runs from code that only sits
+  there, and reported a network call and runtime base64 decoding. The engine
+  now takes only the parts of three it uses, so the loaders are no longer in
+  the bundle, and the build fails if a network or base64 call ever comes back.
+- **No reference URLs in the shaders.** three's shader sources carry links
+  to the papers they implement, in comments. They are stripped at build time,
+  as three's own release build does, so the only address left in `main.js` is
+  the XHTML namespace.
+- `main.js` is about a fifth smaller (977 KB → 768 KB).
+- A type-safety cleanup in how the plugin finds its open views.
+
 ## 2.0.0
 
 The orrery was something you opened to look at. This release makes it

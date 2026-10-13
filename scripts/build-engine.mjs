@@ -254,6 +254,52 @@ API.destroy = () => {
 return API;
 `;
 
+/* Only the parts of three the engine names, each from its own source file. A
+   namespace import keeps the whole library, loaders included, and the loaders
+   are where a bundle picks up fetch, XMLHttpRequest and atob — none of which
+   this plugin ever calls, and all of which a scan of main.js reports as if it
+   did. Named imports from three.module.js are not enough: it is one file, and
+   the bundler keeps most of it. three's src/ has a file per class, and
+   src/Three.js says which file each name lives in.
+
+   The list is read off the engine, so a new THREE.X there arrives here on the
+   next build. A name Three.js does not place itself comes through one of its
+   `export * from` files (the constants, the geometries, the materials), which
+   are searched for it in turn. */
+const THREE_NAMES = [...new Set([...js.matchAll(/\bTHREE\.([A-Za-z_$][\w$]*)/g)].map(m => m[1]))].sort();
+if (!THREE_NAMES.length) fail('the engine names nothing from three; the import scan is broken');
+const THREE_SRC = path.join(here, '..', 'node_modules', 'three', 'src');
+const threeIndex = fs.readFileSync(path.join(THREE_SRC, 'Three.js'), 'utf8');
+/* Which file under src/ declares `n`, following `export * from` the way the
+   barrels in three chain them (Three.js -> geometries/Geometries.js ->
+   geometries/CircleGeometry.js). Null when nothing does. */
+const threeText = new Map();
+const readThree = f => {
+  if (!threeText.has(f)) threeText.set(f, fs.readFileSync(path.join(THREE_SRC, f), 'utf8'));
+  return threeText.get(f);
+};
+function threeHome(n, file) {
+  const text = readThree(file);
+  if (new RegExp(`export (?:const|var|let|class|function) ${n}\\b|export \\{[^}]*\\b${n}\\b[^}]*\\};`).test(text))
+    return file;
+  const named = new RegExp(`^export \\{[^}]*\\b${n}\\b[^}]*\\} from '([^']+)'`, 'm').exec(text);
+  if (named) return threeHome(n, path.posix.join(path.posix.dirname(file), named[1]));
+  for (const m of text.matchAll(/^export \* from '([^']+)'/gm)) {
+    const hit = threeHome(n, path.posix.join(path.posix.dirname(file), m[1]));
+    if (hit) return hit;
+  }
+  return null;
+}
+const threeFiles = new Map();
+THREE_NAMES.forEach(n => {
+  const file = threeHome(n, 'Three.js');
+  if (!file) fail(`three has no export named ${n}`);
+  if (!threeFiles.has(file)) threeFiles.set(file, []);
+  threeFiles.get(file).push(n);
+});
+const threeImports = [...threeFiles].sort((a, b) => a[0].localeCompare(b[0]))
+  .map(([f, ns]) => `import { ${ns.join(', ')} } from 'three/src/${f}';`).join('\n');
+
 const out = `/* AUTO-GENERATED — do not edit.
  * Source:    vault-orrery-v2.html
  * Generator: scripts/build-engine.mjs   (npm run engine)
@@ -261,7 +307,8 @@ const out = `/* AUTO-GENERATED — do not edit.
  * Edit the HTML, then regenerate. Edits made here are lost on the next build.
  */
 /* eslint-disable */
-import * as THREE from 'three';
+${threeImports}
+const THREE = { ${THREE_NAMES.join(', ')} };
 
 export const ENGINE_HTML = ${JSON.stringify(markup)};
 
@@ -323,7 +370,7 @@ if (dirty) fail(`${dirty} page-level references survived. The engine changed sha
    things in the output it cannot take, and neither can be malformed here
    because this script writes both. */
 try {
-  new Function(out.replace(/^import .*$/m, '').replace(/^export /gm, ''));
+  new Function(out.replace(/^import .*$/gm, '').replace(/^export /gm, ''));
 } catch (e) {
   fail(`the generated module does not parse: ${e.message}. ` +
        `Most likely a backtick inside one of the shader template strings.`);

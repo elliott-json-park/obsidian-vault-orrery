@@ -167,8 +167,8 @@ export default class VaultOrreryPlugin extends Plugin {
       .filter((v): v is OrreryView => v instanceof OrreryView);
   }
   private allViews(): OrreryView[] {
-    return [VIEW_TYPE_ORRERY, VIEW_TYPE_MINI]
-      .flatMap(t => this.app.workspace.getLeavesOfType(t))
+    const ws = this.app.workspace;
+    return [...ws.getLeavesOfType(VIEW_TYPE_ORRERY), ...ws.getLeavesOfType(VIEW_TYPE_MINI)]
       .map(l => l.view)
       .filter((v): v is OrreryView => v instanceof OrreryView);
   }

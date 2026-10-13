@@ -13,6 +13,25 @@ const banner =
 
 const prod = process.argv[2] === 'production';
 
+/* three is imported from its src/ files (see scripts/build-engine.mjs), and
+   the shader chunks there still carry their comments — dozens of reference
+   URLs that three's own release build strips and a scan of main.js reads as
+   addresses the plugin talks to. This is that strip, as three's rollup config
+   does it for the same files. */
+const glslComments = {
+  name: 'three-glsl-comments',
+  setup(build) {
+    build.onLoad({ filter: /[\\/]three[\\/]src[\\/]renderers[\\/]shaders[\\/].*\.glsl\.js$/ }, async args => {
+      const fs = await import('node:fs/promises');
+      const code = (await fs.readFile(args.path, 'utf8'))
+        .replace(/[ \t]*\/\/.*\n/g, '')
+        .replace(/[ \t]*\/\*[\s\S]*?\*\//g, '')
+        .replace(/\n{2,}/g, '\n');
+      return { contents: code, loader: 'js' };
+    });
+  },
+};
+
 const ctx = await esbuild.context({
   banner: { js: banner },
   entryPoints: ['src/main.ts'],
@@ -34,6 +53,7 @@ const ctx = await esbuild.context({
   logLevel: 'info',
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
+  plugins: [glslComments],
   outfile: 'main.js',
   minify: prod,
 });
