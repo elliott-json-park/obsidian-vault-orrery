@@ -12,6 +12,8 @@ offline.
   <a href="https://elliott-json-park.github.io/obsidian-vault-orrery/"><b>▶ Try it in your browser — no install, nothing uploaded</b></a>
   &nbsp;·&nbsp;
   <a href="https://obsidian.md/plugins?id=vault-orrery"><b>Install in Obsidian</b></a>
+  &nbsp;·&nbsp;
+  <a href="#中文">中文</a> · <a href="#한국어">한국어</a>
 </p>
 
 The demo is the same engine the plugin is built from. It opens on a sample
@@ -212,6 +214,42 @@ Desktop only: the renderer needs WebGL.
 - [Changelog](CHANGELOG.md)
 
 ---
+
+## 中文
+
+**Vault Orrery** 把你的 Obsidian 库画成一个 3D 星系：每个文件夹是一颗恒星，笔记是绕着它运行的行星，链接在它们之间划出光弧。文件夹拥挤，画面就拥挤；没有人链接的笔记，会独自漂在外面。
+
+- **Genesis（`G`）**：宇宙先回到一片虚空，再按照你真正写下笔记的顺序，一篇一篇重新形成。可以拖动时间轴。
+- **检查器**：点击行星即可查看笔记的属性、摘要、链接和反向链接；Ctrl/Cmd 点击在旁边打开笔记。
+- **思维导图（`M` 或双击）**：一篇笔记两跳以内的邻居，旁边附阅读栏。
+- **路径**：选两篇笔记，点亮它们之间最短的路线。坏链接会被统计并可筛选。
+- **侧边栏迷你星系**：以你正在编辑的笔记为中心。
+- **海报（`P`）与照片卡（`C`）**：高清 PNG，或 9:16 图片 / 15 秒 MP4，方便分享。
+- 界面支持 中文 · English · 한국어 · 日本語，可随时切换。
+- **完全离线**：不发出任何网络请求，没有遥测，没有 CDN。仅限桌面端（需要 WebGL）。
+
+**[▶ 在浏览器中试用，无需安装，什么都不会上传](https://elliott-json-park.github.io/obsidian-vault-orrery/)** · 安装：设置 → 第三方插件 → 浏览 → 搜索 “Vault Orrery”
+
+## 한국어
+
+**Vault Orrery**는 옵시디언 볼트를 3D 은하로 그립니다. 폴더는 항성, 노트는 그 둘레를 도는 행성, 링크는 그 사이를 잇는 빛줄기입니다. 붐비는 폴더는 붐벼 보이고, 아무도 링크하지 않는 노트는 바깥에 혼자 떠 있습니다.
+
+- **Genesis(`G`)**: 우주가 빈 공간으로 돌아갔다가, 실제로 노트를 쓴 순서대로 하나씩 다시 생겨납니다. 시간 축을 끌어 앞뒤로 볼 수 있습니다.
+- **인스펙터**: 행성을 누르면 속성·발췌·링크·백링크가 보이고, Ctrl/Cmd 클릭으로 옆에 노트를 엽니다.
+- **마인드맵(`M` 또는 더블클릭)**, **두 노트 사이 최단 경로**, **깨진 링크 필터**, 사이드바의 **미니 오러리**.
+- **포스터(`P`)와 포토 카드(`C`)**: 고해상도 PNG, 9:16 이미지나 15초 MP4로 공유할 수 있습니다.
+- 네트워크 요청이 전혀 없습니다. 데스크톱 전용(WebGL).
+
+**[▶ 설치 없이 브라우저에서 써 보기](https://elliott-json-park.github.io/obsidian-vault-orrery/)** · 설치: 설정 → 커뮤니티 플러그인 → 찾아보기 → “Vault Orrery”
+
+---
+
+## More from the same author
+
+- **[Vault Pet](https://community.obsidian.md/plugins/vault-pet)**: a pixel cat that lives at the bottom of your workspace and levels up as you write.
+- **[Class Timetable](https://community.obsidian.md/plugins/class-timetable)**: a weekly class timetable for students, with each class's lecture notes one click away. Desktop and mobile.
+- **[Tag Graph](https://community.obsidian.md/plugins/tag-graph)**: a graph view for Bases where tags, folders and properties become hubs. Tag, retag and merge by dragging.
+- **[Download Pulse](https://community.obsidian.md/plugins/plugin-pulse)**: download stats for plugin authors: every plugin's downloads, rank and milestones in one dashboard.
 
 ## License
 
