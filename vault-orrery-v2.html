@@ -373,6 +373,37 @@ body.dragdeck #hud{cursor:grabbing}
   background:rgba(92,225,255,.06);transition:.15s;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis}
 .mini:hover{background:rgba(92,225,255,.2);box-shadow:0 0 14px rgba(92,225,255,.2)}
+/* ---------- the sound stage ----------
+   The SOUND tab was four sliders, which is a mixing desk, and nobody opens a
+   mixing desk to play. This sits above them: one switch, the five moods as
+   things to press rather than a number to drag, the music box, and the
+   sound itself drawn as it plays — so the tab is somewhere to fool about in
+   and the sliders are underneath for anyone who wants to tune. */
+#sndstage{grid-column:1/-1;display:flex;flex-direction:column;gap:7px;padding:2px 0 8px;
+  border-bottom:1px solid rgba(92,225,255,.12);margin-bottom:4px}
+#sndstage .top{display:flex;gap:6px;align-items:stretch}
+#sndpow{flex:0 0 auto;min-width:118px}
+#sndpow.on{color:var(--am);border-color:rgba(255,182,72,.45);background:rgba(255,182,72,.08)}
+#sndscope{flex:1 1 auto;min-width:0;height:30px;display:block;
+  border:1px solid rgba(92,225,255,.18);background:rgba(2,8,16,.55)}
+#sndstage .cap{font-size:9.5px;letter-spacing:.12em;color:rgba(223,246,255,.45);
+  font-family:var(--kr);text-transform:none}
+#sndmoods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+#sndmoods u{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  text-decoration:none;cursor:pointer;pointer-events:auto;user-select:none;padding:7px 2px 6px;
+  border:1px solid rgba(92,225,255,.22);background:rgba(92,225,255,.04);color:rgba(223,246,255,.7);
+  font-size:11px;letter-spacing:.06em;transition:background .15s,border-color .15s,color .15s,transform .12s}
+#sndmoods u i{font-style:normal;font-size:15px;line-height:1;opacity:.85}
+#sndmoods u:hover{background:rgba(92,225,255,.12);color:var(--cy)}
+#sndmoods u:active{transform:scale(.96)}
+#sndmoods u.on{color:var(--am);border-color:rgba(255,182,72,.5);background:rgba(255,182,72,.09);
+  box-shadow:0 0 14px rgba(255,182,72,.12)}
+#sndmoods u.play{animation:sndplay .9s ease-out}
+@keyframes sndplay{0%{box-shadow:0 0 0 0 rgba(255,182,72,.55)}100%{box-shadow:0 0 0 12px rgba(255,182,72,0)}}
+#sndbox{text-align:left;white-space:normal}
+#sndbox.on{color:var(--am);border-color:rgba(255,182,72,.45);background:rgba(255,182,72,.08)}
+#sndbox small{display:block;margin-top:3px;font-size:9.5px;letter-spacing:.02em;
+  color:rgba(223,246,255,.5);font-family:var(--kr);text-transform:none}
 /* ---------- language ----------
    Four cells sharing one hairline grid, the same construction as .cbox, so
    the switch reads as part of the instrument rather than as a web widget. */
@@ -889,6 +920,18 @@ body.mini #gl:active{cursor:grabbing}
   background:rgba(92,225,255,.1);box-shadow:0 0 12px rgba(92,225,255,.15)}
 #dock u.lit{color:var(--am);border-color:rgba(255,182,72,.35)}
 #dock i{display:block;width:18px;height:1px;margin:4px 0;background:rgba(92,225,255,.18)}
+/* The rail can be carried anywhere in the leaf. The grip is the handle a
+   hand looks for — six dots, the mark every desktop uses for "this moves" —
+   but the whole rail answers to a drag, and a press that does not travel is
+   still a click on the button under it. */
+#dkgrip{display:block;width:18px;height:9px;margin:-2px 0 3px;cursor:grab;opacity:.55;
+  background:radial-gradient(circle,rgba(92,225,255,.9) 0 1px,transparent 1.3px) 0 0/6px 4.5px;
+  transition:opacity .15s}
+#dock:hover #dkgrip{opacity:.9}
+body.dragrail, body.dragrail *{cursor:grabbing !important}
+body.dragrail #dock{box-shadow:0 0 0 1px rgba(92,225,255,.45),0 10px 30px rgba(0,0,0,.5)}
+#dock.snap{transition:left .18s ease-out,top .18s ease-out}
+#dock{touch-action:none}
 /* A drawer's title bar ends in PIN and close, where the fold used to be:
    open and closed is the rail's business now, so folding went. */
 .dkb{display:flex;gap:9px;margin-left:auto;font-size:10.5px}
@@ -951,6 +994,7 @@ body.card #hud,body.card #tgt{display:none}
        here instead, so the cosmos is the whole picture until a tool is asked
        for. The glyphs are the ones the buttons already used. See DOCK. -->
   <div class="glass" id="dock">
+    <b id="dkgrip" data-i18n-title="dock.grip"></b>
     <u id="dk-search" data-i18n-title="dock.search">&#x2315;</u>
     <u id="dk-idp" data-i18n-title="dock.idp">&#x25CE;</u>
     <u id="dk-leg" data-i18n-title="dock.leg">&#x2726;</u>
@@ -1360,6 +1404,10 @@ if (MINI.on) document.body.classList.add('mini');
    long before that section is reached. */
 const DOCK = { open: new Set(), pin: new Set() };
 const DOCK_PANES = ['idp', 'leg', 'ctl', 'keys'];
+/* the sound stage and the music box: up here because applyLang reaches the
+   stage on the first sweep, long before the SOUND block is evaluated */
+let stageNode = null, scopeData = null;
+let boxPrev = null, boxAt = 0;
 /* The photo card — see PHOTO CARD. Up here for the same reason: resize()
    and the frame loop both ask whether it is open. */
 const CARD = { on: false, frame: null, hole: null, shot: false, rec: null, cd: 0,
@@ -1656,6 +1704,10 @@ const STR = {
                 'ショートカット · と全体ガイド','快捷键 · 以及完整指南'],
 'dock.gen':    ['제네시스 · 볼트가 생겨난 순서대로 [ G ]','GENESIS · replay how the vault grew [ G ]',
                 'ジェネシス · ボルトができた順に再生 [ G ]','创世 · 按仓库形成的顺序回放 [ G ]'],
+'dock.grip':   ['끌어서 옮기기 · 더블클릭하면 제자리로','DRAG TO MOVE · double-click to put it back',
+                'ドラッグで移動 · ダブルクリックで元の位置へ','拖动以移动 · 双击放回原处'],
+'dock.reset':  ['메뉴를 제자리로 되돌렸습니다','Rail put back at the left edge',
+                'メニューを元の位置に戻しました','菜单已放回原处'],
 'dock.pin':    ['고정 · 다른 서랍을 열어도 닫히지 않습니다','PIN · stays open beside the next drawer',
                 '固定 · 他の引き出しを開いても閉じません','固定 · 打开其他抽屉时也不会关闭'],
 'dock.close':  ['닫기 [ Esc ]','CLOSE [ Esc ]','閉じる [ Esc ]','关闭 [ Esc ]'],
@@ -1732,6 +1784,23 @@ const STR = {
 'grid.off':    ['기준 평면 꺼짐','REFERENCE PLANE OFF','基準平面 オフ','基准平面 关'],
 'grp.bodies':  ['천체','BODIES','天体','天体'],
 'grp.light':   ['빛','LIGHT','光','光'],
+'snd.on':      ['♪ 소리 켜기','♪ TURN SOUND ON','♪ サウンドをオン','♪ 打开声音'],
+'snd.off':     ['♪ 소리 끄기','♪ TURN SOUND OFF','♪ サウンドをオフ','♪ 关闭声音'],
+'snd.mood':    ['무드 · 누르면 볼트가 한 소절 연주합니다','MOOD · tap one and the vault plays a phrase in it',
+                'ムード · 押すとボルトが一節を奏でます','情绪 · 点一下，仓库就用它奏一小段'],
+'snd.m0':      ['고요','CALM','静けさ','宁静'],
+'snd.m1':      ['밤','NIGHT','夜','夜'],
+'snd.m2':      ['꿈','DREAM','夢','梦'],
+'snd.m3':      ['표류','DRIFT','漂流','漂流'],
+'snd.m4':      ['광활','VAST','広がり','辽阔'],
+'snd.box':     ['♫ 오르골','♫ MUSIC BOX','♫ オルゴール','♫ 八音盒'],
+'snd.box.t':   ['행성이 자기 항성과 나 사이를 지날 때마다 그 노트의 음이 울립니다. 궤도가 빨라지면 노래도 빨라집니다.',
+                'Each planet sounds its note as it passes between its star and you. Speed the orbits up and the tune speeds up.',
+                '惑星が自分の恒星とあなたの間を通るたびに、そのノートの音が鳴ります。軌道が速いほど曲も速くなります。',
+                '每颗行星从它的恒星和你之间经过时，都会奏出它那条笔记的音。轨道越快，曲子越快。'],
+'snd.box.on':  ['오르골 켜짐 · 행성이 지날 때 울립니다','MUSIC BOX ON · planets sound as they pass',
+                'オルゴール オン · 惑星が通ると鳴ります','八音盒 开 · 行星经过时发声'],
+'snd.box.off': ['오르골 꺼짐','MUSIC BOX OFF','オルゴール オフ','八音盒 关'],
 'grp.sound':   ['소리','SOUND','サウンド','声音'],
 
 /* ---- dependencies · limits · exclusions -------------------------------- */
@@ -1931,10 +2000,10 @@ const STR = {
              'Opens the flat disc into a sphere. A disc at one, a shell at zero.',
              '平らな円盤を球へ開きます。1 で円盤、0 で殻。',
              '把扁平的圆盘展开成球。为一是盘，为零是壳。'],
-'kd.str':   ['하늘 전체: 배경 별, 성운, 그 뒤의 은하수, 렌즈 앞의 먼지. OFF면 볼트만 남습니다.',
-             'The whole sky: the stars, the gas, the band behind them and the dust near the lens. OFF is the vault alone.',
-             '空のすべて：背景の星、星雲、その奥の天の川、レンズ前の塵。OFF ならボルトだけが残ります。',
-             '整个天空：背景星辰、星云、其后的银河带和镜头前的尘埃。OFF 时只剩仓库。'],
+'kd.str':   ['밤하늘이 얼마나 어두운가. 올리면 밝은 별부터 하나씩 늘고, 은하수와 성운이 차례로 떠오릅니다. OFF면 볼트만 남습니다.',
+             'How dark the sky is. Turn it up and the bright stars come first, then fainter ones between them, then the Milky Way and the gas. OFF is the vault alone.',
+             '夜空の暗さ。上げると明るい星から一つずつ増え、天の川と星雲が順に浮かびます。OFF ならボルトだけが残ります。',
+             '夜空有多暗。调高后亮星先出现，暗星在其间渐渐填满，随后是银河和星云。OFF 时只剩仓库。'],
 'kd.zod':   ['항성계 평면에 깔린 먼지가 중심 별빛을 받아 내는 빛. 볼트가 어느 면에 놓였는지를 말합니다.',
              'The dust lying in the system\'s own plane, lit by the star in the middle of it — it says which plane the vault is laid out on.',
              '恒星系の面に横たわる塵が、中心の星の光を受けて返す光。ボルトがどの面に置かれているかを示します。',
@@ -2040,6 +2109,9 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = T(el.dataset.i18nPh); });
   document.querySelectorAll('.langsel u').forEach(u =>
     u.classList.toggle('on', u.dataset.l === LANG));
+  /* the sound stage is out of the document whenever another tab is up, so
+     the sweep above cannot reach it */
+  stageSync();
 }
 function setLang(l) {
   if (LANGS.indexOf(l) < 0 || l === LANG) return;
@@ -2577,7 +2649,7 @@ const KNOBS = [
     fmt:v => offAt(v, mult(v)) },
   { k:'briMn',  g:'bodies', label:'MOON GLOW',   min:0,  max:800, sc:100, def:5.08,
     fmt:v => offAt(v, mult(v)) },
-  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:0,
+  { k:'str', g:'cosmos', label:'STARFIELD',     min:0,  max:200, sc:100, def:.6, pin:1,
     fmt:v => offAt(v, mult(v)), apply: applyStarfield },
   /* The dust in the plane of the system, lit by the star in the middle of
      it. Its own knob rather than a share of STARFIELD, because it is not the
@@ -2810,6 +2882,12 @@ if (!SAVED.litV1 &&
     !(+SAVED.blm || +SAVED.cur || +SAVED.spl || +SAVED.len || +SAVED.grn))
   ['blm', 'cur'].forEach(k => { SET[k] = KNOB_OF[k].def; });
 SET.litV1 = 1;
+/* The sky was the same case. STARFIELD shipped OFF because the knob turned
+   the sky into fog; the sky it turns on now is stars, so a saved OFF is
+   read once as the old default rather than as a choice — and then the mark
+   is down, and an OFF set after today is kept like any other value. */
+if (!SAVED.skyV2 && 'str' in SAVED && +SAVED.str === 0) SET.str = KNOB_OF.str.def;
+SET.skyV2 = 1;
 /* ---- a default that moved -----------------------------------------------
    The same question for two knobs whose defaults changed rather than went
    from off to on. A saved value that is the *old* default to the digit is
@@ -2823,6 +2901,11 @@ SET.litV1 = 1;
   if (k in SAVED && Math.abs(+SAVED[k] - old) < 0.005) SET[k] = KNOB_OF[k].def;
 });
 if (typeof SET.coreNote !== 'string') SET.coreNote = '';
+SET.sBox = !!SET.sBox;
+/* where the rail was carried to, as fractions of the room it has, so a leaf
+   that is resized keeps it on the same side and at the same height */
+if (!SET.railAt || !Number.isFinite(+SET.railAt.fx) || !Number.isFinite(+SET.railAt.fy))
+  SET.railAt = null;
 /* A placement saved on a wide monitor and reopened in a narrow leaf is the
    ordinary case, not the corner one, and layoutHUD clamps it on every resize.
    What it cannot survive is a blob that is not the right shape at all — an
@@ -5559,31 +5642,176 @@ let starFieldObj = null, brightStarObj = null, nebulaObj = null,
    band with its own bulge and its own dust lane. A background that leans the
    same way is the band's job being done twice, once badly. acos(2u-1) is
    already the right sampling for a sphere; it only needed to be left alone. */
-starFieldObj = pointsFrom(13000, (i, pos, sz, cl, al) => {
-  const r = SKY_R * (0.62 + Math.random()*0.38);
-  const th = Math.random()*TAU, ph = Math.acos(2*Math.random()-1);
-  pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
-  pos[i*3+1] = r*Math.cos(ph);
-  pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
-  /* A steep magnitude distribution: a very few bright, a great many at the
-     edge of visible. A flat one gives an evenly speckled dome, which is what
-     a starfield looks like when it is drawn rather than observed. */
-  const m = Math.pow(Math.random(), 1.9);
-  sz[i] = (0.8 + m * 3.6) * 2.4;
-  al[i] = .24 + m * .72;
-  starColor(starTemp()).toArray(cl, i*3);
-}, glowMat(700, 0.02, 0, true));
+/* ---- drawn in pixels, not in world units ----
+   The field used to be glow sprites sized by distance, and at fourteen
+   thousand units a sprite of a few units is a tenth of a pixel. Thirteen
+   thousand stars were being drawn and almost none of them reached the
+   screen, so turning STARFIELD up brightened the band, the dome and the gas
+   — every diffuse thing in the sky — and not the one thing a sky is made
+   of. It read as fog. A star is a point source: its size on a photograph is
+   the optics and the exposure, never its distance, so the size here is in
+   pixels and the magnitude decides it.
 
-brightStarObj = pointsFrom(150, (i, pos, sz, cl, al) => {
-  const r = SKY_R * (0.70 + Math.random()*0.30);
-  const th = Math.random()*TAU, ph = Math.acos(2*Math.random()-1);
-  pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
-  pos[i*3+1] = r*Math.cos(ph);
-  pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
-  sz[i] = (6 + Math.random()*12) * 2.4;
-  al[i] = .40 + Math.random()*.42;
-  starColor(starTemp()).toArray(cl, i*3);
-}, glowMat(700, 0.05, 1, true));
+   Magnitude does two jobs, as it does at a telescope. It sets how big and
+   bright a star is drawn, and it sets whether the star is there at all:
+   uLimit is the limiting magnitude, and the knob moves it, so turning the
+   sky up is a darker site rather than a brighter lamp — first the few
+   bright stars, then more and fainter ones filling in between them. The
+   counts follow the real law, roughly three times as many stars per step
+   fainter, which is why the fill-in accelerates.
+
+   And the sun puts them out. A camera exposed for a star in the frame
+   cannot record the faint ones near it, so stars fade within a few tens of
+   degrees of the hub; turn away from it and the sky comes back. */
+const SKY_STAR_V = `
+attribute vec3 aColor; attribute float aMag;
+varying vec3 vC; varying float vA; varying float vHalo; varying float vCore;
+uniform float uBright; uniform float uLimit; uniform float uPR; uniform float uGlare;
+uniform vec3 uSunDir;
+void main(){
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  float b = 1.0 - aMag;                       // 1 = the brightest in the sky
+  float shown = 1.0 - smoothstep(uLimit - 0.10, uLimit, aMag);
+  float near = 1.0 - dot(normalize(mv.xyz), uSunDir);
+  float glare = mix(1.0, smoothstep(0.0015, 0.035, near), uGlare);
+  /* the composite's toe holds a dim additive point well under where it
+     lands in linear light, so the field is exposed for it here: a faint
+     star has to arrive bright to survive it as faint */
+  vA = uBright * shown * glare * (0.20 + 0.80 * pow(b, 1.8)) * 6.5;
+  vC = aColor;
+  /* Brightness is carried by intensity, and size only a little. A faint
+     star and a bright one are the same point of light on a photograph; the
+     bright one is brighter, and only the very brightest spread — into a
+     soft glow round the point, the scatter in the optics, which is what a
+     bright star looks like when nothing is drawn on top of it. */
+  float core = 0.95 + 1.25 * pow(b, 3.0) + 1.6 * pow(b, 12.0);
+  vHalo = smoothstep(0.80, 0.99, b);
+  float px = core * (1.0 + 3.5 * vHalo);
+  vCore = core / px;                          // the point's share of the sprite
+  gl_PointSize = max(1.0, px * uPR);
+  gl_Position = projectionMatrix * mv;
+}`;
+const SKY_STAR_F = `
+varying vec3 vC; varying float vA; varying float vHalo; varying float vCore;
+void main(){
+  vec2 d = (gl_PointCoord - 0.5) * 2.0;
+  float r2 = dot(d, d);
+  if (r2 > 1.0) discard;
+  /* the point, at the size the vertex stage asked for, and a wide faint
+     scatter round it on the few that have one — falling to zero at the
+     sprite's edge so there is no disc to find */
+  float q = r2 / max(vCore * vCore, 1e-4);
+  float i = exp(-q * 4.2);
+  i += vHalo * 0.10 * exp(-r2 * 4.5) * (1.0 - r2);
+  i *= vA;
+  if (i < 0.003) discard;
+  gl_FragColor = vec4(vC * i, i);
+}`;
+const skyStarMat = new THREE.ShaderMaterial({
+  uniforms: { uBright:{ value: 0 }, uLimit:{ value: 0 }, uPR:{ value: 1 },
+              uGlare:{ value: 0.9 }, uSunDir:{ value: new THREE.Vector3(0, 0, -1) } },
+  vertexShader: SKY_STAR_V, fragmentShader: SKY_STAR_F,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+/* ---- where the stars are ----
+   Scattered evenly over the sphere they read as noise on a screen, which is
+   what an even scatter is. The real sky is not even: most of the stars a
+   camera sees belong to the disc of the galaxy, so they thicken toward the
+   Milky Way and thin out away from it, and here and there a young cluster
+   sits tight on the plane — a knot of hot blue stars a degree or two across,
+   the Pleiades being the one everybody has seen. Both are drawn: a share of
+   the field is laid along the galactic plane with a Gaussian spread in
+   latitude, the rest isotropic, and six clusters of a few dozen stars each.
+   Built after the band's constants, because the plane is the band's. */
+const _whiteStar = new THREE.Color(1, 1, 1);
+function buildSkyStars() {
+  const n = 11000, pos = new Float32Array(n*3), cl = new Float32Array(n*3),
+        mg = new Float32Array(n);
+  const g1 = new THREE.Vector3(1, 0, 0);
+  g1.addScaledVector(MW_N, -g1.dot(MW_N)).normalize();
+  const g2 = new THREE.Vector3().crossVectors(MW_N, g1);
+  const dir = new THREE.Vector3(), tmp = new THREE.Vector3();
+  const onPlane = (l, b, out) => out.copy(g1).multiplyScalar(Math.cos(l) * Math.cos(b))
+    .addScaledVector(g2, Math.sin(l) * Math.cos(b)).addScaledVector(MW_N, Math.sin(b));
+  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) * 1.41;
+  const CL = [];
+  for (let k = 0; k < 6; k++)
+    CL.push({ c: onPlane(Math.random() * TAU, gauss() * 0.10, new THREE.Vector3()),
+              w: 0.006 + Math.random() * 0.016, n: 24 + ((Math.random() * 30) | 0) });
+  let ci = 0, left = CL[0].n;
+  const c = new THREE.Color();
+  for (let i = 0; i < n; i++) {
+    let m = Math.log(1 + Math.random() * 999) / Math.log(1000);
+    let temp = starTemp();
+    if (ci < CL.length) {
+      /* a cluster member: tight round its centre, and young — hot, blue
+         and on the bright side of the field */
+      const C = CL[ci];
+      tmp.set(gauss(), gauss(), gauss()).multiplyScalar(C.w);
+      dir.copy(C.c).add(tmp).normalize();
+      m *= 0.78;
+      temp = 0.62 + Math.random() * 0.38;
+      if (--left === 0 && ++ci < CL.length) left = CL[ci].n;
+    } else if (Math.random() < 0.42) {
+      /* the disc: thick toward the plane, with a long tail off it */
+      onPlane(Math.random() * TAU, gauss() * 0.17, dir);
+    } else {
+      const th = Math.random()*TAU, ph = Math.acos(2*Math.random()-1);
+      dir.set(Math.sin(ph)*Math.cos(th), Math.cos(ph), Math.sin(ph)*Math.sin(th));
+    }
+    dir.multiplyScalar(SKY_R * 0.80);
+    pos[i*3] = dir.x; pos[i*3+1] = dir.y; pos[i*3+2] = dir.z;
+    mg[i] = m;
+    /* Temperature tints a star; it does not paint it. Seen by eye or on a
+       long exposure almost every star is white with a lean — warm, cool —
+       and a field of fully saturated reds and blues is a field of LEDs. */
+    starColor(temp, c);
+    c.lerp(_whiteStar, 0.42).toArray(cl, i*3);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aColor', new THREE.BufferAttribute(cl, 3));
+  g.setAttribute('aMag', new THREE.BufferAttribute(mg, 1));
+  const p = new THREE.Points(g, skyStarMat);
+  p.frustumCulled = false;
+  p.renderOrder = -10;
+  /* gl_PointSize is in device pixels, and the poster, the card and the
+     supersampler each change the ratio under it; reading it at draw time
+     keeps a star the same size on every one of them */
+  p.onBeforeRender = r => { skyStarMat.uniforms.uPR.value = r.getPixelRatio(); };
+  scene.add(p);
+  starFieldObj = p;
+}
+brightStarObj = null;
+
+/* ---- one knob, staged ----
+   STARFIELD used to be a single gain on every layer of the sky at once, so
+   the first thing it did was the thing a sky does last: the dome, the gas
+   and the dust brightened together into a pale wash over the systems, which
+   is why it shipped OFF. A real sky comes up the other way round. Leave the
+   lights of a town and the stars come first, the brightest few and then
+   more and fainter between them; the Milky Way only appears once the sky is
+   genuinely dark, and the gas and the dust lanes are what a long exposure
+   adds on top. So the knob is a walk out of town: stars from the first
+   notch, the band from about a third, the gas and the disc of the galaxy
+   from two thirds — and each diffuse layer has a ceiling, because past it
+   it stops being sky and starts being fog in front of the vault. */
+const SKY = { stars: 0, limit: 0, band: 0, dome: 0, gas: 0, dust: 0, motes: 0 };
+const ramp = (s, a, b) => { const x = clamp((s - a) / (b - a), 0, 1); return x * x * (3 - 2 * x); };
+function skyGains(s) {
+  return {
+    stars: s <= 0 ? 0 : 0.55 + 0.45 * Math.min(s, 1.6) * ramp(s, 0, 0.12) ,
+    limit: s <= 0 ? 0 : 0.58 + 0.42 * ramp(s, 0, 1.4),
+    band:  0.85 * ramp(s, 0.25, 1.3) + 0.25 * ramp(s, 1.3, 2),
+    dome:  0.45 * ramp(s, 0.35, 1.5) + 0.20 * ramp(s, 1.5, 2),
+    /* the gas rides skyGap, which is up to three at a wide ORBIT GAP, and
+       past about a tenth on screen it stops being gas and becomes a white
+       grain over the hub — so its ceiling is low on purpose */
+    gas:   0.045 * ramp(s, 0.6, 1.5) + 0.04 * ramp(s, 1.5, 2),
+    dust:  0.35 * ramp(s, 0.50, 1.5) + 0.15 * ramp(s, 1.5, 2),
+    motes: 0.50 * ramp(s, 0.10, 1.0),
+  };
+}
 
 /* ---------- the milky way ----------
    A band of unresolved stars along one great circle, tilted off the orbital
@@ -5629,6 +5857,7 @@ const MW_CLOUDS = [
   [ 1.40,  0.02, 0.21, 1.05],   // Cygnus
   [-1.31, -0.05, 0.16, 0.70],   // Carina
 ];
+buildSkyStars();
 milkyObj = pointsFrom(9000, (i, pos, sz, cl, al) => {
   const a = Math.random()*TAU;
   /* Signed longitude from the core, because almost everything about the
@@ -6276,9 +6505,35 @@ function buildNebula(outer) {
    long way round, through blue and violet, is therefore not a stylistic
    choice; it is the only path between them that exists. */
 const VEIL_OIII = 186, VEIL_HA = 352;
+/* ---- the veil's own falloff ----
+   The veil was drawn with the glow sprite every star and planet uses, and
+   that sprite has a bright core in it — right for a point of light, wrong for
+   a piece of gas. Two thousand seven hundred cores, each a little brighter
+   or dimmer than the next at random, showed through the sheet as bubbles:
+   the curtains read as foam. This falloff has no core and no edge, only a
+   Gaussian that reaches zero at the rim, so overlapping sprites sum into a
+   surface with nothing in it to resolve; and a dither of a fraction of a
+   grey level so a gradient this faint does not band. */
+const VEIL_F = `
+varying vec3 vC; varying float vA; varying float vF;
+void main(){
+  vec2 d = gl_PointCoord - 0.5;
+  float r2 = dot(d, d) * 4.0;
+  if (r2 > 1.0) discard;
+  float a = exp(-r2 * 3.0) * (1.0 - r2) * vA;
+  a += (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) / 512.0;
+  if (a <= 0.0) discard;
+  gl_FragColor = vec4(vC, a);
+}`;
+function veilMat() {
+  const m = glowMat(700, 0, 0, false);
+  m.fragmentShader = VEIL_F;
+  m.needsUpdate = true;
+  return m;
+}
 function buildVeil() {
   dropGlow(veilObj);
-  const CURT = 9, PER = 300;
+  const CURT = 9, PER = 170;
   const arcs = [];
   /* One sky, one palette. Nine curtains each picking their own hue out of a
      hundred and fifty degrees was the whole of what made this gaudy: a sky
@@ -6344,6 +6599,12 @@ function buildVeil() {
          off centre and leaves a long trail off the other end, which is what a
          streamer actually looks like. */
       skew: 0.55 + Math.random()*1.30,
+      /* Brightness along the curtain is a slow wave of its own, two
+         frequencies beating, rather than a random number per sprite: gas is
+         lumpy at the scale of the whole curtain and smooth at the scale of
+         one sprite, and per-sprite noise is the other way round. */
+      wf: [1.6 + Math.random()*2.2, 4.1 + Math.random()*3.5],
+      wp: [Math.random()*TAU, Math.random()*TAU],
       lanes,
       lit: 0.55 + Math.random()*0.9,
       thick: 0.055 + Math.random()*0.10 });
@@ -6377,13 +6638,15 @@ function buildVeil() {
        the number is large: at fourteen thousand out, two thousand units is a
        blob a couple of hundred pixels across, which is what it takes for
        three hundred of them to overlap into a sheet instead of a stipple. */
-    sz[i] = (900 + Math.random()*1700) * (0.45 + core*0.75) * (SKY_R/14000);
+    sz[i] = (1500 + Math.random()*900) * (0.55 + core*0.75) * (SKY_R/14000);
     /* Three hundred points across a curtain sixty degrees wide overlap maybe
        five deep, so the per-point alpha has to be five times what the sheet
        is meant to read as — not the sheet's own value, which was the first
        guess and produced a curtain that could not be seen at any setting of
        its own knob. */
-    al[i] = (.070 + Math.random()*.115) * c.lit * ends * lane * (0.25 + core);
+    const wave = 0.62 + 0.24 * Math.sin(u * c.wf[0] * Math.PI + c.wp[0])
+                      + 0.14 * Math.sin(u * c.wf[1] * Math.PI + c.wp[1]);
+    al[i] = .17 * (0.9 + Math.random()*0.2) * wave * c.lit * ends * lane * (0.25 + core);
     /* ---- how much colour, and why so little of it ----
        Saturation was the other half of the gaudiness, and the bigger half.
        A sheet this large at half saturation is not read as gas at all — it is
@@ -6399,7 +6662,7 @@ function buildVeil() {
     hsl((c.hue + c.dh*(u-0.5) + 360) % 360,
         (.15 + Math.random()*.13) * rim,
         .38 + Math.random()*.14).toArray(cl, i*3);
-  }, glowMat(700, 0, 0, false));
+  }, veilMat());
   veilObj.name = 'veil';
   /* behind everything, and never writing depth: it is the far wall */
   veilObj.renderOrder = -1;
@@ -11915,6 +12178,7 @@ function audioSet(on) {
   AUD.on = !!on;
   SET.snd = AUD.on; saveSet();
   $('b-snd').classList.toggle('am', AUD.on);
+  stageSync();
   if (AUD.ctx) {
     if (AUD.on && AUD.ctx.state === 'suspended') AUD.ctx.resume();
     /* the whole graph, not just the master: switching sound on is the first
@@ -12148,7 +12412,172 @@ function audioWhoosh(up, i) {
     AUD.holo.o.frequency.setTargetAtTime(noteHz(i) * 4, t, 0.3);
   }
 }
-$('b-snd').onclick = () => audioSet(!AUD.on);
+$('b-snd').onclick = () => {
+  audioSet(!AUD.on);
+  /* and shows where the sound is played from, which a button at the foot
+     of the deck never did */
+  if (AUD.on) { SET.adv = true; SET.tab = 'sound'; syncAdv(); layoutKnobs(); layoutHUD(); saveSet(); }
+};
+
+/* ---- the stage ----
+   Built once and moved, like the knobs, so a mood pressed mid-phrase is not
+   torn out from under the pointer by a relayout. */
+const MOOD_ICON = ['◡', '☾', '✧', '≋', '◇'];
+function stageEl() {
+  if (stageNode) return stageNode;
+  const st = document.createElement('div');
+  st.id = 'sndstage';
+  const top = document.createElement('div'); top.className = 'top';
+  const pow = document.createElement('div'); pow.className = 'mini'; pow.id = 'sndpow';
+  pow.onclick = () => { audioSet(!AUD.on); if (AUD.on) stageAudition(); };
+  const sc = document.createElement('canvas'); sc.id = 'sndscope';
+  top.appendChild(pow); top.appendChild(sc);
+  const cap = document.createElement('div'); cap.className = 'cap'; cap.id = 'sndcap';
+  const moods = document.createElement('div'); moods.id = 'sndmoods';
+  SCALES.forEach((m, k) => {
+    const u = document.createElement('u');
+    u.dataset.m = k;
+    u.title = m.n;
+    u.innerHTML = '<i>' + MOOD_ICON[k % MOOD_ICON.length] + '</i><span></span>';
+    u.onclick = () => {
+      SET.sScale = k;
+      if (!AUD.on) audioSet(true);
+      saveSet(); syncControls(); stageSync();
+      stageAudition();
+      u.classList.remove('play'); void u.offsetWidth; u.classList.add('play');
+    };
+    moods.appendChild(u);
+  });
+  const box = document.createElement('div'); box.className = 'mini'; box.id = 'sndbox';
+  box.onclick = () => {
+    SET.sBox = !SET.sBox;
+    if (SET.sBox && !AUD.on) audioSet(true);
+    boxPrev = null;
+    saveSet(); stageSync();
+    toast(T(SET.sBox ? 'snd.box.on' : 'snd.box.off'));
+  };
+  st.appendChild(top); st.appendChild(cap); st.appendChild(moods); st.appendChild(box);
+  stageNode = st;
+  return st;
+}
+function stageSync() {
+  if (!stageNode) return;
+  const pow = stageNode.querySelector('#sndpow');
+  pow.textContent = T(AUD.on ? 'snd.off' : 'snd.on');
+  pow.classList.toggle('on', AUD.on);
+  stageNode.querySelector('#sndcap').textContent = T('snd.mood');
+  const cur = clamp(SET.sScale | 0, 0, SCALES.length - 1);
+  stageNode.querySelectorAll('#sndmoods u').forEach(u => {
+    const k = +u.dataset.m;
+    u.querySelector('span').textContent = T('snd.m' + k);
+    u.classList.toggle('on', k === cur);
+  });
+  const box = stageNode.querySelector('#sndbox');
+  box.innerHTML = T('snd.box') + '<small></small>';
+  box.querySelector('small').textContent = T('snd.box.t');
+  box.classList.toggle('on', !!SET.sBox);
+}
+/* ---- a phrase in the mood just chosen ----
+   Played on the vault's own most-cited notes, low to high, so what is heard
+   is this vault in this key and not a demo tune: the same notes a selection
+   or a ripple would sound, a few at a time, which is the quickest way to
+   learn what the knob does. */
+function stageAudition() {
+  if (!AUD.on || !AUD.ctx || !N) return;
+  const ids = [];
+  for (let i = 0; i < N; i++) if (i !== coreIdx) ids.push(i);
+  ids.sort((a, b) => (nodes[b].inb | 0) - (nodes[a].inb | 0));
+  const seen = new Set(), seq = [];
+  for (const i of ids.slice(0, 40)) {
+    const f = Math.round(noteHz(i));
+    if (!seen.has(f)) { seen.add(f); seq.push(i); }
+    if (seq.length >= 6) break;
+  }
+  seq.sort((a, b) => noteHz(a) - noteHz(b));
+  const t0 = AUD.ctx.currentTime + 0.04;
+  seq.forEach((i, k) => audioTone(i, t0 + k * 0.17, 0.12, 2.8));
+}
+/* ---- the sound, drawn ----
+   One analyser off the master and a line on a small canvas, drawn only while
+   the stage is on screen — the scope costs nothing when nobody is looking at
+   it, and with sound off it is a flat line, which is itself the answer. */
+function stageScope() {
+  if (!stageNode || !stageNode.isConnected || !stageNode.offsetParent) return;
+  const cv = stageNode.querySelector('#sndscope');
+  const w = Math.max(1, Math.round(cv.clientWidth * (devicePixelRatio || 1)));
+  const h = Math.max(1, Math.round(cv.clientHeight * (devicePixelRatio || 1)));
+  if (cv.width !== w) cv.width = w;
+  if (cv.height !== h) cv.height = h;
+  const g = cv.getContext('2d');
+  g.clearRect(0, 0, w, h);
+  if (AUD.ctx && !AUD.scope) {
+    AUD.scope = AUD.ctx.createAnalyser();
+    AUD.scope.fftSize = 1024;
+    AUD.master.connect(AUD.scope);
+  }
+  const live = AUD.on && AUD.scope;
+  if (live) {
+    if (!scopeData || scopeData.length !== AUD.scope.fftSize) scopeData = new Float32Array(AUD.scope.fftSize);
+    AUD.scope.getFloatTimeDomainData(scopeData);
+  }
+  g.lineWidth = Math.max(1, h / 22);
+  g.strokeStyle = live ? 'rgba(255,190,90,.9)' : 'rgba(92,225,255,.35)';
+  g.shadowColor = live ? 'rgba(255,182,72,.6)' : 'transparent';
+  g.shadowBlur = live ? h / 5 : 0;
+  g.beginPath();
+  const n = live ? scopeData.length : 2;
+  for (let k = 0; k < n; k++) {
+    const x = (k / (n - 1)) * w;
+    const v = live ? clamp(scopeData[k] * 4.5, -1, 1) : 0;
+    const y = h / 2 - v * (h / 2 - 2);
+    if (k) g.lineTo(x, y); else g.moveTo(x, y);
+  }
+  g.stroke();
+}
+/* ---- the music box ----
+   An orrery is a clock, and the oldest thing a clock does besides tell the
+   time is play a tune. Round every body's centre there is a comb of eight
+   teeth, set from where the eye is, and a body sounds its note each time it
+   passes one — so a system with a short period plays a quick figure and a
+   slow outer one a held note now and again, and the tune is the shape of the
+   vault's own orbits. ORBIT SPEED is the tempo. Eight rather than one,
+   because at the shipped speed an orbit takes most of an hour and a single
+   tooth would leave the box silent; and set from the eye, so turning the
+   view sweeps the comb across the planets and strums them.
+
+   Only bodies on screen play, a note waits its turn rather than piling into
+   a chord, and a note that would have to wait more than a moment is dropped:
+   a music box skips, it does not stack up. */
+const BOX_TEETH = 8;
+function musicBoxStep() {
+  if (!SET.sBox || !AUD.on || !AUD.ctx || !N || !P) { boxPrev = null; return; }
+  if (!boxPrev || boxPrev.length !== N) boxPrev = new Int16Array(N).fill(-1);
+  const cp = camera.position, now = AUD.ctx.currentTime;
+  for (let i = 0; i < N; i++) {
+    const o = orb[i];
+    if (i === coreIdx || !o || !o.anchor || !o.anchor.pos) continue;
+    const c = o.anchor.pos;
+    const a = Math.atan2(P[i*3+2] - c.z, P[i*3] - c.x);
+    const b = Math.atan2(cp.z - c.z, cp.x - c.x);
+    let d = (a - b) / TAU;
+    d -= Math.floor(d);
+    const tooth = Math.floor(d * BOX_TEETH);
+    const was = boxPrev[i];
+    boxPrev[i] = tooth;
+    if (was < 0 || was === tooth) continue;
+    /* one tooth over in either direction is a pluck; a jump of several is
+       the view being flung round, and a flung view is not a performance */
+    const step = (tooth - was + BOX_TEETH) % BOX_TEETH;
+    if (step !== 1 && step !== BOX_TEETH - 1) continue;
+    _apos.set(P[i*3], P[i*3+1], P[i*3+2]).project(camera);
+    if (!(_apos.z < 1) || Math.abs(_apos.x) > 1.02 || Math.abs(_apos.y) > 1.02) continue;
+    if (boxAt < now) boxAt = now;
+    if (boxAt - now > 0.35) continue;
+    audioTone(i, boxAt, o.kind === 'wiki' ? 0.06 : 0.035, 2.2);
+    boxAt += 0.12;
+  }
+}
+
 /* A saved preference cannot start a context on its own — the first real
    gesture of the session does it instead. */
 if (SET.snd) {
@@ -14462,9 +14891,23 @@ function writeLinks() {
      The map opens with its own middle selected, so the state this starts in
      is the note's own links lit, which is the picture it was opened for. */
   const lnk = SET.lnk, sel = selected;
+  const hov = mindOpen || dragging ? -1 : hovered;
+  /* ---- the long ones, at rest ----
+     The opening frame was a ball of yarn: every link between two far-apart
+     systems is a curve the width of the screen, and a vault of a few hundred
+     notes has a great many of them, all crossing each other and the sky.
+     They are the least legible links in the frame for the same reason they
+     are the most visible — the eye cannot follow a hairline across half a
+     metre of screen to find which two bodies it joins. So with nothing
+     selected and nothing under the pointer a link dims with its length, to a
+     floor rather than to nothing: the structure is still there to see, it no
+     longer stands in front of the systems. Touch a body and its links are
+     back at full strength, however long. */
+  const restR = Math.max(200, (SHELL_R || 1200));
   /* asked once rather than per edge: it is a Set size test and there are
      several thousand edges */
   const rtOn = routeOn();
+  const atRest = !rtOn && sel < 0 && hov < 0 && !mindOpen;
   const rip = ripples.length > 0 ? ripN : null;
   const VP = P, LP = linkPos, LC = linkCol, AL = alpha;
   /* vertices per edge, not segments: a ribbon is two per sample and there is
@@ -14528,6 +14971,10 @@ function writeLinks() {
     if (mindOpen) str *= (ia === MM.root || ib === MM.root) ? 1.7 : 0.30;
     if (rtOn) str *= routeEdges.has(e) ? 4.2 : .05;
     else if (sel >= 0) str *= (ia===sel || ib===sel) ? 3.4 : .22;
+    /* A body under the pointer previews what selecting it would show: its
+       own links come up and the rest step back a little. Nothing is chosen
+       and nothing moves, so it can be as quick as the pointer is. */
+    else if (hov >= 0) str *= (ia===hov || ib===hov) ? 2.6 : .55;
     /* the wave is *on the link*, which is the point of it — a hop lights as
        the front crosses it, so you can see which way it went */
     if (rip) {
@@ -14558,6 +15005,10 @@ function writeLinks() {
 
     const dx = ax-bx, dy = ay-by, dz = az-bz;
     const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    if (atRest) {
+      const q = clamp((d / restR - 0.30) / 0.90, 0, 1);
+      str *= 1 - 0.68 * q * q * (3 - 2 * q);
+    }
     /* the control point's offset from the chord midpoint, accumulated rather
        than applied directly, because its length is also what decides how many
        samples the curve is worth below */
@@ -15540,6 +15991,8 @@ function frameLoop(now) {
   writeLabels();
   const _p5 = perfNow();
   audioStep();
+  musicBoxStep();
+  stageScope();
 
   /* one clock for every glow material: twinkle, flare, scintillation */
   const gt = now * 0.001;
@@ -15788,10 +16241,10 @@ function frameLoop(now) {
   const skyGap = clamp(gapSys * gapSys, 0.02, 3.0);
   if (dustObj)      { dustObj.rotation.y        = t * 0.0000075;
                       dustObj.scale.setScalar(gapSys);
-                      dustObj.material.uniforms.uBright.value = SET.str * skyGap; }
+                      dustObj.material.uniforms.uBright.value = SKY.dust * skyGap; }
   if (nebulaObj)    { nebulaObj.rotation.y      = -t * 0.0000042;
                       nebulaObj.scale.setScalar(gapSys);
-                      nebulaObj.material.uniforms.uBright.value = SET.str * skyGap;
+                      nebulaObj.material.uniforms.uBright.value = SKY.gas * skyGap;
                       nebulaObj.material.uniforms.uTime.value = t * 0.001;
                       /* where the sun is from the eye, for the gas it lights */
                       const nu = nebulaObj.material.uniforms;
@@ -15800,13 +16253,29 @@ function frameLoop(now) {
                         nu.uSunR.value = Math.max(400, (RAD[coreIdx] || 17) * 40);
                         if (sunObj.userData.surfMat) nu.uSunCol.value.copy(sunObj.userData.surfMat.uniforms.uCore.value);
                       } else nu.uSunV.value.set(0, 0, -1e9); }
-  if (deepSkyObj)     deepSkyObj.material.uniforms.uBright.value = SET.str;
+  if (deepSkyObj)     deepSkyObj.material.uniforms.uBright.value = SKY.dome;
+  /* A layer at zero is not drawn at all. Every one of these used to be
+     submitted every frame at zero brightness — the dome is a full-screen
+     shader with three texture reads a pixel, the dust fourteen thousand
+     sprites — and with STARFIELD OFF, or low enough that the gas has not
+     come in yet, all of that was work for a black frame. */
+  if (deepSkyObj)  deepSkyObj.visible  = SKY.dome > 0.002;
+  if (nebulaObj)   nebulaObj.visible   = SKY.gas  > 0.0005;
+  if (dustObj)     dustObj.visible     = SKY.dust > 0.002;
+  if (milkyObj)    milkyObj.visible    = SKY.band > 0.002;
+  if (nearDustObj) nearDustObj.visible = SKY.motes > 0.002;
+  if (veilObj)     veilObj.visible     = SET.vei > 0.002;
   if (nearDustObj)  { const u = nearDustObj.material.uniforms;
                       u.uCam.value.copy(camera.position);
                       u.uTime.value = t * 0.001;
-                      u.uBright.value = SET.str * 0.55; }
-  if (starFieldObj)   starFieldObj.rotation.y   = t * 0.0000011;
-  if (brightStarObj)  brightStarObj.rotation.y  = t * 0.0000011;
+                      u.uBright.value = SKY.motes; }
+  if (starFieldObj) { starFieldObj.rotation.y   = t * 0.0000011;
+                      /* where the hub is, seen from the eye, for the glare
+                         that puts the faint stars out round it */
+                      const su = skyStarMat.uniforms;
+                      if (sunObj && N) su.uSunDir.value.copy(sunObj.position)
+                        .applyMatrix4(camera.matrixWorldInverse).normalize();
+                      else su.uSunDir.value.set(0, 0, 1); }
   if (milkyObj)       milkyObj.rotation.y       = t * 0.0000008;
   /* The far sky is centred on the eye, every frame. The stars, the band, the
      gas and the veil were built on a shell fourteen thousand units out and
@@ -15820,7 +16289,6 @@ function frameLoop(now) {
   {
     const cp = camera.position;
     if (starFieldObj)  starFieldObj.position.copy(cp);
-    if (brightStarObj) brightStarObj.position.copy(cp);
     if (milkyObj)      milkyObj.position.copy(cp);
     if (nebulaObj)     nebulaObj.position.copy(cp);
     if (veilObj)       veilObj.position.copy(cp);
@@ -15858,15 +16326,17 @@ function frameLoop(now) {
 
 /* ======================================================== CONTROL DECK */
 function applyStarfield() {
-  const b = SET.str;
+  Object.assign(SKY, skyGains(SET.str));
+  const su = skyStarMat.uniforms;
+  su.uBright.value = SKY.stars;
+  su.uLimit.value = SKY.limit;
+  if (starFieldObj) starFieldObj.visible = SKY.stars > 0;
   skyMats.forEach(m => {
-    /* the two that ride the ORBIT GAP scale have their brightness written
+    /* the dust rides the ORBIT GAP scale and has its brightness written
        every frame instead — see skyGap in the parallax block — because it
        depends on something this function cannot see */
-    m.uniforms.uBright.value = b;
-    /* the knob turns the shimmer down with the brightness — v1 ran the whole
-       field at full twinkle and it read as visual noise */
-    m.uniforms.uTwinkle.value = (m.userData.twinkle || 0) * clamp(b, 0, 1.2);
+    m.uniforms.uBright.value = SKY.band;
+    m.uniforms.uTwinkle.value = 0;
   });
 }
 /* the fold's two halves — the class the CSS reads and the arrow the reader
@@ -16045,7 +16515,12 @@ function layoutKnobs() {
   });
   const tab = GROUPS.some(([g]) => g === SET.tab) ? SET.tab : GROUPS[0][0];
   const show = KNOBS.filter(kn => !pinned(kn.k) &&
-    (knobFind ? knobMatches(kn) : kn.g === tab));
+    (knobFind ? knobMatches(kn) : kn.g === tab && kn.k !== 'sScale'));
+  /* the moods are the scale, pressed rather than dragged — SCALE itself is
+     still found by name, and still pinnable */
+  const stage = stageEl();
+  if (tab === 'sound' && !knobFind) { drawer.appendChild(stage); stageSync(); }
+  else if (stage.parentNode === drawer) drawer.removeChild(stage);
   show.forEach(kn => drawer.appendChild(KNOB_EL.get(kn.k).wrap));
   /* Anything the filter or the tab left out has to actually leave the drawer,
      not merely stop being appended: appendChild moves a node, and a knob that
@@ -16429,27 +16904,40 @@ function layoutHUD() {
      page and the leaf inside the plugin. */
   const insp = $('insp'), dock = $('dock');
   const W = innerWidth, H = innerHeight;
-  const x0 = dock.offsetLeft + dock.offsetWidth + 10;
+  railPlace(W, H);
+  const dl = dock.offsetLeft, dw = dock.offsetWidth;
+  /* A rail carried into the right half opens its drawers leftward, toward
+     the room, and takes the inspector's corner from it — so the inspector
+     steps in beside the rail rather than sitting under it. */
+  const right = dl + dw / 2 > W / 2;
+  const x0 = right ? 16 : dl + dw + 10;
+  const edgeR = right ? dl - 10 : W - 16;
+  /* the drawers hang from the rail's own top — and a drawer that would run
+     off the bottom from there rises until it fits, so a rail carried low
+     still opens a deck that can be read without scrolling */
+  const top0 = clamp(dock.offsetTop, 12, Math.max(12, H - 24));
+  insp.style.right = (W - edgeR) + 'px';
 
   /* ---- the drawers ----
      Whichever are open, side by side in the rail's own order, each at the
      top and as tall as it needs up to the bottom of the leaf. Two at once is
      the pinned one and the one being looked at; the rail keeps it to that. */
-  let x = x0;
+  let x = right ? dl - 10 : x0;
   DOCK_PANES.forEach(id => {
     const p = $(id), on = DOCK.open.has(id);
     $('dk-' + id).classList.toggle('on', on);
     p.style.display = on ? '' : 'none';
     if (!on) return;
     p.classList.remove('fold');
-    p.style.left = x + 'px'; p.style.top = '12px';
     p.style.right = 'auto'; p.style.bottom = 'auto'; p.style.transform = 'none';
+    p.style.top = '12px';
     p.style.maxHeight = Math.max(90, H - 24) + 'px';
     if (id === 'ctl') {
       /* the width a corner was pulled to is still honoured; where the deck
          was dragged to is not, because the rail decides that now */
+      const room = right ? x - 16 : W - x - 16;
       const want = SET.deckAt && +SET.deckAt.w > 0 ? +SET.deckAt.w : DECK_OPEN_W;
-      const w = clamp(want, DECK_MIN_W, Math.max(DECK_MIN_W, W - x - 16));
+      const w = clamp(want, DECK_MIN_W, Math.max(DECK_MIN_W, room));
       p.style.width = w + 'px';
       p.classList.toggle('tight', w < 430);
       const bd = p.querySelector('.bd');
@@ -16457,7 +16945,10 @@ function layoutHUD() {
       /* whether a label fits is a question about the width just settled */
       deckScan();
     }
-    x += p.offsetWidth + 10;
+    const top = Math.max(12, Math.min(top0, H - 12 - p.offsetHeight));
+    p.style.top = top + 'px';
+    if (right) { x -= p.offsetWidth; p.style.left = Math.max(8, x) + 'px'; x -= 10; }
+    else       { p.style.left = x + 'px'; x += p.offsetWidth + 10; }
   });
   DOCK_PANES.forEach(id => {
     const pin = $(id).querySelector('.dkb .dkpin');
@@ -16476,7 +16967,7 @@ function layoutHUD() {
   let under = 0;
   DOCK.open.forEach(id => {
     const p = $(id);
-    if (p.offsetLeft + p.offsetWidth > W - 16 - iw - 10)
+    if (p.offsetLeft + p.offsetWidth > edgeR - iw - 10 && p.offsetLeft < edgeR)
       under = Math.max(under, p.offsetTop + p.offsetHeight);
   });
   insp.style.maxHeight =
@@ -16485,7 +16976,7 @@ function layoutHUD() {
   /* The genesis bar runs along the bottom between the rail and the
      inspector. No floor worth speaking of: it shrinks to what is left rather
      than sliding underneath. Below about 380px the year ticks go. */
-  const bFree = Math.max(120, W - 16 - (inspShown() ? (insp.offsetWidth || 352) + 14 : 0) - x0);
+  const bFree = Math.max(120, edgeR - (inspShown() ? (insp.offsetWidth || 352) + 14 : 0) - x0);
   const gen = $('gen');
   gen.style.width = Math.min(660, bFree) + 'px';
   gen.style.left  = Math.round(x0 + bFree / 2) + 'px';
@@ -16493,6 +16984,17 @@ function layoutHUD() {
   fitGenMarks();
 }
 function inspShown() { return selected >= 0 && selected < N && innerWidth >= 620; }
+/* The rail at its carried place, or at the left edge where the host's own
+   ribbon is. Fractions of the free room rather than pixels: a leaf made
+   narrower keeps a right-hand rail on the right instead of pushing it off
+   the edge or leaving it stranded in the middle. */
+function railPlace(W, H) {
+  const dock = $('dock'), a = SET.railAt;
+  if (!a) { dock.style.left = '10px'; dock.style.top = '12px'; return; }
+  const w = dock.offsetWidth, h = dock.offsetHeight;
+  dock.style.left = Math.round(10 + clamp(+a.fx, 0, 1) * Math.max(0, W - w - 20)) + 'px';
+  dock.style.top  = Math.round(12 + clamp(+a.fy, 0, 1) * Math.max(0, H - h - 24)) + 'px';
+}
 
 /* ================================================================== DOCK
    The HUD was five panes in four corners, there from the first frame: the
@@ -16557,6 +17059,78 @@ DOCK_PANES.forEach(id => {
 });
 $('dk-search').onclick = () => openSearch();
 $('dk-gen').onclick = () => toggleGenesis();
+
+/* ---- carrying the rail ----
+   The grip moves it at the first pixel; anywhere else on the rail a press
+   has to travel a few pixels before it is a drag, so a click on a button is
+   still a click. The click a drag ends on is swallowed, or letting go over
+   a button would open its drawer. Let go near an edge and the rail settles
+   onto it, because a rail two pixels off the edge looks like a mistake. */
+let railDragMove = null;
+let railDragUp = null;
+{
+  const dock = $('dock');
+  let st = null, moved = false, swallow = false;
+  dock.addEventListener('pointerdown', e => {
+    if (e.button !== 0) return;
+    st = { x: e.clientX, y: e.clientY, l: dock.offsetLeft, t: dock.offsetTop,
+           grip: e.target === $('dkgrip') };
+    moved = false;
+    if (st.grip) e.preventDefault();
+  });
+  dock.addEventListener('click', e => {
+    if (!swallow) return;
+    swallow = false;
+    e.stopPropagation(); e.preventDefault();
+  }, true);
+  const fracOf = (l, t) => {
+    const W = innerWidth, H = innerHeight, w = dock.offsetWidth, h = dock.offsetHeight;
+    return { fx: clamp((l - 10) / Math.max(1, W - w - 20), 0, 1),
+             fy: clamp((t - 12) / Math.max(1, H - h - 24), 0, 1) };
+  };
+  railDragMove = e => {
+    if (!st) return;
+    const dx = e.clientX - st.x, dy = e.clientY - st.y;
+    if (!moved) {
+      if (Math.abs(dx) + Math.abs(dy) < (st.grip ? 1 : 6)) return;
+      moved = true;
+      dock.classList.remove('snap');
+      document.body.classList.add('dragrail');
+    }
+    SET.railAt = fracOf(st.l + dx, st.t + dy);
+    layoutHUD();
+  };
+  railDragUp = () => {
+    if (!st) return;
+    st = null;
+    if (!moved) return;
+    moved = false;
+    swallow = true;
+    /* the click that ends a drag arrives straight after this, or not at all
+       when the pointer left the rail; either way it must not linger */
+    setTimeout(() => { swallow = false; }, 0);
+    document.body.classList.remove('dragrail');
+    const W = innerWidth, H = innerHeight, w = dock.offsetWidth, h = dock.offsetHeight;
+    const a = SET.railAt, near = 28;
+    if (a.fx * (W - w - 20) < near) a.fx = 0;
+    if ((1 - a.fx) * (W - w - 20) < near) a.fx = 1;
+    if (a.fy * (H - h - 24) < near) a.fy = 0;
+    if ((1 - a.fy) * (H - h - 24) < near) a.fy = 1;
+    /* the top-left corner it came from is not a carried place, it is home */
+    if (a.fx === 0 && a.fy === 0) SET.railAt = null;
+    dock.classList.add('snap');
+    layoutHUD();
+    setTimeout(() => dock.classList.remove('snap'), 220);
+    saveSet();
+  };
+  $('dkgrip').addEventListener('dblclick', () => {
+    SET.railAt = null; saveSet(); layoutHUD();
+    toast(T('dock.reset'));
+  });
+}
+addEventListener('pointermove', e => { if (railDragMove) railDragMove(e); });
+addEventListener('pointerup', () => { if (railDragUp) railDragUp(); });
+addEventListener('pointercancel', () => { if (railDragUp) railDragUp(); });
 
 
 /* ========================================================== VAULT PARSER
@@ -16873,7 +17447,15 @@ function buildGraph(files, vaultName) {
      graph is a concept, whatever nothing points at is raw material. */
   const foldered = recs.some(r => /^(wiki|raw)\//i.test(r.rel));
   const linked = new Uint8Array(K);
-  refs.forEach((set, i) => { if (set.size) linked[i] = 1; set.forEach(j => linked[j] = 1); });
+  /* A note named only in another note's `sources` is raw material, not a
+     concept. Obsidian reports a [[link]] written in a property as an ordinary
+     link, so inside Obsidian every source counted as linked, came out a
+     planet, and a vault without raw/ and wiki/ folders could never grow a
+     moon. Only the links outside the source list make the target a concept. */
+  refs.forEach((set, i) => {
+    if (set.size) linked[i] = 1;
+    set.forEach(j => { if (!srcRefs[i].has(j)) linked[j] = 1; });
+  });
   const kind = recs.map((r, i) => {
     if (foldered) {
       if (/^raw\//i.test(r.rel))  return 'raw';

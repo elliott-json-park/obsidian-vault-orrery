@@ -4,6 +4,66 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.1.0
+
+The sky, the rail and the sound, each made into something you would want to
+leave on.
+
+- **A starfield that looks like space, and is on.** STARFIELD shipped OFF
+  because turning it up turned the sky into fog: the stars were drawn at a
+  tenth of a pixel and never reached the screen, so the knob only brightened
+  the gas, the dome and the dust into a pale wash over the vault. The stars
+  are drawn in pixels now and carry their brightness in intensity rather
+  than size, with a soft glow round only the brightest and no cross-shaped
+  spikes. They are tinted by temperature rather than painted with it. And
+  they are not scattered evenly: the field thickens toward the Milky Way,
+  thins away from it, and has six small blue clusters on the plane. The
+  knob is a walk away from town lights: the bright stars first, then fainter ones filling in between, then
+  the Milky Way, and the gas and the galaxy's dust last, each held under a
+  ceiling so the sky never goes milky. The faint stars fade near the sun, as
+  they do in any photograph with the sun in it. STARFIELD now ships at 0.60×
+  and sits on the front of the deck. If yours was at the old OFF default it
+  is switched on once; turn it off again and it stays off.
+- **SKY VEIL is gas, not foam.** The veil was drawn with the same glow
+  sprite as a star, bright core and all, and those cores showed through the
+  sheet as bubbles. It has its own falloff now, with no core and no edge,
+  fewer and larger sprites, and brightness that changes slowly along each
+  curtain instead of at random from one sprite to the next — so it reads as
+  one smooth streamer of colour rather than a cluster of blobs.
+- **Move the rail anywhere.** Drag the six-dot grip at the top of the rail,
+  or the rail itself, and put it where you like. Let go near an edge and it
+  settles onto it. On the right half of the view the drawers open leftward
+  and the inspector steps in beside it; low down, a drawer rises until it
+  fits. Double-click the grip to send it home.
+- **The sound tab is somewhere to play.** It used to be four sliders. It
+  opens now with a switch, a live trace of the sound, and the five scales as
+  five moods — CALM, NIGHT, DREAM, DRIFT and VAST. Press one and the vault
+  plays a short phrase in it on its own most-cited notes. The ♪ SOUND button
+  opens this tab as it switches sound on.
+- **Music box.** Turn it on in the sound tab and every planet on screen
+  sounds its note as it passes the teeth of a comb set from where you are
+  looking, so the orbits themselves play a tune. ORBIT SPEED is the tempo,
+  and turning the view strums the planets.
+- **Calmer links at rest.** With nothing selected, a long link that crosses
+  half the frame is drawn fainter than a short one, so the opening view is a
+  set of star systems rather than a ball of yarn. Point at a body and its
+  links come up at once, however long, before you click.
+- **Lighter.** Sky layers that are at zero are no longer drawn at all — the
+  dome, the gas, the dust and the veil used to be submitted every frame at
+  zero brightness. With STARFIELD low or OFF, or on FAST, the frame does less
+  work. The 150 bright stars are part of the one star field instead of a
+  draw of their own.
+- **Moons appear inside Obsidian.** A note becomes a moon when another note
+  names it in its `sources` property and nothing else links to it. Obsidian
+  counts a `[[link]]` written in a property as an ordinary link, so inside
+  Obsidian every source came out as a planet, and a vault without `raw/` and
+  `wiki/` folders could never have a moon. MOONS and FAR MOONS stayed at 0. A
+  source is now a moon again unless some other note links to it the ordinary
+  way. The browser demo, which reads links from the note text, was never
+  affected.
+- The README explains what makes a moon, with an example. Thanks to sundeez08
+  on the Obsidian forum for asking.
+
 ## 2.0.1
 
 Nothing you will see changes. This release is about what is in the file.

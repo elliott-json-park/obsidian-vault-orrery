@@ -83,11 +83,12 @@ does that for you and says so.
 
 ## What it does
 
-The tools sit on a thin rail at the left edge and open as drawers, so the
+The tools sit on a thin rail and open as drawers, so the
 frame is all sky until you ask for one: ⌕ search, ◎ the vault's numbers,
 ✦ star systems, ⚙ controls, ? shortcuts, ◌ Genesis and ● the photo card.
 **PIN** keeps a drawer open beside the next; a click on the sky closes the
-rest. The inspector appears when you select a note.
+rest. Drag the rail by its grip to put it anywhere; double-click the grip to
+send it back. The inspector appears when you select a note.
 
 - **Mini orrery** — the same cosmos in the right sidebar, centred on the note
   you are editing. *Open the mini orrery in the sidebar* brings it back.
@@ -106,7 +107,11 @@ rest. The inspector appears when you select a note.
   one click, and every knob still there under ADVANCED.
 - **The sky has events.** A comet lands on the note you just touched; a note
   deleted while you watch goes out as a supernova and says its name.
-- **Ambient sound** — `U` — every note has a pitch; off until you ask.
+- **Sound** — `U` — every note has a pitch; off until you ask. The sound
+  tab has five moods to try with one press, a live trace, and a **music
+  box** that lets the orbits play the vault's notes as they go round.
+- **A real night sky** — STARFIELD brings the stars up first, then the Milky
+  Way and the gas, like walking away from town lights.
 - **한국어 · English · 日本語 · 中文**, switchable without reloading.
 
 ![Mind map of a vault's index note: the note at the centre with its twenty-four neighbours laid out in a ring, and the reading rail on the right with its excerpt and outbound links](docs/screenshots/mind-map.jpg)
@@ -115,6 +120,25 @@ rest. The inspector appears when you select a note.
 Obsidian already keeps, so a link written through an alias resolves rather than
 counting as broken, an embed counts as a link, and a `#tag` in a paragraph
 counts alongside the ones in the front matter.
+
+**Moons are a note's sources.** A note that nothing links to and that links to
+nothing is raw material: a clipping, a transcript, a scan. Name it in another
+note's `sources` property (`source` and `출처` work too) and it orbits that note
+as a moon:
+
+```yaml
+---
+sources:
+  - "[[Lecture 3 transcript]]"
+  - "[[Smith 2021]]"
+---
+```
+
+A raw note no one cites joins the archive, one system per year. If your vault
+already keeps `raw/` and `wiki/` folders, the folders decide instead: anything
+in `raw/` that a `wiki/` note links to or lists in `sources` is a moon of that
+note. The inspector counts **MOONS**, a note's own, and **FAR MOONS**, the
+moons of the notes it links to.
 
 **The vault stays current.** Notes written, created, renamed or deleted while
 the view is open re-derive the cosmos — camera and selection left where they
