@@ -919,6 +919,9 @@ body.mini #gl:active{cursor:grabbing}
 #dock u.on{color:var(--cy);border-color:rgba(92,225,255,.35);
   background:rgba(92,225,255,.1);box-shadow:0 0 12px rgba(92,225,255,.15)}
 #dock u.lit{color:var(--am);border-color:rgba(255,182,72,.35)}
+/* a host's icon in place of the glyph: the same box, the line weight of
+   the host's own ribbon, and the colour states above through currentColor */
+#dock u.ico svg{width:16px;height:16px;stroke-width:1.75px;display:block}
 #dock i{display:block;width:18px;height:1px;margin:4px 0;background:rgba(92,225,255,.18)}
 /* The rail can be carried anywhere in the leaf. The grip is the handle a
    hand looks for — six dots, the mark every desktop uses for "this moves" —
@@ -965,6 +968,17 @@ body.card #hud,body.card #tgt{display:none}
 #card.rec #card-pnl,#card.arm #card-pnl{opacity:.3;pointer-events:none}
 #card-x{cursor:pointer}
 #card-x:hover{color:var(--cy)}
+/* the shape chips: the language chips' look, with their own class so the
+   language sweep leaves them alone */
+.shsel{display:flex;gap:1px;pointer-events:auto;margin-bottom:8px;
+  background:rgba(92,225,255,.16);border:1px solid rgba(92,225,255,.22)}
+.shsel u{text-decoration:none;cursor:pointer;flex:1 1 0;text-align:center;
+  padding:4px 2px;font-size:10.5px;letter-spacing:.06em;color:var(--cy);opacity:.4;
+  background:rgba(4,14,24,.92);transition:.15s;white-space:nowrap}
+.shsel u:hover{opacity:.85;background:rgba(92,225,255,.14)}
+.shsel u.on{opacity:1;color:var(--am);background:rgba(255,182,72,.13);
+  text-shadow:0 0 10px rgba(255,182,72,.4)}
+#card.rec .shsel,#card.arm .shsel{pointer-events:none}
 #card-hint{font-family:var(--kr);font-size:11.5px;opacity:.6;line-height:1.55;margin-bottom:6px}
 .cgh{font-size:10px;letter-spacing:.16em;color:var(--cy);opacity:.7;margin:10px 0 3px}
 .crow{display:flex;justify-content:space-between;gap:10px;font-size:11px;line-height:1.95;
@@ -995,14 +1009,17 @@ body.card #hud,body.card #tgt{display:none}
        for. The glyphs are the ones the buttons already used. See DOCK. -->
   <div class="glass" id="dock">
     <b id="dkgrip" data-i18n-title="dock.grip"></b>
-    <u id="dk-search" data-i18n-title="dock.search">&#x2315;</u>
-    <u id="dk-idp" data-i18n-title="dock.idp">&#x25CE;</u>
-    <u id="dk-leg" data-i18n-title="dock.leg">&#x2726;</u>
-    <u id="dk-ctl" data-i18n-title="dock.ctl">&#x2699;&#xFE0E;</u>
-    <u id="dk-keys" data-i18n-title="dock.keys">?</u>
+    <!-- data-icon names the host's icon for each button, first choice first;
+         a host that has an icon set swaps the glyph for it (see HOST.icon),
+         and the page on its own keeps the glyph. -->
+    <u id="dk-search" data-icon="search" data-i18n-title="dock.search">&#x2315;</u>
+    <u id="dk-idp" data-icon="gauge" data-i18n-title="dock.idp">&#x25CE;</u>
+    <u id="dk-leg" data-icon="sparkles" data-i18n-title="dock.leg">&#x2726;</u>
+    <u id="dk-ctl" data-icon="sliders-horizontal" data-i18n-title="dock.ctl">&#x2699;&#xFE0E;</u>
+    <u id="dk-keys" data-icon="circle-help help-circle" data-i18n-title="dock.keys">?</u>
     <i></i>
-    <u id="dk-gen" data-i18n-title="dock.gen">&#x25CC;</u>
-    <u id="dk-card" data-i18n-title="dock.card">&#x25CF;</u>
+    <u id="dk-gen" data-icon="history" data-i18n-title="dock.gen">&#x25CC;</u>
+    <u id="dk-card" data-icon="camera" data-i18n-title="dock.card">&#x25CF;</u>
   </div>
 
   <div class="pane glass" id="idp">
@@ -1197,6 +1214,9 @@ body.card #hud,body.card #tgt{display:none}
       <span class="tr"><i id="card-n">0 / 6</i><i class="fx" id="card-x" data-i18n-title="dock.close">&#x2715;</i></span>
     </div>
     <div class="bd">
+      <div class="shsel" id="card-shape" data-i18n-title="card.shape.t">
+        <u data-s="9:16">9:16</u><u data-s="4:5">4:5</u><u data-s="1:1">1:1</u><u data-s="16:9">16:9</u>
+      </div>
       <div id="card-hint" data-i18n="card.hint"></div>
       <div id="card-opts"></div>
       <div id="card-acts">
@@ -1711,10 +1731,14 @@ const STR = {
 'dock.pin':    ['고정 · 다른 서랍을 열어도 닫히지 않습니다','PIN · stays open beside the next drawer',
                 '固定 · 他の引き出しを開いても閉じません','固定 · 打开其他抽屉时也不会关闭'],
 'dock.close':  ['닫기 [ Esc ]','CLOSE [ Esc ]','閉じる [ Esc ]','关闭 [ Esc ]'],
-'dock.card':   ['포토카드 · 9:16 이미지와 15초 영상 [ C ]','PHOTO CARD · a 9:16 image or a 15-second clip [ C ]',
+'dock.card':   ['포토카드 · 이미지와 15초 영상 · 9:16 · 4:5 · 1:1 · 16:9 [ C ]','PHOTO CARD · an image or a 15-second clip · 9:16 · 4:5 · 1:1 · 16:9 [ C ]',
                 'フォトカード · 9:16 の画像と15秒の動画 [ C ]','照片卡 · 9:16 图片与 15 秒视频 [ C ]'],
 /* the photo card */
 'card.ttl':    ['포토카드','PHOTO CARD','フォトカード','照片卡'],
+'card.shape.t':['비율 · 9:16 스토리 · 4:5 피드 · 1:1 정방형 · 16:9 가로',
+                'SHAPE · 9:16 story · 4:5 feed · 1:1 square · 16:9 wide',
+                '比率 · 9:16 ストーリー · 4:5 フィード · 1:1 正方形 · 16:9 横長',
+                '比例 · 9:16 故事 · 4:5 信息流 · 1:1 方形 · 16:9 横版'],
 'card.hint':   ['프레임 안에서 돌리고 확대하세요. 보이는 그대로 저장됩니다. 녹화는 누른 뒤 15초 동안의 조작을 담습니다.',
                 'Turn and zoom inside the frame — it is saved exactly as you see it. A recording keeps whatever you do for the fifteen seconds after you press it.',
                 'フレームの中で回して拡大してください。見たまま保存されます。録画は押してから15秒間の操作をそのまま残します。',
@@ -1756,10 +1780,10 @@ const STR = {
 'cu.words':    ['{n}단어','{n} WORDS','{n} 語','{n} 词'],
 'cu.ly':       ['{n} 광년','{n} LY','{n} 光年','{n} 光年'],
 'cu.cites':    ['인용 {n}','CITED {n}','引用 {n}','被引 {n}'],
-'guide.card':  ['9:16 포토카드. 프레임 안 우주와 고른 수치를 이미지 한 장이나 15초 영상으로 저장합니다.',
-                'A 9:16 photo card: the cosmos inside the frame and the stats you pick, as one image or a fifteen-second clip.',
-                '9:16 のフォトカード。フレーム内の宇宙と選んだ数値を、画像一枚か15秒の動画で保存します。',
-                '9:16 照片卡：框内的星图与所选数据，保存为一张图片或 15 秒视频。'],
+'guide.card':  ['포토카드. 프레임 안 우주와 고른 수치를 이미지 한 장이나 15초 영상으로 저장합니다. 비율은 9:16 · 4:5 · 1:1 · 16:9.',
+                'A photo card: the cosmos inside the frame and the stats you pick, as one image or a fifteen-second clip, at 9:16, 4:5, 1:1 or 16:9.',
+                'フォトカード。フレーム内の宇宙と選んだ数値を、画像一枚か15秒の動画で保存します。比率は 9:16 · 4:5 · 1:1 · 16:9。',
+                '照片卡：框内的星图与所选数据，保存为一张图片或 15 秒视频。比例可选 9:16 · 4:5 · 1:1 · 16:9。'],
 'audio.no':    ['오디오를 사용할 수 없습니다','Audio is unavailable','オーディオを使用できません','音频不可用'],
 'audio.on':    ['앰비언트 사운드 ON','AMBIENT SOUND ON','アンビエントサウンド ON','环境音效 开'],
 'audio.off':   ['앰비언트 사운드 OFF','AMBIENT SOUND OFF','アンビエントサウンド OFF','环境音效 关'],
@@ -2180,16 +2204,37 @@ function setHosted(on) {
 
      open(path, opts)   open this note in the editor
      hover(path, ev,el) offer the host's own hover preview
+     icon(el, names)    draw one of the host's icons into el; true if it did
      active(path)       (host -> engine, see setActivePath)
 
    Every one of them is optional. Standalone there is no host, `HOST.open` is
    null, and the affordances that would promise an editor stay hidden rather
    than being drawn and then doing nothing. */
-const HOST = { open:null, hover:null };
+const HOST = { open:null, hover:null, icon:null };
 function setHostHooks(h) {
   HOST.open = h && typeof h.open === 'function' ? h.open : null;
   HOST.hover = h && typeof h.hover === 'function' ? h.hover : null;
+  HOST.icon = h && typeof h.icon === 'function' ? h.icon : null;
   syncHostUI();
+  syncHostIcons();
+}
+/* The rail's buttons are text glyphs, and a glyph is drawn in whatever
+   font the machine has, so the same rail is thin on one desktop and
+   heavy on the next. A host with an icon set of its own draws into the
+   button instead, and the rail reads as part of the host's chrome. The
+   glyph stays wherever the host has no icon by that name. */
+function syncHostIcons() {
+  if (!HOST.icon) return;
+  document.querySelectorAll('#dock u[data-icon]').forEach(u => {
+    if (u.classList.contains('ico')) return;
+    const keep = u.textContent;
+    u.textContent = '';
+    let ok = false;
+    try { ok = !!HOST.icon(u, String(u.dataset.icon).split(/\s+/)); }
+    catch (e) { console.error('vault-orrery: host icon', e); ok = false; }
+    if (ok && u.querySelector('svg')) u.classList.add('ico');
+    else u.textContent = keep;
+  });
 }
 function canOpen() { return !!HOST.open; }
 function syncHostUI() {
@@ -2274,6 +2319,8 @@ function revealPath(p, opts) {
      already, and re-root on it if it is not, which is the same walk the rail
      does when you click a link in it. */
   else if (mindOpen) { if (MM.has.has(i)) select(i); else buildMind(i); }
+  /* `fly`: arrive over two seconds rather than cut — see FLY */
+  else if (opts && opts.fly === true) flyTo(i);
   else focusNode(i, true);
   return true;
 }
@@ -2815,7 +2862,8 @@ const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
    left to offer afterwards. */
 const SET_DEF = { mmHop:false, snd:false, coreNote:'', grid:false,
                   tab:'cosmos', deckAt:null, litV1:1,
-                  adv:false, legFold:false, keysFold:false, pin:PIN_DEF, dock:[], card:null };
+                  adv:false, legFold:false, keysFold:false, pin:PIN_DEF, dock:[], card:null,
+                  cardShape:'9:16' };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
 /* ---- what used to be knobs -----------------------------------------------
    Eleven controls came off the deck in 1.15.0: the grade's split, lens,
@@ -4212,7 +4260,11 @@ function relCounts(i) {
 const canvas = $('gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false,
   powerPreference:'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+/* The sidebar's mini orrery draws at one device pixel per CSS pixel
+   whatever the display: it is a tenth of the full view's area and is on
+   all day, and on a retina screen the two-to-one buffer was four times
+   the work for a picture nobody leans in to. */
+renderer.setPixelRatio(MINI.on ? 1 : Math.min(devicePixelRatio, 2));
 renderer.setClearColor(0x02040a, 1);
 renderer.outputEncoding = THREE.sRGBEncoding;
 /* three zeroes its counters at the top of every render() call, which was fine
@@ -9660,7 +9712,52 @@ const rig = {
   idle: 0,             // seconds since the last deliberate input
   follow: -1           // a node the target is pinned to, orbit and all
 };
-function nudge(){ rig.idle = 0; }
+function nudge(){ rig.idle = 0; FLY.on = false; }
+
+/* ---- the flight in -------------------------------------------------------
+   A reveal from outside — the note's context menu, the palette — used to
+   be a cut: focusNode set the targets and the damper closed on them in
+   half a second, which from the editor read as the orrery opening on a
+   planet with no account of where that planet is. This flies there
+   instead, from wherever the eye is now, over two seconds: the target
+   slides, the range bows out and comes back in so the crossing is seen as
+   a crossing and not a zoom, and the angles ease to where they were
+   heading. The damper is bypassed for the flight's own values and takes
+   over again at the end, with the body under follow. Any input — a drag,
+   a wheel, a reset — goes through nudge() and cancels it. */
+const FLY = { on: false, t: 0, dur: 2.0, i: -1,
+              d0: 0, th0: 0, ph0: 0, tgt0: new THREE.Vector3(),
+              d1: 0, th1: 0, ph1: 0 };
+function flyTo(i) {
+  if (i < 0 || i >= N) return;
+  FLY.tgt0.copy(rig.tgt); FLY.d0 = rig.dist; FLY.th0 = rig.th; FLY.ph0 = rig.ph;
+  select(i);
+  rig.follow = -1; rig.thV = 0; rig.phV = 0;
+  FLY.d1 = clamp(RAD[i] * 9 + 34, 34, 900);
+  /* the angles finish where the damper was already taking them, so a
+     turn in progress is completed rather than undone */
+  FLY.th1 = rig.thD; FLY.ph1 = rig.phD;
+  FLY.i = i; FLY.t = 0;
+  rig.idle = 0;
+  FLY.on = true;
+}
+function flyStep(dt) {
+  if (!FLY.on) return;
+  if (FLY.i < 0 || FLY.i >= N) { FLY.on = false; return; }
+  FLY.t += dt;
+  const u = clamp(FLY.t / FLY.dur, 0, 1);
+  const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+  /* read every frame: the body is in orbit and moves while we fly */
+  const x = P[FLY.i*3], y = P[FLY.i*3+1], z = P[FLY.i*3+2];
+  rig.tgtD.set(x, y, z);
+  rig.tgt.set(lerp(FLY.tgt0.x, x, e), lerp(FLY.tgt0.y, y, e), lerp(FLY.tgt0.z, z, e));
+  const far = Math.hypot(x - FLY.tgt0.x, y - FLY.tgt0.y, z - FLY.tgt0.z);
+  const bow = Math.min(far * 0.35, FLY.d0 * 0.6) * Math.sin(Math.PI * u);
+  rig.dist = lerp(FLY.d0, FLY.d1, e) + bow; rig.distD = rig.dist;
+  rig.th = lerp(FLY.th0, FLY.th1, e); rig.thD = rig.th;
+  rig.ph = lerp(FLY.ph0, FLY.ph1, e); rig.phD = rig.ph;
+  if (u >= 1) { FLY.on = false; rig.follow = FLY.i; rig.distD = FLY.d1; }
+}
 
 /* Where the camera sits when a vault first opens. Kept so the reset gesture
    can glide back to it instead of cutting there. */
@@ -9739,6 +9836,9 @@ function applyCam(dt) {
   const idleAt = MINI.on ? 2 : 7, idleRate = MINI.on ? 0.03 : 0.019;
   if (rig.idle > idleAt) rig.thD -= dt * idleRate * clamp((rig.idle - idleAt) / 4, 0, 1);
 
+  /* a flight in progress writes the rig itself; the damper below then
+     finds nothing to close */
+  flyStep(dt);
   const k = 1 - Math.pow(0.0012, dt);
   rig.dist = lerp(rig.dist, rig.distD, k);
   rig.th   = lerp(rig.th, rig.thD, k);
@@ -11490,8 +11590,41 @@ $('b-post').onclick = savePoster;
    The recording is the composite canvas, captured as a stream. MP4 when the
    runtime can encode it, WebM when it cannot, and the toast says which.
    Nothing is uploaded: the file is handed to the browser's own download. */
-const CARD_W = 1080, CARD_H = 1920, CARD_TOP = 300, CARD_BOT = 440;
-const CARD_MID = CARD_H - CARD_TOP - CARD_BOT;
+/* The card's shape. 9:16 is a story; 4:5 and 1:1 are a feed post, which
+   is where most of these actually land; 16:9 is a header or a wide post.
+   Each has its own two bands, scaled so the title and the stats keep
+   their proportions to the frame, and the middle is whatever is left.
+   The chosen one is kept in SET.cardShape. */
+const CARD_SHAPES = {
+  '9:16': { w: 1080, h: 1920, top: 300, bot: 440 },
+  '4:5':  { w: 1080, h: 1350, top: 240, bot: 380 },
+  '1:1':  { w: 1080, h: 1080, top: 210, bot: 330 },
+  '16:9': { w: 1920, h: 1080, top: 200, bot: 300 },
+};
+const CARD_SHAPE_DEF = '9:16';
+let CARD_W = 1080, CARD_H = 1920, CARD_TOP = 300, CARD_BOT = 440;
+let CARD_MID = CARD_H - CARD_TOP - CARD_BOT;
+function cardShape() { return CARD_SHAPES[SET.cardShape] ? SET.cardShape : CARD_SHAPE_DEF; }
+/* Read the chosen shape into the constants above. The two offscreen
+   canvases are sized to a shape, so they are dropped and remade. */
+function cardApplyShape() {
+  const sh = CARD_SHAPES[cardShape()];
+  CARD_W = sh.w; CARD_H = sh.h; CARD_TOP = sh.top; CARD_BOT = sh.bot;
+  CARD_MID = CARD_H - CARD_TOP - CARD_BOT;
+  CARD.bands = null; CARD.out = null;
+  document.querySelectorAll('#card-shape u').forEach(u =>
+    u.classList.toggle('on', u.dataset.s === cardShape()));
+}
+function cardSetShape(k) {
+  if (!CARD_SHAPES[k] || CARD.rec || CARD.cd) return;
+  SET.cardShape = k; saveSet();
+  cardApplyShape();
+  /* a new frame is a new portrait: the whole vault, fitted to it */
+  if (CARD.on) { resize(); fitView(); }
+}
+document.querySelectorAll('#card-shape u').forEach(u => {
+  u.onclick = () => cardSetShape(u.dataset.s);
+});
 const CARD_MAX = 6, CARD_SECS = 15;
 const CARD_STATS = [
   ['basic', 'age'], ['basic', 'notes'], ['basic', 'links'], ['basic', 'systems'],
@@ -11591,9 +11724,9 @@ function cardValues() {
 function cardPlace() {
   const W = innerWidth, H = innerHeight, M = 20, GAP = 16;
   const pw = Math.round(clamp(W * 0.3, 210, 268));
-  let fh = H - 2 * M, fw = fh * 9 / 16;
+  let fh = H - 2 * M, fw = fh * CARD_W / CARD_H;
   const room = W - 2 * M - pw - GAP;
-  if (fw > room) { fw = Math.max(90, room); fh = fw * 16 / 9; }
+  if (fw > room) { fw = Math.max(90, room); fh = fw * CARD_H / CARD_W; }
   fw = Math.round(fw); fh = Math.round(fh);
   const fx = Math.round(Math.max(M, (W - fw - GAP - pw) / 2)), fy = Math.round((H - fh) / 2);
   const sc = fw / CARD_W;
@@ -11640,7 +11773,7 @@ function cardText(x, str, cx, y, maxW, size, family, weight, track) {
   x.fillText(t, cx, y);
   if ('letterSpacing' in x) x.letterSpacing = '0px';
 }
-/* The two bands, in card pixels (1080 x 1920). The middle is left alone:
+/* The two bands, in card pixels (CARD_W x CARD_H). The middle is left alone:
    on screen the live canvas shows through it, in the file it is drawn
    there first. Each band fades into the sky over its inner edge rather
    than stopping at a line. */
@@ -11666,26 +11799,41 @@ function cardDrawBands(x) {
   x.textAlign = 'center'; x.textBaseline = 'alphabetic';
   x.fillStyle = '#eaf9ff';
   x.shadowColor = 'rgba(92,225,255,.55)'; x.shadowBlur = 26;
-  cardText(x, String(DATA.meta.vault || 'VAULT').toUpperCase(), CARD_W / 2, 162, 920, 74, F.kr, '600', 0.2);
+  /* the title a little above the middle of the top band, the date under
+     it: 162 and 220 of a 300 band on the story card, and the same
+     proportions of a shorter band on the others */
+  cardText(x, String(DATA.meta.vault || 'VAULT').toUpperCase(), CARD_W / 2, Math.round(CARD_TOP * 0.54), CARD_W - 160, 74, F.kr, '600', 0.2);
   x.shadowBlur = 0;
   x.fillStyle = 'rgba(92,225,255,.6)';
-  cardText(x, '—  ' + cardDate() + '  —', CARD_W / 2, 220, 900, 24, F.mono, '500', 0.3);
+  cardText(x, '—  ' + cardDate() + '  —', CARD_W / 2, Math.round(CARD_TOP * 0.733), CARD_W - 180, 24, F.mono, '500', 0.3);
 
   const sel = CARD.sel.filter(k => CARD.vals && CARD.vals[k]);
   const n = sel.length;
   if (n) {
-    const rows = n <= 3 ? [sel] : n === 4 ? [sel.slice(0, 2), sel.slice(2)] : [sel.slice(0, 3), sel.slice(3)];
-    const ys = rows.length === 1 ? [1668] : [1584, 1758];
+    /* a wide card has room for every stat in one row; a tall one takes
+       three to a row */
+    const wide = CARD_W >= 1600;
+    const rows = wide || n <= 3 ? [sel] : n === 4 ? [sel.slice(0, 2), sel.slice(2)] : [sel.slice(0, 3), sel.slice(3)];
+    /* the rows sit where they did on the story card — 1584 and 1758 of
+       1920, or 1668 alone — as fractions of the band; on a band shorter
+       than the story's 440 the type shrinks and both rows ride a little
+       higher, so the second row's caption still clears the mark at the
+       foot */
+    const short = CARD_BOT < 440;
+    const ys = rows.length === 1 ? [CARD_H - CARD_BOT * 0.573]
+             : short ? [CARD_H - CARD_BOT * 0.80, CARD_H - CARD_BOT * 0.42]
+                     : [CARD_H - CARD_BOT * 0.764, CARD_H - CARD_BOT * 0.368];
+    const kb = rows.length === 1 ? Math.min(1, CARD_BOT / 300) : Math.min(1, CARD_BOT / 440);
     rows.forEach((row, r) => {
-      const cw = 960 / row.length;
+      const cw = (CARD_W - 120) / row.length;
       row.forEach((k, c) => {
         const cx = 60 + cw * (c + 0.5), v = CARD.vals[k];
         x.fillStyle = v.name ? '#eaf9ff' : '#5ce1ff';
-        cardText(x, v.v, cx, ys[r], cw - 34, v.name ? 44 : 66, v.name ? F.kr : F.mono, '600', v.name ? 0 : 0.02);
+        cardText(x, v.v, cx, Math.round(ys[r]), cw - 34, Math.round((v.name ? 44 : 66) * kb), v.name ? F.kr : F.mono, '600', v.name ? 0 : 0.02);
         /* big enough to read on a phone held at arm's length, which is the
            only place this card is ever looked at */
         x.fillStyle = 'rgba(223,246,255,.58)';
-        cardText(x, T('cs.' + k) + (v.u ? '  ·  ' + v.u : ''), cx, ys[r] + 48, cw - 16, 27, F.kr, '500', 0.04);
+        cardText(x, T('cs.' + k) + (v.u ? '  ·  ' + v.u : ''), cx, Math.round(ys[r] + 48 * kb), cw - 16, Math.round(27 * kb), F.kr, '500', 0.04);
       });
     });
   }
@@ -11771,6 +11919,7 @@ function cardOpen() {
   const saved = Array.isArray(SET.card) ? SET.card.filter(k => CARD_KEYS.indexOf(k) >= 0) : CARD_DEF;
   CARD.sel = saved.filter(k => CARD.vals[k]).slice(0, CARD_MAX);
   CARD.on = true;
+  cardApplyShape();
   document.body.classList.add('card');
   cardBuildOpts();
   resize();
@@ -11791,7 +11940,8 @@ function cardClose() {
 
 /* ---- saving ---- */
 function cardFileBase() {
-  return (DATA.meta.vault || 'vault').replace(/[^\w가-힣ぁ-んァ-ヶー一-龥.-]+/g, '_') + '-orrery-card';
+  return (DATA.meta.vault || 'vault').replace(/[^\w가-힣ぁ-んァ-ヶー一-龥.-]+/g, '_') +
+         '-orrery-card-' + cardShape().replace(':', 'x');
 }
 function cardSave(blob, ext, msg) {
   if (!blob || !blob.size) { toast(T('card.fail')); return; }
@@ -13837,7 +13987,7 @@ const _actUp = new THREE.Vector3();     // the active-note mark's own scratch
    two hundred percent gets asked once, loses the frame rate for about a
    second, and is never asked again for the rest of the session. */
 const SS = {
-  base: Math.min(devicePixelRatio || 1, 2),
+  base: MINI.on ? 1 : Math.min(devicePixelRatio || 1, 2),   // see the renderer's own note
   now: 1, want: 1,
   still: 0, hold: 0,
   /* the highest multiplier this machine has got away with. It only ever

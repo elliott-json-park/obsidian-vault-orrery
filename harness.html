@@ -331,9 +331,10 @@ window.__run = async () => {
       throw new Error('the defaults lifted the corner of the sky to ' + sky +
                       ' — the composite is adding a pedestal to the blacks');
     /* and the shipped defaults are what RESET lands on — LINK GLOW 0.30 and
-       STARFIELD off since 1.15.0 */
+       STARFIELD at 0.60, where 2.1.0 put it once the stars were drawn in
+       pixels and the knob stopped being a fog */
     const set = JSON.parse(localStorage.getItem('harness:orrery2.set') || '{}');
-    if (Math.abs(set.lnk - 0.30) > 0.001 || Math.abs(set.str - 0) > 0.001)
+    if (Math.abs(set.lnk - 0.30) > 0.001 || Math.abs(set.str - 0.6) > 0.001)
       throw new Error('RESET landed on lnk ' + set.lnk + ' / str ' + set.str);
     log.push('   dark end of the sky ' + sky + ' · lnk ' + set.lnk + ' · str ' + set.str);
   });

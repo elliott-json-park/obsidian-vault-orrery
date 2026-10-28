@@ -4,6 +4,49 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.2.0
+
+The orrery comes to where you work: a Bases view, a report for the note you
+are writing, a card in the shape each place wants, and a rail and a sidebar
+that look like the rest of Obsidian.
+
+- **An Orrery view for Bases.** On Obsidian 1.10 and later, every Base has
+  *Orrery* in its view menu beside Table and Cards. The notes the Base
+  selects are drawn as their own cosmos — one project's star systems and
+  nothing else — and the toolbar's filters are, for the first time, a way
+  to carve the vault before it is drawn. Click a planet to open the note as
+  in the full view. Embedded in a note, the Base draws at a fixed height;
+  in a tab, it fills it. Older Obsidians load the plugin as before, without
+  the view.
+- **The sky report.** *Insert the sky report for this month* puts the
+  month's numbers into the note at the cursor as a callout, in the orrery's
+  own words: planets, how many arrived and how many were touched, links,
+  star systems, the biggest and the fastest-growing, the most cited note,
+  the rogue planets and the broken links. *Copy the sky report* puts the
+  same block on the clipboard where there is no editor. It reads only
+  Obsidian's index — nothing is drawn and no note is opened — and it
+  follows the plugin's language and the excluded-files patterns.
+- **The photo card has four shapes.** 9:16 for a story, 4:5 and 1:1 for a
+  feed, 16:9 for a header, chosen at the top of the card panel and
+  remembered. Each shape has bands of its own; a wide card takes every stat
+  in one row, and the file name carries the shape.
+- **The rail is drawn in Obsidian's icons.** The seven buttons were text
+  glyphs, and a glyph is whatever font the machine has — thin on one
+  desktop, heavy on the next, a pixel off centre on both. Inside Obsidian
+  they are Lucide icons now, at the ribbon's own line weight, so the rail
+  reads as part of the app. The standalone page keeps its glyphs.
+- **The mini orrery is finished at the edges.** A vignette in the theme's
+  own background colour melts the sky into the sidebar instead of stopping
+  at a rectangle, and a caption at the foot names the note the light is on.
+- **The mini draws at one pixel per pixel.** It was drawing at the
+  display's ratio, which on a retina screen is four times the work for a
+  picture a tenth of the leaf wide; it is on all day, so it draws at one now.
+- **Show in Vault Orrery flies there.** A reveal from the context menu or
+  the palette used to cut to the note. The camera flies now, over two
+  seconds, from wherever it was: the range bows out and comes back in so
+  the crossing reads as a crossing, and any drag or wheel cancels it. The
+  follow-active-note setting still cuts, since it fires on every tab switch.
+
 ## 2.1.0
 
 The sky, the rail and the sound, each made into something you would want to

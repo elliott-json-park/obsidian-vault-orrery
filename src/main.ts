@@ -1,7 +1,14 @@
 import { Plugin, WorkspaceLeaf, Notice, TFile, Menu, addIcon, debounce, moment } from 'obsidian';
+import type { Editor } from 'obsidian';
 import type { OrreryApi, OrreryCommand, OrreryStore } from './engine.generated.js';
 import { OrreryView, MiniOrreryView, VIEW_TYPE_ORRERY, VIEW_TYPE_MINI, HOVER_SOURCE } from './view';
 import { OrrerySettingTab, DEFAULT_SETTINGS, type OrrerySettings, type Lang } from './settings';
+import { registerOrreryBasesView } from './bases';
+import { skyReport, renderReport } from './report';
+
+/** The report's pure functions, for the smoke test, which has no editor
+    to insert into. Not part of the plugin's surface. */
+export const __test = { skyReport, renderReport };
 
 const ORBIT_ICON = `<circle cx="50" cy="50" r="12" fill="currentColor"/>` +
   `<ellipse cx="50" cy="50" rx="44" ry="18" fill="none" stroke="currentColor" stroke-width="6"/>` +
@@ -33,6 +40,8 @@ const MODE_COMMANDS: ReadonlyArray<[OrreryCommand, string]> = [
 
 export default class VaultOrreryPlugin extends Plugin {
   settings: OrrerySettings = DEFAULT_SETTINGS;
+  /** Whether this Obsidian took the Bases view (1.10.0 and later). */
+  basesRegistered = false;
 
   /* The engine writes its own preferences — language, panel sizes, radar size,
      its exclusion list — as it is used. They are held here and flushed to the
@@ -129,6 +138,33 @@ export default class VaultOrreryPlugin extends Plugin {
       });
     }
 
+    /* The month's numbers, into the note being written — or onto the
+       clipboard when no note is. See report.ts for what it says. The
+       insert is an editor command, so it is only offered where there is an
+       editor to insert into; the copy is offered everywhere. */
+    this.addCommand({
+      id: 'report-insert',
+      name: 'Insert the sky report for this month',
+      editorCallback: (editor: Editor) => {
+        editor.replaceSelection(this.skyReportText());
+      },
+    });
+    this.addCommand({
+      id: 'report-copy',
+      name: 'Copy the sky report for this month',
+      callback: () => {
+        const text = this.skyReportText();
+        void navigator.clipboard.writeText(text).then(
+          () => new Notice('Vault Orrery: the sky report is on the clipboard.'),
+          () => new Notice(text, 15000));
+      },
+    });
+
+    /* A view for Bases, where Obsidian has them: the notes a Base selects,
+       drawn as their own cosmos. Registered only where the API exists, so
+       an older Obsidian loads the rest of the plugin as before. */
+    this.basesRegistered = registerOrreryBasesView(this);
+
     /* "Show in Vault Orrery", where a note is already being right-clicked. */
     this.registerEvent(this.app.workspace.on('file-menu', (menu: Menu, file) => {
       if (!(file instanceof TFile) || file.extension !== 'md') return;
@@ -224,7 +260,10 @@ export default class VaultOrreryPlugin extends Plugin {
     if (this.allViews().length <= 1) this.texts.clear();
   }
 
-  /** Open the orrery if it is not open, then put the camera on this note. */
+  /** Open the orrery if it is not open, then fly the camera to this note.
+      A flight rather than a cut, because this is a reveal from outside the
+      view — the context menu, the palette — and the flight across the vault
+      is what tells the reader where the note is in it. */
   async revealFile(file: TFile) {
     await this.activateView();
     const view = this.views()[0];
@@ -234,10 +273,15 @@ export default class VaultOrreryPlugin extends Plugin {
        only the last attempt is allowed to report that the note is not there,
        or a slow vault produces one notice per retry. */
     const attempt = (tries: number) => {
-      if (view.reveal(file, tries > 0)) return;
+      if (view.reveal(file, tries > 0, true)) return;
       if (tries > 0) window.setTimeout(() => attempt(tries - 1), 400);
     };
     attempt(view.getApi()?.busy() ? 25 : 0);
+  }
+
+  /** The month's report, in the language the plugin is shown in. */
+  skyReportText(): string {
+    return renderReport(skyReport(this.app, this.ignoreFilters()), this.resolveLang());
   }
 
   async activateView() {
@@ -318,7 +362,7 @@ export default class VaultOrreryPlugin extends Plugin {
     return l === 'ko' || l === 'en' || l === 'ja' || l === 'zh';
   }
 
-  private resolveLang(): 'ko' | 'en' | 'ja' | 'zh' {
+  resolveLang(): 'ko' | 'en' | 'ja' | 'zh' {
     const pick = (l: Lang) => (l === 'auto' ? null : l);
     const explicit = pick(this.settings.language);
     if (explicit) return explicit;
@@ -331,7 +375,7 @@ export default class VaultOrreryPlugin extends Plugin {
   }
 
   /** Obsidian's own excluded-file patterns, plus the plugin's own. */
-  private ignoreFilters(): string[] {
+  ignoreFilters(): string[] {
     const mine = this.settings.extraIgnoreFilters.slice();
     if (!this.settings.followExcludedFiles) return mine;
     /* getConfig is not in the public typings. It is how the core graph reads

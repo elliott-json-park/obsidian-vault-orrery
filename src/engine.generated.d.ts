@@ -80,6 +80,11 @@ export interface OrreryHostHooks {
   open?(path: string, opts: { newLeaf: boolean; newWindow: boolean }): void;
   /** Offer the host's own hover preview over an element the engine owns. */
   hover?(path: string, event: MouseEvent, el: HTMLElement): void;
+  /** Draw one of the host's icons into an element the engine owns — the
+      rail's buttons. `names` is the engine's first choice first, then older
+      names for the same icon. True if one was drawn; false leaves the engine
+      with its own text glyph. */
+  icon?(el: HTMLElement, names: string[]): boolean;
 }
 
 export interface OrreryApi {
@@ -109,8 +114,9 @@ export interface OrreryApi {
   /** Hand the engine the things only a host can do. */
   setHostHooks(hooks: OrreryHostHooks): void;
   /** Put the camera on the note at this path. False if that note is not in
-      the cosmos on screen — excluded, or past the node ceiling. */
-  revealPath(path: string, opts?: { select?: boolean }): boolean;
+      the cosmos on screen — excluded, or past the node ceiling. `fly`
+      arrives over a couple of seconds instead of cutting. */
+  revealPath(path: string, opts?: { select?: boolean; fly?: boolean }): boolean;
   /** The note being edited, marked in the sky while the camera goes
       elsewhere. Empty string clears it. */
   setActivePath(path: string): void;

@@ -13,6 +13,9 @@ class Plugin {
   addSettingTab(t) { calls.push('settingTab'); this._tab = t; }
   registerEvent() { calls.push('event'); }
   registerHoverLinkSource(id) { calls.push('hover:' + id); }
+  /* Bases, as 1.10.0 and later have it. The stub records the registration
+     and keeps the factory, so the view can be built and fed below. */
+  registerBasesView(id, reg) { calls.push('basesView:' + id); this._bases = reg; return true; }
   register() {}
   async loadData() { return this._data ?? null; }
   async saveData(d) { this._data = d; }
@@ -20,8 +23,13 @@ class Plugin {
 /* debounce() here fires immediately and keeps the .cancel() the plugin calls,
    so a write scheduled by the store is observable within one tick. */
 const debounce = fn => Object.assign((...a) => fn(...a), { cancel() { return this; } });
+/* TFile here is a class the test can instantiate, so the Bases view's
+   instanceof check and the report's file walk both see real files. */
+class TFile { constructor(path, stat) { this.path = path; this.stat = stat || { ctime: 0, mtime: 0 };
+  this.extension = path.split('.').pop(); this.basename = path.split('/').pop().replace(/\.md$/, ''); } }
 const stub = { Plugin, ItemView: class {}, PluginSettingTab: class {}, Setting: class {},
-  Notice: class {}, TFile: class {}, WorkspaceLeaf: class {}, Menu: class {}, debounce,
+  Notice: class {}, TFile, WorkspaceLeaf: class {}, Menu: class {}, debounce,
+  BasesView: class { constructor(controller) { this.controller = controller; } },
   getAllTags: c => (c && c.tags ? c.tags.map(t => t.tag) : []),
   addIcon: n => calls.push('icon:' + n), moment: { locale: () => 'ko' } };
 const or = Module._resolveFilename;
@@ -39,7 +47,7 @@ global.document = {
 const P = require(path.resolve(__dirname, '..', 'main.js')).default;
 const ok = (c, m) => { console.log((c ? '  ok  ' : 'FAIL  ') + m); if (!c) process.exitCode = 1; };
 const mkApp = vault => ({
-  vault,
+  vault: Object.assign({ getMarkdownFiles: () => [], getName: () => 'VAULT' }, vault),
   workspace: { on() {}, getLeavesOfType: () => [], getActiveFile: () => null,
                /* run at once: the stub has no layout to wait for, and the
                   first-run sidebar placement is what it is there to check */
@@ -68,6 +76,54 @@ const mkApp = vault => ({
   ok(calls.includes('hover:vault-orrery'),
      'declares itself a hover source, so page preview can be turned off for it');
   ok(calls.includes('icon:orbit'), 'registers its icon');
+  ok(calls.includes('basesView:vault-orrery'), 'registers an Orrery view for Bases');
+  ok(p.basesRegistered === true && p._bases && p._bases.name === 'Orrery' && p._bases.icon === 'orbit',
+     'the Bases view is named and has the orbit icon');
+  ok(typeof p._bases.factory === 'function', 'the Bases view has a factory');
+  ok(calls.includes('command:report-insert') && calls.includes('command:report-copy'),
+     'the sky report can be inserted or copied from the palette');
+
+  /* And on an Obsidian without Bases the plugin still loads: the view is
+     built from a class that only exists on 1.10.0 and later, so this is
+     the path that must not throw. */
+  const hadBases = stub.BasesView;
+  delete stub.BasesView;
+  const pOld = new P(mkApp({}), { dir: 'x' });
+  pOld.registerBasesView = undefined;
+  await pOld.onload();
+  ok(pOld.basesRegistered === false, 'an Obsidian without Bases loads the plugin without the view');
+  stub.BasesView = hadBases;
+
+  /* The sky report, against a small vault with known numbers. Three
+     systems; two notes born this month, one of them in 'b'; one note that
+     nothing links and that links to nothing; one dead link. */
+  const now = new Date(2026, 9, 28), m0 = new Date(2026, 9, 1).getTime(), old = m0 - 86400000 * 40;
+  const F = [new TFile('a/index.md', { ctime: old, mtime: old }),
+             new TFile('a/one.md', { ctime: old, mtime: m0 + 1000 }),
+             new TFile('b/two.md', { ctime: m0 + 1000, mtime: m0 + 1000 }),
+             new TFile('b/three.md', { ctime: m0 + 2000, mtime: m0 + 2000 }),
+             new TFile('alone.md', { ctime: old, mtime: old }),
+             new TFile('hidden/x.md', { ctime: m0 + 3000, mtime: m0 + 3000 })];
+  const appR = mkApp({ getMarkdownFiles: () => F, getName: () => 'TESTVAULT', getConfig: () => ['hidden'] });
+  appR.metadataCache.resolvedLinks = {
+    'a/one.md': { 'a/index.md': 2 }, 'b/two.md': { 'a/index.md': 1, 'b/three.md': 1 },
+    'b/three.md': { 'a/index.md': 1, 'pic.png': 1 }, 'hidden/x.md': { 'a/index.md': 5 } };
+  appR.metadataCache.unresolvedLinks = { 'b/two.md': { 'Nowhere': 1 } };
+  const pR = new P(appR, { dir: 'x' });
+  await pR.onload();
+  const { skyReport, renderReport } = require(path.resolve(__dirname, '..', 'main.js')).__test;
+  const r = skyReport(appR, pR.ignoreFilters(), now);
+  ok(r.notes === 5 && r.born === 2 && r.touched === 3, `report counts notes 5 / born 2 / touched 3 -> ${r.notes} / ${r.born} / ${r.touched}`);
+  ok(r.links === 5 && r.broken === 1, `report counts links 5 and broken 1 -> ${r.links} / ${r.broken}`);
+  ok(r.systems === 3 && r.biggest && r.biggest.name === 'a' && r.grew && r.grew.name === 'b' && r.grew.n === 2,
+     'report names the biggest system and the one that grew -> ' + JSON.stringify([r.biggest, r.grew]));
+  ok(r.cited && r.cited.name === 'index' && r.cited.n === 4, 'report drops excluded notes from the citation count -> ' + JSON.stringify(r.cited));
+  ok(r.rogue === 1, 'report counts the one rogue planet -> ' + r.rogue);
+  const md = renderReport(r, 'ko', now);
+  ok(md.startsWith('> [!orrery] 하늘 보고서 · 2026년 10월') && md.includes('[[a/index|index]]') && md.includes('**+2**'),
+     'the report renders as a callout in Korean');
+  ok(renderReport(r, 'en', now).includes('SKY REPORT · October 2026'), 'and in English');
+  ok(pR.skyReportText().includes('하늘 보고서'), 'skyReportText follows the plugin language (ko locale)');
   /* The stylesheet is a file Obsidian loads, not something the plugin builds
      at runtime — so it is checked on disk, and the plugin is checked for not
      reaching for document.head at all. */

@@ -1,7 +1,9 @@
-import { ItemView, WorkspaceLeaf, Notice, TFile, debounce, getAllTags, setIcon } from 'obsidian';
-import { createOrrery, ENGINE_HTML } from './engine.generated.js';
-import type { OrreryApi, OrreryFile, OrreryFileMeta } from './engine.generated.js';
+import { ItemView, WorkspaceLeaf, Notice, TFile, debounce, setIcon } from 'obsidian';
+import type { OrreryApi } from './engine.generated.js';
+import { mountEngine, hostIcon, openNoteFrom, hoverNote, orreryFiles } from './host';
 import type VaultOrreryPlugin from './main';
+
+export { HOVER_SOURCE } from './host';
 
 export const VIEW_TYPE_ORRERY = 'vault-orrery-view';
 /** The same cosmos, small and quiet, kept in a sidebar. */
@@ -12,21 +14,14 @@ export const VIEW_TYPE_MINI = 'vault-orrery-mini';
     event would be a rebuild every couple of seconds while someone writes. */
 const SYNC_DELAY = 2500;
 
-/** How many of a note's dead links travel with it. The inspector lists a
-    handful and says how many more there were, so the rest would be carried
-    across the whole vault to be counted and thrown away. */
-const BROKEN_NAME_CAP = 24;
-
-/** How many front-matter keys travel with a note. The inspector shows a
-    dozen and a vault of ten thousand notes carries every one of these. */
-const PROP_CAP = 24;
-
 export class OrreryView extends ItemView {
   private api: OrreryApi | null = null;
   private io: IntersectionObserver | null = null;
   private ro: ResizeObserver | null = null;
   /** Set while a sync is waiting on a load that is already running. */
   private syncPending = false;
+  /** The mini's caption: the name of the note being edited. */
+  private caption: HTMLElement | null = null;
   /** The sidebar's mini orrery rather than the full view. Set by the
       subclass before onOpen, because the engine has to be told at birth. */
   protected readonly mini: boolean = false;
@@ -42,22 +37,16 @@ export class OrreryView extends ItemView {
     const host = this.contentEl;
     host.empty();
     host.addClass('vault-orrery-host');
+    if (this.mini) host.addClass('vault-orrery-host-mini');
 
     const root = host.createDiv({ cls: 'vo-root' });
-    /* ENGINE_HTML is a build-time constant with no user data in it, so innerHTML
-       would be safe here — but DOMParser is safe by construction rather than by
-       argument, and it does not run scripts. Cheaper to reason about, and one
-       less thing for a reviewer to have to take on trust. */
-    const doc = new DOMParser().parseFromString(ENGINE_HTML, 'text/html');
-    while (doc.body.firstChild) root.appendChild(doc.body.firstChild);
-
     try {
       /* The mini reads the full view's preferences and writes none of them:
          its quality is forced down and its panels never move, and either of
          those written back would change the full view's picture. */
-      this.api = createOrrery(root,
+      this.api = mountEngine(root,
         this.mini ? this.plugin.engineStoreReadOnly() : this.plugin.engineStore(),
-        { mini: this.mini });
+        this.mini);
     } catch (e) {
       console.error('Vault Orrery: engine failed to start', e);
       host.empty();
@@ -65,22 +54,26 @@ export class OrreryView extends ItemView {
       return;
     }
 
-    /* Before anything is drawn: the vault here is the one the plugin is
-       installed in, so the engine's own way of asking for a folder has to be
-       gone by the first paint rather than dismissed after it. */
-    this.api.setHosted(true);
     /* What the engine cannot do for itself. Without this the orrery is a
        picture of the vault; with it, every body on screen is a note you can
-       be reading a second later. */
+       be reading a second later. The icon hook is how the rail comes to be
+       drawn in Obsidian's own icon set rather than in text glyphs. */
     this.api.setHostHooks({
-      open: (path, opts) => { void this.openNote(path, opts); },
-      hover: (path, event, el) => this.hoverNote(path, event, el),
+      open: (path, opts) => { void openNoteFrom(this.app, this.leaf, path, opts); },
+      hover: (path, event, el) => hoverNote(this.app, this, path, event, el),
+      icon: hostIcon,
     });
     this.plugin.applySettingsTo(this.api);
 
-    /* The way from the sidebar to the full view. The engine draws no panels
-       in the mini, so this one control is the host's. */
+    /* The mini's finish. The engine draws a hard-edged sky into a sidebar
+       whose own background is the theme's, so a vignette in that colour
+       melts the edges into the pane, and a one-line caption names the note
+       the light is on — the thing the sidebar is turning about. The one
+       control, the way to the full view, is the host's as well: the engine
+       draws no panels in the mini. */
     if (this.mini) {
+      host.createDiv({ cls: 'vo-mini-vignette' });
+      this.caption = host.createDiv({ cls: 'vo-mini-caption' });
       const exp = host.createDiv({ cls: 'vo-mini-expand', attr: { 'aria-label': 'Open the full orrery' } });
       setIcon(exp, 'maximize-2');
       exp.addEventListener('click', () => { void this.plugin.activateView(); });
@@ -154,52 +147,27 @@ export class OrreryView extends ItemView {
 
   /* ---- the host's half of the conversation ------------------------------ */
 
-  /** Open a note from the cosmos. The default lands it beside the orrery
-      rather than on top of it: replacing this leaf with the note would close
-      the very view the click came from, which is never what a click on a
-      planet means. */
-  private async openNote(path: string, opts: { newLeaf: boolean; newWindow: boolean }) {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (!(file instanceof TFile)) {
-      new Notice(`Vault Orrery: ${path} is no longer in the vault.`);
-      return;
-    }
-    const ws = this.app.workspace;
-    let leaf: WorkspaceLeaf;
-    if (opts.newWindow) leaf = ws.getLeaf('window');
-    else if (opts.newLeaf) leaf = ws.getLeaf('tab');
-    else {
-      const recent = ws.getMostRecentLeaf(ws.rootSplit);
-      leaf = recent && recent !== this.leaf ? recent : ws.getLeaf('tab');
-    }
-    await leaf.openFile(file, { active: true });
-  }
-
-  /** Obsidian's own page preview, over an element the engine owns. Registered
-      as a hover source by the plugin, so the user's "preview on hover"
-      preference — including the Ctrl requirement — is honoured here as it is
-      anywhere else. */
-  private hoverNote(path: string, event: MouseEvent, el: HTMLElement) {
-    this.app.workspace.trigger('hover-link', {
-      event, source: HOVER_SOURCE, hoverParent: this, targetEl: el, linktext: path,
-    });
-  }
-
   /** Mark the note being edited, and follow it if the user asked to. */
   private syncActive(file: TFile | null) {
     if (!this.api) return;
     const path = file && file.extension === 'md' ? file.path : '';
     this.api.setActivePath(path);
+    if (this.caption) {
+      this.caption.setText(file && path ? file.basename : '');
+      this.caption.toggleClass('is-empty', !path);
+    }
     /* The mini marks the note and keeps drifting: following would stop the
        one thing it is for every time a note is opened. */
     if (path && !this.mini && this.plugin.settings.followActiveNote) this.api.revealPath(path);
   }
 
   /** Put the camera on a note, and say so if it is not in the cosmos. `quiet`
-      is for a caller that is going to try again. */
-  reveal(file: TFile, quiet = false): boolean {
+      is for a caller that is going to try again. `fly` arrives over a couple
+      of seconds instead of cutting — right for a reveal that came from
+      outside the view, where the flight is what shows where the note is. */
+  reveal(file: TFile, quiet = false, fly = false): boolean {
     if (!this.api) return false;
-    const ok = this.api.revealPath(file.path);
+    const ok = this.api.revealPath(file.path, { fly });
     if (!ok && !quiet) new Notice(`Vault Orrery: ${file.basename} is not in the cosmos on screen — ` +
                         `it may be excluded, or past the maximum-notes ceiling.`);
     return ok;
@@ -229,6 +197,7 @@ export class OrreryView extends ItemView {
     this.ro?.disconnect(); this.ro = null;
     this.api?.destroy();
     this.api = null;
+    this.caption = null;
     this.contentEl.empty();
     this.plugin.releaseTexts();
   }
@@ -289,94 +258,7 @@ export class OrreryView extends ItemView {
       return;
     }
     this.plugin.pruneTexts(files);
-    const list: OrreryFile[] = files.map(f => ({
-      path: f.path,
-      file: { text: () => this.plugin.readText(f) },
-      meta: this.metaFor(f),
-    }));
-    await this.api.load(list, this.app.vault.getName(), { quiet });
-  }
-
-  /** What Obsidian already knows about a note, in the shape the engine reads.
-
-      This is the difference between a graph that agrees with Obsidian's and
-      one that quietly disagrees. The engine's own parser is a regular
-      expression over the text: it cannot follow a link written through an
-      alias, does not see an embed as a link, and only finds tags in the front
-      matter. Obsidian has resolved all of it already, for the whole vault, in
-      an index it keeps up to date — so inside the plugin that index is the
-      answer and the parser is the fallback for the standalone page. */
-  private metaFor(f: TFile): OrreryFileMeta {
-    const cache = this.app.metadataCache;
-    /* Both maps are keyed by source path and hold counts. Attachments and
-       other non-markdown targets are in there too; the engine drops the ones
-       it has no body for. */
-    const links = cache.resolvedLinks[f.path];
-    /* A dead link is the one fact about a note that is worth acting on the
-       moment you see it, and a count on its own cannot be acted on: it says
-       three of this note's links reach nothing and leaves you to go and find
-       which three. The keys of the unresolved map are what was written, so
-       they come along with the count.
-
-       Capped, because nothing downstream lists more than a handful and a
-       note pasted full of broken references should not be able to make the
-       payload for a whole vault large on its own. */
-    const unresolved = cache.unresolvedLinks[f.path];
-    let broken = 0;
-    const brokenNames: string[] = [];
-    if (unresolved) for (const k in unresolved) {
-      broken += unresolved[k];
-      if (brokenNames.length < BROKEN_NAME_CAP) brokenNames.push(k);
-    }
-    /* getAllTags merges the front matter and the body, and returns them with
-       the leading '#', which the engine strips. Nested tags arrive whole
-       (#project/orrery); leaving them whole is right, because two notes under
-       the same parent are not the same subject. */
-    const fc = cache.getFileCache(f);
-    const tags = fc ? getAllTags(fc) : null;
-    /* ---- and whatever else the note keeps about itself ----
-       Obsidian's Properties are a first-class part of a vault, and the
-       orrery read four keys out of the front matter and discarded the rest.
-       Passed as they were parsed, minus the one key Obsidian adds for its
-       own bookkeeping: `position` is where the block sat in the file, which
-       is a fact about the text and not about the subject.
-
-       Scalars and flat lists only. Nothing downstream can render a nested
-       map and the whole vault's worth of these travels together, so a note
-       carrying an object graph in its front matter contributes its scalars
-       and nothing else. */
-    const props: Record<string, unknown> = {};
-    const fm = fc?.frontmatter;
-    if (fm) {
-      let n = 0;
-      for (const k in fm) {
-        if (k === 'position' || n >= PROP_CAP) continue;
-        const v = (fm as Record<string, unknown>)[k];
-        if (v === null || v === undefined) continue;
-        const ok = typeof v !== 'object' ||
-          (Array.isArray(v) && v.every(x => x === null || typeof x !== 'object'));
-        if (!ok) continue;
-        props[k] = v;
-        n++;
-      }
-    }
-    return {
-      links: links ? { ...links } : {},
-      broken,
-      brokenNames,
-      tags: tags ? tags.map(t => t.replace(/^#/, '')) : [],
-      props,
-      /* When the file was last written, which is not the same question as the
-         date inside it. A note's front matter says when the thing it describes
-         happened; the file system says when the person last had their hands on
-         it. The engine had only the first, so it could draw a vault's history
-         and not its present — a note rewritten this morning and one untouched
-         since 2022 were the same object if their dates matched.
-
-         Obsidian has both stats already, for free, on every TFile. */
-      mtime: f.stat.mtime,
-      ctime: f.stat.ctime,
-    };
+    await this.api.load(orreryFiles(this.plugin, files), this.app.vault.getName(), { quiet });
   }
 }
 
@@ -387,7 +269,3 @@ export class MiniOrreryView extends OrreryView {
   getViewType() { return VIEW_TYPE_MINI; }
   getDisplayText() { return 'Vault Orrery mini'; }
 }
-
-/** Named once. It is what Obsidian shows the user in Settings → Core plugins →
-    Page preview, so it has to be stable across releases. */
-export const HOVER_SOURCE = 'vault-orrery';

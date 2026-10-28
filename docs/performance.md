@@ -24,8 +24,9 @@ and it draws thirty frames a second instead of sixty; the first touch puts it
 straight back. Genesis is exempt, because it is being watched even when the
 hands are still. The sidebar's **mini orrery** is paced all the time, at
 twenty, with BALANCED light, no panels, no sound and no sky events — its
-canvas is a tenth of the full view's pixels, so it costs a small fraction of
-it.
+canvas is a tenth of the full view's pixels, and since 2.2.0 it is drawn at
+one device pixel per CSS pixel whatever the display, so on a retina screen it
+costs a quarter of what it did and a small fraction of the full view.
 
 **Rendering stops when you are not looking at it.** The render loop, the physics
 clock and the audio context are all suspended when the view's leaf is hidden or
