@@ -35,7 +35,7 @@ export function excluded(path: string, filters: string[]): boolean {
   for (const f of filters) {
     if (!f) continue;
     if (f.length > 2 && f.startsWith('/') && f.endsWith('/')) {
-      try { if (new RegExp(f.slice(1, -1)).test(path)) return true; } catch (e) { /* not a pattern */ }
+      try { if (new RegExp(f.slice(1, -1)).test(path)) return true; } catch { /* not a pattern */ }
     } else if (path.startsWith(f)) return true;
   }
   return false;

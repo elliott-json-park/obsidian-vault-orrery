@@ -4,6 +4,15 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.2.1
+
+- **Requires Obsidian 1.10.0.** The Bases view in 2.2.0 is built on the
+  Bases API that arrived in 1.10.0, and the community directory's checks
+  refuse a plugin that uses an API newer than the version it declares. The
+  declared minimum is now 1.10.0 to say so. An Obsidian older than that
+  keeps 2.1.0, which is the same plugin without the Bases view.
+- A lint note in the report's pattern matcher cleared.
+
 ## 2.2.0
 
 The orrery comes to where you work: a Bases view, a report for the note you

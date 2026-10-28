@@ -27,11 +27,11 @@ export const BASES_VIEW_TYPE = 'vault-orrery';
     burst of updates, and the engine should take one reload for the lot. */
 const RETRY_MS = 600;
 
-/** Register the view, if this Obsidian has Bases with a plugin API (1.10.0).
-    The class is declared inside, not at module level: `extends BasesView`
-    throws at load on an Obsidian that has no BasesView to extend, and that
-    would take the whole plugin down on the versions this plugin otherwise
-    runs on. Returns false where it could not register. */
+/** Register the view. The plugin's minAppVersion is 1.10.0, where Bases
+    gained a plugin API, so this is expected to succeed; the guard stays
+    because a plugin folder copied by hand onto an older Obsidian would
+    otherwise throw at `extends BasesView` and take the whole plugin down.
+    Returns false where it could not register. */
 export function registerOrreryBasesView(plugin: VaultOrreryPlugin): boolean {
   if (typeof BasesView !== 'function' || typeof plugin.registerBasesView !== 'function') return false;
 

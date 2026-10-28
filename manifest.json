@@ -1,8 +1,8 @@
 {
   "id": "vault-orrery",
   "name": "Vault Orrery",
-  "version": "2.2.0",
-  "minAppVersion": "1.7.2",
+  "version": "2.2.1",
+  "minAppVersion": "1.10.0",
   "description": "A 3D graph view that draws your vault as a galaxy: every folder is a solar system, with its notes in orbit. Replay how your vault grew, map any note's links, and fly it all offline.",
   "author": "Elliott Park",
   "authorUrl": "https://github.com/elliott-json-park",

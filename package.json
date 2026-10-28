@@ -1,6 +1,6 @@
 {
   "name": "vault-orrery",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "A 3D graph view that draws your vault as a galaxy: every folder is a solar system, with its notes in orbit. Replay how your vault grew, map any note's links, and fly it all offline.",
   "main": "main.js",
   "//": "No \"type\": \"module\" — Obsidian loads main.js as CommonJS, and declaring the package as ESM makes Node treat the built bundle as a module too. Build scripts use .mjs instead.",
