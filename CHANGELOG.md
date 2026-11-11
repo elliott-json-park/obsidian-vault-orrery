@@ -4,6 +4,10 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.3.0
+
+- **A one-time request to star the repository.** After an update, the first time you open the Vault Orrery view yourself, a small window asks for a GitHub star. It shows once, only to people who updated, never at start-up, and the plugin makes no request of its own: the button opens the repository in your browser when pressed. See "One-time message" in the README.
+
 ## 2.2.1
 
 - **Requires Obsidian 1.10.0.** The Bases view in 2.2.0 is built on the

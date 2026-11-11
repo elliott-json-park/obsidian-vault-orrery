@@ -27,7 +27,7 @@ const debounce = fn => Object.assign((...a) => fn(...a), { cancel() { return thi
    instanceof check and the report's file walk both see real files. */
 class TFile { constructor(path, stat) { this.path = path; this.stat = stat || { ctime: 0, mtime: 0 };
   this.extension = path.split('.').pop(); this.basename = path.split('/').pop().replace(/\.md$/, ''); } }
-const stub = { Plugin, ItemView: class {}, PluginSettingTab: class {}, Setting: class {},
+const stub = { Plugin, ItemView: class {}, PluginSettingTab: class {}, Setting: class {}, Modal: class {},
   Notice: class {}, TFile, WorkspaceLeaf: class {}, Menu: class {}, debounce,
   BasesView: class { constructor(controller) { this.controller = controller; } },
   getAllTags: c => (c && c.tags ? c.tags.map(t => t.tag) : []),

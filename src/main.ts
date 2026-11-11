@@ -5,6 +5,10 @@ import { OrreryView, MiniOrreryView, VIEW_TYPE_ORRERY, VIEW_TYPE_MINI, HOVER_SOU
 import { OrrerySettingTab, DEFAULT_SETTINGS, type OrrerySettings, type Lang } from './settings';
 import { registerOrreryBasesView } from './bases';
 import { skyReport, renderReport } from './report';
+import { askWhenPicked, maybeAskForStar, starChanged, starOnLoad } from './star';
+
+/* Opened only when the star request's button is pressed. */
+const REPO_PAGE = 'https://github.com/elliott-json-park/obsidian-vault-orrery';
 
 /** The report's pure functions, for the smoke test, which has no editor
     to insert into. Not part of the plugin's surface. */
@@ -59,6 +63,7 @@ export default class VaultOrreryPlugin extends Plugin {
        Obsidian loads that file itself. */
 
     this.registerView(VIEW_TYPE_ORRERY, leaf => new OrreryView(leaf, this));
+    askWhenPicked(this, leaf => leaf.view.getViewType() === VIEW_TYPE_ORRERY, () => this.askForStar());
     this.registerView(VIEW_TYPE_MINI, leaf => new MiniOrreryView(leaf, this));
 
     this.addRibbonIcon('orbit', 'Open Vault Orrery', () => this.activateView());
@@ -303,8 +308,23 @@ export default class VaultOrreryPlugin extends Plugin {
     /* Object.assign copies the reference, so a saved file with no engine state
        would otherwise have every view writing into DEFAULT_SETTINGS itself. */
     this.settings.engineStore = Object.assign({}, this.settings.engineStore);
+    const star = starOnLoad(saved?.starAsk, !!saved, this.manifest.version);
+    const starMoved = starChanged(saved?.starAsk, star);
+    this.settings.starAsk = star;
+    if (starMoved) await this.saveSettings();
   }
   async saveSettings() { await this.saveData(this.settings); }
+
+  /** Show the one-time star request if an update armed it (star.ts). Called when the full view opens. */
+  askForStar() {
+    maybeAskForStar(this.app, {
+      state: this.settings.starAsk,
+      name: this.manifest.name,
+      url: REPO_PAGE,
+      language: this.resolveLang(),
+      save: next => { this.settings.starAsk = next; return this.saveSettings(); },
+    });
+  }
 
   /** The same store with the writes dropped, for the mini orrery. */
   engineStoreReadOnly(): OrreryStore {

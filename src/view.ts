@@ -38,6 +38,7 @@ export class OrreryView extends ItemView {
     host.empty();
     host.addClass('vault-orrery-host');
     if (this.mini) host.addClass('vault-orrery-host-mini');
+    else this.plugin.askForStar();
 
     const root = host.createDiv({ cls: 'vo-root' });
     try {

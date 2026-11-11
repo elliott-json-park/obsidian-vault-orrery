@@ -284,6 +284,10 @@ Desktop only: the renderer needs WebGL.
 
 ---
 
+## One-time message
+
+After you update Vault Orrery, the first time you open the Vault Orrery view yourself, a small window asks you to star this repository on GitHub if you find the plugin useful. It appears **once**, only for people who updated (never on a fresh install), never at start-up, and never again after that. Its button opens the repository in your browser only when you press it, and nothing in the plugin depends on it. There are no other messages or ads.
+
 ## More from the same author
 
 - **[Vault Pet](https://community.obsidian.md/plugins/vault-pet)**: a pixel cat that lives at the bottom of your workspace and levels up as you write.

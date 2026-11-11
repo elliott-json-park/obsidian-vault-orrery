@@ -9,6 +9,8 @@ const isLang = (v: unknown): v is Lang =>
   typeof v === 'string' && (LANGS as readonly string[]).includes(v);
 
 export interface OrrerySettings {
+  /** The one-time star request after an update (star.ts). */
+  starAsk?: import('./star').StarState;
   language: Lang;
   /** 0 = no ceiling. */
   maxNodes: number;
