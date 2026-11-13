@@ -525,7 +525,13 @@ body.dragdeck #hud{cursor:grabbing}
 #srch{position:fixed;z-index:22;top:50%;left:50%;transform:translate(-50%,-50%);
   width:520px;display:none}
 #srch input{width:100%;background:transparent;border:0;outline:0;color:var(--ink);
-  font-family:var(--kr);font-size:19px;padding:14px 16px;letter-spacing:.01em}
+  font-family:var(--kr);font-size:19px;padding:14px 52px 14px 16px;letter-spacing:.01em}
+/* Escape closes the box, but a box that only a key can close reads as stuck
+   to anyone who reached it with the mouse, so it carries its own way out. */
+#sx{position:absolute;top:0;right:0;width:48px;height:51px;display:flex;
+  align-items:center;justify-content:center;cursor:pointer;font-size:15px;
+  color:rgba(223,246,255,.45)}
+#sx:hover{color:var(--am)}
 #srch input::placeholder{color:rgba(223,246,255,.25)}
 #sres{max-height:320px;overflow:auto;border-top:1px solid rgba(92,225,255,.16)}
 #sres div{padding:7px 16px;font-family:var(--kr);font-size:14px;cursor:pointer;
@@ -1229,6 +1235,7 @@ body.card #hud,body.card #tgt{display:none}
 
 <div class="glass" id="srch">
   <input id="sin" data-i18n-ph="search.ph" placeholder="노트 검색 …" autocomplete="off" spellcheck="false">
+  <span id="sx" data-i18n-title="search.close.t" title="닫기 [Esc]">✕</span>
   <div id="sres"></div>
 </div>
 
@@ -1665,6 +1672,7 @@ const STR = {
                 'Drop a folder or markdown files and a cosmos is built from that vault',
                 'フォルダやマークダウンファイルを置くと、そのボルトから宇宙を作ります',
                 '放下文件夹或 Markdown 文件，就用那个仓库造一个宇宙'],
+'search.close.t': ['닫기 [Esc]','Close [Esc]','閉じる [Esc]','关闭 [Esc]'],
 'search.ph':   ['노트 · 설정 · 기능 검색 …','Search notes, settings, actions …',
                 'ノート・設定・機能を検索 …','搜索笔记 · 设置 · 功能 …'],
 'insp.more':   ['+ {n}개 더 보기','+ {n} more','+ 他 {n} 件','+ 还有 {n} 项'],
@@ -10587,6 +10595,7 @@ function searchGo(k, e) {
   if (h.kind === 'knob') revealKnob(h.kn.k);
   else h.a.run(e);
 }
+$('sx').addEventListener('click', () => { filterTxt=''; closeSearch(); });
 $('sin').addEventListener('input', e => runSearch(e.target.value));
 $('sin').addEventListener('keydown', e => {
   if (e.key === 'Escape') { filterTxt=''; closeSearch(); }

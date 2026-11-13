@@ -4,6 +4,10 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.3.1
+
+- **The search box has a close button.** A ✕ at the right end of the box closes it, the same as Esc, so the box no longer looks stuck to anyone who opened it with the mouse.
+
 ## 2.3.0
 
 - **A one-time request to star the repository.** After an update, the first time you open the Vault Orrery view yourself, a small window asks for a GitHub star. It shows once, only to people who updated, never at start-up, and the plugin makes no request of its own: the button opens the repository in your browser when pressed. See "One-time message" in the README.
