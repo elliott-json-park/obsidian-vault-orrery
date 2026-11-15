@@ -286,7 +286,7 @@ Desktop only: the renderer needs WebGL.
 
 ## One-time message
 
-After you update Vault Orrery, the first time you open the Vault Orrery view yourself, a small window asks you to star this repository on GitHub if you find the plugin useful. It appears **once**, only for people who updated (never on a fresh install), never at start-up, and never again after that. Its button opens the repository in your browser only when you press it, and nothing in the plugin depends on it. There are no other messages or ads.
+After you update Vault Orrery, the first time you open the Vault Orrery view yourself, a small window asks you to star this repository on GitHub if you find the plugin useful. It appears only for people who updated (never on a fresh install) and never at start-up. Press its star button and it never appears again; otherwise each design of the window is shown at most once (the redesigned window from 2.3.2 is shown once more to people who saw the first one). Its button opens the repository in your browser only when you press it, and nothing in the plugin depends on it. There are no other messages or ads.
 
 ## More from the same author
 

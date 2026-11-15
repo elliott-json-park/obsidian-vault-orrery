@@ -4,6 +4,10 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.3.2
+
+- **A redesigned star request.** The window that asks for a GitHub star is now an "orbit log" in the view's own HUD style: a small system turning on the left, a readout on the right, and an amber star button. People who saw the first, plainer window see the new one once more after this update; anyone who presses the star button is never asked again. See "One-time message" in the README.
+
 ## 2.3.1
 
 - **The search box has a close button.** A ✕ at the right end of the box closes it, the same as Esc, so the box no longer looks stuck to anyone who opened it with the mouse.
