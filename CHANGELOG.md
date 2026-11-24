@@ -4,6 +4,10 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.4.1
+
+- **The star request opens without a clipping effect.** Its window now unfolds from its top edge with a transform instead of a clip path, which the directory review flagged as only partly supported. It looks the same.
+
 ## 2.4.0
 
 - **Lighter beside your notes on a big vault.** An idle view is now held to a fifth of the main thread instead of to a fixed thirty frames a second. On a 3,000-note vault with 11,000 links, an untouched orrery next to a note used to keep the thread busy most of the time; now it drifts at about thirteen frames a second and leaves most of the thread to the editor. Small vaults are not affected: their frames are cheap enough for thirty. It also goes idle at once, rather than after twenty seconds, when the window is in the background or you are typing in a note. Touching the view brings it straight back to full rate.

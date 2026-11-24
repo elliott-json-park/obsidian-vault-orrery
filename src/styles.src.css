@@ -141,6 +141,7 @@
   border: 1px solid rgba(92, 225, 255, 0.32);
   box-shadow: 0 0 40px rgba(92, 225, 255, 0.08);
   color: var(--vo-ink);
+  transform-origin: top center;
   animation: vo-star-in 0.45s ease-out both;
 }
 .vo-star-modal .modal-close-button, .vo-star-modal .modal-header-button { color: rgba(92, 225, 255, 0.6); background: none; box-shadow: none; }
@@ -191,7 +192,9 @@
 .vo-star-modal .vo-star-btn:hover { background: rgba(92, 225, 255, 0.12); }
 .vo-star-modal .vo-star-btn.is-cta { color: var(--vo-am); border-color: rgba(255, 182, 72, 0.6); background: rgba(255, 182, 72, 0.08); }
 .vo-star-modal .vo-star-btn.is-cta:hover { background: rgba(255, 182, 72, 0.2); box-shadow: 0 0 14px rgba(255, 182, 72, 0.35); }
-@keyframes vo-star-in { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+/* Opens downward from its top edge, like a readout coming up. A transform rather than
+   a clipping wipe, which the directory's review flags as only partly supported. */
+@keyframes vo-star-in { from { opacity: 0; transform: scaleY(0.04); } to { opacity: 1; transform: none; } }
 @keyframes vo-star-spin { to { transform: rotate(360deg); } }
 @keyframes vo-star-blink { 50% { opacity: 0.25; } }
 @media (max-width: 420px) {
