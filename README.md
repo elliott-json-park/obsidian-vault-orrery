@@ -107,7 +107,9 @@ send it back. The inspector appears when you select a note.
   fastest-growing, the most cited note, rogue planets, broken links. *Copy
   the sky report* puts it on the clipboard instead.
 - **Photo card** — `C` — an image or a fifteen-second MP4 of your vault, with
-  the stats you choose, at 9:16, 4:5, 1:1 or 16:9.
+  the stats you choose, at 9:16, 4:5, 1:1 or 16:9. Until the end of January,
+  *Year in orbit clip* records the vault forming in fifteen seconds with the
+  year's numbers on the card.
 - **Mind map** — `M` or double-click — one note's neighbourhood, two hops out,
   in place, with a reading rail beside it.
 - **Search** — `/` — notes, controls and actions in one box. Front-matter
@@ -214,9 +216,10 @@ own if the machine is plainly struggling — once, and with a line saying so.
 The **MAX NODES** ceiling ships **off**: a cap that silently drops half a vault
 is worse than a slow first minute, and the slider is right there. Rendering
 stops entirely when you are not looking at the view, so an orrery in a
-background tab costs nothing; a view on screen that nobody has touched for
-twenty seconds draws at half rate, and the sidebar's mini orrery always draws
-at a third.
+background tab costs nothing; a view on screen that nobody is touching draws
+at half rate or slower, so that on a big vault it never takes more than about a
+fifth of Obsidian's main thread, and the sidebar's mini orrery always draws at
+a third.
 
 → [Performance in detail](docs/performance.md)
 

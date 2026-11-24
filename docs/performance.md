@@ -18,10 +18,16 @@ thing. What it keeps is chosen, not whatever came first in the file list: the
 note open in the editor and the hub you picked always stay, then the notes the
 vault links to most, then the most recently written.
 
-**A view nobody is touching draws at half rate.** Twenty seconds without a
-pointer or a key on the view — typing in the note beside it does not count —
-and it draws thirty frames a second instead of sixty; the first touch puts it
-straight back. Genesis is exempt, because it is being watched even when the
+**A view nobody is touching draws at half rate, or slower on a big vault.**
+Twenty seconds without a pointer or a key on the view, or two seconds once the
+window is in the background or the keyboard is in a note, and it draws thirty
+frames a second instead of sixty; the first touch puts it straight back. Since
+2.4.0 the idle rate also answers to what a frame costs: it is slowed until a
+frame takes no more than a fifth of the time between frames, never below
+eight a second. A few hundred notes never notice. On a 3,000-note vault with
+11,000 links (measured: about 24 ms of main-thread work a frame), the idle
+view drifts at about thirteen frames a second beside a note being typed in,
+and the main thread is free about three quarters of the time. Genesis is exempt, because it is being watched even when the
 hands are still. The sidebar's **mini orrery** is paced all the time, at
 twenty, with BALANCED light, no panels, no sound and no sky events — its
 canvas is a tenth of the full view's pixels, and since 2.2.0 it is drawn at

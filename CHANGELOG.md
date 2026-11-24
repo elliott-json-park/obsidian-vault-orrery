@@ -4,6 +4,12 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.4.0
+
+- **Lighter beside your notes on a big vault.** An idle view is now held to a fifth of the main thread instead of to a fixed thirty frames a second. On a 3,000-note vault with 11,000 links, an untouched orrery next to a note used to keep the thread busy most of the time; now it drifts at about thirteen frames a second and leaves most of the thread to the editor. Small vaults are not affected: their frames are cheap enough for thirty. It also goes idle at once, rather than after twenty seconds, when the window is in the background or you are typing in a note. Touching the view brings it straight back to full rate.
+- **A faster link writer.** Links are drawn about a fifth faster on a large vault, with the same picture.
+- **Year in orbit (until the end of January).** The photo card has one more button, *Year in orbit clip*: it puts the year's numbers on the card (new notes, words written, the busiest month, the longest run, the fastest-growing system) and records your vault forming, from nothing to today, in fifteen seconds. In January it shows the year just finished. The button goes away by itself after January.
+
 ## 2.3.2
 
 - **A redesigned star request.** The window that asks for a GitHub star is now an "orbit log" in the view's own HUD style: a small system turning on the left, a readout on the right, and an amber star button. People who saw the first, plainer window see the new one once more after this update; anyone who presses the star button is never asked again. See "One-time message" in the README.

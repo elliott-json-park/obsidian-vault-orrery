@@ -999,6 +999,10 @@ body.card #hud,body.card #tgt{display:none}
 .crow.na{opacity:.3;cursor:default}
 #card-acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
 #card-acts .mini{text-align:center;letter-spacing:.03em;padding-left:4px;padding-right:4px;white-space:nowrap}
+#card-wrap{display:none;text-align:center;letter-spacing:.05em;margin-top:6px;white-space:nowrap}
+#card-wrap-d{display:none;font-family:var(--kr);font-size:10.5px;opacity:.5;line-height:1.5;margin-top:5px}
+body.wrap-on #card-wrap,body.wrap-on #card-wrap-d{display:block}
+#card.rec #card-wrap,#card.arm #card-wrap{pointer-events:none}
 </style>
 </head>
 <body>
@@ -1229,6 +1233,9 @@ body.card #hud,body.card #tgt{display:none}
         <div class="mini" id="card-png" data-i18n="card.png">⤓ 이미지</div>
         <div class="mini am" id="card-mp4" data-i18n="card.mp4">● 15초 녹화</div>
       </div>
+      <!-- YEAR IN ORBIT: a year-end special, gone after January. See WRAP. -->
+      <div class="mini vio" id="card-wrap" data-i18n="card.wrap">✦ 한 해 우주 영상</div>
+      <div id="card-wrap-d" data-i18n="card.wrap.d"></div>
     </div>
   </div>
 </div>
@@ -1423,7 +1430,11 @@ const MINI = {
 /* How closely a view on screen is drawn — see the PACE notes by frameLoop.
    Declared up here with MINI because the build calls paceTouch() long before
    the frame loop's own section is reached. */
-const PACE = { last: 0, touch: performance.now(), idleMs: 20000, idleStep: 1000 / 30, on: false };
+const PACE = { last: 0, touch: performance.now(), idleMs: 20000, idleStep: 1000 / 30, on: false,
+               /* see FRAME COST by paceStep: the share of the main thread an
+                  idle view may take, the slowest it is ever drawn, and how
+                  long after the last touch typing elsewhere counts as idle */
+               share: 0.2, maxStep: 1000 / 8, awayMs: 2000, cost: 0 };
 function paceTouch() { PACE.touch = performance.now(); }
 if (MINI.on) document.body.classList.add('mini');
 /* Which of the rail's drawers are open, and which are pinned open. See DOCK
@@ -1438,7 +1449,9 @@ let boxPrev = null, boxAt = 0;
 /* The photo card — see PHOTO CARD. Up here for the same reason: resize()
    and the frame loop both ask whether it is open. */
 const CARD = { on: false, frame: null, hole: null, shot: false, rec: null, cd: 0,
-               sel: [], vals: null, bands: null, out: null };
+               sel: [], vals: null, bands: null, out: null,
+               /* YEAR IN ORBIT on the card, and the replay rate it put aside; see WRAP */
+               wrap: false, wrapRate: undefined };
 /* Note names, folder names and tags come out of somebody's vault, and several
    panels build their rows as markup. This is what stands between the two.
 
@@ -1783,6 +1796,22 @@ const STR = {
 'cs.ly':       ['링크를 한 줄로 이으면','LINKS END TO END','リンクを一列につなぐと','链接首尾相连'],
 'cs.rogue':    ['떠돌이 행성 · 링크 없음','ROGUE PLANETS','はぐれ惑星 · リンクなし','流浪行星 · 无链接'],
 'cs.const':    ['볼트 별자리','CONSTELLATION','ボルトの星座','仓库星座'],
+/* YEAR IN ORBIT — see WRAP. The year is in the card's title line, so these
+   say what was counted and not which year: in January they are last year's. */
+'card.g.yr':   ['연감','YEAR IN ORBIT','年鑑','年鉴'],
+'card.wrap':   ['✦ 한 해 우주 영상','✦ YEAR IN ORBIT CLIP','✦ 一年の宇宙ムービー','✦ 年度星空视频'],
+'card.wrap.d': ['한 해 동안의 숫자를 넣고, 볼트가 생겨난 순서를 15초 안에 다시 재생하며 녹화합니다. 1월까지만 있는 기능입니다.',
+                'Puts the year\'s numbers on the card and records the vault forming, from nothing to today, in fifteen seconds. Here until the end of January.',
+                '一年の数値を入れ、ボルトができていく様子を15秒で再生しながら録画します。1月末までの機能です。',
+                '放入这一年的数据，并在 15 秒内重播仓库的形成过程并录制。仅在一月底前提供。'],
+'card.wrap.sub':['우주 연감','YEAR IN ORBIT','宇宙年鑑','星空年鉴'],
+'card.wrap.none':['그 해 날짜가 있는 노트가 없어 연감 숫자를 만들 수 없습니다','No notes are dated in that year, so there are no year numbers to show',
+                'その年の日付があるノートがないため、年鑑の数値を作れません','那一年没有带日期的笔记，无法生成年鉴数据'],
+'cs.yNotes':   ['새로 쓴 노트','NEW NOTES','新しいノート','新增笔记'],
+'cs.yWords':   ['새로 쓴 단어','WORDS WRITTEN','書いた単語','写下的字数'],
+'cs.yMonth':   ['가장 바빴던 달','BUSIEST MONTH','一番書いた月','最忙的月份'],
+'cs.yStreak':  ['연속 작성 최장','LONGEST RUN','最長の連続','最长连续'],
+'cs.ySys':     ['가장 많이 자란 항성계','FASTEST-GROWING SYSTEM','一番育った恒星系','成长最快的星系'],
 'cu.days':     ['{n}일','{n} DAYS','{n}日','{n} 天'],
 'cu.notes':    ['노트 {n}','{n} NOTES','{n} ノート','{n} 篇'],
 'cu.words':    ['{n}단어','{n} WORDS','{n} 語','{n} 词'],
@@ -9380,7 +9409,17 @@ EN = edges.length;
    ceiling is also the upload, and a vault of four thousand links pays for
    every sample on every one of them every frame. */
 SEG = EN > 4000 ? 10 : EN > 1500 ? 14 : 24;
+/* Every entry made up front and in one shape. They used to be born empty
+   inside the link writer and filled in whichever order that frame's branch
+   wrote them, so ten thousand of them came out as a handful of different
+   object shapes — and the writer that reads and writes them every frame ran
+   at a fraction of its speed on a large vault. See FRAME COST in writeLinks. */
 edgeCache = new Array(EN);
+for (let e = 0; e < EN; e++) edgeCache[e] = {
+  ax: 0, ay: 0, az: 0, bx: 0, by: 0, bz: 0,
+  c1x: 0, c1y: 0, c1z: 0, c2x: 0, c2y: 0, c2z: 0,
+  str: 0, ty: 0, prog: 1, zero: false
+};
 linkProg = new Float32Array(Math.max(1,EN)).fill(1);
 /* A strip of SEG samples per edge rather than SEG-1 segments — one sample
    more, and the vertex count is what it was plus two. See RIBBONS for why
@@ -11635,12 +11674,32 @@ document.querySelectorAll('#card-shape u').forEach(u => {
   u.onclick = () => cardSetShape(u.dataset.s);
 });
 const CARD_MAX = 6, CARD_SECS = 15;
+/* ---- WRAP: YEAR IN ORBIT ----
+   A year-end special, and temporary by design: from now to the end of
+   January the card offers one more button, which puts the year's numbers on
+   the card and records the vault forming — the genesis replay, squeezed to
+   fit the clip — so the clip is the year's sky arriving. Everything on it is
+   measured, as everything else on the card is: notes dated this year, their
+   words, the month and the run with the most of them, the system that
+   gained the most.
+
+   It switches itself off after January whatever release is installed, and
+   the code is to be taken out in the first release after that. In January
+   the year is the one just finished. */
+const WRAP_UNTIL = new Date(2027, 1, 1).getTime();
+const WRAP_ON = Date.now() < WRAP_UNTIL;
+const WRAP_YEAR = new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear();
+/* the formation takes this long of the fifteen seconds; the rest is the
+   finished sky, held, so the clip ends on the vault as it stands */
+const WRAP_FORM_SECS = 11.5;
+const WRAP_KEYS = ['yNotes', 'yWords', 'yMonth', 'yStreak', 'ySys', 'const'];
 const CARD_STATS = [
   ['basic', 'age'], ['basic', 'notes'], ['basic', 'links'], ['basic', 'systems'],
   ['best', 'bigsys'], ['best', 'cited'], ['best', 'longest'],
   ['act', 'year'], ['act', 'words'], ['act', 'month'], ['act', 'streak'],
   ['fun', 'ly'], ['fun', 'rogue'], ['fun', 'const'],
-];
+].concat(WRAP_ON ? [['yr', 'yNotes'], ['yr', 'yWords'], ['yr', 'yMonth'], ['yr', 'yStreak'], ['yr', 'ySys']] : []);
+if (WRAP_ON) document.body.classList.add('wrap-on');
 const CARD_KEYS = CARD_STATS.map(st => st[1]);
 const CARD_DEF = ['age', 'notes', 'links', 'systems', 'cited', 'const'];
 
@@ -11673,6 +11732,9 @@ function cardValues() {
   const yr = new Date().getFullYear();
   const months = new Map(), days = new Set(), deg = new Uint32Array(N);
   let first = Infinity, words = 0, thisYear = 0;
+  /* the WRAP year's own counts */
+  const yMonths = new Map(), yDays = new Set(), ySys = new Map();
+  let yN = 0, yW = 0;
   for (let i = 0; i < N; i++) {
     const nd = nodes[i], t = cardBorn(nd);
     words += nd.w || 0;
@@ -11682,7 +11744,15 @@ function cardValues() {
     if (d.getFullYear() === yr) thisYear++;
     const m = d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0');
     months.set(m, (months.get(m) || 0) + 1);
-    days.add(Math.floor((t - d.getTimezoneOffset() * 60000) / 86400000));
+    const day = Math.floor((t - d.getTimezoneOffset() * 60000) / 86400000);
+    days.add(day);
+    if (WRAP_ON && d.getFullYear() === WRAP_YEAR) {
+      yN++; yW += nd.w || 0;
+      yMonths.set(m, (yMonths.get(m) || 0) + 1);
+      yDays.add(day);
+      const c = catOf[i];
+      if (c) ySys.set(c, (ySys.get(c) || 0) + 1);
+    }
   }
   for (let e = 0; e < edges.length; e++) {
     const a = edges[e][0], b = edges[e][1];
@@ -11724,6 +11794,20 @@ function cardValues() {
   for (let i = 0; i < N; i++) if (!deg[i]) rogue++;
   out.rogue = { v: fmt(rogue) };
   out.const = { v: cardConstellation(String(DATA.meta.vault || '')), name: true };
+  if (WRAP_ON) {
+    out.yNotes = yN ? { v: fmt(yN) } : null;
+    out.yWords = yW ? { v: fmt(yW) } : null;
+    let ym = '', ymn = 0;
+    yMonths.forEach((n, k) => { if (n > ymn) { ymn = n; ym = k; } });
+    out.yMonth = ym ? { v: ym, u: T('cu.notes', { n: fmt(ymn) }) } : null;
+    const yd = [...yDays].sort((a, b) => a - b);
+    let yrun = 0, ybest = 0, yprev = NaN;
+    yd.forEach(d => { yrun = d === yprev + 1 ? yrun + 1 : 1; yprev = d; if (yrun > ybest) ybest = yrun; });
+    out.yStreak = ybest ? { v: T('cu.days', { n: fmt(ybest) }) } : null;
+    let ys = null, ysn = 0;
+    ySys.forEach((n, c) => { if (n > ysn) { ysn = n; ys = c; } });
+    out.ySys = ys ? { v: catLabel(ys), name: true, u: T('cu.notes', { n: fmt(ysn) }) } : null;
+  }
   return out;
 }
 
@@ -11814,7 +11898,8 @@ function cardDrawBands(x) {
   cardText(x, String(DATA.meta.vault || 'VAULT').toUpperCase(), CARD_W / 2, Math.round(CARD_TOP * 0.54), CARD_W - 160, 74, F.kr, '600', 0.2);
   x.shadowBlur = 0;
   x.fillStyle = 'rgba(92,225,255,.6)';
-  cardText(x, '—  ' + cardDate() + '  —', CARD_W / 2, Math.round(CARD_TOP * 0.733), CARD_W - 180, 24, F.mono, '500', 0.3);
+  cardText(x, CARD.wrap ? '✦  ' + WRAP_YEAR + '  ' + T('card.wrap.sub').toUpperCase() + '  ✦' : '—  ' + cardDate() + '  —',
+           CARD_W / 2, Math.round(CARD_TOP * 0.733), CARD_W - 180, 24, CARD.wrap ? F.kr : F.mono, '500', 0.3);
 
   const sel = CARD.sel.filter(k => CARD.vals && CARD.vals[k]);
   const n = sel.length;
@@ -11885,9 +11970,9 @@ function cardCompose() {
 function cardBuildOpts() {
   const box = $('card-opts');
   box.replaceChildren();
-  ['basic', 'best', 'act', 'fun'].forEach(g => {
+  ['basic', 'best', 'act', 'fun'].concat(WRAP_ON ? ['yr'] : []).forEach(g => {
     const h = document.createElement('div');
-    h.className = 'cgh'; h.textContent = T('card.g.' + g);
+    h.className = 'cgh'; h.textContent = (g === 'yr' ? WRAP_YEAR + ' ' : '') + T('card.g.' + g);
     box.appendChild(h);
     CARD_STATS.filter(st => st[0] === g).forEach(st => {
       const k = st[1], v = CARD.vals[k];
@@ -11906,6 +11991,7 @@ function cardBuildOpts() {
 }
 function cardToggle(k) {
   if (!CARD.vals[k] || CARD.rec || CARD.cd) return;
+  CARD.wrap = false;
   const i = CARD.sel.indexOf(k);
   if (i >= 0) CARD.sel.splice(i, 1);
   else if (CARD.sel.length < CARD_MAX) CARD.sel.push(k);
@@ -11941,6 +12027,7 @@ function cardClose() {
   if (CARD.rec) cardStop();
   cardCancel();
   CARD.on = false;
+  CARD.wrap = false;
   document.body.classList.remove('card');
   ['left', 'top', 'width', 'height', 'right', 'bottom'].forEach(k => { canvas.style[k] = ''; });
   renderer.setPixelRatio(SS.base * SS.now);
@@ -11950,7 +12037,7 @@ function cardClose() {
 /* ---- saving ---- */
 function cardFileBase() {
   return (DATA.meta.vault || 'vault').replace(/[^\w가-힣ぁ-んァ-ヶー一-龥.-]+/g, '_') +
-         '-orrery-card-' + cardShape().replace(':', 'x');
+         (CARD.wrap ? '-orrery-' + WRAP_YEAR : '-orrery-card') + '-' + cardShape().replace(':', 'x');
 }
 function cardSave(blob, ext, msg) {
   if (!blob || !blob.size) { toast(T('card.fail')); return; }
@@ -11972,8 +12059,9 @@ function cardMime() {
 }
 /* Three, two, one — long enough to get a hand back on the mouse. */
 let cardCdT = 0;
-function cardRecord() {
+function cardRecord(wrap) {
   if (!CARD.on || CARD.rec || CARD.cd) return;
+  if (wrap !== true && CARD.wrap) { CARD.wrap = false; cardPreview(); }
   const mime = cardMime();
   if (!mime || !(CARD.bands && 'captureStream' in CARD.bands)) { toast(T('card.norec')); return; }
   let n = 3;
@@ -11984,9 +12072,36 @@ function cardRecord() {
     if (n > 0) { $('card-cd').textContent = n; n--; cardCdT = setTimeout(tick, 800); return; }
     $('card-cd').textContent = '';
     CARD.cd = 0;
+    if (wrap === true) wrapFormation(true);
     cardStart(mime);
   };
   tick();
+}
+/* The special: the year's numbers on the card, the year in its title, and
+   the recording made over the formation replay rather than over whatever the
+   hands do. */
+function cardWrap() {
+  if (!WRAP_ON || !CARD.on || CARD.rec || CARD.cd) return;
+  const sel = WRAP_KEYS.filter(k => CARD.vals[k]).slice(0, CARD_MAX);
+  if (!CARD.vals.yNotes) { toast(T('card.wrap.none'), 5000); return; }
+  CARD.wrap = true;
+  CARD.sel = sel;
+  cardBuildOpts(); cardPreview();
+  cardRecord(true);
+}
+/* The formation, run at whatever rate fits it into the clip, and the rate
+   put back after. Started at the end of the countdown, so the first frame of
+   the file is the void. */
+function wrapFormation(on) {
+  if (on) {
+    CARD.wrapRate = GEN.rate;
+    GEN.rate = GEN.playSec / WRAP_FORM_SECS;
+    genSet(true);
+  } else if (CARD.wrapRate !== undefined) {
+    GEN.rate = CARD.wrapRate;
+    CARD.wrapRate = undefined;
+    genSet(false);
+  }
 }
 function cardCancel() {
   clearTimeout(cardCdT);
@@ -12027,6 +12142,7 @@ function cardStop() {
   CARD.rec = null;
   $('card').classList.remove('rec');
   try { r.rec.stop(); } catch (e) { console.error('vault-orrery: card recorder', e); }
+  wrapFormation(false);
 }
 /* Called by the frame loop straight after the draw, which is the only time
    the canvas can be read. */
@@ -12045,7 +12161,8 @@ function cardAfterRender() {
 $('dk-card').onclick = cardOpen;
 $('card-x').onclick = cardClose;
 $('card-png').onclick = cardShot;
-$('card-mp4').onclick = cardRecord;
+$('card-mp4').onclick = () => cardRecord(false);
+$('card-wrap').onclick = cardWrap;
 
 /* ================================================================= SOUND
    Off by default, and deliberately so: v1 chose "소리 없는 정적" as one of
@@ -15142,8 +15259,7 @@ function writeLinks() {
     }
     if (prog < 1) str *= prog > 0 ? prog : 0;
 
-    let ec = edgeCache[e];
-    if (!ec) ec = edgeCache[e] = {};
+    const ec = edgeCache[e];
 
     const ax = VP[ia*3], ay = VP[ia*3+1], az = VP[ia*3+2];
     const bx = VP[ib*3], by = VP[ib*3+1], bz = VP[ib*3+2];
@@ -15418,9 +15534,21 @@ function writeLinks() {
        one-pixel line could not do. */
     const hw = wpx * 0.5 * eyeD / fpx;
     for (let j=0;j<SEG;j++){
-      /* past the end of what this edge needed, every remaining sample parks
-         on the curve's last point at zero width and no colour */
-      const jj = j < segE ? j : segE-1;
+      /* Past the end of what this edge needed, every remaining sample parks
+         on the curve's last point at zero width and no colour. Written
+         straight in: a zero-width ribbon vertex is the point itself, so the
+         cross product and the square root ribVert would spend on it come to
+         nothing. Most edges of a large vault, seen whole, need two or three
+         samples of the ten they are given. */
+      if (j >= segE) {
+        const o = w*3, q = (segE-1)*3;
+        const qx = _rq[q], qy = _rq[q+1], qz = _rq[q+2];
+        LP[o] = qx; LP[o+1] = qy; LP[o+2] = qz; LP[o+3] = qx; LP[o+4] = qy; LP[o+5] = qz;
+        LC[o] = 0; LC[o+1] = 0; LC[o+2] = 0; LC[o+3] = 0; LC[o+4] = 0; LC[o+5] = 0;
+        w += 2;
+        continue;
+      }
+      const jj = j;
       const o = jj*3;
       const qx = _rq[o], qy = _rq[o+1], qz = _rq[o+2];
       const ai = (jj > 0 ? jj-1 : 0)*3;
@@ -15633,7 +15761,7 @@ function writePulses(dt) {
       } else pulseIdx[i] = Math.floor(Math.random()*EN);
     }
     const ec = edgeCache[pulseIdx[i]];
-    if (!ec || ec.str < .03 || ec.c1x === undefined) {
+    if (!ec || ec.str < .03) {
       for (let k = 0; k < PULSE_K; k++) pAl[i*PULSE_K + k] = 0;
       continue;
     }
@@ -15642,7 +15770,7 @@ function writePulses(dt) {
        time; a pulse left running on the old formula after the links were
        routed would travel beside its link instead of along it, and that is
        the kind of wrong that looks like a second effect rather than a bug. */
-    const prog = ec.prog === undefined ? 1 : ec.prog;
+    const prog = ec.prog;
     const c = EDGE_TINT[ec.ty];
     const head = Math.min(1, ec.str*2.4);
     for (let k = 0; k < PULSE_K; k++) {
@@ -15983,14 +16111,47 @@ const RUN = { host: true, running: false, raf: 0, lost: false };
   canvas.addEventListener(t, paceTouch, { passive: true });
   $('hud').addEventListener(t, paceTouch, { passive: true });
 });
+/* ---- FRAME COST ----
+   Thirty frames a second was the idle rate whatever a frame cost. On a vault
+   of a few hundred notes a frame is three milliseconds and thirty of them are
+   a tenth of the main thread. On three thousand notes a frame is twenty-odd
+   milliseconds, and thirty of them are most of it: the orrery, untouched,
+   beside a note being written, was taking seven tenths of the thread the
+   editor types on. Measured, on a 3,000-note vault with 11,000 links.
+
+   So an idle view is held to a share of the thread rather than to a rate.
+   The rate is whichever is slower: thirty a second, or what keeps the
+   measured cost of a frame under a fifth of the time between frames. A small
+   vault never notices — its frames are cheap enough for thirty — and a large
+   one drifts at eight to fifteen, which is still motion for a sky that turns
+   this slowly, and gives the thread back to the note.
+
+   "Idle" also starts sooner when the reader has plainly gone elsewhere: the
+   window is not focused, or the keyboard is in something outside this view
+   (a note) and the view has not been touched for a couple of seconds. The
+   first touch on the view puts it straight back to full rate, as before. */
+function paceAway(now) {
+  if (MINI.on || now - PACE.touch < PACE.awayMs) return false;
+  if (typeof document.hasFocus === 'function' && !document.hasFocus()) return true;
+  const ae = document.activeElement, home = canvas.parentElement;
+  return !!(ae && home && !home.contains(ae) &&
+            (ae.isContentEditable || ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT'));
+}
 function paceStep(now) {
   /* A recording is paced to an even thirty, which is what it is encoded
      at; a card being composed is drawn at full rate, however still the
      hands are, because somebody is looking at it to decide. */
-  const step = MINI.on ? MINI.step
-             : CARD.rec ? 1000 / 30
-             : CARD.on ? 0
-             : (now - PACE.touch > PACE.idleMs && !GEN.on) ? PACE.idleStep : 0;
+  const idle = !GEN.on && (now - PACE.touch > PACE.idleMs || paceAway(now));
+  let step = MINI.on ? MINI.step
+           : CARD.rec ? 1000 / 30
+           : CARD.on ? 0
+           : idle ? PACE.idleStep : 0;
+  /* the share of the thread, for every paced view but a recording, which
+     has to be an even thirty to be the clip it says it is */
+  if (step && !CARD.rec) {
+    const fair = PACE.cost / PACE.share;
+    if (fair > step) step = fair < PACE.maxStep ? fair : PACE.maxStep;
+  }
   PACE.on = step > 0;
   if (!step) { PACE.last = now; return false; }
   /* four milliseconds of slack, or a 60 Hz display's own jitter would turn a
@@ -16101,6 +16262,9 @@ canvas.addEventListener('webglcontextrestored', () => {
 function frameLoop(now) {
   RUN.raf = requestAnimationFrame(frameLoop);
   if (paceStep(now)) return;
+  /* what this frame costs the thread, for the pacing above — two clock
+     reads a frame, kept whether or not the budget panel is open */
+  const _c0 = performance.now();
   const dtms = Math.min(64, now - last); last = now;
   const dt = dtms/1000;
   fps = fps*0.92 + (1000/Math.max(1,dtms))*0.08;
@@ -16481,6 +16645,7 @@ function frameLoop(now) {
        that lives in none of the rows still shows up in the total */
     perfMix('tot',  _p7-_p0);
   }
+  PACE.cost = PACE.cost * 0.9 + (performance.now() - _c0) * 0.1;
 }
 
 /* ======================================================== CONTROL DECK */
