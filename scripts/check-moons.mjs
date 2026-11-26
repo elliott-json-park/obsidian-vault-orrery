@@ -44,7 +44,7 @@ const decl = name => {
 const consts = ['MD_RE', 'FM_SKIP', 'DATE_RE'];
 const fns = ['unq', 'splitFront', 'propsOf', 'tagsOf', 'mergeTags', 'dateOf', 'excerptOf', 'buildGraph'];
 const { buildGraph } = new Function(
-  'const T = k => k;\n' + consts.map(decl).join('\n') + '\n' +
+  'const T = k => k;\nconst looseInFolder = false;\n' + consts.map(decl).join('\n') + '\n' +
   fns.map(n => grab(n, 'function ' + n + '(')).join('\n') +
   '\nreturn { buildGraph };')();
 

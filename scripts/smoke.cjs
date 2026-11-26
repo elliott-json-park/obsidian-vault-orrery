@@ -152,7 +152,7 @@ const mkApp = vault => ({
   const defs = flatten(tab.getSettingDefinitions());
   const keys = defs.filter(d => d.control).map(d => d.control.key).sort();
   ok(JSON.stringify(keys) === '["extraIgnoreFilters","floatFrame","followActiveNote","followExcludedFiles",' +
-                             '"language","liveSync","maxNodes","showFloat","showMini"]',
+                             '"language","liveSync","looseInFolder","maxNodes","showFloat","showMini"]',
      'every setting is declared for search -> ' + JSON.stringify(keys));
   ok(defs.every(d => d.name), 'every declared setting has a name to be found by');
 
@@ -166,7 +166,8 @@ const mkApp = vault => ({
   p.settings.extraIgnoreFilters = [];
 
   const seen = {};
-  const fake = { setLang: v => seen.lang = v, setMaxNodes: v => seen.max = v, setIgnoreFilters: v => seen.ig = v };
+  const fake = { setLang: v => seen.lang = v, setMaxNodes: v => seen.max = v, setIgnoreFilters: v => seen.ig = v,
+                 setLooseInFolder: v => seen.loose = v };
   /* An earlier check above put a language in the engine store. "Match
      Obsidian" defers to that, so clear it first: this case is the one where
      nobody has chosen inside the view. */
@@ -174,6 +175,12 @@ const mkApp = vault => ({
   p.applySettingsTo(fake);
   ok(seen.lang === 'ko', 'language follows Obsidian locale on auto -> ' + seen.lang);
   ok(seen.max === 0, 'node ceiling reaches the engine -> ' + seen.max);
+  ok(seen.loose === false, 'unlinked notes go to the archives by default -> ' + seen.loose);
+  await tab.setControlValue('looseInFolder', true);
+  p.applySettingsTo(fake);
+  ok(seen.loose === true, 'turning "Unlinked notes stay in their folder" on reaches the engine');
+  p.settings.looseInFolder = false;
+  p.applySettingsTo(fake);
 
   /* The engine has a language chip of its own, and it is persisted in this
      same data file. On 'auto' a chosen one wins — otherwise the next workspace
@@ -182,7 +189,7 @@ const mkApp = vault => ({
   const pl = new P(mkApp({ getConfig: () => [] }), { dir: 'x' });
   await pl.onload();
   pl.settings.engineStore['orrery2.lang'] = 'ja';
-  pl.applySettingsTo({ setLang: v => held.lang = v, setMaxNodes() {}, setIgnoreFilters() {} });
+  pl.applySettingsTo({ setLang: v => held.lang = v, setMaxNodes() {}, setLooseInFolder() {}, setIgnoreFilters() {} });
   ok(held.lang === undefined,
      'auto does not overwrite a language chosen in the view -> ' + held.lang);
   ok(Array.isArray(seen.ig) && seen.ig.includes('journal') && seen.ig.includes('/^\d{4}-/'),
@@ -200,27 +207,27 @@ const mkApp = vault => ({
 
   /* And a repeat push of unchanged settings is not a push at all — the same
      view, asked twice. Tracked per view, so this has to be the same object. */
-  seen.lang = seen.max = seen.ig = undefined;
+  seen.lang = seen.max = seen.ig = seen.loose = undefined;
   p.applySettingsTo(fake);
-  ok(seen.lang === undefined && seen.max === undefined && seen.ig === undefined,
+  ok(seen.lang === undefined && seen.max === undefined && seen.ig === undefined && seen.loose === undefined,
      'unchanged settings are not re-pushed over the view');
 
   const p2 = new P(mkApp({}), { dir: 'x' });
   await p2.onload();
   const s2 = {};
-  p2.applySettingsTo({ setLang() {}, setMaxNodes() {}, setIgnoreFilters: v => s2.ig = v });
+  p2.applySettingsTo({ setLang() {}, setMaxNodes() {}, setLooseInFolder() {}, setIgnoreFilters: v => s2.ig = v });
   ok(Array.isArray(s2.ig) && s2.ig.length === 0, 'degrades quietly when getConfig is missing');
 
   const p3 = new P(mkApp({ getConfig: () => 'not-an-array' }), { dir: 'x' });
   await p3.onload();
   const s3 = {};
-  p3.applySettingsTo({ setLang() {}, setMaxNodes() {}, setIgnoreFilters: v => s3.ig = v });
+  p3.applySettingsTo({ setLang() {}, setMaxNodes() {}, setLooseInFolder() {}, setIgnoreFilters: v => s3.ig = v });
   ok(Array.isArray(s3.ig), 'survives an unexpected getConfig shape');
 
   const p4 = new P(mkApp({ getConfig: () => { throw new Error('boom'); } }), { dir: 'x' });
   await p4.onload();
   const s4 = {};
-  p4.applySettingsTo({ setLang() {}, setMaxNodes() {}, setIgnoreFilters: v => s4.ig = v });
+  p4.applySettingsTo({ setLang() {}, setMaxNodes() {}, setLooseInFolder() {}, setIgnoreFilters: v => s4.ig = v });
   ok(Array.isArray(s4.ig), 'survives getConfig throwing');
 
   p.onunload();

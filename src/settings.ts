@@ -15,6 +15,8 @@ export interface OrrerySettings {
   language: Lang;
   /** 0 = no ceiling. */
   maxNodes: number;
+  /** Unlinked notes stay in their folder's system rather than the archives. */
+  looseInFolder: boolean;
   /** Re-derive the cosmos when the vault changes under an open view. */
   liveSync: boolean;
   /** Move the camera to whatever note is being edited. */
@@ -62,6 +64,7 @@ export const DEFAULT_SETTINGS: OrrerySettings = {
      vault answers 'show me my notes' with a subset; a slow first minute is at
      least a problem whose cause is visible, and the slider is right there. */
   maxNodes: 0,
+  looseInFolder: false,
   liveSync: true,
   /* Off by default. Following is a strong opinion about where the camera
      should be — right for a view kept open beside the editor, wrong for one
@@ -89,7 +92,7 @@ const isFrame = (v: unknown): v is FloatFrame =>
 
 /** The settings this tab edits. The engine's own store is not among them: it is
     written by the engine, not by a human, and has no place in settings search. */
-type Key = 'language' | 'maxNodes' | 'liveSync' | 'followActiveNote'
+type Key = 'language' | 'maxNodes' | 'looseInFolder' | 'liveSync' | 'followActiveNote'
          | 'followExcludedFiles' | 'extraIgnoreFilters' | 'showMini'
          | 'showFloat' | 'floatFrame';
 
@@ -135,6 +138,21 @@ export class OrrerySettingTab extends PluginSettingTab {
           max: 10000,
           step: 500,
           defaultValue: DEFAULT_SETTINGS.maxNodes,
+        },
+      },
+      {
+        name: 'Unlinked notes stay in their folder',
+        desc: 'By default a note that no other note links to is filed in a ' +
+              'yearly archive system, so folders whose notes are not linked ' +
+              'do not appear as star systems. Turn this on to keep every note ' +
+              'in its own folder\'s system. Notes listed in another note\'s ' +
+              '"sources" stay its moons either way. Has no effect in a vault ' +
+              'with raw/ and wiki/ folders, where those folders decide.',
+        aliases: ['archive', 'folder', 'missing folders', 'star systems'],
+        control: {
+          type: 'toggle',
+          key: 'looseInFolder',
+          defaultValue: DEFAULT_SETTINGS.looseInFolder,
         },
       },
       {
@@ -269,6 +287,7 @@ export class OrrerySettingTab extends PluginSettingTab {
     switch (key as Key) {
       case 'language': return s.language;
       case 'maxNodes': return s.maxNodes;
+      case 'looseInFolder': return s.looseInFolder;
       case 'liveSync': return s.liveSync;
       case 'followActiveNote': return s.followActiveNote;
       case 'followExcludedFiles': return s.followExcludedFiles;
@@ -296,6 +315,9 @@ export class OrrerySettingTab extends PluginSettingTab {
         s.maxNodes = n;
         break;
       }
+      case 'looseInFolder':
+        s.looseInFolder = Boolean(value);
+        break;
       case 'liveSync':
         s.liveSync = Boolean(value);
         break;

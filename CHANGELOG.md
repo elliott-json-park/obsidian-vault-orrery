@@ -4,6 +4,12 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.9.0
+
+- **Folders whose notes are not linked can have a star of their own.** By default a note that no other note links to goes to a yearly archive system, so a folder of unlinked notes never shows up in STAR SYSTEMS. Turn on *Unlinked notes stay in their folder* under Settings → Vault Orrery to keep every note in its own folder's system. Notes listed in another note's `sources` stay its moons either way. Thanks @ZephyrIsla for the report (#2).
+- **Path order puts every folder under its real parent.** A folder that holds only subfolders now gets a row of its own in path order, so its subfolders are indented under it instead of under whatever row came before (#2).
+- **Switch a folder together with its subfolders.** In path order, click a parent folder's row, or the ▾ next to a folder that has subfolders, to turn the whole branch on or off at once (#2).
+
 ## 2.8.0
 
 - **The sun twinkles instead of rippling.** Pointing at the floating orrery's sun now makes it glow softly and glint, where it is, in place of the rings that spread out from it.

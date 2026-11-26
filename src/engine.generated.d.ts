@@ -119,6 +119,9 @@ export interface OrreryApi {
   setLang(lang: 'ko' | 'en' | 'ja' | 'zh'): void;
   /** 0 means no ceiling. */
   setMaxNodes(n: number): void;
+  /** Unlinked notes orbit their own folder's star instead of joining the
+      year archives. A change rebuilds the vault already loaded. */
+  setLooseInFolder(on: boolean): void;
   /** The engine applies its own exclusion and cap gates, so hand it
       everything and let one set of rules decide.
 

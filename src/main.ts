@@ -448,7 +448,7 @@ export default class VaultOrreryPlugin extends Plugin {
      view has a language chip and a MAX NODES knob of its own, and a click on
      either was undone by the next layout event — which is every sidebar
      toggle. Only a change to the *plugin's* value is an instruction. */
-  private pushed = new WeakMap<OrreryApi, { lang: string; maxNodes: number; filters: string }>();
+  private pushed = new WeakMap<OrreryApi, { lang: string; maxNodes: number; filters: string; loose: boolean }>();
 
   applySettingsTo(api: OrreryApi) {
     const prev = this.pushed.get(api);
@@ -464,7 +464,10 @@ export default class VaultOrreryPlugin extends Plugin {
     }
     if (!prev || prev.maxNodes !== this.settings.maxNodes) api.setMaxNodes(this.settings.maxNodes);
     if (!prev || prev.filters !== key) api.setIgnoreFilters(filters);
-    this.pushed.set(api, { lang, maxNodes: this.settings.maxNodes, filters: key });
+    /* the engine rebuilds the vault it already holds when this changes */
+    const loose = this.settings.looseInFolder;
+    if (!prev || prev.loose !== loose) api.setLooseInFolder(loose);
+    this.pushed.set(api, { lang, maxNodes: this.settings.maxNodes, filters: key, loose });
   }
 
   /** Whether the engine has a language of its own in the plugin's data file.

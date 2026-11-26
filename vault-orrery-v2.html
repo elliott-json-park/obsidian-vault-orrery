@@ -533,6 +533,10 @@ body.dragdeck #hud{cursor:grabbing}
 .lrow em{font-style:normal;font-family:var(--kr);letter-spacing:0;flex:1;
   overflow:hidden;text-overflow:ellipsis;text-transform:none;font-size:12px}
 .lrow i{font-style:normal;opacity:.4;font-variant-numeric:tabular-nums}
+.lrow.hdr .dot{background:none;box-shadow:none;border:1px solid currentColor;opacity:.45}
+.lrow.hdr em{opacity:.6}
+.lrow .lgrp{font-weight:normal;opacity:.45;padding:0 3px;cursor:pointer}
+.lrow .lgrp:hover{opacity:1;color:var(--cy)}
 
 #tgt{position:fixed;z-index:11;pointer-events:none;font-size:11.5px;letter-spacing:.1em;
   color:var(--am);text-shadow:0 0 12px rgba(255,182,72,.7);display:none;
@@ -1711,6 +1715,8 @@ const STR = {
                 'ノート数順 · クリックでパス順','按笔记数排序 · 点击改为按路径'],
 'leg.sort.p':  ['경로 순서 · 누르면 노트 수 순서','Sorted by path · click for size order',
                 'パス順 · クリックでノート数順','按路径排序 · 点击改为按笔记数'],
+'leg.grp':     ['누르면 하위 폴더까지 한꺼번에 켜고 끔','Click to switch this folder and its subfolders together',
+                'クリックでサブフォルダーごと切り替え','点击可连同子文件夹一起开关'],
 'mm.hint':     ['클릭 = 선택 · 더블클릭 = 중심 이동<br>끌기 = 시점 회전 · 휠 = 확대',
                 'CLICK = SELECT · DOUBLE-CLICK = RECENTRE<br>DRAG = ORBIT THE VIEW · WHEEL = ZOOM',
                 'クリック = 選択 · ダブルクリック = 中心移動<br>ドラッグ = 視点回転 · ホイール = 拡大',
@@ -10468,6 +10474,30 @@ function legendOrder() {
   };
   return wikiCats.slice().sort(cmp).concat(rawCats);
 }
+/* The systems filed at a path or anywhere under it. */
+function catsUnder(p) {
+  return wikiCats.filter(x => { const q = catPath(x); return q === p || q.startsWith(p + '/'); });
+}
+/* The legend as rows. By path, a folder that holds only folders is not a
+   system — it has no notes to orbit a star — and so had no row, and its
+   children were set in a step under whatever row happened to sort before
+   them, which read as the wrong parent (#2). Such a folder gets a header row
+   of its own now, so every indented row sits under its real parent. */
+function legendRows() {
+  const list = legendOrder();
+  if (SET.legSort !== 'p') return list.map(c => ({ c, depth: 0 }));
+  const have = new Set(wikiCats.map(catPath));
+  const rows = [], made = new Set();
+  list.forEach(c => {
+    const seg = c.dom === 'wiki' ? catPath(c).split('/').filter(Boolean) : [];
+    for (let k = 1; k < seg.length; k++) {
+      const up = seg.slice(0, k).join('/');
+      if (!have.has(up) && !made.has(up)) { made.add(up); rows.push({ hdr: up, depth: k - 1 }); }
+    }
+    rows.push({ c, depth: Math.max(0, seg.length - 1) });
+  });
+  return rows;
+}
 function syncLegSort() {
   const b = $('legsort');
   if (!b) return;
@@ -10486,33 +10516,62 @@ function renderLegend() {
     return;
   }
   const byPath = SET.legSort === 'p';
-  legendOrder().forEach(c => {
+  /* keys of folders not in this build (excluded for now, or emptied) are
+     kept: they were switched off on purpose and stay that way if the folder
+     comes back */
+  const saveOff = () => {
+    const here = new Set(cats.map(x => x.key));
+    SET.legOff = (Array.isArray(SET.legOff) ? SET.legOff : []).filter(k => !here.has(k))
+      .concat(cats.filter(x => !x.on).map(x => x.key));
+    saveSet();
+  };
+  const hdrs = [];
+  const syncHdrs = () => hdrs.forEach(h => h.el.classList.toggle('off', h.g.every(x => !x.on)));
+  /* a folder and everything filed under it switch together: all on if any of
+     them is off, otherwise all off */
+  const flip = g => {
+    const on = g.some(x => !x.on);
+    g.forEach(x => { x.on = on; if (x.el) x.el.classList.toggle('off', !on); });
+    syncHdrs(); saveOff();
+  };
+  const pad = (d, depth) => { if (depth > 0) d.style.paddingLeft = Math.min(depth, 6) * 10 + 'px'; };
+  legendRows().forEach(r => {
     const d = document.createElement('div');
+    if (r.hdr != null) {
+      /* a parent folder with no notes of its own: no star, but its children
+         are set under it, and a click switches all of them */
+      const g = catsUnder(r.hdr);
+      d.className = 'lrow hdr';
+      d.innerHTML = '<span class="dot"></span><em>' + esc(r.hdr.split('/').pop()) + '</em><i>' +
+                    g.reduce((n, x) => n + x.n, 0) + '</i>';
+      pad(d, r.depth);
+      d.title = r.hdr + '\n' + T('leg.grp');
+      d.onclick = () => flip(g);
+      hdrs.push({ el: d, g });
+      legBody.appendChild(d);
+      return;
+    }
+    const c = r.c;
+    const path = catPath(c);
+    const kids = byPath && c.dom === 'wiki' ? catsUnder(path).filter(x => x !== c) : [];
     d.className = 'lrow';
     d.innerHTML = '<span class="dot" style="color:#' + c.color.getHexString() + '"></span>' +
-                  '<em>' + esc(catLabel(c)) + '</em><i>' +
-                  (c.temp ? spectralOf(c.temp) + ' · ' : '') + c.n + '</i>';
-    const path = catPath(c);
-    if (byPath && path) {
-      const depth = path.split('/').filter(Boolean).length - 1;
-      if (depth > 0) d.style.paddingLeft = Math.min(depth, 6) * 10 + 'px';
-    }
+                  '<em>' + esc(catLabel(c)) + '</em>' +
+                  (kids.length ? '<b class="lgrp" title="' + esc(T('leg.grp')) + '">▾</b>' : '') +
+                  '<i>' + (c.temp ? spectralOf(c.temp) + ' · ' : '') + c.n + '</i>';
+    if (byPath && path) pad(d, r.depth);
     const cls = c.temp ? T('cls.star', { s: spectralOf(c.temp), t: Math.round(c.temp / 100) * 100 }) : '';
     d.title = path ? path + (cls ? '\n' + cls : '') : cls;
     d.classList.toggle('off', !c.on);
-    d.onclick = () => {
+    d.onclick = e => {
+      if (kids.length && e.target.closest('.lgrp')) { flip([c].concat(kids)); return; }
       c.on = !c.on; d.classList.toggle('off', !c.on);
-      /* keys of folders not in this build (excluded for now, or emptied)
-         are kept: they were switched off on purpose and stay that way if
-         the folder comes back */
-      const here = new Set(cats.map(x => x.key));
-      SET.legOff = (Array.isArray(SET.legOff) ? SET.legOff : []).filter(k => !here.has(k))
-        .concat(cats.filter(x => !x.on).map(x => x.key));
-      saveSet();
+      syncHdrs(); saveOff();
     };
     legBody.appendChild(d);
     c.el = d;
   });
+  syncHdrs();
 }
 
 
@@ -18138,13 +18197,23 @@ function buildGraph(files, vaultName) {
     if (set.size) linked[i] = 1;
     set.forEach(j => { if (!srcRefs[i].has(j)) linked[j] = 1; });
   });
+  /* Unless the reader asked for folders to decide (looseInFolder, the
+     plugin's "Unlinked notes stay in their folder"). A reader who files by
+     folder and links little saw whole folders missing from STAR SYSTEMS —
+     every note in them had gone to the year archives — and read that as the
+     vault not being scanned (#2). Kept off by default, because the archive is
+     what gives a linked vault its shape. A note listed in someone's `sources`
+     stays raw either way: it is that note's moon, not a planet of its own. */
+  const sourced = new Uint8Array(K);
+  if (looseInFolder) srcRefs.forEach(set => set.forEach(j => { sourced[j] = 1; }));
   const kind = recs.map((r, i) => {
     if (foldered) {
       if (/^raw\//i.test(r.rel))  return 'raw';
       if (/^wiki\//i.test(r.rel)) return 'wiki';
       return r.dir ? 'wiki' : 'root';
     }
-    return linked[i] ? 'wiki' : 'raw';
+    if (linked[i]) return 'wiki';
+    return looseInFolder && !sourced[i] ? 'wiki' : 'raw';
   });
 
   /* --- categories = star systems --------------------------------------- */
@@ -18507,8 +18576,24 @@ let loading = false;
    summary toast announcing a vault they already know they have — the planets
    simply are where the notes now are. Only a change in what the vault
    *contains* is worth a word, and even that is one line. */
+/* How unlinked notes are filed, and the last vault handed in, so that turning
+   the choice over can rebuild from what is already here instead of waiting
+   for the host's next load. */
+let looseInFolder = false, lastIngest = null, looseRetry = 0;
+function setLooseInFolder(on) {
+  on = !!on;
+  if (on === looseInFolder) return;
+  looseInFolder = on;
+  const again = () => {
+    if (!lastIngest) return;
+    if (loading) { clearTimeout(looseRetry); looseRetry = setTimeout(again, 300); return; }
+    ingest(lastIngest.list, lastIngest.vaultName, { quiet: true });
+  };
+  again();
+}
 async function ingest(list, vaultName, opts) {
   if (loading) return;
+  lastIngest = { list, vaultName };
   const quiet = !!(opts && opts.quiet);
   const before = N;
 
@@ -18980,6 +19065,7 @@ window.vaultOrrery = {
   setIgnoreFilters,
   setLang,
   setMaxNodes(n) { SET.maxNodes = Math.max(0, n|0); syncControls(); saveSet(); },
+  setLooseInFolder,
   /* ---- the floating orrery's two host calls ----
      applySettings: the full view's saved knobs, handed over again after the
      reader has moved one, so the floating cosmos follows the deck without
