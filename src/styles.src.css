@@ -147,31 +147,52 @@
 }
 .vo-float.is-sun .vo-float-sun { pointer-events: auto; }
 .vo-float.is-moving .vo-float-sun { cursor: grabbing; }
-/* The ripple: two rings that leave the hub and fade, starting a half-cycle
-   apart. Drawn only while the pointer is over the hub, so nothing at all
-   shows on a float that is merely hovered. */
+/* The twinkle: a soft warm glow that swells and fades over the hub, and a
+   small four-pointed glint that flashes once each breath. Drawn only while
+   the pointer is over the hub, so nothing at all shows on a float that is
+   merely hovered. Nothing leaves the sun: it brightens where it is. */
 .vo-float-sun::before,
 .vo-float-sun::after {
   content: "";
   position: absolute;
-  inset: 0;
   border-radius: 50%;
-  border: 1px solid var(--interactive-accent, rgba(255, 196, 96, 0.9));
   opacity: 0;
   pointer-events: none;
 }
-.vo-float.is-sun .vo-float-sun::before,
-.vo-float.is-sun .vo-float-sun::after {
-  animation: vo-float-ripple 1.8s ease-out infinite;
+.vo-float-sun::before {
+  inset: -45%;
+  background: radial-gradient(circle closest-side,
+    rgba(255, 246, 220, 0.75) 0%,
+    rgba(255, 214, 140, 0.32) 38%,
+    rgba(255, 190, 110, 0.10) 62%,
+    transparent 100%);
 }
-.vo-float.is-sun .vo-float-sun::after { animation-delay: 0.9s; }
-@keyframes vo-float-ripple {
-  0%   { transform: scale(1);   opacity: 0.85; }
-  100% { transform: scale(3.6); opacity: 0; }
+.vo-float-sun::after {
+  inset: -70%;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(255, 248, 228, 0.9) 50%, transparent 100%) center / 100% 1.5px no-repeat,
+    linear-gradient(0deg, transparent 0%, rgba(255, 248, 228, 0.9) 50%, transparent 100%) center / 1.5px 100% no-repeat;
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 0%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side, #000 0%, transparent 100%);
+}
+.vo-float.is-sun .vo-float-sun::before {
+  animation: vo-float-glow 2.4s ease-in-out infinite;
+}
+.vo-float.is-sun .vo-float-sun::after {
+  animation: vo-float-glint 2.4s ease-in-out infinite;
+}
+@keyframes vo-float-glow {
+  0%, 100% { transform: scale(0.92); opacity: 0.35; }
+  50%      { transform: scale(1.06); opacity: 0.85; }
+}
+@keyframes vo-float-glint {
+  0%, 30%, 70%, 100% { transform: scale(0.6) rotate(0deg);  opacity: 0; }
+  50%                { transform: scale(1)   rotate(45deg); opacity: 0.8; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .vo-float.is-sun .vo-float-sun::before,
-  .vo-float.is-sun .vo-float-sun::after { animation: none; opacity: 0.5; transform: scale(1.6); }
+  .vo-float.is-sun .vo-float-sun::before { animation: none; opacity: 0.6; transform: none; }
+  .vo-float.is-sun .vo-float-sun::after { animation: none; opacity: 0; }
 }
 
 /* The float's own settings, opened by right-clicking it. Drawn in the

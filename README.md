@@ -100,8 +100,9 @@ send it back. The inspector appears when you select a note.
   sidebar* brings it back.
 - **Floating orrery**: the cosmos with its sky taken away, hung over your
   notes like a sticker. It turns, glows and lets every click through to the
-  note underneath, and pointing at it shows nothing. To move it, drag its sun;
-  a ripple shows when the pointer is over the sun. Right-click it for its own
+  note underneath, and pointing at it shows nothing. Point at its sun and it
+  twinkles: drag the sun to move it, or turn the wheel there to make the whole
+  orrery bigger or smaller. Right-click it for its own
   zoom, orbit speed, node and link glow, link width, sun halo, orbit gap and
   shell, opacity, pause, position lock, and the button that turns it off.
   Anything you leave

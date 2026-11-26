@@ -14,9 +14,9 @@ import type VaultOrreryPlugin from './main';
    takes the pointer covers a square of the note. So the box ignores the
    pointer always, and watches it from the window instead. Hovering it shows
    nothing at all: it stays a picture, and the note underneath keeps every
-   click. The one exception is the hub in the middle. Over the sun a ripple
-   goes out from it, and a press there is taken and turns into a drag of the
-   whole box. Nothing else about the float takes a click; closing it and its
+   click. The one exception is the hub in the middle. Over the sun it twinkles,
+   a press there is taken and turns into a drag of the whole box, and the
+   wheel there grows or shrinks the whole box around the pointer. Nothing else about the float takes a click; closing it and its
    other settings live in the right-click panel.
 
    Above the workspace and the status bar, below popovers, menus and modals,
@@ -88,7 +88,7 @@ export class FloatingOrrery {
   private api: OrreryApi | null = null;
   private ro: ResizeObserver | null = null;
   private off: Array<() => void> = [];
-  private sun: HTMLElement;        // the hub's grab area, and its ripple
+  private sun: HTMLElement;        // the hub's grab area, and its twinkle
   private rect: FloatRect;
   private sunOn = false;           // the pointer is over the hub
   private busy = false;            // a drag is in progress
@@ -109,6 +109,13 @@ export class FloatingOrrery {
     this.el.toggleClass('is-locked', plugin.settings.floatLocked);
     this.root.setCssStyles({ opacity: String(plugin.settings.floatOpacity) });
     this.dragWith(this.sun, (r, dx, dy) => ({ ...r, x: r.x + dx, y: r.y + dy }));
+    /* The wheel over the hub sizes the whole box. The element only takes the
+       pointer while it is over the sun, so a wheel anywhere else still
+       scrolls the note underneath. Not passive: the note must not scroll
+       along with it. */
+    const wheel = (e: WheelEvent) => this.wheelSize(e);
+    this.sun.addEventListener('wheel', wheel, { passive: false });
+    this.off.push(() => this.sun.removeEventListener('wheel', wheel));
 
     /* the pointer, watched from the window: see the note at the top. The
        only thing it decides is whether the hub is under it, and the hub's
@@ -308,6 +315,35 @@ export class FloatingOrrery {
     if (on === this.sunOn) return;
     this.sunOn = on;
     this.el.toggleClass('is-sun', on);
+  }
+
+  /** The wheel over the sun: the box grows or shrinks around the pointer,
+      keeping its shape, so the sun stays under it. The step is clamped so
+      neither side passes MIN or the window, rather than letting fitRect bend
+      the box out of square. Saved a moment after the wheel stops. */
+  private wheelSize(e: WheelEvent) {
+    if (!this.sunOn || this.busy) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const r = this.rect;
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+    const W = window.innerWidth, H = window.innerHeight;
+    const lo = MIN / Math.min(r.w, r.h);
+    const hi = Math.min(Math.max(MIN, W - 16) / r.w, Math.max(MIN, H - 16) / r.h);
+    const k = Math.min(Math.max(Math.exp(-dy * 0.0015), lo), hi);
+    if (Math.abs(k - 1) < 1e-3) return;
+    const px = e.clientX, py = e.clientY;
+    this.rect = this.fitRect({
+      x: px - (px - r.x) * k, y: py - (py - r.y) * k, w: r.w * k, h: r.h * k,
+    });
+    this.place();
+    /* the engine redraws the sun at its new size on the next frames */
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      const s = this.sunBox();
+      if (s) this.placeSun(s);
+    }));
+    this.plugin.settings.floatRect = { ...this.rect };
+    this.saveSoon();
   }
 
   /** A handle that changes the rect as it is dragged, and saves it on

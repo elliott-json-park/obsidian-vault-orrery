@@ -4,6 +4,11 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.8.0
+
+- **The sun twinkles instead of rippling.** Pointing at the floating orrery's sun now makes it glow softly and glint, where it is, in place of the rings that spread out from it.
+- **Resize with the wheel.** Turn the mouse wheel over the sun to make the whole floating orrery bigger or smaller, around the pointer. A wheel anywhere else still scrolls your note. Locking its position turns this off too.
+
 ## 2.7.0
 
 - **The floating orrery stays out of your way.** Pointing at it no longer draws a frame, a grip, a close button or a resize corner. It shows nothing and every click reaches the note underneath.
