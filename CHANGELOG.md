@@ -4,6 +4,12 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.6.0
+
+- **The legend remembers what you hide.** Systems you switch off in the STAR SYSTEMS list stay off when you close the view, restart Obsidian or reload the vault, until you click them back on. Resetting the controls leaves them as they are. Thanks @ZephyrIsla for the request (#3).
+- **Sort the legend by path.** A small `#` button in the STAR SYSTEMS title switches the list between size order (as before) and path order, where each folder comes before its subfolders and subfolders are set in a step. Hover a row to see its full path. Only the list changes: systems keep their place in the sky. Thanks @ZephyrIsla (#2).
+- **Readable names in the link map.** Note names in Chinese and Japanese are now drawn in a face that has their characters, with a lighter weight and a thinner outline, and inside the link map no name is drawn smaller than about 13 px. Thanks @ZephyrIsla (#2).
+
 ## 2.5.0
 
 - **A floating orrery.** The cosmos with its sky taken away, hung over your notes: suns, planets, links and their light, turning, with the note showing through everywhere else. It takes no clicks, so you keep working underneath it. Point at it to move it, resize it or close it, and it comes back where you left it. Turn it on with *Show or hide the floating orrery*, in Settings, or from the new WIDGETS tab.

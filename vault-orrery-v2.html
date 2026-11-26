@@ -526,6 +526,8 @@ body.dragdeck #hud{cursor:grabbing}
 .lrow{display:flex;align-items:center;gap:7px;font-size:11.5px;line-height:2.05;cursor:pointer;
   opacity:.95;white-space:nowrap}
 .lrow.off{opacity:.28}
+#legsort{cursor:pointer;pointer-events:auto;min-width:22px;text-align:center}
+#legsort:hover,#legsort.on{color:var(--cy)}
 .dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 8px currentColor;
   background:currentColor}
 .lrow em{font-style:normal;font-family:var(--kr);letter-spacing:0;flex:1;
@@ -1105,7 +1107,7 @@ body.wrap-on #card-wrap,body.wrap-on #card-wrap-d{display:block}
 
   <div class="pane glass foldable" id="leg">
     <div class="ttl"><b>STAR SYSTEMS</b>
-      <span class="tr"><i id="l-cnt">0</i><i class="fx" id="legfold">[ − ]</i></span>
+      <span class="tr"><i class="fx" id="legsort">#</i><i id="l-cnt">0</i><i class="fx" id="legfold">[ − ]</i></span>
     </div>
     <div class="bd" id="legbody"></div>
   </div>
@@ -1705,6 +1707,10 @@ const STR = {
                 '隣の隣までもう一層 [2]','再加一层 — 邻居的邻居 [2]'],
 'leg.wiki':    ['위키링크','WIKILINK','ウィキリンク','维基链接'],
 'leg.src':     ['출처','SOURCE','出典','来源'],
+'leg.sort.n':  ['노트 수 순서 · 누르면 경로 순서','Sorted by size · click for path order',
+                'ノート数順 · クリックでパス順','按笔记数排序 · 点击改为按路径'],
+'leg.sort.p':  ['경로 순서 · 누르면 노트 수 순서','Sorted by path · click for size order',
+                'パス順 · クリックでノート数順','按路径排序 · 点击改为按笔记数'],
 'mm.hint':     ['클릭 = 선택 · 더블클릭 = 중심 이동<br>끌기 = 시점 회전 · 휠 = 확대',
                 'CLICK = SELECT · DOUBLE-CLICK = RECENTRE<br>DRAG = ORBIT THE VIEW · WHEEL = ZOOM',
                 'クリック = 選択 · ダブルクリック = 中心移動<br>ドラッグ = 視点回転 · ホイール = 拡大',
@@ -2974,7 +2980,12 @@ const PIN_DEF = KNOBS.filter(kn => kn.pin).map(kn => kn.k);
 const SET_DEF = { mmHop:false, snd:false, coreNote:'', grid:false,
                   tab:'cosmos', deckAt:null, litV1:1,
                   adv:false, legFold:false, keysFold:false, pin:PIN_DEF, dock:[], card:null,
-                  cardShape:'9:16' };
+                  cardShape:'9:16',
+                  /* the legend's own two choices: which systems the reader
+                     switched off (by key, so a folder that grows or shrinks
+                     keeps its state) and the order the list is read in —
+                     'n' by size, as the galaxy is laid out, 'p' by path */
+                  legOff:[], legSort:'n' };
 KNOBS.forEach(kn => { SET_DEF[kn.k] = kn.def; });
 /* ---- what used to be knobs -----------------------------------------------
    Eleven controls came off the deck in 1.15.0: the grade's split, lens,
@@ -3790,6 +3801,12 @@ cats.forEach((c, i) => { catIndex[c.key] = i; });
    there are — see wikiPalette */
 const wikiPal = wikiPalette(cats.reduce((n, c) => n + (c.dom === 'wiki' ? 1 : 0), 0));
 let wi = 0;
+/* A system switched off in the legend stays off across a reload and a
+   restart. It used to come back on every time the view opened, so a reader
+   who only ever wants three of thirty systems had to click twenty-seven rows
+   again each morning. A key that no longer matches a folder is simply never
+   asked about. */
+const legOff = new Set(Array.isArray(SET.legOff) ? SET.legOff : []);
 cats.forEach(c => {
   if (c.dom === 'wiki') {
     c.color = wikiPal[wi];
@@ -3799,7 +3816,7 @@ cats.forEach(c => {
     c.color = RAW_YEAR_COLOR[y] || RAW_YEAR_COLOR[0];
     c.tier = 1; c.year = y;
   }
-  c.on = true;
+  c.on = !legOff.has(c.key);
 });
 wikiCats = cats.filter(c => c.tier === 0);
 rawCats  = cats.filter(c => c.tier === 1)
@@ -9836,12 +9853,35 @@ const LBL_MAX_CH = 26;
    letterSpacing on a 2D context is recent enough to be worth asking about
    rather than assuming. Where it is missing the labels come out untracked,
    which is exactly what they were before. */
+/* Which face a name is set in follows the name, not the interface language.
+   Malgun Gothic leads the list for Korean, and it does carry Han characters —
+   but in Korean hanja forms, with simplified characters it lacks falling
+   through one glyph at a time to the next face, so a Chinese title came out
+   in two fonts at two weights. A name with kana goes to the Japanese faces
+   first, one with Han and no Hangul to the Chinese ones.
+
+   And a dense script gets a lighter weight and a thinner rim. At 600 with a
+   rim of 15% the counters of a ten-stroke character fill in once the label
+   is drawn at a dozen pixels, which is what a note name is at map distance:
+   Latin survives that, Han does not. */
+const LBL_HANGUL = /[가-힯㄰-㆏]/;
+const LBL_KANA = /[぀-ヿ]/;
+const LBL_HAN = /[㐀-鿿豈-﫿]/;
+const LBL_FACE_JA = '"Yu Gothic UI","Yu Gothic","Hiragino Sans","Meiryo",' + LBL_FACE;
+const LBL_FACE_ZH = '"Microsoft YaHei UI","Microsoft YaHei","PingFang SC","Noto Sans CJK SC",' +
+                    '"Noto Sans SC",' + LBL_FACE;
+function labelFace(s) {
+  if (LBL_KANA.test(s)) return { face: LBL_FACE_JA, dense: true };
+  if (LBL_HAN.test(s) && !LBL_HANGUL.test(s)) return { face: LBL_FACE_ZH, dense: true };
+  return { face: LBL_FACE, dense: false };
+}
 function makeLabel(text, color, size, wide) {
   const s0 = String(text);
   const txt = s0.length > LBL_MAX_CH ? s0.slice(0, LBL_MAX_CH - 1) + '…' : s0;
-  const fs = 46, pad = 15, ring = Math.round(fs * 0.15);
+  const lf = labelFace(txt);
+  const fs = 46, pad = 15, ring = Math.round(fs * (lf.dense ? 0.11 : 0.15));
   const c = document.createElement('canvas'), x = c.getContext('2d');
-  const font = (wide ? '700 ' : '600 ') + fs + 'px ' + LBL_FACE;
+  const font = (lf.dense ? (wide ? '600 ' : '400 ') : (wide ? '700 ' : '600 ')) + fs + 'px ' + lf.face;
   const track = wide && 'letterSpacing' in x ? Math.round(fs * 0.13) + 'px' : '';
   if (track) x.letterSpacing = track;
   x.font = font;
@@ -10401,6 +10441,43 @@ function refreshHUD() {
   $('hint').classList.toggle('on', N === 0 && !hosted);
   $('b-clear').style.display = (N && !hosted) ? '' : 'none';
 
+  renderLegend();
+}
+
+/* The folder part of a system's key, which is its path inside the vault. */
+function catPath(c) { return c.dom === 'wiki' ? c.key.slice(5) : ''; }
+/* The legend, in one of two orders. By size is the galaxy's own order — the
+   biggest systems sit nearest the core — and stays the default. By path is
+   the file explorer's order, for the reader who knows their vault by where
+   things are filed rather than by how big they have grown: a parent comes
+   straight before its children, and each child is set in a step under it.
+   Only the list moves. The galaxy is laid out by size either way, because a
+   system's place in the sky is its orbit and re-sorting a list must not
+   re-arrange the sky. */
+function legendOrder() {
+  if (SET.legSort !== 'p') return cats;
+  /* folder by folder, so "Alpha Beta" cannot sort between "Alpha" and
+     "Alpha/Child" the way it would comparing the whole path as one string */
+  const cmp = (a, b) => {
+    const p = catPath(a).split('/'), q = catPath(b).split('/');
+    for (let i = 0; i < Math.min(p.length, q.length); i++) {
+      const r = p[i].localeCompare(q[i], undefined, { numeric: true, sensitivity: 'base' });
+      if (r) return r;
+    }
+    return p.length - q.length;
+  };
+  return wikiCats.slice().sort(cmp).concat(rawCats);
+}
+function syncLegSort() {
+  const b = $('legsort');
+  if (!b) return;
+  const p = SET.legSort === 'p';
+  b.textContent = p ? 'A–Z' : '#';
+  b.title = T(p ? 'leg.sort.p' : 'leg.sort.n');
+  b.classList.toggle('on', p);
+}
+function renderLegend() {
+  syncLegSort();
   const legBody = $('legbody');
   legBody.innerHTML = '';
   if (!cats.length) {
@@ -10408,14 +10485,31 @@ function refreshHUD() {
                         'padding:8px 0;text-align:center">NO VAULT LOADED</div>';
     return;
   }
-  cats.forEach(c => {
+  const byPath = SET.legSort === 'p';
+  legendOrder().forEach(c => {
     const d = document.createElement('div');
     d.className = 'lrow';
     d.innerHTML = '<span class="dot" style="color:#' + c.color.getHexString() + '"></span>' +
                   '<em>' + esc(catLabel(c)) + '</em><i>' +
                   (c.temp ? spectralOf(c.temp) + ' · ' : '') + c.n + '</i>';
-    if (c.temp) d.title = T('cls.star', { s: spectralOf(c.temp), t: Math.round(c.temp / 100) * 100 });
-    d.onclick = () => { c.on = !c.on; d.classList.toggle('off', !c.on); };
+    const path = catPath(c);
+    if (byPath && path) {
+      const depth = path.split('/').filter(Boolean).length - 1;
+      if (depth > 0) d.style.paddingLeft = Math.min(depth, 6) * 10 + 'px';
+    }
+    const cls = c.temp ? T('cls.star', { s: spectralOf(c.temp), t: Math.round(c.temp / 100) * 100 }) : '';
+    d.title = path ? path + (cls ? '\n' + cls : '') : cls;
+    d.classList.toggle('off', !c.on);
+    d.onclick = () => {
+      c.on = !c.on; d.classList.toggle('off', !c.on);
+      /* keys of folders not in this build (excluded for now, or emptied)
+         are kept: they were switched off on purpose and stay that way if
+         the folder comes back */
+      const here = new Set(cats.map(x => x.key));
+      SET.legOff = (Array.isArray(SET.legOff) ? SET.legOff : []).filter(k => !here.has(k))
+        .concat(cats.filter(x => !x.on).map(x => x.key));
+      saveSet();
+    };
     legBody.appendChild(d);
     c.el = d;
   });
@@ -16073,6 +16167,8 @@ function underPane(x, y, hw, hh) {
         y + hh > PANES.y0[k] && y - hh < PANES.y1[k]) return true;
   return false;
 }
+/* the smallest card a name is drawn at inside the mind map, in pixels */
+const MM_LABEL_PX = 22;
 function writeLabels() {
   if (!labels || !labels.length) return;
   /* A model has no captions. Floating, the names would be text laid over
@@ -16148,7 +16244,13 @@ function writeLabels() {
        pixels of air. */
     const k = clamp(d * 0.0016, .55, 5.2);
     const base = L.node ? (12 + Math.min(7, nodes[L.idx].inb*.12)) : (L.cat.tier===0?22:17);
-    const hgt = base * k;
+    let hgt = base * k;
+    /* Inside the mind map there are a handful of names and each one is the
+       point of the view, so none is drawn smaller than can be read: the card
+       is 76 units tall with 46 of glyph, and 22 px of card is a 13 px line.
+       Outside it the cosmos keeps its own scale, where a far label is meant
+       to be small and the arbitration below thins out the crowd. */
+    if (mindOpen) hgt = Math.max(hgt, MM_LABEL_PX * d / fpx);
     const img = L.sprite.material.map.image;
     const asp = img.width / img.height;
     const hpx = hgt * fpx / d;
@@ -17255,8 +17357,20 @@ $('advtog').onclick = () => {
   syncAdv(); saveSet(); layoutHUD();
 };
 
+/* the legend's order, remembered like the fold above */
+$('legsort').onclick = e => {
+  e.stopPropagation();
+  SET.legSort = SET.legSort === 'p' ? 'n' : 'p';
+  saveSet(); renderLegend();
+};
+
 $('b-rst').onclick = () => {
-  Object.assign(SET, SET_DEF);
+  /* RESET is the deck's controls. Which systems the reader switched off and
+     how the legend is sorted are choices about the vault, not the picture,
+     and resetting the sliders must not hand back thirty systems somebody
+     spent a minute turning off. */
+  const keepLeg = { legOff: SET.legOff, legSort: SET.legSort };
+  Object.assign(SET, SET_DEF, keepLeg);
   /* The arrangement is an array, and SET_DEF holds the only copy of it. A
      plain assign hands SET the defaults' own list — after which pinning
      anything edits the defaults, and RESET has nothing left to reset to. */
@@ -18580,6 +18694,7 @@ function relocalize() {
      fresh rows, and a system the user had filtered off would come back looking
      switched on */
   cats.forEach(c => { if (c.el) c.el.querySelector('em').textContent = catLabel(c); });
+  syncLegSort();
   renderInspector();                  // counts, excerpt placeholder, go-label
   if (GEN.on) syncGen(true);
   if (mindOpen && MM.sel >= 0) { mmHint(); mmSide(MM.sel); }
