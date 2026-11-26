@@ -1,11 +1,12 @@
 import { Plugin, WorkspaceLeaf, Notice, TFile, Menu, addIcon, debounce, moment } from 'obsidian';
 import type { Editor } from 'obsidian';
-import type { OrreryApi, OrreryCommand, OrreryStore } from './engine.generated.js';
+import type { OrreryApi, OrreryCommand, OrreryStore, OrreryWidgets } from './engine.generated.js';
 import { OrreryView, MiniOrreryView, VIEW_TYPE_ORRERY, VIEW_TYPE_MINI, HOVER_SOURCE } from './view';
 import { OrrerySettingTab, DEFAULT_SETTINGS, type OrrerySettings, type Lang } from './settings';
 import { registerOrreryBasesView } from './bases';
 import { skyReport, renderReport } from './report';
 import { askWhenPicked, maybeAskForStar, starChanged, starOnLoad } from './star';
+import { FloatingOrrery, FLOAT_FIT, type FloatFrame } from './float';
 
 /* Opened only when the star request's button is pressed. */
 const REPO_PAGE = 'https://github.com/elliott-json-park/obsidian-vault-orrery';
@@ -46,6 +47,8 @@ export default class VaultOrreryPlugin extends Plugin {
   settings: OrrerySettings = DEFAULT_SETTINGS;
   /** Whether this Obsidian took the Bases view (1.10.0 and later). */
   basesRegistered = false;
+  /** The floating orrery, while it is shown. */
+  private floating: FloatingOrrery | null = null;
 
   /* The engine writes its own preferences — language, panel sizes, radar size,
      its exclusion list — as it is used. They are held here and flushed to the
@@ -79,6 +82,17 @@ export default class VaultOrreryPlugin extends Plugin {
        sidebar is the default. So it is put there and shown once, without
        taking the keyboard from the note being edited, and from then on the
        workspace remembers it or forgets it like any other pane. */
+    this.addCommand({
+      id: 'toggle-float',
+      name: 'Show or hide the floating orrery',
+      callback: () => { void this.setFloat(!this.settings.floatOn); },
+    });
+    /* It was left showing: put it back where it was. After layout, so the
+       window has its size and the vault has its files. */
+    this.app.workspace.onLayoutReady(() => {
+      if (this.settings.floatOn) this.showFloat();
+    });
+
     this.app.workspace.onLayoutReady(() => {
       if (this.settings.miniOffered) return;
       this.settings.miniOffered = true;
@@ -188,7 +202,11 @@ export default class VaultOrreryPlugin extends Plugin {
     this.addSettingTab(new OrrerySettingTab(this.app, this));
 
     /* Excluded-files patterns can change while a view is open. */
-    this.registerEvent(this.app.workspace.on('layout-change', () => this.pushSettingsToViews()));
+    this.registerEvent(this.app.workspace.on('layout-change', () => {
+      this.pushSettingsToViews();
+      /* the mini's tab closed by hand is a widget switched off */
+      this.syncWidgets();
+    }));
   }
 
   onunload() {
@@ -196,6 +214,9 @@ export default class VaultOrreryPlugin extends Plugin {
        disabled is still sitting in the debounce. */
     this.flushStore.cancel();
     void this.saveSettings();
+    /* Not a view, so Obsidian does not close it: it is ours to take down. */
+    this.floating?.destroy();
+    this.floating = null;
     /* Views are torn down by Obsidian, which calls onClose(); that is where the
        engine's own listeners and audio context are released. */
   }
@@ -237,6 +258,56 @@ export default class VaultOrreryPlugin extends Plugin {
     this.app.workspace.getLeavesOfType(VIEW_TYPE_MINI).forEach(l => l.detach());
   }
 
+  /* ---- the floating orrery (float.ts) ----------------------------------- */
+
+  /** Show or hide it, and remember which for the next start. */
+  async setFloat(on: boolean) {
+    this.settings.floatOn = on;
+    await this.saveSettings();
+    if (on) this.showFloat();
+    else this.hideFloat();
+    this.syncWidgets();
+  }
+
+  /** The full view deck's WIDGETS tab: the sidebar mini and the floating
+      orrery, switched from inside the cosmos. */
+  widgetHooks(): OrreryWidgets {
+    const set = (name: string, value: unknown) => {
+      if (name === 'mini') {
+        if (value) void this.openMini(true).then(() => this.syncWidgets());
+        else { this.closeMini(); this.syncWidgets(); }
+      } else if (name === 'float') {
+        void this.setFloat(Boolean(value));
+      } else if (name === 'frame' && typeof value === 'string' && value in FLOAT_FIT) {
+        this.settings.floatFrame = value as FloatFrame;
+        this.settings.floatZoom = 1;
+        void this.saveSettings();
+        this.floatFrameChanged();
+        this.syncWidgets();
+      }
+    };
+    return {
+      get: () => ({ mini: this.miniOpen(), float: this.settings.floatOn, frame: this.settings.floatFrame }),
+      set: set as OrreryWidgets['set'],
+    };
+  }
+  /** Something other than the deck changed a widget: tell every deck. */
+  syncWidgets() {
+    this.views().forEach(v => v.getApi()?.syncWidgets());
+    this.floating?.syncPanel();
+  }
+  private showFloat() {
+    if (!this.floating) this.floating = new FloatingOrrery(this);
+  }
+  private hideFloat() {
+    this.floating?.destroy();
+    this.floating = null;
+    if (!this.allViews().length) this.texts.clear();
+  }
+  floatFrameChanged() {
+    this.floating?.reframe();
+  }
+
   /* ---- note text, shared by every view ----------------------------------
      Each note's text as last read, against the file time it was read at. A
      rebuild after a save used to read every note in the vault again to learn
@@ -261,8 +332,8 @@ export default class VaultOrreryPlugin extends Plugin {
   /** Called as a view closes. The last one out empties the cache. */
   releaseTexts() {
     /* the closing view's leaf still holds it at this point, so "one left"
-       is the view that is going */
-    if (this.allViews().length <= 1) this.texts.clear();
+       is the view that is going; the floating orrery reads from it too */
+    if (this.allViews().length <= 1 && !this.floating) this.texts.clear();
   }
 
   /** Open the orrery if it is not open, then fly the camera to this note.
@@ -308,6 +379,25 @@ export default class VaultOrreryPlugin extends Plugin {
     /* Object.assign copies the reference, so a saved file with no engine state
        would otherwise have every view writing into DEFAULT_SETTINGS itself. */
     this.settings.engineStore = Object.assign({}, this.settings.engineStore);
+    /* Hand-editable like the rest: a frame that is not one of the three, or a
+       rect with a hole in it, falls back rather than reaching the box. */
+    if (!(this.settings.floatFrame in FLOAT_FIT)) this.settings.floatFrame = DEFAULT_SETTINGS.floatFrame;
+    const r = this.settings.floatRect;
+    if (r && !(['x', 'y', 'w', 'h'] as const).every(k => typeof r[k] === 'number' && Number.isFinite(r[k])))
+      this.settings.floatRect = null;
+    this.settings.floatOn = !!this.settings.floatOn;
+    const num = (v: unknown, lo: number, hi: number, d: number) =>
+      typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d;
+    this.settings.floatZoom = num(this.settings.floatZoom, 0.25, 4, 1);
+    this.settings.floatOpacity = num(this.settings.floatOpacity, 0.2, 1, 1);
+    const tune = this.settings.floatTune;
+    this.settings.floatTune = {};
+    if (tune && typeof tune === 'object')
+      for (const [k, v] of Object.entries(tune))
+        if (typeof v === 'number' && Number.isFinite(v)) this.settings.floatTune[k] = v;
+    this.settings.floatLinks = this.settings.floatLinks !== false;
+    this.settings.floatPaused = !!this.settings.floatPaused;
+    this.settings.floatLocked = !!this.settings.floatLocked;
     const star = starOnLoad(saved?.starAsk, !!saved, this.manifest.version);
     const starMoved = starChanged(saved?.starAsk, star);
     this.settings.starAsk = star;
@@ -339,6 +429,8 @@ export default class VaultOrreryPlugin extends Plugin {
       set: (k: string, v: string) => {
         this.settings.engineStore[k] = String(v);
         this.flushStore();
+        /* the deck moved: the floating orrery follows it */
+        if (k === 'orrery2.set') this.floating?.settingsChanged();
       },
     };
   }

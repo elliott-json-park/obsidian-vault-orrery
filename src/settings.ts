@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type { SettingDefinitionItem, SettingGroupItem } from 'obsidian';
 import type VaultOrreryPlugin from './main';
+import type { FloatFrame, FloatRect } from './float';
 
 export type Lang = 'auto' | 'ko' | 'en' | 'ja' | 'zh';
 
@@ -24,6 +25,26 @@ export interface OrrerySettings {
   extraIgnoreFilters: string[];
   /** Whether the mini orrery has been put in the sidebar once (2.0.0). */
   miniOffered: boolean;
+  /** The floating orrery is shown, and comes back on the next start. */
+  floatOn: boolean;
+  /** How close its camera sits. */
+  floatFrame: FloatFrame;
+  /** Where it was left, in window pixels. Null until it has been moved. */
+  floatRect: FloatRect | null;
+  /** A fine zoom on top of the frame, set from the float's own panel. 1 is
+      the frame as named; smaller is closer. Picking a frame resets it. */
+  floatZoom: number;
+  /** Knobs the float's panel has moved away from the full view's deck, by
+      engine knob key. A key absent here follows the deck. */
+  floatTune: Record<string, number>;
+  /** The float's link layer: every link, or none. */
+  floatLinks: boolean;
+  /** The whole float, from 0.2 (faint) to 1. */
+  floatOpacity: number;
+  /** Stopped on its last frame: no drawing, no motion. */
+  floatPaused: boolean;
+  /** No grip or resize corner, so it cannot be moved by accident. */
+  floatLocked: boolean;
   /** The engine's own preferences — panel sizes, radar size, its language
       chip. The standalone page keeps these in localStorage; inside a plugin
       they belong in the plugin's data file, so they live in the vault and
@@ -50,13 +71,27 @@ export const DEFAULT_SETTINGS: OrrerySettings = {
   followExcludedFiles: true,
   extraIgnoreFilters: [],
   miniOffered: false,
+  floatOn: false,
+  floatFrame: 'medium',
+  floatRect: null,
+  floatZoom: 1,
+  floatTune: {},
+  floatLinks: true,
+  floatOpacity: 1,
+  floatPaused: false,
+  floatLocked: false,
   engineStore: {},
 };
+
+const FRAMES: readonly FloatFrame[] = ['close', 'medium', 'whole'];
+const isFrame = (v: unknown): v is FloatFrame =>
+  typeof v === 'string' && (FRAMES as readonly string[]).includes(v);
 
 /** The settings this tab edits. The engine's own store is not among them: it is
     written by the engine, not by a human, and has no place in settings search. */
 type Key = 'language' | 'maxNodes' | 'liveSync' | 'followActiveNote'
-         | 'followExcludedFiles' | 'extraIgnoreFilters' | 'showMini';
+         | 'followExcludedFiles' | 'extraIgnoreFilters' | 'showMini'
+         | 'showFloat' | 'floatFrame';
 
 /* This tab is English-only, deliberately, even though the engine itself speaks
    four languages. Obsidian gives plugins no i18n facility for settings, and the
@@ -118,6 +153,32 @@ export class OrrerySettingTab extends PluginSettingTab {
               type: 'toggle',
               key: 'showMini',
               defaultValue: true,
+            },
+          },
+          {
+            name: 'Floating orrery',
+            desc: 'Hang the cosmos over the workspace with its sky taken away, so only ' +
+                  'the suns, planets and their light are left, turning. It ignores clicks, ' +
+                  'which go through to the note underneath. Point at it to bring up a grip ' +
+                  'to move it, a corner to resize it and a button to hide it. Right-click ' +
+                  'it for its own zoom, speed, light and orbit settings; anything left ' +
+                  'untouched there follows the full view\'s control deck.',
+            aliases: ['float', 'overlay', 'transparent', 'sticker', 'widget', 'always on top'],
+            control: {
+              type: 'toggle',
+              key: 'showFloat',
+              defaultValue: DEFAULT_SETTINGS.floatOn,
+            },
+          },
+          {
+            name: 'Floating orrery frame',
+            desc: 'How close the floating orrery\'s camera sits.',
+            aliases: ['float', 'zoom', 'overlay'],
+            control: {
+              type: 'dropdown',
+              key: 'floatFrame',
+              options: { close: 'Close: the central star', medium: 'Medium: its neighbours', whole: 'Whole: every system' },
+              defaultValue: DEFAULT_SETTINGS.floatFrame,
             },
           },
           {
@@ -214,6 +275,8 @@ export class OrrerySettingTab extends PluginSettingTab {
       case 'extraIgnoreFilters': return s.extraIgnoreFilters.join('\n');
       /* Not stored: the workspace is the record of whether it is open. */
       case 'showMini': return this.plugin.miniOpen();
+      case 'showFloat': return s.floatOn;
+      case 'floatFrame': return s.floatFrame;
       default: return undefined;
     }
   }
@@ -248,7 +311,17 @@ export class OrrerySettingTab extends PluginSettingTab {
       case 'showMini':
         if (value) await this.plugin.openMini(true);
         else this.plugin.closeMini();
+        this.plugin.syncWidgets();
         return;
+      case 'showFloat':
+        await this.plugin.setFloat(Boolean(value));
+        return;
+      case 'floatFrame':
+        if (!isFrame(value)) return;
+        s.floatFrame = value;
+        s.floatZoom = 1;
+        this.plugin.floatFrameChanged();
+        break;
       default:
         return;
     }

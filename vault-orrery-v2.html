@@ -400,6 +400,21 @@ body.dragdeck #hud{cursor:grabbing}
   box-shadow:0 0 14px rgba(255,182,72,.12)}
 #sndmoods u.play{animation:sndplay .9s ease-out}
 @keyframes sndplay{0%{box-shadow:0 0 0 0 rgba(255,182,72,.55)}100%{box-shadow:0 0 0 12px rgba(255,182,72,0)}}
+/* ---------- the widgets tab ---------- */
+#wgtstage{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;padding:2px 0 8px}
+#wgtstage .mini{display:grid;grid-template-columns:1fr auto;gap:2px 8px;text-align:left;white-space:normal}
+#wgtstage .mini em{font-style:normal;opacity:.7}
+#wgtstage .mini small{grid-column:1/-1;font-size:9.5px;letter-spacing:.02em;
+  color:rgba(223,246,255,.5);font-family:var(--kr);text-transform:none}
+#wgtstage .mini.on{color:var(--am);border-color:rgba(255,182,72,.45);background:rgba(255,182,72,.08)}
+#wgtstage .cap{margin-top:4px;font-size:9.5px;letter-spacing:.12em;color:rgba(223,246,255,.45);
+  font-family:var(--kr);text-transform:none}
+#wgtframes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+#wgtframes u{text-decoration:none;cursor:pointer;pointer-events:auto;user-select:none;text-align:center;
+  padding:6px 2px;border:1px solid rgba(92,225,255,.22);background:rgba(92,225,255,.04);
+  color:rgba(223,246,255,.7);font-size:11px;letter-spacing:.06em;transition:background .15s,color .15s}
+#wgtframes u:hover{background:rgba(92,225,255,.12);color:var(--cy)}
+#wgtframes u.on{color:var(--am);border-color:rgba(255,182,72,.5);background:rgba(255,182,72,.09)}
 #sndbox{text-align:left;white-space:normal}
 #sndbox.on{color:var(--am);border-color:rgba(255,182,72,.45);background:rgba(255,182,72,.08)}
 #sndbox small{display:block;margin-top:3px;font-size:9.5px;letter-spacing:.02em;
@@ -1420,12 +1435,46 @@ const lerp  = (a,b,t) => a+(b-a)*t;
    quality, the audio arming and the intro card all ask it on the way in. The
    host passes it at creation (VO_BOOT, from createOrrery's third argument);
    the standalone page takes ?mini=1, which is how the harness draws one. */
+/* ---- the floating orrery ---------------------------------------------------
+   The mini again, cut out of its box: no sky, no pane, no frame, a cosmos
+   hung over the workspace like a sticker that turns. Everything the mini must
+   not do it must not do either — it has no keys, no events, no clicks, and
+   it writes nothing back — so it is a mini, and FLOAT is the handful of
+   places where the two part ways:
+
+     the light    it is the one thing on screen, so it gets the reader's own
+                  light settings rather than the sidebar's BALANCED, and the
+                  pixel ratio of the display rather than one
+     the sky      off, all of it. The sky is the background, and the
+                  background is what this mode removes
+     the alpha    the canvas is transparent, and the composite says how much
+                  of each pixel is cosmos (see FLOAT ALPHA by renderFrame)
+     the frame    the host picks how close the camera sits; see fitView
+
+   Implies MINI: ?float=1 alone draws one in the standalone page. */
+const FLOAT = {
+  on: !!((typeof VO_BOOT !== 'undefined' && VO_BOOT && VO_BOOT.float) ||
+         /[?&]float=1\b/.test(location.search)),
+  /* how much of the fitted vault the frame holds — see fitView */
+  fit: (typeof VO_BOOT !== 'undefined' && VO_BOOT && +VO_BOOT.fit > 0) ? +VO_BOOT.fit : 0.6,
+  /* ---- the links, over a page ----
+     A link is light added to black, and drawn against the full view's sky it
+     only has to beat two per cent grey. Floating, it has to beat the page —
+     Obsidian's dark theme is a grey of twelve per cent — and at the deck's
+     own strength a link over a note was a hairline barely lighter than the
+     paper. So, here only: more light, a wider line, and the long ones held
+     down at rest by less (see atRest in writeLinks), since nothing here can
+     ever be hovered or selected to bring them back up. Multiplied onto the
+     deck's LINK GLOW and LINE WIDTH, so those knobs still move them. */
+  linkGain: 2.6, linkWidth: 1.5, linkRest: 0.35,
+};
 const MINI = {
-  on: !!((typeof VO_BOOT !== 'undefined' && VO_BOOT && VO_BOOT.mini) ||
+  on: FLOAT.on || !!((typeof VO_BOOT !== 'undefined' && VO_BOOT && VO_BOOT.mini) ||
          /[?&]mini=1\b/.test(location.search)),
   /* twenty frames a second is enough for a slow drift and a third of the
-     work of the full view's sixty; see PACE for where it is spent */
-  step: 1000 / 20,
+     work of the full view's sixty; see PACE for where it is spent. The
+     floating one is the thing being looked at, so it gets thirty. */
+  step: FLOAT.on ? 1000 / 30 : 1000 / 20,
 };
 /* How closely a view on screen is drawn — see the PACE notes by frameLoop.
    Declared up here with MINI because the build calls paceTouch() long before
@@ -1437,6 +1486,7 @@ const PACE = { last: 0, touch: performance.now(), idleMs: 20000, idleStep: 1000 
                share: 0.2, maxStep: 1000 / 8, awayMs: 2000, cost: 0 };
 function paceTouch() { PACE.touch = performance.now(); }
 if (MINI.on) document.body.classList.add('mini');
+if (FLOAT.on) document.body.classList.add('float');
 /* Which of the rail's drawers are open, and which are pinned open. See DOCK
    beside layoutHUD; declared up here because layoutHUD runs during start-up,
    long before that section is reached. */
@@ -1863,6 +1913,22 @@ const STR = {
                 'オルゴール オン · 惑星が通ると鳴ります','八音盒 开 · 行星经过时发声'],
 'snd.box.off': ['오르골 꺼짐','MUSIC BOX OFF','オルゴール オフ','八音盒 关'],
 'grp.sound':   ['소리','SOUND','サウンド','声音'],
+/* the widgets tab: the mini in the sidebar and the floating orrery */
+'grp.widgets': ['위젯','WIDGETS','ウィジェット','小部件'],
+'wgt.mini':    ['사이드바 미니 오러리','SIDEBAR MINI ORRERY','サイドバーのミニ オーラリー','侧边栏迷你星仪'],
+'wgt.mini.t':  ['오른쪽 사이드바에 작은 우주를 띄워 둡니다','A small cosmos kept in the right sidebar',
+                '右サイドバーに小さな宇宙を置きます','在右侧边栏放一个小宇宙'],
+'wgt.float':   ['플로팅 오러리','FLOATING ORRERY','フローティング オーラリー','悬浮星仪'],
+'wgt.float.t': ['배경 없이 작업 공간 위에 떠 있습니다. 우클릭하면 설정이 열립니다',
+                'Hangs over the workspace with no sky. Right-click it for its settings',
+                '背景なしでワークスペースの上に浮かびます。右クリックで設定が開きます',
+                '无背景悬浮在工作区上方。右键打开设置'],
+'wgt.frame':   ['플로팅 거리','FLOATING FRAME','フローティングの距離','悬浮距离'],
+'wgt.f.close': ['가까이','CLOSE','近く','近'],
+'wgt.f.medium':['중간','MEDIUM','中間','中'],
+'wgt.f.whole': ['전체','WHOLE','全体','全部'],
+'wgt.on':      ['켜짐','ON','オン','开'],
+'wgt.off':     ['꺼짐','OFF','オフ','关'],
 
 /* ---- dependencies · limits · exclusions -------------------------------- */
 'vendor.missing':['three.js를 찾을 수 없습니다. 이 앱은 라이브러리를 원격에서 받아오지 않습니다 — <b>vendor/three.min.js</b> 에 직접 넣어 주세요. 자세한 내용은 THIRD-PARTY-NOTICES.md 를 보세요.',
@@ -2247,11 +2313,18 @@ function setHosted(on) {
    Every one of them is optional. Standalone there is no host, `HOST.open` is
    null, and the affordances that would promise an editor stay hidden rather
    than being drawn and then doing nothing. */
-const HOST = { open:null, hover:null, icon:null };
+const HOST = { open:null, hover:null, icon:null, widgets:null };
 function setHostHooks(h) {
   HOST.open = h && typeof h.open === 'function' ? h.open : null;
   HOST.hover = h && typeof h.hover === 'function' ? h.hover : null;
   HOST.icon = h && typeof h.icon === 'function' ? h.icon : null;
+  /* widgets: the host's other two copies of this cosmos, the sidebar mini and
+     the floating one, switched from the deck. { get() -> {mini, float,
+     frame}, set(name, value) }. Absent standalone, where the WIDGETS tab is
+     not drawn at all. */
+  HOST.widgets = h && h.widgets && typeof h.widgets.get === 'function' &&
+                 typeof h.widgets.set === 'function' ? h.widgets : null;
+  if (tabEl.size) { layoutKnobs(); syncControls(); }
   syncHostUI();
   syncHostIcons();
 }
@@ -2621,7 +2694,7 @@ const KNOBS = [
      is brightness — LINK GLOW owns that, and the two were deliberately not
      merged: "I cannot see the links" and "the links are drowning the notes"
      are opposite complaints and one slider answers only one of them. */
-  { k:'lwd', g:'cosmos', label:'LINE WIDTH',    min:60, max:400, sc:100, def:.60,
+  { k:'lwd', g:'cosmos', label:'LINE WIDTH',    min:15, max:400, sc:100, def:.60,
     fmt:v => v.toFixed(1) + ' px' },
   /* RECENT WORK lights a note by when it was last touched.
 
@@ -2880,7 +2953,8 @@ function applyQuality(q, quiet) {
 const KNOB_OF = {};
 KNOBS.forEach(kn => { KNOB_OF[kn.k] = kn; });
 const GROUPS = [['cosmos','grp.cosmos'], ['bodies','grp.bodies'],
-                ['light','grp.light'], ['sound','grp.sound']];
+                ['light','grp.light'], ['sound','grp.sound'],
+                ['widgets','grp.widgets']];
 
 /* The arrangement is a list rather than a flag per knob, because it is one
    thing — what is on the bar — and a list of five strings survives a knob
@@ -3022,9 +3096,20 @@ SET.dock.forEach(id => { DOCK.pin.add(id); DOCK.open.add(id); });
    sidebar has a tenth of the full view's pixels at a third of its frame rate.
    FAST there saved almost nothing and left a grey sky. */
 if (MINI.on) {
-  Q_KEYS.forEach(k => { SET[k] = qualityVal('balanced', k); });
+  if (!FLOAT.on) Q_KEYS.forEach(k => { SET[k] = qualityVal('balanced', k); });
   SET.qAuto = 1;
   SET.snd = false;
+}
+floatOverrides();
+/* The floating orrery keeps the reader's light and loses the sky. STARFIELD
+   at zero is "the vault alone" — the stars, the band, the gas and the dust
+   all go with it — and the veil is the same backdrop by another knob. The
+   grain is a floor of noise for dark pixels, and over a transparent canvas
+   a dark pixel is the page: grain there is a fog of speckles on the note
+   underneath. Called again whenever the host hands over new settings. */
+function floatOverrides() {
+  if (!FLOAT.on) return;
+  SET.str = 0; SET.vei = 0; SET.grn = 0; SET.snd = false;
 }
 
 function saveSet(){
@@ -4295,14 +4380,18 @@ function relCounts(i) {
 
 /* ================================================================= SCENE */
 const canvas = $('gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false,
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:FLOAT.on,
   powerPreference:'high-performance' });
 /* The sidebar's mini orrery draws at one device pixel per CSS pixel
    whatever the display: it is a tenth of the full view's area and is on
    all day, and on a retina screen the two-to-one buffer was four times
-   the work for a picture nobody leans in to. */
-renderer.setPixelRatio(MINI.on ? 1 : Math.min(devicePixelRatio, 2));
-renderer.setClearColor(0x02040a, 1);
+   the work for a picture nobody leans in to. The floating one is small too,
+   but it is the picture rather than a glance at one, and a one-to-one
+   cosmos on a retina page sits blurred beside text that is not. */
+renderer.setPixelRatio(MINI.on && !FLOAT.on ? 1 : Math.min(devicePixelRatio, 2));
+/* Floating, empty space is nothing at all: black and zero alpha, so what
+   the canvas holds where there is no cosmos is the page underneath. */
+renderer.setClearColor(FLOAT.on ? 0x000000 : 0x02040a, FLOAT.on ? 0 : 1);
 renderer.outputEncoding = THREE.sRGBEncoding;
 /* three zeroes its counters at the top of every render() call, which was fine
    while a frame was one call and became a lie the moment the bloom chain made
@@ -4476,9 +4565,17 @@ const FXAA_F = `
 uniform sampler2D tSrc; uniform vec2 uRes;
 varying vec2 vUv;
 float luma(vec3 c){ return dot(c, vec3(0.299, 0.587, 0.114)); }
+/* uAlpha: the floating orrery's frame carries coverage in its alpha, and an
+   edge filter that smooths the colour along a silhouette and leaves the
+   coverage stepped would put a jagged dark rim round every planet over the
+   page. So the four taps are read whole and blended whole; off the float
+   the alpha is written back as one, as it always was. Same reads, same
+   arithmetic on the colour. */
+uniform float uAlpha;
 void main(){
   vec2 px = 1.0 / uRes;
-  vec3 rgbM = texture2D(tSrc, vUv).rgb;
+  vec4 m4 = texture2D(tSrc, vUv);
+  vec3 rgbM = m4.rgb;
   float lM  = luma(rgbM);
   float lNW = luma(texture2D(tSrc, vUv + vec2(-1.0, -1.0) * px).rgb);
   float lNE = luma(texture2D(tSrc, vUv + vec2( 1.0, -1.0) * px).rgb);
@@ -4486,17 +4583,19 @@ void main(){
   float lSE = luma(texture2D(tSrc, vUv + vec2( 1.0,  1.0) * px).rgb);
   float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE)));
   float lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
-  if (lMax - lMin < max(0.0312, lMax * 0.125)) { gl_FragColor = vec4(rgbM, 1.0); return; }
+  float keepA = uAlpha > 0.5 ? 0.0 : 1.0;
+  if (lMax - lMin < max(0.0312, lMax * 0.125)) { gl_FragColor = vec4(rgbM, max(m4.a, keepA)); return; }
   vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), ((lNW + lSW) - (lNE + lSE)));
   float dirReduce = max((lNW + lNE + lSW + lSE) * 0.03125, 0.0078125);
   float rcp = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
   dir = clamp(dir * rcp, -8.0, 8.0) * px;
-  vec3 rgbA = 0.5 * (texture2D(tSrc, vUv + dir * (1.0 / 3.0 - 0.5)).rgb
-                   + texture2D(tSrc, vUv + dir * (2.0 / 3.0 - 0.5)).rgb);
-  vec3 rgbB = rgbA * 0.5 + 0.25 * (texture2D(tSrc, vUv + dir * -0.5).rgb
-                                 + texture2D(tSrc, vUv + dir *  0.5).rgb);
-  float lB = luma(rgbB);
-  gl_FragColor = vec4((lB < lMin || lB > lMax) ? rgbA : rgbB, 1.0);
+  vec4 rgbA = 0.5 * (texture2D(tSrc, vUv + dir * (1.0 / 3.0 - 0.5))
+                   + texture2D(tSrc, vUv + dir * (2.0 / 3.0 - 0.5)));
+  vec4 rgbB = rgbA * 0.5 + 0.25 * (texture2D(tSrc, vUv + dir * -0.5)
+                                 + texture2D(tSrc, vUv + dir *  0.5));
+  float lB = luma(rgbB.rgb);
+  vec4 o = (lB < lMin || lB > lMax) ? rgbA : rgbB;
+  gl_FragColor = vec4(o.rgb, max(o.a, keepA));
 }`;
 /* ---- the lens, as a set of reflections ----
    A source in front of a real lens is seen more than once. Each air-glass
@@ -4576,7 +4675,7 @@ uniform sampler2D tScene; uniform sampler2D tRay;
 uniform sampler2D tB1; uniform sampler2D tB2; uniform sampler2D tB3;
 uniform sampler2D tFlare; uniform sampler2D tAnam; uniform sampler2D tNoise;
 uniform float uAmt, uRay, uFlare;
-uniform float uCurve, uSplit, uLens, uGrain, uTime, uExpo;
+uniform float uCurve, uSplit, uLens, uGrain, uTime, uExpo, uAlpha;
 uniform vec2 uRes;
 varying vec2 vUv;
 void main(){
@@ -4758,7 +4857,22 @@ void main(){
     float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
     c += (n - 0.5) * uGrain * 0.048 * (1.0 - smoothstep(0.0, 0.60, lum));
   }
-  gl_FragColor = vec4(c, 1.0);
+  /* ---- floating: how much of this pixel is cosmos ----
+     Everything above is light over black, so on a transparent canvas the
+     colour is already premultiplied and only the coverage is missing. Two
+     answers, and the larger wins. A solid body says so itself: the scene
+     pass leaves alpha at one where a planet or the sun's disc was drawn and
+     at zero everywhere else (see floatAlphaStep), so a planet's night side
+     hides the page behind it the way a real one would. Light says so by
+     how bright it is: a glow at a quarter is a quarter of the way to
+     covering what is under it, which composited reads exactly as light
+     laid over the page, and the bloom's spill, the shafts and the ghosts
+     are that kind of thing. Off the float this is the one it always was. */
+  if (uAlpha > 0.5) {
+    c = clamp(c, 0.0, 1.0);
+    float a = max(texture2D(tScene, vUv).a, max(c.r, max(c.g, c.b)));
+    gl_FragColor = vec4(c, clamp(a, 0.0, 1.0));
+  } else gl_FragColor = vec4(c, 1.0);
 }`;
 /* The meter's own pass: one output pixel per cell, holding the brightest of
    sixty-four points spread over that cell in red and their mean in green.
@@ -4850,6 +4964,7 @@ function bloomInit() {
                           uAmt:{value:0.6}, uRay:{value:0}, uFlare:{value:0},
                           uCurve:{value:0}, uSplit:{value:0}, uLens:{value:0},
                           uGrain:{value:0}, uTime:{value:0}, uExpo:{value:1},
+                          uAlpha:{value:FLOAT.on ? 1 : 0},
                           uRes:{value:new THREE.Vector2(1,1)} };
   /* The meter. A sixteen-by-sixteen grid over the frame, each cell the mean
      of a six-by-six spread of the scene under it, read back to the CPU —
@@ -4865,7 +4980,8 @@ function bloomInit() {
   BLOOM.anam.uniforms = { tSrc:{value:null}, uDir:{value:new THREE.Vector2()},
                           uTint:{value:new THREE.Vector3(0.45, 0.68, 1.0).multiplyScalar(0.5)} };
   BLOOM.fxaa = mk(FXAA_F);
-  BLOOM.fxaa.uniforms = { tSrc:{value:null}, uRes:{value:new THREE.Vector2(1,1)} };
+  BLOOM.fxaa.uniforms = { tSrc:{value:null}, uRes:{value:new THREE.Vector2(1,1)},
+                          uAlpha:{value:FLOAT.on ? 1 : 0} };
   BLOOM.probe = mk(PROBE_F);
   BLOOM.probe.uniforms = { tSrc:{value:null}, uCell:{value:new THREE.Vector2(1/16, 1/16)} };
   BLOOM.pr = new THREE.WebGLRenderTarget(16, 16, {
@@ -4946,10 +5062,57 @@ function sunScreen() {
   if (_sunV.z > 1) return null;
   return _sunV;
 }
+/* ---- FLOAT ALPHA ----
+   The floating orrery's alpha has to mean "a solid thing is here", and by
+   default it does not. Every glow in this scene — the coronas, the halos,
+   the ribbons, the rings — is drawn additively, and three's additive blend
+   applies to alpha as it does to colour, so a big soft sprite leaves its
+   whole square at some alpha. Over a transparent canvas that is a dark
+   smudge on the page wherever a halo was faint.
+
+   So, floating, every blended material keeps its colour blend and leaves
+   the destination's alpha alone: the glow is still light, and its coverage
+   comes from how bright it is (see the composite). What does write alpha
+   is the opaque pass — the planets, the moons, the sun's disc — which is
+   exactly the set of things that should hide what is behind them.
+
+   Walked every frame because materials come and go with every rebuild, and
+   marked so each is converted once; a few hundred objects is nothing next
+   to the frame it precedes. */
+const _floatDone = new WeakSet();
+function floatAlphaMat(m) {
+  if (!m || _floatDone.has(m)) return;
+  _floatDone.add(m);
+  if (m.blending === THREE.NoBlending) return;
+  if (m.blending === THREE.NormalBlending && !m.transparent) return;
+  const pre = !!m.premultipliedAlpha;
+  if (m.blending === THREE.AdditiveBlending) {
+    m.blendEquation = THREE.AddEquation;
+    m.blendSrc = pre ? THREE.OneFactor : THREE.SrcAlphaFactor;
+    m.blendDst = THREE.OneFactor;
+  } else if (m.blending === THREE.NormalBlending) {
+    m.blendEquation = THREE.AddEquation;
+    m.blendSrc = pre ? THREE.OneFactor : THREE.SrcAlphaFactor;
+    m.blendDst = THREE.OneMinusSrcAlphaFactor;
+  } else if (m.blending !== THREE.CustomBlending) return;   // subtractive, multiply: none here
+  m.blending = THREE.CustomBlending;
+  m.blendEquationAlpha = THREE.AddEquation;
+  m.blendSrcAlpha = THREE.ZeroFactor;
+  m.blendDstAlpha = THREE.OneFactor;
+  m.needsUpdate = true;
+}
+function floatAlphaStep() {
+  scene.traverse(o => {
+    const m = o.material;
+    if (!m) return;
+    if (Array.isArray(m)) m.forEach(floatAlphaMat); else floatAlphaMat(m);
+  });
+}
 /* The one place the frame is drawn. Every caller — the loop, the poster —
    goes through here so that what is saved is what was on screen. */
 function renderFrame() {
   renderer.info.reset();
+  if (FLOAT.on) floatAlphaStep();
   const amt = SET.blm;
   const sun = SET.ray > 0.02 ? sunScreen() : null;
   /* Two fades, and both of them are about where the source is rather than how
@@ -5085,7 +5248,7 @@ function renderFrame() {
 const scene = new THREE.Scene();
 /* thinner fog than v1: a heavy exponential fog turns the far half of the
    vault into grey soup long before you can read it */
-scene.fog = new THREE.FogExp2(0x02040a, 0.00026);
+scene.fog = new THREE.FogExp2(FLOAT.on ? 0x000000 : 0x02040a, 0.00026);
 const camera = new THREE.PerspectiveCamera(52, 1, 0.6, 40000);
 
 /* ================================================================ RIBBONS
@@ -10014,7 +10177,7 @@ function fitView() {
      links and the nearer systems read, and the drift brings the rest round. */
   /* the photo card the same way, less so: it is a portrait, and a portrait
      can lose the outermost scatter to have the systems read */
-  const fit = MINI.on ? 0.6 : CARD.on ? 0.8 * tall : tall;
+  const fit = FLOAT.on ? FLOAT.fit : MINI.on ? 0.6 : CARD.on ? 0.8 * tall : tall;
   rig.distD = N ? clamp((m * 1.25 + 120) * fit, 200, 22000) : 1250;
   rig.dist  = rig.distD * 1.35;                // ease in from further out
   rig.tgt.set(0,0,0);
@@ -12753,6 +12916,70 @@ function stageSync() {
   box.querySelector('small').textContent = T('snd.box.t');
   box.classList.toggle('on', !!SET.sBox);
 }
+/* ---- the widgets tab ----
+   The host's two other copies of the cosmos, switched from here. The tab
+   holds no knobs, so it is built and moved like the sound stage. The host
+   owns the state; this only asks it and tells it. */
+let wgtNode = null;
+function wgtEl() {
+  if (wgtNode) return wgtNode;
+  const st = document.createElement('div');
+  st.id = 'wgtstage';
+  const sw = (id) => {
+    const b = document.createElement('div');
+    b.className = 'mini'; b.id = id;
+    b.innerHTML = '<span></span><em></em><small></small>';
+    return b;
+  };
+  const mini = sw('wgtmini'), flt = sw('wgtfloat');
+  mini.onclick = () => wgtSet('mini');
+  flt.onclick = () => wgtSet('float');
+  const cap = document.createElement('div'); cap.className = 'cap'; cap.id = 'wgtcap';
+  const frames = document.createElement('div'); frames.id = 'wgtframes';
+  ['close', 'medium', 'whole'].forEach(f => {
+    const u = document.createElement('u');
+    u.dataset.f = f;
+    u.onclick = () => {
+      if (!HOST.widgets) return;
+      try { HOST.widgets.set('frame', f); } catch (e) { console.error('vault-orrery: widgets', e); }
+      wgtSync();
+    };
+    frames.appendChild(u);
+  });
+  st.appendChild(mini); st.appendChild(flt); st.appendChild(cap); st.appendChild(frames);
+  wgtNode = st;
+  return st;
+}
+function wgtState() {
+  if (!HOST.widgets) return null;
+  try { return HOST.widgets.get() || null; } catch (e) { return null; }
+}
+function wgtSet(name) {
+  const s = wgtState();
+  if (!s) return;
+  /* the host may answer after an await; the switch shows the request now
+     and the host's syncWidgets call settles it */
+  const want = !s[name];
+  try { HOST.widgets.set(name, want); } catch (e) { console.error('vault-orrery: widgets', e); }
+  const b = wgtNode && wgtNode.querySelector(name === 'mini' ? '#wgtmini' : '#wgtfloat');
+  if (b) { b.classList.toggle('on', want); b.querySelector('em').textContent = T(want ? 'wgt.on' : 'wgt.off'); }
+}
+function wgtSync() {
+  if (!wgtNode) return;
+  const s = wgtState() || {};
+  [['#wgtmini', 'mini'], ['#wgtfloat', 'float']].forEach(([id, k]) => {
+    const b = wgtNode.querySelector(id);
+    b.querySelector('span').textContent = T('wgt.' + k);
+    b.querySelector('em').textContent = T(s[k] ? 'wgt.on' : 'wgt.off');
+    b.querySelector('small').textContent = T('wgt.' + k + '.t');
+    b.classList.toggle('on', !!s[k]);
+  });
+  wgtNode.querySelector('#wgtcap').textContent = T('wgt.frame');
+  wgtNode.querySelectorAll('#wgtframes u').forEach(u => {
+    u.textContent = T('wgt.f.' + u.dataset.f);
+    u.classList.toggle('on', s.frame === u.dataset.f);
+  });
+}
 /* ---- a phrase in the mood just chosen ----
    Played on the vault's own most-cited notes, low to high, so what is heard
    is this vault in this key and not a demo tune: the same notes a selection
@@ -14113,7 +14340,7 @@ const _actUp = new THREE.Vector3();     // the active-note mark's own scratch
    two hundred percent gets asked once, loses the frame rate for about a
    second, and is never asked again for the rest of the session. */
 const SS = {
-  base: MINI.on ? 1 : Math.min(devicePixelRatio || 1, 2),   // see the renderer's own note
+  base: MINI.on && !FLOAT.on ? 1 : Math.min(devicePixelRatio || 1, 2),   // see the renderer's own note
   now: 1, want: 1,
   still: 0, hold: 0,
   /* the highest multiplier this machine has got away with. It only ever
@@ -15277,12 +15504,13 @@ function writeLinks() {
        one in front of it. Fog changes the ordering within a tier, which is
        what it is for, and not between tiers, which would be a lie. */
     str *= fogAt(eyeD);
+    if (FLOAT.on) str *= FLOAT.linkGain;
 
     const dx = ax-bx, dy = ay-by, dz = az-bz;
     const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
     if (atRest) {
       const q = clamp((d / restR - 0.30) / 0.90, 0, 1);
-      str *= 1 - 0.68 * q * q * (3 - 2 * q);
+      str *= 1 - (FLOAT.on ? FLOAT.linkRest : 0.68) * q * q * (3 - 2 * q);
     }
     /* the control point's offset from the chord midpoint, accumulated rather
        than applied directly, because its length is also what decides how many
@@ -15477,8 +15705,15 @@ function writeLinks() {
     }
 
     /* how wide this one is drawn — see the note on lwd above */
-    let wpx = lwd * (ty === 0 ? 1 : 0.86);
+    let wpx = lwd * (ty === 0 ? 1 : 0.86) * (FLOAT.on ? FLOAT.linkWidth : 1);
     if (sel >= 0 && (ia === sel || ib === sel)) wpx *= 1.5;
+    /* Under a pixel a ribbon stops being a thinner line and becomes a broken
+       one: the rasteriser drops whole stretches of it. So below half a pixel
+       it is drawn at half and dimmed by the difference, which is what a
+       hairline looks like on screen anyway. Half, because that is under
+       anything the knob could reach before its floor came down, so no width
+       somebody already had looks any different. */
+    if (wpx < 0.5) { str *= wpx / 0.5; wpx = 0.5; }
 
     /* ---- what colour a link is along its length ----
        One flat tint per kind said what kind of fact a link was and nothing
@@ -15840,6 +16075,9 @@ function underPane(x, y, hw, hh) {
 }
 function writeLabels() {
   if (!labels || !labels.length) return;
+  /* A model has no captions. Floating, the names would be text laid over
+     the reader's own text, and nothing there can be clicked to use one. */
+  if (FLOAT.on) { for (let li = 0; li < labels.length; li++) labels[li].sprite.visible = false; return; }
   if (frame - PANES.at > 12 || frame < PANES.at) { readPanes(); PANES.at = frame; }
   const camPos = camera.position;
   const W = innerWidth, H = innerHeight;
@@ -16837,7 +17075,8 @@ function layoutKnobs() {
     e.wrap.classList.toggle('pinned', on);
     if (on) bar.appendChild(e.wrap);
   });
-  const tab = GROUPS.some(([g]) => g === SET.tab) ? SET.tab : GROUPS[0][0];
+  const tab = GROUPS.some(([g]) => g === SET.tab) &&
+              (SET.tab !== 'widgets' || HOST.widgets) ? SET.tab : GROUPS[0][0];
   const show = KNOBS.filter(kn => !pinned(kn.k) &&
     (knobFind ? knobMatches(kn) : kn.g === tab && kn.k !== 'sScale'));
   /* the moods are the scale, pressed rather than dragged — SCALE itself is
@@ -16845,6 +17084,9 @@ function layoutKnobs() {
   const stage = stageEl();
   if (tab === 'sound' && !knobFind) { drawer.appendChild(stage); stageSync(); }
   else if (stage.parentNode === drawer) drawer.removeChild(stage);
+  const wgt = wgtEl();
+  if (tab === 'widgets' && !knobFind) { drawer.appendChild(wgt); wgtSync(); }
+  else if (wgt.parentNode === drawer) drawer.removeChild(wgt);
   show.forEach(kn => drawer.appendChild(KNOB_EL.get(kn.k).wrap));
   /* Anything the filter or the tab left out has to actually leave the drawer,
      not merely stop being appended: appendChild moves a node, and a knob that
@@ -16864,6 +17106,7 @@ function layoutKnobs() {
     b.classList.toggle('on', !knobFind && g === tab);
     /* a group with nothing left in it — every knob pinned out — is not a
        place worth going */
+    if (g === 'widgets') { b.style.display = HOST.widgets ? '' : 'none'; return; }
     b.classList.toggle('empty', !KNOBS.some(kn => kn.g === g && !pinned(kn.k)));
   });
   drawer.classList.toggle('found', !!knobFind);
@@ -16962,6 +17205,7 @@ function syncControls() {
     if (b) b.textContent = T(key);
   });
   if (findEl) findEl.placeholder = T('ctl.find');
+  wgtSync();
   /* The line is the pin hint, or what a search that found nothing should say,
      or — while the cursor is on a knob — what that knob is for. One writer
      for all three, so they cannot each be correct and stale at once. */
@@ -18621,6 +18865,64 @@ window.vaultOrrery = {
   setIgnoreFilters,
   setLang,
   setMaxNodes(n) { SET.maxNodes = Math.max(0, n|0); syncControls(); saveSet(); },
+  /* ---- the floating orrery's two host calls ----
+     applySettings: the full view's saved knobs, handed over again after the
+     reader has moved one, so the floating cosmos follows the deck without
+     being rebuilt. Only the knobs travel, clamped to their own ranges; the
+     arrangement of the deck, the language and the rest are the full view's
+     business. The sky and the grain are put back off afterwards (see
+     floatOverrides), and every knob's hook runs once, the way RESET does it,
+     so a knob that owns a buffer as well as a number is told too.
+
+     setFrame: how close the camera sits, as a share of the fitted vault.
+     Smaller is closer. Reframes from home, which is the only place a
+     floating cosmos ever is. */
+  applySettings(json) {
+    let saved = null;
+    try { saved = JSON.parse(json || '{}'); } catch (e) { return; }
+    if (!saved || typeof saved !== 'object') return;
+    KNOBS.forEach(kn => {
+      const v = saved[kn.k];
+      /* MAX NODES keeps its own counsel and comes from the plugin's tab */
+      if (kn.set || typeof v !== 'number' || !isFinite(v)) return;
+      SET[kn.k] = clamp(v, kn.min / kn.sc, kn.max / kn.sc);
+    });
+    Object.assign(SET, FIXED);
+    floatOverrides();
+    const ran = new Set();
+    KNOBS.forEach(kn => {
+      if (!kn.apply || ran.has(kn.apply)) return;
+      ran.add(kn.apply);
+      try { kn.apply(); } catch (e) { console.error('vault-orrery: settings ' + kn.k, e); }
+    });
+    recolour();
+  },
+  setFrame(fit) {
+    if (!(+fit > 0)) return;
+    FLOAT.fit = +fit;
+    fitView();
+  },
+  /* ---- the floating orrery's settings panel ----
+     knobs: the ranges, defaults and readouts of the knobs the panel offers,
+     so the host draws its sliders off the same table the deck does rather
+     than a second copy of the numbers. Values are in the knob's own units.
+     setLinks: the link layer, ALL or OFF. syncWidgets: the host changed a
+     widget from outside the deck (the float's own close button, a command),
+     and the WIDGETS tab should say so. */
+  knobs(keys) {
+    return (keys || []).map(k => {
+      const kn = KNOB_OF[k];
+      if (!kn) return null;
+      return { k, label: kn.label, min: kn.min / kn.sc, max: kn.max / kn.sc,
+               step: 1 / kn.sc, def: kn.def, value: SET[k] };
+    }).filter(Boolean);
+  },
+  knobText(k, v) {
+    const kn = KNOB_OF[k];
+    try { return kn ? kn.fmt(+v) : ''; } catch (e) { return String(v); }
+  },
+  setLinks(on) { layerIdx = on ? 0 : LAYERS.length - 1; nudge(); },
+  syncWidgets() { wgtSync(); },
   load: ingest,
   /* --- the host's half of the conversation ----------------------------- */
   setHostHooks,

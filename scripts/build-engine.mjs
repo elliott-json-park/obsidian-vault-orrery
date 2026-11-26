@@ -182,7 +182,7 @@ js = subRx(js, /\binnerWidth\b/g,  'VW()', 8, 'innerWidth -> VW()');
 js = subRx(js, /\binnerHeight\b/g, 'VH()', 8, 'innerHeight -> VH()');
 
 /* 4. mode flags live on the root, not on <body> */
-js = subRx(js, /document\.body\.classList/g, 'root.classList', 5, 'body.classList -> root.classList');
+js = subRx(js, /document\.body\.classList/g, 'root.classList', 6, 'body.classList -> root.classList');
 
 /* 5. the i18n sweep and the language chips must not reach outside this view */
 js = subRx(js, /document\.querySelectorAll/g, 'root.querySelectorAll', 5, 'querySelectorAll scoped');
@@ -406,6 +406,8 @@ const GLOBALS = new Set([
   'Array','Boolean','Date','Error','Float32Array','Float64Array',
   'Int16Array','Int32Array',
   'JSON','Map','Math','Number','Object','Promise','RegExp','Set','String',
+  /* the floating orrery's record of which materials it has converted */
+  'WeakSet',
   'THREE','Uint8Array','Uint16Array','Uint32Array',
   'cancelAnimationFrame','clearInterval','clearTimeout','decodeURIComponent',
   'isFinite','parseInt','performance',

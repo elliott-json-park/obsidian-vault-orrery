@@ -85,6 +85,22 @@ export interface OrreryHostHooks {
       names for the same icon. True if one was drawn; false leaves the engine
       with its own text glyph. */
   icon?(el: HTMLElement, names: string[]): boolean;
+  /** The sidebar mini and the floating orrery, switched from the deck's
+      WIDGETS tab. Without it the tab is not drawn. */
+  widgets?: OrreryWidgets;
+}
+
+export type OrreryFrame = 'close' | 'medium' | 'whole';
+export interface OrreryWidgets {
+  get(): { mini: boolean; float: boolean; frame: OrreryFrame };
+  set(name: 'mini' | 'float', value: boolean): void;
+  set(name: 'frame', value: OrreryFrame): void;
+}
+
+/** One knob as the floating orrery's panel draws it, in the knob's units. */
+export interface OrreryKnob {
+  k: string; label: string; min: number; max: number; step: number;
+  def: number; value: number;
 }
 
 export interface OrreryApi {
@@ -125,6 +141,22 @@ export interface OrreryApi {
   commands(): OrreryCommand[];
   /** Run one. False if the engine does not have a command by that name. */
   command(name: OrreryCommand): boolean;
+  /** The full view's saved knobs (the JSON it keeps under `orrery2.set`),
+      applied live. For the floating orrery, which follows the deck without
+      being rebuilt; the sky and the grain stay off there whatever it says. */
+  applySettings(json: string): void;
+  /** Floating only: how much of the fitted vault the frame holds. Smaller
+      is closer. Reframes from home. */
+  setFrame(fit: number): void;
+  /** Ranges, defaults and current values of these knobs. Unknown keys are
+      left out. */
+  knobs(keys: string[]): OrreryKnob[];
+  /** A knob value as the deck would print it. */
+  knobText(k: string, v: number): string;
+  /** The link layer: every link, or none. */
+  setLinks(on: boolean): void;
+  /** Re-read the widgets' state into the WIDGETS tab. */
+  syncWidgets(): void;
   /** Re-measure against the container. Call when the leaf changes size. */
   resize(): void;
   destroy(): void;
@@ -136,6 +168,11 @@ export interface OrreryBoot {
   /** The sidebar's mini orrery: no panels, no keys, no events, no sound,
       the light effects off and the frame rate paced to twenty. */
   mini?: boolean;
+  /** The floating orrery: a mini with a transparent canvas, no sky, and the
+      reader's own light settings. Implies `mini`. */
+  float?: boolean;
+  /** Floating only: the starting frame, as for setFrame(). */
+  fit?: number;
 }
 
 export declare function createOrrery(root: HTMLElement, store?: OrreryStore,

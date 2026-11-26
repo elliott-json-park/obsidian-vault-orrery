@@ -98,6 +98,14 @@ send it back. The inspector appears when you select a note.
 - **Mini orrery** — the same cosmos in the right sidebar, centred on the note
   you are editing, with its name at the foot. *Open the mini orrery in the
   sidebar* brings it back.
+- **Floating orrery**: the cosmos with its sky taken away, hung over your
+  notes like a sticker. It turns, glows and lets every click through to the
+  note underneath. Point at it to move, resize or close it; right-click it
+  for its own zoom, orbit speed, node and link glow, link width, sun halo,
+  orbit gap and shell, opacity, pause and position lock. Anything you leave
+  alone there follows the full view's controls. Turn it on with *Show or hide
+  the floating orrery*, in Settings, or from the **WIDGETS** tab of the
+  controls drawer, which switches the mini orrery as well.
 - **Orrery view for Bases** — on Obsidian 1.10 and later, in every Base's
   view menu. The notes the Base selects, and only those, drawn as their own
   cosmos; the Base's filters are how you carve the vault before it is drawn.

@@ -151,8 +151,8 @@ const mkApp = vault => ({
   const flatten = items => items.flatMap(i => i.type === 'group' ? flatten(i.items ?? []) : [i]);
   const defs = flatten(tab.getSettingDefinitions());
   const keys = defs.filter(d => d.control).map(d => d.control.key).sort();
-  ok(JSON.stringify(keys) === '["extraIgnoreFilters","followActiveNote","followExcludedFiles",' +
-                             '"language","liveSync","maxNodes","showMini"]',
+  ok(JSON.stringify(keys) === '["extraIgnoreFilters","floatFrame","followActiveNote","followExcludedFiles",' +
+                             '"language","liveSync","maxNodes","showFloat","showMini"]',
      'every setting is declared for search -> ' + JSON.stringify(keys));
   ok(defs.every(d => d.name), 'every declared setting has a name to be found by');
 

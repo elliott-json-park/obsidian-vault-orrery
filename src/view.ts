@@ -63,6 +63,8 @@ export class OrreryView extends ItemView {
       open: (path, opts) => { void openNoteFrom(this.app, this.leaf, path, opts); },
       hover: (path, event, el) => hoverNote(this.app, this, path, event, el),
       icon: hostIcon,
+      /* the WIDGETS tab, in the full view only: the mini has no deck */
+      widgets: this.mini ? undefined : this.plugin.widgetHooks(),
     });
     this.plugin.applySettingsTo(this.api);
 

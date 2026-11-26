@@ -1,6 +1,6 @@
 import { App, Notice, TFile, WorkspaceLeaf, getAllTags, setIcon } from 'obsidian';
 import { createOrrery, ENGINE_HTML } from './engine.generated.js';
-import type { OrreryApi, OrreryFile, OrreryFileMeta, OrreryStore } from './engine.generated.js';
+import type { OrreryApi, OrreryBoot, OrreryFile, OrreryFileMeta, OrreryStore } from './engine.generated.js';
 import type VaultOrreryPlugin from './main';
 
 /* The half of hosting the engine that every surface shares: the leaf view,
@@ -24,14 +24,14 @@ export const HOVER_SOURCE = 'vault-orrery';
 
 /** Mount the engine's markup into `root` and start it. Throws if the engine
     cannot start; the caller decides what to show instead. */
-export function mountEngine(root: HTMLElement, store: OrreryStore, mini: boolean): OrreryApi {
+export function mountEngine(root: HTMLElement, store: OrreryStore, mini: boolean | OrreryBoot): OrreryApi {
   /* ENGINE_HTML is a build-time constant with no user data in it, so innerHTML
      would be safe here — but DOMParser is safe by construction rather than by
      argument, and it does not run scripts. Cheaper to reason about, and one
      less thing for a reviewer to have to take on trust. */
   const doc = new DOMParser().parseFromString(ENGINE_HTML, 'text/html');
   while (doc.body.firstChild) root.appendChild(doc.body.firstChild);
-  const api = createOrrery(root, store, { mini });
+  const api = createOrrery(root, store, typeof mini === 'boolean' ? { mini } : mini);
   /* Before anything is drawn: the vault here is the one the plugin is
      installed in, so the engine's own way of asking for a folder has to be
      gone by the first paint rather than dismissed after it. */

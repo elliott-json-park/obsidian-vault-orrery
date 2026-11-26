@@ -109,6 +109,161 @@
 }
 .vo-mini-caption.is-empty { opacity: 0; }
 
+/* ---- the floating orrery (src/float.ts) ----
+   A box hung over the workspace that takes no clicks. Above the side docks
+   and the status bar, one under popovers — so a page preview, a menu or a
+   modal always lands on top of it. */
+.vo-float {
+  position: fixed;
+  z-index: calc(var(--layer-popover, 30) - 1);
+  pointer-events: none;
+}
+.vo-float.is-failed { display: none; }
+/* No sky behind the cosmos: the engine's root paints the page colour, and
+   here the page is Obsidian's. The canvas is transparent (FLOAT in the
+   engine), so this is the last opaque thing between the two.
+
+   The edge goes soft. The bloom spills as far as the box, and a glow cut
+   square at the box's edge is the one line that would give the rectangle
+   away; fading the outer ring to nothing leaves a cosmos with no edge. */
+.vo-float .vo-root {
+  background: transparent;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 74%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side at 50% 50%, #000 74%, transparent 100%);
+}
+.vo-float .vo-root * { pointer-events: none; }
+
+/* The frame: nothing until the pointer comes near, then a faint outline and
+   three handles, which are the only parts of the box that take a click. */
+.vo-float-frame {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed transparent;
+  border-radius: var(--radius-m, 8px);
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.vo-float.is-hover .vo-float-frame,
+.vo-float.is-moving .vo-float-frame {
+  border-color: rgba(var(--mono-rgb-100, 0, 0, 0), 0.22);
+}
+.vo-float-grip,
+.vo-float-close,
+.vo-float-size {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+.vo-float.is-hover :is(.vo-float-grip, .vo-float-close, .vo-float-size),
+.vo-float.is-moving :is(.vo-float-grip, .vo-float-close, .vo-float-size) {
+  opacity: 0.9;
+  pointer-events: auto;
+}
+.vo-float-grip:hover, .vo-float-close:hover, .vo-float-size:hover { opacity: 1; color: var(--text-normal); }
+.vo-float-grip {
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 20px;
+  cursor: grab;
+}
+.vo-float.is-moving .vo-float-grip { cursor: grabbing; }
+.vo-float-close {
+  top: -11px;
+  right: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.vo-float-size {
+  right: -7px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+}
+.vo-float-grip svg { width: 14px; height: 14px; }
+.vo-float-close svg { width: 12px; height: 12px; }
+/* Locked: no grip, no resize corner, no outline. The close button stays, and
+   the right-click panel is where it is unlocked. */
+.vo-float.is-locked .vo-float-frame { border-color: transparent !important; }
+.vo-float.is-locked :is(.vo-float-grip, .vo-float-size) { display: none; }
+
+/* The float's own settings, opened by right-clicking it. Drawn in the
+   theme's menu colours so it reads as part of Obsidian, not of the cosmos. */
+.vo-float-panel {
+  position: fixed;
+  z-index: var(--layer-menu, 65);
+  width: 248px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  padding: 8px 10px 10px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 8px);
+  box-shadow: var(--shadow-l);
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+.vo-fp-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -8px -10px 0;
+  padding: 8px 10px 4px;
+  font-weight: var(--font-semibold, 600);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+.vo-float-panel.is-moving .vo-fp-title { cursor: grabbing; }
+.vo-fp-grip { display: inline-flex; color: var(--text-faint); }
+.vo-fp-title:hover .vo-fp-grip { color: var(--text-muted); }
+.vo-fp-grip svg { width: 14px; height: 14px; }
+.vo-fp-head {
+  margin: 8px 0 2px;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  letter-spacing: 0.04em;
+}
+.vo-fp-row.is-slider {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0 8px;
+  padding: 3px 0;
+}
+.vo-fp-row.is-slider .slider { grid-column: 1 / -1; width: 100%; }
+.vo-fp-row.is-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.vo-fp-label { display: flex; align-items: center; gap: 4px; color: var(--text-muted); }
+.vo-fp-label.is-own { color: var(--text-accent); }
+.vo-fp-reset { display: inline-flex; cursor: pointer; color: var(--text-faint); }
+.vo-fp-reset:hover { color: var(--text-normal); }
+.vo-fp-reset svg { width: 12px; height: 12px; }
+.vo-fp-val { font-variant-numeric: tabular-nums; color: var(--text-faint); }
+.vo-fp-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 3px 0; }
+.vo-fp-seg button { font-size: var(--font-ui-smaller); padding: 2px 4px; height: auto; }
+.vo-fp-seg button.is-on { background: var(--interactive-accent); color: var(--text-on-accent); }
+.vo-fp-sep { height: 1px; margin: 8px 0 2px; background: var(--background-modifier-border); }
+.vo-fp-foot { display: flex; gap: 6px; margin-top: 8px; }
+.vo-fp-foot button { flex: 1 1 auto; font-size: var(--font-ui-smaller); height: auto; padding: 4px 6px; }
+
 /* The Bases view. Bases hands the view a container and lays it out; a Base
    embedded in a note gives it no height of its own, so one is asked for. */
 .vault-orrery-bases {

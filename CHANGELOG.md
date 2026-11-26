@@ -4,6 +4,13 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.5.0
+
+- **A floating orrery.** The cosmos with its sky taken away, hung over your notes: suns, planets, links and their light, turning, with the note showing through everywhere else. It takes no clicks, so you keep working underneath it. Point at it to move it, resize it or close it, and it comes back where you left it. Turn it on with *Show or hide the floating orrery*, in Settings, or from the new WIDGETS tab.
+- **Its own settings on a right-click.** Right-click the floating orrery for a small panel: frame and zoom, orbit speed, pause, node glow, link glow, link width, sun halo, orbit gap, orbit shell, links on or off, opacity and a position lock. Anything you leave alone follows the full view's controls; a changed value is marked and can be sent back on its own, or all at once with *Follow the full view*. Drag the panel by its title to put it where you like.
+- **A WIDGETS tab in the controls drawer.** The sidebar mini orrery and the floating orrery switch on and off from inside the full view, with the floating orrery's frame beside them.
+- **Thinner links.** LINE WIDTH now goes down to 0.15 px. Below half a pixel a link is drawn as a fainter hairline rather than a broken one. Widths you already had look the same.
+
 ## 2.4.1
 
 - **The star request opens without a clipping effect.** Its window now unfolds from its top edge with a transform instead of a clip path, which the directory review flagged as only partly supported. It looks the same.
