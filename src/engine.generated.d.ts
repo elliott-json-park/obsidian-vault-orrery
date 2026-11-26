@@ -148,6 +148,9 @@ export interface OrreryApi {
   /** Floating only: how much of the fitted vault the frame holds. Smaller
       is closer. Reframes from home. */
   setFrame(fit: number): void;
+  /** Floating only: the hub's disc on screen, in normalised device
+      coordinates (-1..1, y up). Null when there is no sun to point at. */
+  sunAt(): { x: number; y: number; r: number } | null;
   /** Ranges, defaults and current values of these knobs. Unknown keys are
       left out. */
   knobs(keys: string[]): OrreryKnob[];

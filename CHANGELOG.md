@@ -4,6 +4,13 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.7.0
+
+- **The floating orrery stays out of your way.** Pointing at it no longer draws a frame, a grip, a close button or a resize corner. It shows nothing and every click reaches the note underneath.
+- **Move it by its sun.** Point at the sun in the middle and a ripple goes out from it; press there and drag to move the whole orrery. Locking its position turns this off.
+- **Close it from the right-click panel.** The ✕ in the corner is gone, and the panel has a *Turn off the floating orrery* button at its foot.
+- **No resize corner.** The floating orrery keeps the size it has; the frame and zoom controls in the panel still change how close the view sits.
+
 ## 2.6.1
 
 - **Cleaner code for the directory review.** An unneeded type assertion, an `!important` in the floating orrery's locked style and three unused error variables are gone. Nothing you see or use changes.

@@ -19017,6 +19017,21 @@ window.vaultOrrery = {
     FLOAT.fit = +fit;
     fitView();
   },
+  /* ---- the floating orrery's sun ----
+     Where the hub is on screen, so the host can offer it as the one part of
+     the float that takes a grab, and draw a ripple from it. Returned in
+     normalised device coordinates (-1..1, y up): x and y the centre, r the
+     disc's radius measured along x. Null when there is no sun to point at:
+     not built yet, hidden while a map is open, or behind the camera. */
+  sunAt() {
+    if (!N || !sunObj || !sunObj.visible || !sunObj.userData || !sunObj.userData.R) return null;
+    const c = new THREE.Vector3().copy(sunObj.position).project(camera);
+    if (c.z > 1 || c.z < -1) return null;
+    const R = sunObj.userData.R * sunObj.scale.x;
+    const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+    const e = new THREE.Vector3().copy(sunObj.position).addScaledVector(right, R).project(camera);
+    return { x: c.x, y: c.y, r: Math.abs(e.x - c.x) };
+  },
   /* ---- the floating orrery's settings panel ----
      knobs: the ranges, defaults and readouts of the knobs the panel offers,
      so the host draws its sliders off the same table the deck does rather

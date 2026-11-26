@@ -134,70 +134,45 @@
 }
 .vo-float .vo-root * { pointer-events: none; }
 
-/* The frame: nothing until the pointer comes near, then a faint outline and
-   three handles, which are the only parts of the box that take a click. */
-.vo-float-frame {
+/* The hub. Its element is the only part of the float that takes a pointer,
+   and only while the pointer is over the sun (see is-sun in float.ts); the
+   rest of the time it is transparent and the note underneath has every click.
+   Its size and place are set from the engine's sun, so the disc and the grab
+   area are the same shape. */
+.vo-float-sun {
   position: absolute;
-  inset: 0;
-  border: 1px dashed transparent;
-  border-radius: var(--radius-m, 8px);
-  transition: border-color 0.15s, background-color 0.15s;
-}
-.vo-float.is-hover .vo-float-frame,
-.vo-float.is-moving .vo-float-frame {
-  border-color: rgba(var(--mono-rgb-100, 0, 0, 0), 0.22);
-}
-.vo-float-grip,
-.vo-float-close,
-.vo-float-size {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s, 4px);
-  opacity: 0;
+  border-radius: 50%;
   pointer-events: none;
-  transition: opacity 0.15s;
-}
-.vo-float.is-hover :is(.vo-float-grip, .vo-float-close, .vo-float-size),
-.vo-float.is-moving :is(.vo-float-grip, .vo-float-close, .vo-float-size) {
-  opacity: 0.9;
-  pointer-events: auto;
-}
-.vo-float-grip:hover, .vo-float-close:hover, .vo-float-size:hover { opacity: 1; color: var(--text-normal); }
-.vo-float-grip {
-  top: -11px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 20px;
   cursor: grab;
 }
-.vo-float.is-moving .vo-float-grip { cursor: grabbing; }
-.vo-float-close {
-  top: -11px;
-  right: -11px;
-  width: 22px;
-  height: 22px;
+.vo-float.is-sun .vo-float-sun { pointer-events: auto; }
+.vo-float.is-moving .vo-float-sun { cursor: grabbing; }
+/* The ripple: two rings that leave the hub and fade, starting a half-cycle
+   apart. Drawn only while the pointer is over the hub, so nothing at all
+   shows on a float that is merely hovered. */
+.vo-float-sun::before,
+.vo-float-sun::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  cursor: pointer;
+  border: 1px solid var(--interactive-accent, rgba(255, 196, 96, 0.9));
+  opacity: 0;
+  pointer-events: none;
 }
-.vo-float-size {
-  right: -7px;
-  bottom: -7px;
-  width: 14px;
-  height: 14px;
-  cursor: nwse-resize;
+.vo-float.is-sun .vo-float-sun::before,
+.vo-float.is-sun .vo-float-sun::after {
+  animation: vo-float-ripple 1.8s ease-out infinite;
 }
-.vo-float-grip svg { width: 14px; height: 14px; }
-.vo-float-close svg { width: 12px; height: 12px; }
-/* Locked: no grip, no resize corner, no outline. The close button stays, and
-   the right-click panel is where it is unlocked. */
-.vo-float.is-locked .vo-float-frame { border-color: transparent; }
-.vo-float.is-locked :is(.vo-float-grip, .vo-float-size) { display: none; }
+.vo-float.is-sun .vo-float-sun::after { animation-delay: 0.9s; }
+@keyframes vo-float-ripple {
+  0%   { transform: scale(1);   opacity: 0.85; }
+  100% { transform: scale(3.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vo-float.is-sun .vo-float-sun::before,
+  .vo-float.is-sun .vo-float-sun::after { animation: none; opacity: 0.5; transform: scale(1.6); }
+}
 
 /* The float's own settings, opened by right-clicking it. Drawn in the
    theme's menu colours so it reads as part of Obsidian, not of the cosmos. */

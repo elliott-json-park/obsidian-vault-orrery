@@ -12,10 +12,12 @@ import type VaultOrreryPlugin from './main';
    That is the whole design problem, because the two pull against each other.
    Something that ignores the pointer cannot be dragged, and something that
    takes the pointer covers a square of the note. So the box ignores the
-   pointer always, and watches it from the window instead: when the pointer
-   comes inside the box, a faint frame, a grip, a close button and a resize
-   corner come up, and those few pixels are the only part of the whole thing
-   that takes a click. The pointer leaves and it is a picture again.
+   pointer always, and watches it from the window instead. Hovering it shows
+   nothing at all: it stays a picture, and the note underneath keeps every
+   click. The one exception is the hub in the middle. Over the sun a ripple
+   goes out from it, and a press there is taken and turns into a drag of the
+   whole box. Nothing else about the float takes a click; closing it and its
+   other settings live in the right-click panel.
 
    Above the workspace and the status bar, below popovers, menus and modals,
    so a page preview or a context menu is never under it.
@@ -35,9 +37,9 @@ const MIN = 140;
 /* how much of the box has to stay on screen when the window shrinks or the
    box is dragged off an edge, so there is always something to grab */
 const KEEP = 48;
-/* the pointer counts as inside a little before it reaches the edge, so the
-   grip is already there when it gets to it */
-const REACH = 10;
+/* the hub's grab area is never smaller than this, however far away the sun
+   is drawn, so a small sun is still something a pointer can find */
+const SUN_MIN = 12;
 const SYNC_DELAY = 2500;
 
 /* ---- the right-click panel ----
@@ -65,7 +67,7 @@ const WORDS: Record<'ko' | 'en', Words> = {
     orbits: '궤도', gap: '궤도 간격', sph: '궤도 껍질',
     show: '표시', links: '링크 보이기', opacity: '투명도',
     lock: '위치 잠금', follow: '전체 뷰 설정 따르기',
-    reset: '전체 뷰 값으로 되돌리기',
+    reset: '전체 뷰 값으로 되돌리기', off: '플로팅 오러리 끄기',
   },
   en: {
     title: 'Floating orrery', view: 'View', zoom: 'Zoom',
@@ -76,7 +78,7 @@ const WORDS: Record<'ko' | 'en', Words> = {
     orbits: 'Orbits', gap: 'Orbit gap', sph: 'Orbit shell',
     show: 'Show', links: 'Links', opacity: 'Opacity',
     lock: 'Lock position', follow: 'Follow the full view',
-    reset: 'Back to the full view value',
+    reset: 'Back to the full view value', off: 'Turn off the floating orrery',
   },
 };
 
@@ -86,9 +88,10 @@ export class FloatingOrrery {
   private api: OrreryApi | null = null;
   private ro: ResizeObserver | null = null;
   private off: Array<() => void> = [];
+  private sun: HTMLElement;        // the hub's grab area, and its ripple
   private rect: FloatRect;
-  private hover = false;
-  private busy = false;            // a drag or a resize is in progress
+  private sunOn = false;           // the pointer is over the hub
+  private busy = false;            // a drag is in progress
   private syncPending = false;
   private visible = false;
   private panel: HTMLElement | null = null;
@@ -100,36 +103,27 @@ export class FloatingOrrery {
 
     this.el = document.body.createDiv({ cls: 'vo-float' });
     this.root = this.el.createDiv({ cls: 'vo-root' });
-    const frame = this.el.createDiv({ cls: 'vo-float-frame' });
-    const grip = frame.createDiv({ cls: 'vo-float-grip', attr: { 'aria-label': 'Move' } });
-    setIcon(grip, 'grip-horizontal');
-    const close = frame.createDiv({ cls: 'vo-float-close', attr: { 'aria-label': 'Hide the floating orrery' } });
-    setIcon(close, 'x');
-    const size = frame.createDiv({ cls: 'vo-float-size', attr: { 'aria-label': 'Resize' } });
+    this.sun = this.el.createDiv({ cls: 'vo-float-sun', attr: { 'aria-label': 'Drag to move' } });
     this.place();
 
-    close.addEventListener('click', () => { void plugin.setFloat(false); });
     this.el.toggleClass('is-locked', plugin.settings.floatLocked);
     this.root.setCssStyles({ opacity: String(plugin.settings.floatOpacity) });
-    this.dragWith(grip, (r, dx, dy) => ({ ...r, x: r.x + dx, y: r.y + dy }));
-    this.dragWith(size, (r, dx, dy) => ({ ...r, w: r.w + dx, h: r.h + dy }));
+    this.dragWith(this.sun, (r, dx, dy) => ({ ...r, x: r.x + dx, y: r.y + dy }));
 
-    /* the pointer, watched from the window: see the note at the top */
+    /* the pointer, watched from the window: see the note at the top. The
+       only thing it decides is whether the hub is under it, and the hub's
+       element takes the pointer only while it is. */
     this.listen(window, 'pointermove', (e: PointerEvent) => {
       if (this.busy) return;
-      const r = this.rect;
-      const inside = e.clientX >= r.x - REACH && e.clientX <= r.x + r.w + REACH &&
-                     e.clientY >= r.y - REACH && e.clientY <= r.y + r.h + REACH;
-      if (inside !== this.hover) {
-        this.hover = inside;
-        this.el.toggleClass('is-hover', inside);
-      }
+      const s = this.sunBox();
+      const hit = !!s && Math.hypot(e.clientX - this.rect.x - s.x, e.clientY - this.rect.y - s.y) <= s.r;
+      if (s && hit) this.placeSun(s);
+      this.setSunOn(hit);
     });
     /* leaving the window entirely sends no pointermove from outside it */
     this.listen(document, 'pointerleave', () => {
-      if (this.busy || !this.hover) return;
-      this.hover = false;
-      this.el.removeClass('is-hover');
+      if (this.busy) return;
+      this.setSunOn(false);
     });
     this.listen(window, 'resize', () => { this.rect = this.fitRect(this.rect); this.place(); });
     /* Right-click inside the box opens the float's own settings. Taken in the
@@ -281,6 +275,39 @@ export class FloatingOrrery {
   private place() {
     const r = this.rect;
     this.el.setCssStyles({ left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+  }
+
+  /** Where the hub is inside the box, and how far its grab area reaches, in
+      pixels. Null when there is nothing to grab: the position is locked, or
+      the engine has no sun on screen. */
+  private sunBox(): { x: number; y: number; r: number } | null {
+    if (this.plugin.settings.floatLocked || !this.api) return null;
+    const s = this.api.sunAt();
+    if (!s) return null;
+    const W = this.el.offsetWidth, H = this.el.offsetHeight;
+    return {
+      x: (s.x * 0.5 + 0.5) * W,
+      y: (1 - (s.y * 0.5 + 0.5)) * H,
+      r: Math.max(SUN_MIN, s.r * W * 0.5),
+    };
+  }
+
+  /** The grab area and its ripple sit over the hub. The box moves by its own
+      position, so they come along with a drag without being moved here. */
+  private placeSun(s: { x: number; y: number; r: number }) {
+    const d = s.r * 2;
+    this.sun.setCssStyles({
+      left: (s.x - s.r) + 'px', top: (s.y - s.r) + 'px', width: d + 'px', height: d + 'px',
+    });
+  }
+
+  /** The hub takes the pointer only while the pointer is over it. Anywhere
+      else the element is transparent to clicks, so the note underneath keeps
+      them. */
+  private setSunOn(on: boolean) {
+    if (on === this.sunOn) return;
+    this.sunOn = on;
+    this.el.toggleClass('is-sun', on);
   }
 
   /** A handle that changes the rect as it is dragged, and saves it on
@@ -520,6 +547,12 @@ export class FloatingOrrery {
       s.floatTune = {};
       this.applyLook(); this.saveSoon(); this.renderPanel();
     });
+
+    /* the only way to close the float is here: the box itself takes no
+       clicks, so there is no corner of it to put a close button on */
+    const off = p.createDiv({ cls: 'vo-fp-foot' });
+    off.createEl('button', { text: w.off })
+      .addEventListener('click', () => { void this.plugin.setFloat(false); });
   }
 
   destroy() {
