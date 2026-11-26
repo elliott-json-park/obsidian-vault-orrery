@@ -196,7 +196,7 @@
 .vo-float-close svg { width: 12px; height: 12px; }
 /* Locked: no grip, no resize corner, no outline. The close button stays, and
    the right-click panel is where it is unlocked. */
-.vo-float.is-locked .vo-float-frame { border-color: transparent !important; }
+.vo-float.is-locked .vo-float-frame { border-color: transparent; }
 .vo-float.is-locked :is(.vo-float-grip, .vo-float-size) { display: none; }
 
 /* The float's own settings, opened by right-clicking it. Drawn in the

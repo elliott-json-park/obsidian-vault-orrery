@@ -288,7 +288,7 @@ export default class VaultOrreryPlugin extends Plugin {
     };
     return {
       get: () => ({ mini: this.miniOpen(), float: this.settings.floatOn, frame: this.settings.floatFrame }),
-      set: set as OrreryWidgets['set'],
+      set,
     };
   }
   /** Something other than the deck changed a widget: tell every deck. */

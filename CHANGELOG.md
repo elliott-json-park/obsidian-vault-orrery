@@ -4,6 +4,10 @@ Each version's section here becomes that release's description on GitHub —
 `.github/workflows/release.yml` reads it when the tag is pushed, and refuses to
 publish a version that has no section.
 
+## 2.6.1
+
+- **Cleaner code for the directory review.** An unneeded type assertion, an `!important` in the floating orrery's locked style and three unused error variables are gone. Nothing you see or use changes.
+
 ## 2.6.0
 
 - **The legend remembers what you hide.** Systems you switch off in the STAR SYSTEMS list stay off when you close the view, restart Obsidian or reload the vault, until you click them back on. Resetting the controls leaves them as they are. Thanks @ZephyrIsla for the request (#3).

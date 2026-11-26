@@ -220,7 +220,7 @@ export class FloatingOrrery {
     const s = this.plugin.settings;
     let deck: Record<string, unknown> = {};
     try { deck = JSON.parse(s.engineStore['orrery2.set'] || '{}') as Record<string, unknown>; }
-    catch (_) { deck = {}; }
+    catch { deck = {}; }
     const merged: Record<string, unknown> = { ...deck };
     for (const kn of api.knobs([...TUNE_KEYS])) {
       const own = s.floatTune[kn.k];
@@ -304,7 +304,7 @@ export class FloatingOrrery {
         handle.removeEventListener('pointermove', move);
         handle.removeEventListener('pointerup', up);
         handle.removeEventListener('pointercancel', up);
-        try { handle.releasePointerCapture(ev.pointerId); } catch (_) { /* already released */ }
+        try { handle.releasePointerCapture(ev.pointerId); } catch { /* already released */ }
         this.busy = false;
         this.el.removeClass('is-moving');
         this.plugin.settings.floatRect = { ...this.rect };
@@ -384,7 +384,7 @@ export class FloatingOrrery {
         bar.removeEventListener('pointermove', move);
         bar.removeEventListener('pointerup', up);
         bar.removeEventListener('pointercancel', up);
-        try { bar.releasePointerCapture(ev.pointerId); } catch (_) { /* already released */ }
+        try { bar.releasePointerCapture(ev.pointerId); } catch { /* already released */ }
         p.removeClass('is-moving');
         const now = p.getBoundingClientRect();
         this.panelPos = { x: now.left, y: now.top };
