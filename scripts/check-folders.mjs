@@ -92,10 +92,27 @@ const bySize = rowsOf('n');
 ok('size order has no header rows and no steps', bySize.every(s => !s.startsWith('H:') && s.endsWith('@0')), bySize);
 
 const byPath = rowsOf('p');
-const want = ['wiki:Alpha@0', 'wiki:Alpha/Child@1', 'wiki:Alpha Beta@0',
-              'H:Reading@0', 'wiki:Reading/快思慢想@1', 'H:Reading/Novels@1', 'wiki:Reading/Novels/Old@2',
-              'wiki:W.Templates@0', 'raw:2025@0'];
-ok('path order: a folder of folders gets a header, children sit under their real parent', JSON.stringify(byPath) === JSON.stringify(want), byPath);
+/* Checked by structure, not by one exact list: how 快 sorts against Latin
+   letters is the platform's collation, and it differs between machines. */
+const pathOf = s => s.replace(/^H:/, '').replace(/^wiki:/, '').replace(/@\d+$/, '');
+const depthOf = s => +s.split('@').pop();
+const treeOk = byPath.every((s, k) => {
+  if (s.startsWith('raw:')) return true;
+  const d = depthOf(s);
+  if (!d) return true;
+  /* the nearest row above at one step less is this row's real parent */
+  for (let j = k - 1; j >= 0; j--) {
+    if (depthOf(byPath[j]) === d - 1) return pathOf(s).startsWith(pathOf(byPath[j]) + '/');
+    if (depthOf(byPath[j]) < d - 1) return false;
+  }
+  return false;
+});
+ok('path order: every indented row sits under its real parent', treeOk, byPath);
+ok('a folder of folders gets a header, and only those do',
+   JSON.stringify(byPath.filter(s => s.startsWith('H:'))) === JSON.stringify(['H:Reading@0', 'H:Reading/Novels@1']), byPath);
+ok('Latin names keep their order, archives last',
+   JSON.stringify(byPath.filter(s => /^wiki:(Alpha|W\.)/.test(s))) === JSON.stringify(['wiki:Alpha@0', 'wiki:Alpha/Child@1', 'wiki:Alpha Beta@0', 'wiki:W.Templates@0']) &&
+   byPath[byPath.length - 1] === 'raw:2025@0', byPath);
 const iT = byPath.indexOf('wiki:W.Templates@0'), iK = byPath.indexOf('wiki:Reading/快思慢想@1');
 ok('快思慢想 is not set under W.Templates', iK < iT || byPath[iK - 1] !== 'wiki:W.Templates@0');
 
